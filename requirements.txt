@@ -1,0 +1,19 @@
+# Discord Quran Bot - Python Dependencies
+# Professional 24/7 Quran streaming bot
+
+# Discord API wrapper
+discord.py>=2.3.0
+
+# Environment configuration
+python-dotenv>=1.0.0
+
+# Audio processing (if needed for future features)
+# PyNaCl>=1.5.0
+
+# System monitoring
+psutil>=5.9.0
+
+# Development dependencies (optional)
+# pytest>=7.0.0
+# black>=22.0.0
+# flake8>=5.0.0 
