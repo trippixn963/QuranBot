@@ -154,13 +154,21 @@ class DiscordEmbedLogger:
         if self.bot.user and self.bot.user.avatar:
             embed.set_thumbnail(url=self.bot.user.avatar.url)
         
-        # Voice channel info
-        embed.add_field(name="🎙️ Channel", value=channel_name, inline=True)
+        # Last uptime (from bot start time)
+        if hasattr(self.bot, 'start_time'):
+            uptime = datetime.now() - self.bot.start_time
+            hours = uptime.seconds // 3600
+            minutes = (uptime.seconds % 3600) // 60
+            uptime_str = f"{hours:02d}h {minutes:02d}m"
+            embed.add_field(name="⏱️ Last Uptime", value=uptime_str, inline=True)
         
-        # Current reciter if available
-        if hasattr(self.bot, 'current_reciter'):
-            reciter = getattr(self.bot, 'current_reciter', 'Not set')
-            embed.add_field(name="🗣️ Reciter", value=reciter, inline=True)
+        # Health checks status
+        health_status = "✅ All Systems OK"
+        if hasattr(self.bot, 'health_checks'):
+            failed_checks = getattr(self.bot, 'health_checks', {}).get('failed', [])
+            if failed_checks:
+                health_status = f"⚠️ Issues Found: {len(failed_checks)}"
+        embed.add_field(name="🔍 Health Checks", value=health_status, inline=True)
         
         # Playback status
         embed.add_field(name="⏯️ Status", value="Ready to stream", inline=True)
