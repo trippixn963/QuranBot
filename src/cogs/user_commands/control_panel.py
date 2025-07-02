@@ -151,9 +151,10 @@ class SurahSelect(Select):
         for surah_num_int, surah_num, surah_name in all_surahs[start_idx:end_idx]:
             emoji = get_surah_emoji(surah_num_int)
             surah_options.append(discord.SelectOption(
-                label=f"{emoji} {surah_num.zfill(3)} - {surah_name}", 
+                label=f"{surah_num.zfill(3)} - {surah_name}",
                 value=surah_num,
-                description=f"Surah {surah_num_int}"
+                description=f"Surah {surah_num_int}",
+                emoji=emoji if emoji else None
             ))
         
         # Create placeholder with page info
