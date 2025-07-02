@@ -1,6 +1,33 @@
 """
-Main Discord Quran Bot implementation.
-Professional 24/7 Quran streaming bot with local audio support.
+QuranBot - Main Discord Bot Implementation
+=========================================
+
+Core Discord bot class for 24/7 Quran streaming service.
+This module contains the main QuranBot class that handles all Discord interactions,
+audio streaming, command management, and bot lifecycle.
+
+Key Features:
+    - Discord voice channel management
+    - Audio streaming with FFmpeg
+    - Slash command system
+    - Health monitoring and reporting
+    - State persistence across restarts
+    - Auto-reconnection and error recovery
+    - Dynamic rich presence cycling
+    - Graceful shutdown handling
+
+Classes:
+    QuranBot: Main Discord client class with Quran streaming capabilities
+
+Dependencies:
+    - discord.py: Discord API wrapper
+    - asyncio: Asynchronous programming
+    - FFmpeg: Audio processing
+    - Custom utils: config, logger, health, state_manager, surah_mapper
+
+Author: QuranBot Team
+License: MIT
+Version: 2.1.0
 """
 
 import discord
@@ -10,14 +37,16 @@ import sys
 import tempfile
 import subprocess
 from datetime import datetime
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import time
 import itertools
 import signal
 
-# Add src to path for imports
+# Add src directory to Python path for module imports
+# This allows importing from utils.config, utils.logger, etc.
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Import utility modules
 from utils.config import Config
 from utils.logger import (
     logger, log_bot_startup, log_audio_playback, log_crossfade_generation,
@@ -31,59 +60,99 @@ from utils.health_reporter import HealthReporter
 from utils.state_manager import StateManager
 from utils.surah_mapper import get_surah_from_filename, get_surah_emoji, get_surah_display_name
 
+
 class QuranBot(discord.Client):
-    """Professional Discord bot for 24/7 Quran streaming."""
+    """
+    Professional Discord bot for 24/7 Quran streaming.
+    
+    This class extends discord.Client to provide Quran streaming capabilities
+    with comprehensive error handling, health monitoring, and state management.
+    
+    Attributes:
+        _voice_clients (Dict[int, discord.VoiceClient]): Active voice connections
+        is_streaming (bool): Current streaming status
+        current_audio_file (Optional[str]): Currently playing audio file
+        current_reciter (str): Active reciter folder name
+        connection_failures (int): Number of consecutive connection failures
+        max_connection_failures (int): Maximum allowed connection failures
+        start_time (float): Bot startup timestamp for uptime calculation
+        loop_enabled (bool): Whether current surah should loop
+        shuffle_enabled (bool): Whether surah order should be shuffled
+        original_playlist (List[str]): Original playlist for shuffle functionality
+        health_monitor (HealthMonitor): Health monitoring instance
+        health_reporter (Optional[HealthReporter]): Health reporting instance
+        state_manager (StateManager): State persistence manager
+        presence_messages (List[tuple]): Dynamic presence messages
+        current_presence_index (int): Current presence message index
+        presence_task (Optional[asyncio.Task]): Presence cycling task
+    """
     
     def __init__(self):
-        """Initialize the Quran Bot."""
+        """
+        Initialize the QuranBot Discord client.
+        
+        Sets up Discord intents, command tree, bot state variables,
+        health monitoring, state management, and signal handlers.
+        """
+        # Configure Discord intents for required permissions
         intents = discord.Intents.default()
-        intents.message_content = True
-        intents.voice_states = True
+        intents.message_content = True  # Required for slash commands
+        intents.voice_states = True     # Required for voice channel access
 
         super().__init__(intents=intents)
         
-        # Initialize command tree for slash commands
+        # Initialize Discord slash command tree
         self.tree = discord.app_commands.CommandTree(self)
         
-        # Bot state
+        # Bot state management
         self._voice_clients: Dict[int, discord.VoiceClient] = {}
         self.is_streaming = False
         self.current_audio_file: Optional[str] = None
-        # Store the folder name internally, but use display name for UI
-        # Get the default reciter display name and convert to folder name
+        
+        # Reciter management - store folder name internally, use display name for UI
         default_reciter_display = Config.DEFAULT_RECITER
         self.current_reciter: str = Config.get_folder_name_from_display(default_reciter_display)
-        self.connection_failures = 0  # Track connection failures
-        self.max_connection_failures = 5  # Stop trying after 5 failures
-        self.start_time = time.time()  # For uptime calculation
         
-        # Playback control
-        self.loop_enabled = False  # Loop current surah
-        self.shuffle_enabled = False  # Shuffle surah order
-        self.original_playlist = []  # Store original playlist for shuffle
+        # Connection failure tracking
+        self.connection_failures = 0
+        self.max_connection_failures = 5  # Stop trying after 5 consecutive failures
+        self.start_time = time.time()     # For uptime calculation
         
-        # Health monitoring
+        # Playback control settings
+        self.loop_enabled = False         # Loop current surah
+        self.shuffle_enabled = False      # Shuffle surah order
+        self.original_playlist = []       # Store original playlist for shuffle
+        
+        # Initialize monitoring and management systems
         self.health_monitor = HealthMonitor()
-        
-        # Health reporting
         self.health_reporter = None
-        
-        # State management
         self.state_manager = StateManager()
         
-        # Setup environment
+        # Setup environment configuration
         Config.setup_environment()
         
-        # Setup graceful shutdown
-        signal.signal(signal.SIGINT, self.signal_handler)
-        signal.signal(signal.SIGTERM, self.signal_handler)
+        # Setup graceful shutdown signal handlers
+        signal.signal(signal.SIGINT, self.signal_handler)   # Ctrl+C
+        signal.signal(signal.SIGTERM, self.signal_handler)  # Termination signal
         
     async def setup_hook(self):
-        """Setup hook for bot initialization."""
+        """
+        Discord.py setup hook for bot initialization.
+        
+        This method is called during bot startup and is responsible for:
+        - Loading all slash command extensions (cogs)
+        - Syncing the command tree with Discord
+        - Performance monitoring of the setup process
+        
+        The setup process loads commands from the following categories:
+        - Admin commands: restart, status, skip, reconnect, credits
+        - User commands: control_panel
+        - Utility commands: logs
+        """
         t0 = time.time()
         logger.info("Setting up Quran Bot...", extra={'event': 'STARTUP'})
         
-        # Load individual command files
+        # Define all command extensions to load
         commands_to_load = [
             'src.cogs.admin_commands.restart',
             'src.cogs.admin_commands.status',
@@ -94,6 +163,7 @@ class QuranBot(discord.Client):
             'src.cogs.user_commands.control_panel'
         ]
         
+        # Load each command extension
         for command in commands_to_load:
             try:
                 await self.load_extension(command)
@@ -101,7 +171,7 @@ class QuranBot(discord.Client):
             except Exception as e:
                 logger.error(f"Failed to load command {command}: {e}", extra={'event': 'COMMAND_LOAD_ERROR'})
         
-        # Sync command tree
+        # Sync command tree with Discord to register slash commands
         try:
             await self.tree.sync()
             logger.info("Command tree synced successfully", extra={'event': 'COMMAND_SYNC'})
@@ -112,7 +182,15 @@ class QuranBot(discord.Client):
         log_performance("setup_hook", t1-t0)
     
     async def load_extension(self, extension_name: str):
-        """Load a cog extension."""
+        """
+        Load a Discord.py cog extension.
+        
+        Args:
+            extension_name (str): The module path to the extension (e.g., 'src.cogs.admin_commands.restart')
+            
+        Raises:
+            Exception: If the extension fails to load or doesn't have a setup function
+        """
         try:
             import importlib
             module = importlib.import_module(extension_name)
@@ -126,15 +204,31 @@ class QuranBot(discord.Client):
             raise
         
     async def on_ready(self):
-        """Called when bot is ready."""
+        """
+        Discord.py event handler called when the bot is ready.
+        
+        This method is called once the bot has successfully connected to Discord
+        and is ready to handle events. It performs the following initialization:
+        
+        - Logs bot startup information
+        - Sets up dynamic rich presence cycling
+        - Initializes health monitoring and reporting
+        - Sets up state management
+        - Attempts to join the target voice channel
+        - Starts presence cycling task
+        
+        The method includes comprehensive performance monitoring for each
+        initialization step to help identify bottlenecks.
+        """
         t0 = time.time()
         if self.user:
+            # Log successful bot startup
             log_bot_startup(self.user.name, self.user.id)
             log_discord_event("ready", {"guilds": len(self.guilds)})
             t1 = time.time()
             log_performance("discord_ready", t1-t0)
             
-            # Set up dynamic rich presence
+            # Initialize dynamic rich presence system
             self.presence_messages = [
                 (discord.ActivityType.listening, "📖 Quran 24/7"),
                 (discord.ActivityType.playing, "🕋 Surah Al-Fatiha"),
@@ -146,17 +240,17 @@ class QuranBot(discord.Client):
             self.presence_cycle = self._presence_cycle()
             await self.set_presence()
             
-            # Start presence cycling
+            # Start background task for presence cycling
             self.presence_task = asyncio.create_task(self.cycle_presence())
             
-            # Initialize health monitoring
+            # Initialize health monitoring and reporting system
             self.health_reporter = HealthReporter(self, self.health_monitor, Config.LOGS_CHANNEL_ID)
             await self.health_reporter.start()
             
-            # Initialize state manager
+            # Initialize state management system
             self.state_manager = StateManager()
             
-            # Find and join target voice channel
+            # Attempt to find and join the target voice channel
             t2 = time.time()
             logger.info(f"Auto voice connect setting: {Config.AUTO_VOICE_CONNECT}", 
                        extra={'event': 'CONFIG_CHECK', 'auto_voice_connect': Config.AUTO_VOICE_CONNECT})
@@ -168,11 +262,11 @@ class QuranBot(discord.Client):
             t3 = time.time()
             log_performance("find_and_join_channel", t3-t2)
             
-            # Log health status
+            # Log health monitoring initialization
             logger.info("Bot health monitoring initialized", extra={'event': 'HEALTH'})
             logger.info("DEBUG: About to initialize state management", extra={'event': 'DEBUG_STATE_INIT'})
             
-            # Initialize state management
+            # Initialize state management and track bot starts
             self.state_manager.increment_bot_start_count()
             start_count = self.state_manager.get_bot_start_count()
             log_state_load("bot_start_count", {"start_count": start_count})
@@ -184,7 +278,16 @@ class QuranBot(discord.Client):
             log_performance("health_reporter_start", t5-t4)
         
     async def find_and_join_channel(self):
-        """Find the target channel and join it."""
+        """
+        Find and join the target voice channel.
+        
+        This method searches through all guilds the bot is in to find the
+        configured target voice channel. If found and auto-connection is enabled,
+        it will attempt to start streaming. If not found, it logs an error.
+        
+        The method includes performance monitoring to track how long the
+        search and connection process takes.
+        """
         t0 = time.time()
         target_channel = None
         
@@ -215,15 +318,31 @@ class QuranBot(discord.Client):
         log_performance("find_and_join_channel_total", t2-t0)
         
     async def on_voice_state_update(self, member, before, after):
-        """Handle voice state updates for reconnection logic."""
+        """
+        Handle Discord voice state updates for reconnection logic.
+        
+        This method monitors voice state changes and handles automatic
+        reconnection when the bot is disconnected from voice channels.
+        
+        Features:
+        - Detects when the bot is disconnected
+        - Implements progressive reconnection delays
+        - Limits reconnection attempts to prevent infinite loops
+        - Updates streaming status and health monitoring
+        
+        Args:
+            member: The Discord member whose voice state changed
+            before: The previous voice state
+            after: The new voice state
+        """
         if self.user and member.id == self.user.id:
             if before.channel and not after.channel:
-                # Bot was disconnected
+                # Bot was disconnected from voice channel
                 log_disconnection(before.channel.name, "Disconnected from voice channel")
                 self.is_streaming = False
                 self.health_monitor.set_streaming_status(False)
                 
-                # Check if we've had too many failures
+                # Increment connection failure counter
                 self.connection_failures += 1
                 if self.connection_failures >= self.max_connection_failures:
                     logger.error(f"Too many connection failures ({self.connection_failures}). Stopping reconnection attempts.", 
@@ -231,7 +350,8 @@ class QuranBot(discord.Client):
                     self.is_streaming = False
                     return
                 
-                # Wait much longer before reconnecting to break the reconnection loop
+                # Implement progressive delay to prevent rapid reconnection loops
+                # Wait longer between each attempt, up to 5 minutes maximum
                 wait_time = min(60 * self.connection_failures, 300)  # Progressive delay up to 5 minutes
                 logger.info(f"Waiting {wait_time} seconds before reconnection attempt {self.connection_failures}/{self.max_connection_failures}...", 
                            extra={'event': 'RECONNECT_WAIT', 'wait_time': wait_time, 'failures': self.connection_failures})
@@ -673,13 +793,24 @@ class QuranBot(discord.Client):
         log_performance("play_quran_files_total", t3-t0)
             
     async def close(self):
-        """Cleanup when bot is shutting down."""
+        """
+        Cleanup method called when the bot is shutting down.
+        
+        Stops health reporting and calls the parent class close method
+        to properly clean up Discord client resources.
+        """
         if self.health_reporter:
             await self.health_reporter.stop()
         await super().close()
 
     async def update_presence_for_surah(self, surah_info):
-        """Update the bot's presence to show the currently playing surah."""
+        """
+        Update the bot's Discord presence to show the currently playing surah.
+        
+        Args:
+            surah_info (dict): Dictionary containing surah information including
+                             'number' and 'english_name'
+        """
         try:
             emoji = get_surah_emoji(surah_info['number'])
             activity_type = discord.ActivityType.listening
@@ -691,7 +822,12 @@ class QuranBot(discord.Client):
             log_error(e, "update_presence_for_surah")
 
     async def cycle_presence(self):
-        """Cycle through different rich presences every 2 minutes."""
+        """
+        Background task that cycles through different rich presences every 2 minutes.
+        
+        This method runs continuously and updates the bot's Discord presence
+        to show either the currently playing surah or general Quran-related messages.
+        """
         while True:
             # Check if we're currently playing a surah
             if hasattr(self, 'current_audio_file') and self.current_audio_file:
@@ -705,25 +841,45 @@ class QuranBot(discord.Client):
             await asyncio.sleep(120)  # 2 minutes instead of 5
 
     def signal_handler(self, signum, frame):
-        """Handle shutdown signals gracefully."""
+        """
+        Handle shutdown signals gracefully.
+        
+        This method is called when the bot receives SIGINT (Ctrl+C) or SIGTERM.
+        It initiates a graceful shutdown process to clean up resources properly.
+        
+        Args:
+            signum: The signal number received
+            frame: The current stack frame
+        """
         print(f"\n🛑 Received signal {signum}. Starting graceful shutdown...")
         asyncio.create_task(self.graceful_shutdown())
         
     async def graceful_shutdown(self):
-        """Perform graceful shutdown with state saving and cleanup."""
+        """
+        Perform graceful shutdown with comprehensive cleanup.
+        
+        This method ensures all resources are properly cleaned up when the bot
+        is shutting down, including:
+        - Stopping audio streaming
+        - Stopping health reporting
+        - Cancelling background tasks
+        - Disconnecting from voice channels
+        - Saving final state
+        - Closing Discord client
+        """
         try:
             log_shutdown("Graceful shutdown initiated")
             
-            # Stop streaming
+            # Stop streaming and update health status
             self.is_streaming = False
             self.health_monitor.set_streaming_status(False)
             
-            # Stop health reporting
+            # Stop health reporting system
             if self.health_reporter:
                 await self.health_reporter.stop()
                 logger.info("Health reporting stopped")
             
-            # Stop presence cycling
+            # Stop presence cycling task
             if self.presence_task and not self.presence_task.done():
                 self.presence_task.cancel()
                 try:
@@ -741,7 +897,7 @@ class QuranBot(discord.Client):
                 except Exception as e:
                     log_error(e, f"disconnect_voice_guild_{guild_id}")
             
-            # Save final state
+            # Save final state for next startup
             if hasattr(self, 'current_audio_file') and self.current_audio_file:
                 self.state_manager.set_current_song_name(self.current_audio_file)
                 logger.info(f"Saved final state: {self.current_audio_file}")
@@ -760,13 +916,24 @@ class QuranBot(discord.Client):
             sys.exit(0)
 
     def _presence_cycle(self):
-        """Generator for cycling through presence messages."""
+        """
+        Generator for cycling through presence messages.
+        
+        Returns:
+            Generator that yields tuples of (activity_type, message) for
+            Discord presence updates.
+        """
         while True:
             for activity_type, message in self.presence_messages:
                 yield activity_type, message
 
     async def set_presence(self):
-        """Set initial presence for the bot."""
+        """
+        Set initial presence for the bot.
+        
+        Called during startup to set the bot's initial Discord presence
+        before the cycling begins.
+        """
         try:
             activity_type, message = next(self.presence_cycle)
             await self.change_presence(activity=discord.Activity(type=activity_type, name=message))
@@ -775,17 +942,31 @@ class QuranBot(discord.Client):
             log_error(e, "set_presence")
 
 def main():
-    """Main entry point for the Quran Bot."""
-    # Validate configuration
+    """
+    Main entry point for the QuranBot Discord application.
+    
+    This function:
+    1. Validates the configuration
+    2. Creates a QuranBot instance
+    3. Starts the bot with the Discord token
+    4. Handles any startup errors
+    
+    The bot will run continuously until interrupted or an error occurs.
+    """
+    # Validate configuration before starting
     if not Config.validate():
         print("❌ Configuration validation failed!")
         return
+    
+    # Check for required Discord token
     if not Config.DISCORD_TOKEN:
         print("❌ Discord token not set in environment!")
         return
-    # Create bot instance
+    
+    # Create and start the bot instance
     bot = QuranBot()
     logger.info("Starting Quran Bot...", extra={'event': 'startup'})
+    
     try:
         bot.run(Config.DISCORD_TOKEN)
     except Exception as e:

@@ -1,6 +1,36 @@
 """
-Configuration management for the Discord Quran Bot.
-Centralized configuration for all bot settings.
+QuranBot - Configuration Management
+==================================
+
+Centralized configuration management for the QuranBot Discord application.
+This module provides a comprehensive configuration system that handles all
+bot settings, environment variables, and reciter management.
+
+Key Features:
+    - Environment variable loading from .env files
+    - Discord bot configuration (tokens, channel IDs)
+    - Audio and FFmpeg configuration
+    - Reciter management and discovery
+    - Logging configuration
+    - Bot behavior settings
+    - Configuration validation
+
+Classes:
+    Config: Main configuration class with all bot settings and utility methods
+
+Environment Variables:
+    DISCORD_TOKEN: Discord bot token (required)
+    TARGET_CHANNEL_ID: Voice channel ID for streaming (required)
+    PANEL_CHANNEL_ID: Control panel channel ID (required)
+    LOGS_CHANNEL_ID: Logs channel ID (optional)
+    AUDIO_FOLDER: Directory containing reciter folders (default: 'audio')
+    DEFAULT_RECITER: Default reciter name (default: 'Saad Al Ghamdi')
+    FFMPEG_PATH: Path to FFmpeg installation (default: 'C:\\ffmpeg\\bin')
+    AUDIO_QUALITY: Audio quality for streaming (default: '128k')
+
+Author: QuranBot Team
+License: MIT
+Version: 2.1.0
 """
 
 import os
@@ -8,42 +38,97 @@ from typing import Optional, List, Dict, Any
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
+# This allows configuration to be stored in a separate file
 load_dotenv()
 
+
 class Config:
-    """Configuration class for the Quran Bot."""
+    """
+    Configuration class for the QuranBot Discord application.
     
+    This class provides centralized access to all bot configuration settings,
+    including Discord credentials, audio settings, reciter management, and
+    bot behavior parameters. All settings can be configured via environment
+    variables or have sensible defaults.
+    
+    Attributes:
+        DISCORD_TOKEN (Optional[str]): Discord bot token from environment
+        TARGET_CHANNEL_ID (int): Voice channel ID for Quran streaming
+        PANEL_CHANNEL_ID (int): Channel ID for control panel
+        LOGS_CHANNEL_ID (int): Channel ID for bot logs
+        TARGET_GUILD_ID (Optional[int]): Guild ID (set at runtime)
+        AUDIO_FOLDER (str): Directory containing reciter folders
+        AUDIO_QUALITY (str): Audio quality for streaming
+        AUDIO_FORMAT (str): Audio format (always 'mp3')
+        DEFAULT_RECITER (str): Default reciter name
+        FFMPEG_PATH (str): Path to FFmpeg installation
+        FFMPEG_OPTIONS (str): FFmpeg command line options
+        LOG_LEVEL (str): Logging level
+        LOG_FILE (str): Log file path
+        LOG_FORMAT (str): Log message format
+        AUTO_RECONNECT (bool): Enable automatic reconnection
+        RECONNECT_DELAY (int): Delay between reconnection attempts
+        STREAM_TIMEOUT (int): Timeout for streaming operations
+        AUTO_VOICE_CONNECT (bool): Enable automatic voice connection
+        MAX_RECONNECT_ATTEMPTS (int): Maximum reconnection attempts
+        HEARTBEAT_INTERVAL (int): Health check interval
+    """
+    
+    # =============================================================================
     # Discord Bot Configuration
+    # =============================================================================
+    
+    # Discord API credentials and channel IDs
     DISCORD_TOKEN: Optional[str] = os.getenv('DISCORD_TOKEN')
     TARGET_CHANNEL_ID: int = int(os.getenv('TARGET_CHANNEL_ID', '1389675580253016144'))
     PANEL_CHANNEL_ID: int = int(os.getenv('PANEL_CHANNEL_ID', '1389716643512455219'))
     LOGS_CHANNEL_ID: int = int(os.getenv('LOGS_CHANNEL_ID', '1389683881078423567'))
-    TARGET_GUILD_ID: Optional[int] = None
+    TARGET_GUILD_ID: Optional[int] = None  # Set at runtime when channel is found
     
+    # =============================================================================
     # Audio Configuration
+    # =============================================================================
+    
+    # Audio file and streaming settings
     AUDIO_FOLDER: str = os.getenv('AUDIO_FOLDER', 'audio')
     AUDIO_QUALITY: str = os.getenv('AUDIO_QUALITY', '128k')
-    AUDIO_FORMAT: str = "mp3"
+    AUDIO_FORMAT: str = "mp3"  # Currently only supports MP3
     DEFAULT_RECITER: str = os.getenv('DEFAULT_RECITER', 'Saad Al Ghamdi')
     
+    # =============================================================================
     # FFmpeg Configuration
+    # =============================================================================
+    
+    # FFmpeg installation path and streaming options
     FFMPEG_PATH: str = os.getenv('FFMPEG_PATH', r"C:\ffmpeg\bin")
     FFMPEG_OPTIONS: str = "-vn -b:a 128k -reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
     
+    # =============================================================================
     # Logging Configuration
+    # =============================================================================
+    
+    # Logging settings and file paths
     LOG_LEVEL: str = "INFO"
     LOG_FILE: str = "logs/quran_bot.log"
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     
-    # Bot Behavior
-    AUTO_RECONNECT: bool = True
-    RECONNECT_DELAY: int = 5  # seconds
-    STREAM_TIMEOUT: int = 30  # seconds
-    AUTO_VOICE_CONNECT: bool = True  # Enable automatic voice connection
+    # =============================================================================
+    # Bot Behavior Configuration
+    # =============================================================================
     
+    # Connection and reconnection settings
+    AUTO_RECONNECT: bool = True
+    RECONNECT_DELAY: int = 5  # seconds between reconnection attempts
+    STREAM_TIMEOUT: int = 30  # seconds timeout for streaming operations
+    AUTO_VOICE_CONNECT: bool = True  # Enable automatic voice connection on startup
+    
+    # =============================================================================
     # Performance Settings
+    # =============================================================================
+    
+    # Performance and reliability settings
     MAX_RECONNECT_ATTEMPTS: int = 10
-    HEARTBEAT_INTERVAL: int = 5  # seconds
+    HEARTBEAT_INTERVAL: int = 5  # seconds between health checks
     
     @classmethod
     def validate(cls) -> bool:
