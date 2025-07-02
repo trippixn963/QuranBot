@@ -1,22 +1,14 @@
 # 📖 QuranBot - Discord 24/7 Quran Streaming Bot
 
+[![MIT License](https://img.shields.io/github/license/JohnHamwi/QuranAudioBot)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
+[![Last Commit](https://img.shields.io/github/last-commit/JohnHamwi/QuranAudioBot)](https://github.com/JohnHamwi/QuranAudioBot/commits/master)
+[![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Discord.py](https://img.shields.io/badge/discord.py-2.3.0%2B-blue)](https://discordpy.readthedocs.io/)
+
 > **🚨 Disclaimer:** This project is provided as-is, with no support or warranty. Issues and pull requests may not be reviewed or answered. See [SUPPORT.md](SUPPORT.md) for details.
 
 A professional Discord bot for continuous Quran recitation with multiple reciters, interactive controls, and comprehensive monitoring.
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
-## 🤝 Contributing & Security
-
-- See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
-- See [SECURITY.md](SECURITY.md) for security policy.
-- See [SUPPORT.md](SUPPORT.md) for support policy.
-
----
 
 ## 🌟 Features
 
@@ -61,7 +53,7 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for detai
 
 3. **Setup environment**
    ```bash
-   cp .env.example .env
+   cp env_template.txt .env
    # Edit .env with your Discord bot configuration
    ```
 
@@ -316,10 +308,20 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **Discord.py** - Excellent Discord API wrapper
-- **FFmpeg** - Powerful audio processing
-- **Quran Reciters** - Beautiful recitations
-- **Community** - All contributors and users
+### Quran Audio Sources
+- **Quran MP3 Files:** Audio recitations sourced from [SurahQuran.com](https://surahquran.com/) - A comprehensive Islamic website providing Quran recitations by renowned reciters.
+- **Reciters:** All reciters featured in this bot are professional Quran reciters whose work is made available for educational and religious purposes.
+
+### Libraries and Tools
+- **[Discord.py](https://discordpy.readthedocs.io/)** - Excellent Discord API wrapper
+- **[FFmpeg](https://ffmpeg.org/)** - Powerful audio processing
+- **[Python](https://www.python.org/)** - Programming language
+- **[Colorama](https://github.com/tartley/colorama)** - Cross-platform colored terminal text
+
+### Community
+- **Discord.py Community** - For excellent documentation and support
+- **Open Source Community** - For inspiration and best practices
+- **Muslim Developer Community** - For feedback and suggestions
 
 ---
 
