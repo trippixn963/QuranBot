@@ -207,17 +207,11 @@ class DiscordEmbedLogger:
     
     async def log_user_joined_vc(self, member: discord.Member, channel_name: str):
         """Log when a user joins the target voice channel."""
-        # Get any existing total time if they were tracked before
-        existing_total_time = 0.0
-        if member.id in self.user_sessions:
-            existing_total_time = self.user_sessions[member.id].get('total_time', 0.0)
-        
-        # Start tracking session
+        # Start tracking session (no previous time accumulation)
         self.user_sessions[member.id] = {
             'joined_at': datetime.now(),
             'channel_name': channel_name,
-            'username': member.display_name,
-            'total_time': existing_total_time
+            'username': member.display_name
         }
         
         # Save sessions after each join
@@ -232,32 +226,22 @@ class DiscordEmbedLogger:
         embed.add_field(name="👤 User", value=f"<@{member.id}>", inline=True)
         embed.add_field(name="🆔 ID", value=str(member.id), inline=True)
         
-        # Show previous total time if they had any
-        if existing_total_time > 0:
-            embed.add_field(name="⏱️ Previous Time", value=self.format_duration(existing_total_time), inline=True)
-        
         if member.avatar:
             embed.set_thumbnail(url=member.avatar.url)
         
         await self._send_embed(embed)
     
     async def log_user_left_vc(self, member: discord.Member, channel_name: str):
-        """Log when a user leaves the target voice channel with total duration."""
+        """Log when a user leaves the target voice channel with session duration."""
         session_duration = 0.0
-        total_duration = 0.0
         
         if member.id in self.user_sessions:
             session_info = self.user_sessions[member.id]
             # Calculate current session duration
             session_duration = (datetime.now() - session_info['joined_at']).total_seconds()
-            # Add to any previous total time
-            total_duration = session_duration + session_info.get('total_time', 0.0)
             
-            # Update the session with accumulated time but keep the record
-            session_info['total_time'] = total_duration
-            session_info['last_left'] = datetime.now().isoformat()
-            
-            # Save the updated session data
+            # Remove the session (reset time tracking)
+            del self.user_sessions[member.id]
             self._save_sessions()
         
         embed = discord.Embed(
@@ -270,7 +254,6 @@ class DiscordEmbedLogger:
         
         if session_duration > 0:
             embed.add_field(name="⏱️ Session Time", value=self.format_duration(session_duration), inline=True)
-            embed.add_field(name="🕐 Total Time", value=self.format_duration(total_duration), inline=True)
         else:
             embed.add_field(name="⏱️ Duration", value="Unknown", inline=True)
         
