@@ -141,6 +141,10 @@ async def credits_command(interaction: discord.Interaction):
     embed.set_footer(text="Made with ❤️ for the Muslim Ummah • QuranBot v2.0.0")
     embed.timestamp = discord.utils.utcnow()
     
+    # Add bot avatar as author
+    if interaction.client.user and interaction.client.user.avatar:
+        embed.set_author(name=interaction.client.user.display_name, icon_url=interaction.client.user.avatar.url)
+    
     # Set creator's Discord profile picture
     try:
         creator_user = await interaction.client.fetch_user(259725211664908288)

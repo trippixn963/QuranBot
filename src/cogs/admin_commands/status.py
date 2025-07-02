@@ -97,6 +97,10 @@ async def status(interaction: discord.Interaction):
     embed.set_footer(text=f"Requested by {interaction.user.name}")
     embed.timestamp = discord.utils.utcnow()
     
+    # Add bot avatar as author
+    if interaction.client.user and interaction.client.user.avatar:
+        embed.set_author(name=interaction.client.user.display_name, icon_url=interaction.client.user.avatar.url)
+    
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 def get_uptime(bot) -> str:
@@ -127,6 +131,9 @@ async def status_error(interaction: discord.Interaction, error: app_commands.App
             description="This command is only available to the bot administrator.",
             color=discord.Color.red()
         )
+        # Add bot avatar as author
+        if interaction.client.user and interaction.client.user.avatar:
+            embed.set_author(name=interaction.client.user.display_name, icon_url=interaction.client.user.avatar.url)
         await interaction.response.send_message(embed=embed, ephemeral=True)
     else:
         embed = discord.Embed(
@@ -134,6 +141,9 @@ async def status_error(interaction: discord.Interaction, error: app_commands.App
             description=f"An error occurred: {str(error)}",
             color=discord.Color.red()
         )
+        # Add bot avatar as author
+        if interaction.client.user and interaction.client.user.avatar:
+            embed.set_author(name=interaction.client.user.display_name, icon_url=interaction.client.user.avatar.url)
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 async def setup(bot):

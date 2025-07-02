@@ -142,6 +142,15 @@ class QuranBot(discord.Client):
         signal.signal(signal.SIGINT, self.signal_handler)   # Ctrl+C
         signal.signal(signal.SIGTERM, self.signal_handler)  # Termination signal
         
+        # Updated presence messages
+        self.presence_messages = [
+            (discord.ActivityType.listening, "📖 Quran 24/7"),
+            (discord.ActivityType.playing, "🕌 Surah Al-Fatiha"),
+            (discord.ActivityType.watching, "👀 for your requests"),
+            (discord.ActivityType.listening, "🎵 Beautiful Recitations"),
+            (discord.ActivityType.playing, "🕊️ Dhikr & Remembrance")
+        ]
+        
     async def send_hourly_log_task(self):
         await self.wait_until_ready()
         channel_id = 1389683881078423567
@@ -159,14 +168,14 @@ class QuranBot(discord.Client):
                         for chunk in [log_content[i:i+1900] for i in range(0, len(log_content), 1900)]:
                             embed = discord.Embed(
                                 title="📋 Hourly Log Report",
-                                description=f"```{chunk}```",
+                                description=f"```py\n{chunk}\n```",
                                 color=discord.Color.blue()
                             )
-                            
                             # Add bot avatar as thumbnail
-                            if self.user and self.user.avatar:
+                            if getattr(self, 'user', None) and getattr(self.user, 'avatar', None):
                                 embed.set_thumbnail(url=self.user.avatar.url)
-                            
+                            if getattr(self, 'user', None) and getattr(self.user, 'display_name', None) and getattr(self.user, 'avatar', None):
+                                embed.set_author(name=self.user.display_name, icon_url=self.user.avatar.url)
                             embed.set_footer(text="QuranBot Hourly Log • Auto-generated")
                             embed.timestamp = discord.utils.utcnow()
                             await channel.send(embed=embed)
@@ -188,7 +197,7 @@ class QuranBot(discord.Client):
         channel_id = 1389683881078423567
         channel = self.get_channel(channel_id)
         user = getattr(interaction, 'user', None) or getattr(interaction, 'author', None)
-        user_str = f"{user} ({user.id})" if user else "Unknown user"
+        user_str = f"<@{user.id}> ({user})" if user else "Unknown user"
         content = f"User interaction: {user_str}\nCommand: {getattr(interaction, 'command', 'N/A')}\nChannel: {getattr(interaction.channel, 'name', 'N/A')}"
         if extra_info:
             content += f"\nExtra: {extra_info}"
@@ -201,12 +210,14 @@ class QuranBot(discord.Client):
                 description=content,
                 color=discord.Color.green()
             )
-            
             # Add user avatar as thumbnail
             if user and user.avatar:
                 embed.set_thumbnail(url=user.avatar.url)
-            
-            embed.add_field(name="User", value=user_str, inline=True)
+            # Add bot avatar as author
+            if getattr(self, 'user', None) and getattr(self.user, 'avatar', None):
+                embed.set_author(name=self.user.display_name, icon_url=self.user.avatar.url)
+            if user:
+                embed.add_field(name="User", value=f"<@{user.id}> ({user})", inline=True)
             embed.add_field(name="Channel", value=getattr(interaction.channel, 'name', 'N/A'), inline=True)
             embed.set_footer(text="QuranBot Interaction Logger")
             embed.timestamp = discord.utils.utcnow()
@@ -221,7 +232,11 @@ class QuranBot(discord.Client):
             # Add user avatar as thumbnail
             if user and user.avatar:
                 confirmation_embed.set_thumbnail(url=user.avatar.url)
-            
+            # Add bot avatar as author
+            if getattr(self, 'user', None) and getattr(self.user, 'avatar', None):
+                confirmation_embed.set_author(name=self.user.display_name, icon_url=self.user.avatar.url)
+            if user:
+                confirmation_embed.add_field(name="User", value=f"<@{user.id}> ({user})", inline=True)
             confirmation_embed.add_field(name="Status", value="Logged", inline=True)
             confirmation_embed.set_footer(text="QuranBot Interaction Logger")
             confirmation_embed.timestamp = discord.utils.utcnow()
@@ -327,11 +342,11 @@ class QuranBot(discord.Client):
             
             # Initialize dynamic rich presence system
             self.presence_messages = [
-                (discord.ActivityType.listening, "Quran 24/7"),
-                (discord.ActivityType.playing, "Surah Al-Fatiha"),
-                (discord.ActivityType.watching, "for your requests"),
-                (discord.ActivityType.listening, "Beautiful Recitations"),
-                (discord.ActivityType.playing, "Dhikr & Remembrance")
+                (discord.ActivityType.listening, "📖 Quran 24/7"),
+                (discord.ActivityType.playing, "🕌 Surah Al-Fatiha"),
+                (discord.ActivityType.watching, "👀 for your requests"),
+                (discord.ActivityType.listening, "🎵 Beautiful Recitations"),
+                (discord.ActivityType.playing, "🕊️ Dhikr & Remembrance")
             ]
             self.current_presence_index = 0
             self.presence_cycle = self._presence_cycle()
@@ -435,22 +450,18 @@ class QuranBot(discord.Client):
             after: The new voice state
         """
         # Handle user joins and leaves (excluding bot itself)
-        if member is not None and self.user is not None and member.id != self.user.id:
+        if member and member.id != self.user.id:
             current_time = time.time()
-            
-            # User joined a voice channel
-            if not before.channel and after.channel:
+            target_channel_id = 1389675580253016144
+            # User joined the target voice channel
+            if not before.channel and after.channel and after.channel.id == target_channel_id:
                 self.user_join_times[member.id] = current_time
-                self.user_interaction_counts[member.id] = 0
                 logger.info(f"User joined voice channel: {member.display_name} ({member.id}) joined {after.channel.name} in {after.channel.guild.name}", 
                            extra={'event': 'USER_JOIN', 'user_id': member.id, 'user_name': member.display_name, 
                                  'channel_name': after.channel.name, 'guild_name': after.channel.guild.name})
-                
-                # Send to Discord log channel
                 await self.log_user_voice_activity(member, "joined", after.channel)
-            
-            # User left a voice channel
-            elif before.channel and not after.channel:
+            # User left the target voice channel
+            elif before.channel and not after.channel and before.channel.id == target_channel_id:
                 join_time = self.user_join_times.get(member.id)
                 duration = None
                 if join_time:
@@ -463,27 +474,38 @@ class QuranBot(discord.Client):
                 logger.info(f"User left voice channel: {member.display_name} ({member.id}) left {before.channel.name} in {before.channel.guild.name} - Stayed for {duration_str} | Interactions: {interaction_count}", 
                            extra={'event': 'USER_LEAVE', 'user_id': member.id, 'user_name': member.display_name, 
                                  'channel_name': before.channel.name, 'guild_name': before.channel.guild.name, 'duration': duration, 'interactions': interaction_count})
-                
-                # Send to Discord log channel
                 await self.log_user_voice_activity(member, "left", before.channel, duration, interaction_count=interaction_count)
-            
-            # User moved between voice channels
+            # User moved channels
             elif before.channel and after.channel and before.channel != after.channel:
-                join_time = self.user_join_times.get(member.id)
-                duration = None
-                if join_time:
-                    duration = current_time - join_time
-                    # Update join time for new channel
+                # If moving from Quran channel to anywhere else, treat as leave
+                if before.channel.id == target_channel_id and after.channel.id != target_channel_id:
+                    join_time = self.user_join_times.get(member.id)
+                    duration = None
+                    if join_time:
+                        duration = current_time - join_time
+                        del self.user_join_times[member.id]
+                    interaction_count = self.user_interaction_counts.get(member.id, 0)
+                    if member.id in self.user_interaction_counts:
+                        del self.user_interaction_counts[member.id]
+                    duration_str = self.format_duration(duration) if duration else "Unknown duration"
+                    logger.info(f"User left voice channel (moved): {member.display_name} ({member.id}) left {before.channel.name} in {before.channel.guild.name} - Stayed for {duration_str} | Interactions: {interaction_count}", 
+                               extra={'event': 'USER_LEAVE', 'user_id': member.id, 'user_name': member.display_name, 
+                                     'channel_name': before.channel.name, 'guild_name': before.channel.guild.name, 'duration': duration, 'interactions': interaction_count})
+                    await self.log_user_voice_activity(member, "left", before.channel, duration, interaction_count=interaction_count)
+                # If moving to Quran channel, treat as join
+                elif after.channel.id == target_channel_id and before.channel.id != target_channel_id:
                     self.user_join_times[member.id] = current_time
-                
-                duration_str = self.format_duration(duration) if duration else "Unknown duration"
-                logger.info(f"User moved voice channels: {member.display_name} ({member.id}) moved from {before.channel.name} to {after.channel.name} in {after.channel.guild.name} - Was in previous channel for {duration_str}", 
-                           extra={'event': 'USER_MOVE', 'user_id': member.id, 'user_name': member.display_name, 
-                                 'from_channel': before.channel.name, 'to_channel': after.channel.name, 
-                                 'guild_name': after.channel.guild.name, 'duration': duration})
-                
-                # Send to Discord log channel
-                await self.log_user_voice_activity(member, "moved", after.channel, duration, from_channel=before.channel)
+                    logger.info(f"User joined voice channel (moved): {member.display_name} ({member.id}) joined {after.channel.name} in {after.channel.guild.name}", 
+                               extra={'event': 'USER_JOIN', 'user_id': member.id, 'user_name': member.display_name, 
+                                     'channel_name': after.channel.name, 'guild_name': after.channel.guild.name})
+                    await self.log_user_voice_activity(member, "joined", after.channel)
+                # Only log move if both before and after are not the Quran channel
+                elif before.channel.id != target_channel_id and after.channel.id != target_channel_id:
+                    logger.info(f"User moved voice channels: {member.display_name} ({member.id}) moved from {before.channel.name} to {after.channel.name} in {after.channel.guild.name}", 
+                               extra={'event': 'USER_MOVE', 'user_id': member.id, 'user_name': member.display_name, 
+                                     'from_channel': before.channel.name, 'to_channel': after.channel.name, 
+                                     'guild_name': after.channel.guild.name})
+                    await self.log_user_voice_activity(member, "moved", after.channel, from_channel=before.channel)
         
         # Handle bot voice state changes (existing logic)
         if self.user and member.id == self.user.id:
@@ -820,11 +842,6 @@ class QuranBot(discord.Client):
                     activity = discord.Activity(
                         type=discord.ActivityType.listening, 
                         name=presence_str,
-                        # You can add small images here if you have them
-                        # large_image="quran_icon",  # Large image key
-                        # small_image="playing",     # Small image key
-                        # large_text=f"Listening to {surah_info['english_name']}",  # Hover text
-                        # small_text="Quran Bot"     # Small image hover text
                     )
                     await self.change_presence(activity=activity)
                     # Wait 5 seconds or until playback ends
@@ -1203,11 +1220,11 @@ class QuranBot(discord.Client):
             timestamp=discord.utils.utcnow()
         )
         
-        # Add user avatar as thumbnail
-        if member.avatar:
+        # Add user avatar as thumbnail (for user logs)
+        if member and member.avatar:
             embed.set_thumbnail(url=member.avatar.url)
         
-        embed.add_field(name="User", value=f"{member.display_name} ({member.id})", inline=True)
+        embed.add_field(name="User", value=f"<@{member.id}> ({member.display_name})", inline=True)
         embed.add_field(name="Channel", value=channel.name, inline=True)
         embed.add_field(name="Server", value=channel.guild.name, inline=True)
         
@@ -1219,6 +1236,8 @@ class QuranBot(discord.Client):
             embed.add_field(name="From Channel", value=from_channel.name, inline=True)
         
         embed.set_footer(text="QuranBot Voice Activity Logger • Professional Log")
+        if getattr(self, 'user', None) and getattr(self.user, 'avatar', None):
+            embed.set_author(name=self.user.display_name, icon_url=self.user.avatar.url)
         try:
             await log_channel.send(embed=embed)
         except Exception as e:

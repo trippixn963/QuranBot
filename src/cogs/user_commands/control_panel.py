@@ -1245,6 +1245,10 @@ async def setup(bot):
                 embed.set_footer(text="QuranBot v2.0.0 • Only works for voice channel users")
                 embed.timestamp = discord.utils.utcnow()
                 
+                # Add bot avatar as author
+                if bot.user and bot.user.avatar:
+                    embed.set_author(name=bot.user.display_name, icon_url=bot.user.avatar.url)
+                
                 # Send the panel with buttons
                 view = ControlPanelView(bot)
                 message = await panel_channel.send(embed=embed, view=view)
@@ -1330,5 +1334,10 @@ async def send_interaction_log_embed(bot, interaction, action, response_time_ms,
     if error:
         embed.add_field(name="❌ Error", value=str(error), inline=False)
     embed.set_footer(text=f"Channel: {getattr(interaction.channel, 'name', 'N/A')}")
+    
+    # Add bot avatar as author
+    if bot.user and bot.user.avatar:
+        embed.set_author(name=bot.user.display_name, icon_url=bot.user.avatar.url)
+    
     if channel and isinstance(channel, discord.TextChannel):
         await channel.send(embed=embed) 
