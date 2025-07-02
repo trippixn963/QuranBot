@@ -229,8 +229,7 @@ class DiscordEmbedLogger:
             color=0x00ff88,
             timestamp=datetime.now()
         )
-        embed.add_field(name="👤 User", value=member.display_name, inline=True)
-        embed.add_field(name="📍 Channel", value=channel_name, inline=True)
+        embed.add_field(name="👤 User", value=f"<@{member.id}>", inline=True)
         embed.add_field(name="🆔 ID", value=str(member.id), inline=True)
         
         # Show previous total time if they had any
@@ -267,8 +266,7 @@ class DiscordEmbedLogger:
             color=0xff4444,
             timestamp=datetime.now()
         )
-        embed.add_field(name="👤 User", value=member.display_name, inline=True)
-        embed.add_field(name="📍 Channel", value=channel_name, inline=True)
+        embed.add_field(name="👤 User", value=f"<@{member.id}>", inline=True)
         
         if session_duration > 0:
             embed.add_field(name="⏱️ Session Time", value=self.format_duration(session_duration), inline=True)
@@ -289,7 +287,7 @@ class DiscordEmbedLogger:
             color=0x5865f2,
             timestamp=datetime.now()
         )
-        embed.add_field(name="👤 User", value=interaction.user.display_name, inline=True)
+        embed.add_field(name="👤 User", value=f"<@{interaction.user.id}>", inline=True)
         embed.add_field(name="🔘 Button", value=button_name, inline=True)
         embed.add_field(name="📍 Channel", value=self._get_channel_name(interaction.channel), inline=True)
         
@@ -309,7 +307,7 @@ class DiscordEmbedLogger:
             color=0x9932cc,
             timestamp=datetime.now()
         )
-        embed.add_field(name="👤 User", value=interaction.user.display_name, inline=True)
+        embed.add_field(name="👤 User", value=f"<@{interaction.user.id}>", inline=True)
         embed.add_field(name="📋 Menu", value=select_name, inline=True)
         embed.add_field(name="✅ Selected", value=selected_value, inline=True)
         embed.add_field(name="📍 Channel", value=self._get_channel_name(interaction.channel), inline=True)
