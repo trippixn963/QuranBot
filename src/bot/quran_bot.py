@@ -232,6 +232,8 @@ class QuranBot(discord.Client):
                 # Bot was disconnected
                 log_disconnection(before.channel.name, "Disconnected from voice channel")
                 await self.discord_logger.log_bot_disconnected(before.channel.name, "Disconnected from voice channel")
+                # Properly reset streaming state on disconnection
+                self._was_streaming_before_disconnect = self.is_streaming
                 self.is_streaming = False
                 self.health_monitor.set_streaming_status(False)
                 
@@ -262,9 +264,32 @@ class QuranBot(discord.Client):
                     logger.info(f"Connection successful! Reset failure counter from {self.connection_failures} to 0.", 
                                extra={'event': 'CONNECTION_SUCCESS'})
                     self.connection_failures = 0
-                # TEMPORARILY DISABLE RESUME - Test if connection stays stable
-                logger.info("Voice connected but auto-resume disabled for testing", 
-                           extra={'event': 'STREAM_RESUME_DISABLED'})
+                # Resume streaming if it was previously active (with proper delay and checks)
+                # Check if we were streaming before the last disconnection
+                if hasattr(self, '_was_streaming_before_disconnect') and self._was_streaming_before_disconnect:
+                    logger.info("Bot was streaming before disconnect, scheduling resume...", 
+                               extra={'event': 'STREAM_RESUME_SCHEDULED'})
+                    
+                    # Schedule delayed resume to ensure voice connection is stable
+                    async def delayed_resume():
+                        await asyncio.sleep(3)  # Wait 3 seconds for connection to stabilize
+                        guild_id = after.channel.guild.id
+                        if (guild_id in self._voice_clients and 
+                            self._voice_clients[guild_id].is_connected() and
+                            not self.is_streaming):  # Only resume if not already streaming
+                            logger.info("Resuming streaming after stable reconnection...", 
+                                       extra={'event': 'STREAM_RESUME_EXECUTE'})
+                            self._was_streaming_before_disconnect = False  # Clear flag
+                            await self.start_stream(after.channel)
+                        else:
+                            logger.warning("Cannot resume streaming - connection not stable or already streaming", 
+                                         extra={'event': 'STREAM_RESUME_FAILED'})
+                            self._was_streaming_before_disconnect = False  # Clear flag anyway
+                    
+                    asyncio.create_task(delayed_resume())
+                else:
+                    logger.info("Voice connected (no auto-resume needed)", 
+                               extra={'event': 'VOICE_CONNECTED'})
             elif before.channel and after.channel and before.channel != after.channel:
                 # Bot moved to different channel
                 log_connection_success(after.channel.name, after.channel.guild.name)
