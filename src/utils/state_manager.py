@@ -129,6 +129,8 @@ class StateManager:
             'last_state_save': None,
             'loop_enabled_by': None,  # Stores user ID who enabled loop
             'loop_enabled_by_name': None,  # Stores username who enabled loop
+            'shuffle_enabled_by': None,  # Stores user ID who enabled shuffle
+            'shuffle_enabled_by_name': None,  # Stores username who enabled shuffle
             'last_change': None,  # Stores the last user action
             'last_change_time': None  # Stores when the last change happened
         }
@@ -537,10 +539,90 @@ class StateManager:
         """Get who enabled loop mode as (user_id, username)."""
         return (self.state.get('loop_enabled_by'), self.state.get('loop_enabled_by_name'))
     
+    def set_shuffle_enabled_by(self, user_id: int, username: str):
+        """Set who enabled the shuffle mode with comprehensive logging."""
+        try:
+            log_operation("shuffle_user", "INFO", {
+                "action": "set_shuffle_enabled_by",
+                "user_id": user_id,
+                "username": username,
+                "previous_user_id": self.state.get('shuffle_enabled_by'),
+                "previous_username": self.state.get('shuffle_enabled_by_name')
+            })
+            
+            self.state['shuffle_enabled_by'] = user_id
+            self.state['shuffle_enabled_by_name'] = username
+            self._save_state()
+            
+            # Emit state update event
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(self._emit_event('state_updated', {
+                        'type': 'shuffle_user_changed',
+                        'user_id': user_id,
+                        'username': username
+                    }))
+            except RuntimeError:
+                log_operation("shuffle_user", "DEBUG", {
+                    "action": "no_event_loop_for_shuffle_user_event"
+                })
+                
+        except Exception as e:
+            log_operation("shuffle_user", "ERROR", {
+                "action": "set_shuffle_enabled_by_failed",
+                "user_id": user_id,
+                "username": username,
+                "error": str(e),
+                "error_type": type(e).__name__
+            }, e)
+    
+    def clear_shuffle_enabled_by(self):
+        """Clear who enabled shuffle mode (when shuffle is disabled) with comprehensive logging."""
+        try:
+            old_user_id = self.state.get('shuffle_enabled_by')
+            old_username = self.state.get('shuffle_enabled_by_name')
+            
+            log_operation("shuffle_user", "INFO", {
+                "action": "clear_shuffle_enabled_by",
+                "previous_user_id": old_user_id,
+                "previous_username": old_username
+            })
+            
+            self.state['shuffle_enabled_by'] = None
+            self.state['shuffle_enabled_by_name'] = None
+            self._save_state()
+            
+            # Emit state update event
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(self._emit_event('state_updated', {
+                        'type': 'shuffle_user_cleared'
+                    }))
+            except RuntimeError:
+                log_operation("shuffle_user", "DEBUG", {
+                    "action": "no_event_loop_for_shuffle_clear_event"
+                })
+                
+        except Exception as e:
+            log_operation("shuffle_user", "ERROR", {
+                "action": "clear_shuffle_enabled_by_failed",
+                "error": str(e),
+                "error_type": type(e).__name__
+            }, e)
+    
+    def get_shuffle_enabled_by(self) -> tuple:
+        """Get who enabled shuffle mode as (user_id, username)."""
+        return (self.state.get('shuffle_enabled_by'), self.state.get('shuffle_enabled_by_name'))
+    
     def set_last_change(self, action: str, user_id: int, username: str, details: Optional[str] = None):
         """Set the last change made by a user with comprehensive logging."""
         try:
-            change_time = datetime.now().isoformat()
+            import time
+            change_time = int(time.time())  # Unix timestamp for Discord formatting
             change_description = f"{action} by <@{user_id}>"
             if details:
                 change_description += f" to {details}"
@@ -622,6 +704,8 @@ class StateManager:
             'last_state_save': None,
             'loop_enabled_by': None,
             'loop_enabled_by_name': None,
+            'shuffle_enabled_by': None,
+            'shuffle_enabled_by_name': None,
             'last_change': None,
             'last_change_time': None
         }

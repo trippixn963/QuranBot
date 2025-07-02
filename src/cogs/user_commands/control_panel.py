@@ -766,7 +766,16 @@ class ControlPanelView(View):
                     loop_status = "🔁 ON"
             else:
                 loop_status = "🔁 OFF"
-            shuffle_status = "🔀 ON" if shuffle_enabled else "🔀 OFF"
+            
+            # Create shuffle status with user tracking  
+            if shuffle_enabled:
+                shuffle_user_id, shuffle_username = self.bot.state_manager.get_shuffle_enabled_by()
+                if shuffle_user_id and shuffle_username:
+                    shuffle_status = f"🔀 ON - <@{shuffle_user_id}>"
+                else:
+                    shuffle_status = "🔀 ON"
+            else:
+                shuffle_status = "🔀 OFF"
             streaming_status = "▶️ Playing" if is_streaming else "⏸️ Stopped"
             
             # Get last change info
@@ -774,17 +783,21 @@ class ControlPanelView(View):
             last_change_display = ""
             if last_change:
                 try:
-                    from datetime import datetime
-                    change_time = datetime.fromisoformat(last_change_time)
-                    time_str = change_time.strftime("%H:%M")
-                    last_change_display = f"\n\n**Last Change:** {last_change} at {time_str}"
+                    # Ensure we have a valid Unix timestamp
+                    if isinstance(last_change_time, int):
+                        # Use Discord timestamp formatting for automatic timezone conversion
+                        time_str = f"<t:{last_change_time}:t>"  # Short time format with AM/PM in user's timezone
+                        last_change_display = f"\n\n**Last Change:** {last_change} at {time_str}"
+                    else:
+                        # Fallback for old ISO format or other issues
+                        last_change_display = f"\n\n**Last Change:** {last_change}"
                 except:
                     last_change_display = f"\n\n**Last Change:** {last_change}"
             
             # Create updated embed
             embed = discord.Embed(
                 title="",
-                description=f"• **Now Playing**: {current_surah_display}\n• **Reciter**: {current_reciter}\n• **Status**: {streaming_status}\n• **Loop**: {loop_status}\n• **Shuffle**: {shuffle_status}{last_change_display}\n\n\n\n\n\n\n\n**⚠️ Beta Testing Notice**\nThis bot is currently in beta testing. If you encounter any bugs or issues, please DM <@259725211664908288> to report them. Your feedback helps improve the bot!",
+                description=f"• **Now Playing**: {current_surah_display}\n• **Reciter**: {current_reciter}\n• **Status**: {streaming_status}\n• **Loop**: {loop_status}\n• **Shuffle**: {shuffle_status}{last_change_display}",
                 color=discord.Color.green()
             )
             
@@ -1206,7 +1219,7 @@ class ControlPanelView(View):
             return
         
         # Toggle shuffle mode
-        shuffle_enabled = self.bot.toggle_shuffle()
+        shuffle_enabled = self.bot.toggle_shuffle(interaction.user.id, interaction.user.name)
         
         # Track the shuffle change
         if shuffle_enabled:
@@ -1462,11 +1475,12 @@ async def setup(bot):
                 # Check if a control panel already exists and delete it
                 try:
                     async for message in panel_channel.history(limit=50):
-                        # Check if this message has our control panel embed (check for beta notice since we removed title)
+                        # Check if this message has our control panel embed (check for specific format since we removed title)
                         if (message.embeds and 
                             message.author == bot.user and
                             message.embeds[0].description and 
-                            "Beta Testing Notice" in message.embeds[0].description):
+                            "• **Now Playing**:" in message.embeds[0].description and
+                            "• **Reciter**:" in message.embeds[0].description):
                             
                             log_operation("check", "INFO", {
                                 "component": "create_panel",
@@ -1531,7 +1545,16 @@ async def setup(bot):
                             loop_status = "🔁 ON"
                     else:
                         loop_status = "🔁 OFF"
-                    shuffle_status = "🔀 ON" if shuffle_enabled else "🔀 OFF"
+                    
+                    # Create shuffle status with user tracking  
+                    if shuffle_enabled:
+                        shuffle_user_id, shuffle_username = bot.state_manager.get_shuffle_enabled_by()
+                        if shuffle_user_id and shuffle_username:
+                            shuffle_status = f"🔀 ON - <@{shuffle_user_id}>"
+                        else:
+                            shuffle_status = "🔀 ON"
+                    else:
+                        shuffle_status = "🔀 OFF"
                     streaming_status = "▶️ Playing" if is_streaming else "⏸️ Stopped"
                     
                 except Exception as e:
@@ -1542,22 +1565,26 @@ async def setup(bot):
                     shuffle_status = "🔀 OFF"
                     streaming_status = "⏸️ Stopped"
                 
-                # Get last change info
-                last_change, last_change_time = bot.state_manager.get_last_change()
-                last_change_display = ""
-                if last_change:
-                    try:
-                        from datetime import datetime
-                        change_time = datetime.fromisoformat(last_change_time)
-                        time_str = change_time.strftime("%H:%M")
-                        last_change_display = f"\n\n**Last Change:** {last_change} at {time_str}"
-                    except:
-                        last_change_display = f"\n\n**Last Change:** {last_change}"
+                                    # Get last change info
+                    last_change, last_change_time = bot.state_manager.get_last_change()
+                    last_change_display = ""
+                    if last_change:
+                        try:
+                            # Ensure we have a valid Unix timestamp
+                            if isinstance(last_change_time, int):
+                                # Use Discord timestamp formatting for automatic timezone conversion
+                                time_str = f"<t:{last_change_time}:t>"  # Short time format with AM/PM in user's timezone
+                                last_change_display = f"\n\n**Last Change:** {last_change} at {time_str}"
+                            else:
+                                # Fallback for old ISO format or other issues
+                                last_change_display = f"\n\n**Last Change:** {last_change}"
+                        except:
+                            last_change_display = f"\n\n**Last Change:** {last_change}"
                 
                 # Create the control panel embed with dynamic status
                 embed = discord.Embed(
                     title="",
-                    description=f"• **Now Playing**: {current_surah_display}\n• **Reciter**: {current_reciter}\n• **Status**: {streaming_status}\n• **Loop**: {loop_status}\n• **Shuffle**: {shuffle_status}{last_change_display}\n\n\n\n\n\n\n\n**⚠️ Beta Testing Notice**\nThis bot is currently in beta testing. If you encounter any bugs or issues, please DM <@259725211664908288> to report them. Your feedback helps improve the bot!",
+                    description=f"• **Now Playing**: {current_surah_display}\n• **Reciter**: {current_reciter}\n• **Status**: {streaming_status}\n• **Loop**: {loop_status}\n• **Shuffle**: {shuffle_status}{last_change_display}",
                     color=discord.Color.green()
                 )
                 
