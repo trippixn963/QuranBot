@@ -3,33 +3,20 @@ from discord import app_commands
 from datetime import datetime
 from typing import Optional, Dict, Any
 import os
+import traceback
 
 # Import the main project logger
 from utils.logger import logger
 
 def log_operation(operation: str, level: str = "INFO", extra: Optional[Dict[str, Any]] = None, error: Optional[Exception] = None):
-    """Enhanced logging for admin credits command with emoji-structured format."""
-    operation_emojis = {
-        "credits": "📋",
-        "admin": "👑",
-        "error": "❌"
-    }
-    
-    level_emojis = {
-        "DEBUG": "🔍",
-        "INFO": "ℹ️",
-        "WARNING": "⚠️",
-        "ERROR": "❌",
-        "CRITICAL": "🔥"
-    }
-    
-    emoji = operation_emojis.get(operation, "📋")
-    level_emoji = level_emojis.get(level, "ℹ️")
+    """Enhanced logging with operation tracking and structured data. No emojis for clean logs."""
+    # Format timestamp with new format: MM-DD | HH:MM:SS AM/PM
+    timestamp = datetime.now().strftime('%m-%d | %I:%M:%S %p')
     
     log_data = {
         "operation": operation,
-        "component": "admin_credits",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": timestamp,
+        "component": "admin_credits"
     }
     
     if extra:
@@ -38,19 +25,31 @@ def log_operation(operation: str, level: str = "INFO", extra: Optional[Dict[str,
     if error:
         log_data["error"] = str(error)
         log_data["error_type"] = type(error).__name__
+        log_data["traceback"] = traceback.format_exc()
+        level = "ERROR"
     
-    log_message = f"{emoji} {level_emoji} Admin Credits - {operation.upper()}"
+    # Include user information in the main log message if available
+    user_info = ""
+    if extra and "user_name" in extra and "user_id" in extra:
+        user_info = f" | User: {extra['user_name']} ({extra['user_id']})"
+    
+    # Add latency monitoring if response time is available
+    latency_info = ""
+    if extra and "response_time_ms" in extra:
+        latency_info = f" | Response: {extra['response_time_ms']:.2f}ms"
+    
+    log_message = f"Admin Credits - {operation.upper()}{user_info}{latency_info}"
     
     if level == "DEBUG":
-        logger.debug(log_message, extra=log_data)
+        logger.debug(log_message, extra={"extra": log_data})
     elif level == "INFO":
-        logger.info(log_message, extra=log_data)
+        logger.info(log_message, extra={"extra": log_data})
     elif level == "WARNING":
-        logger.warning(log_message, extra=log_data)
+        logger.warning(log_message, extra={"extra": log_data})
     elif level == "ERROR":
-        logger.error(log_message, extra=log_data)
+        logger.error(log_message, extra={"extra": log_data})
     elif level == "CRITICAL":
-        logger.critical(log_message, extra=log_data)
+        logger.critical(log_message, extra={"extra": log_data})
 
 async def credits_command(interaction: discord.Interaction):
     """Admin command to show bot credits and information."""

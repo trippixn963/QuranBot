@@ -19,8 +19,10 @@ A professional Discord bot for continuous Quran recitation with multiple reciter
 - **Health Monitoring** - Real-time bot health and performance tracking
 - **Auto-Reconnection** - Robust error handling and recovery
 - **Rich Presence** - Dynamic Discord status updates
-- **Comprehensive Logging** - Emoji-enhanced structured logging
-- **VPS Ready** - Optimized for server deployment
+- **Professional Logging System** - Enhanced structured logging with user avatars
+- **User Activity Tracking** - Monitor voice channel joins/leaves with duration and interaction counting
+- **Avatar-Enhanced Embeds** - Professional Discord embeds with user profile pictures
+- **VPS Ready** - Optimized for server deployment with comprehensive management scripts
 
 ## 🎵 Supported Reciters
 
@@ -203,6 +205,42 @@ ssh root@your-vps-ip "cd /opt/quranbot && chmod +x deploy_temp/setup_vps.sh && .
 # View logs
 ./scripts/vps/logs_bot.sh
 ```
+
+## 📊 Enhanced Logging System
+
+### User Activity Tracking
+
+The bot now provides comprehensive user activity monitoring with professional Discord embeds:
+
+- **Voice Channel Joins** - Track when users join voice channels
+- **Voice Channel Leaves** - Monitor when users leave with duration tracking
+- **Interaction Counting** - Count user interactions (commands, button clicks) while in voice channels
+- **Duration Formatting** - Human-readable duration display (seconds, minutes, hours)
+
+### Avatar-Enhanced Embeds
+
+All logging embeds now include user avatars for a professional appearance:
+
+- **User Join/Leave Embeds** - Show user profile pictures with activity details
+- **Interaction Logs** - Display user avatars for command and button interactions
+- **Confirmation Embeds** - Professional confirmation messages with user avatars
+- **Hourly Log Reports** - Bot avatar in automated log summaries
+
+### Professional Logging Features
+
+- **Structured Data** - Consistent pipe-aligned log formatting
+- **Color Coding** - Console output with color-coded log levels
+- **Emoji-Free Logs** - Clean, professional log messages
+- **Real-time Discord Logs** - Instant embed notifications in designated log channels
+- **Comprehensive Metadata** - User IDs, channel names, server information, timestamps
+
+### Log Channel Integration
+
+The bot automatically sends professional embeds to your designated log channel for:
+- User voice activity (joins, leaves, moves)
+- User interactions (commands, button clicks)
+- Bot status changes and health updates
+- Hourly log summaries
 
 ## 📊 Monitoring & Logging
 

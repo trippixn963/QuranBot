@@ -1,32 +1,28 @@
+"""
+Stop command for the Quran Bot.
+Allows admins to stop the bot gracefully.
+"""
+
 import discord
 from discord import app_commands
 import os
-import time
 import asyncio
 import logging
 from datetime import datetime
-from typing import Optional, Dict, Any
+import traceback
 
 # Enhanced logger for admin commands
 logger = logging.getLogger(__name__)
 
-def log_operation(operation: str, level: str = "INFO", extra: Optional[Dict[str, Any]] = None, error: Optional[Exception] = None):
-    """Enhanced logging with operation tracking and structured data."""
-    emoji_map = {
-        "init": "🚀", "auth": "🔐", "command": "⚡", "restart": "🔄", 
-        "reciter": "🎤", "error": "❌", "success": "✅", "check": "🔍"
-    }
-    
-    emoji = emoji_map.get(operation, "ℹ️")
-    level_emoji = {"DEBUG": "🔍", "INFO": "ℹ️", "WARNING": "⚠️", "ERROR": "❌", "CRITICAL": "🔥"}
-    
+def log_operation(operation: str, level: str = "INFO", extra: dict = None, error: Exception = None):
+    """Enhanced logging with operation tracking and structured data. No emojis for clean logs."""
     # Format timestamp with new format: MM-DD | HH:MM:SS AM/PM
     timestamp = datetime.now().strftime('%m-%d | %I:%M:%S %p')
     
     log_data = {
         "operation": operation,
         "timestamp": timestamp,
-        "component": "admin_commands"
+        "component": "admin_stop"
     }
     
     if extra:
@@ -35,9 +31,20 @@ def log_operation(operation: str, level: str = "INFO", extra: Optional[Dict[str,
     if error:
         log_data["error"] = str(error)
         log_data["error_type"] = type(error).__name__
+        log_data["traceback"] = traceback.format_exc()
         level = "ERROR"
     
-    log_message = f"{emoji} {level_emoji.get(level, 'ℹ️')} Admin Commands - {operation.upper()}"
+    # Include user information in the main log message if available
+    user_info = ""
+    if extra and "user_name" in extra and "user_id" in extra:
+        user_info = f" | User: {extra['user_name']} ({extra['user_id']})"
+    
+    # Add latency monitoring if response time is available
+    latency_info = ""
+    if extra and "response_time_ms" in extra:
+        latency_info = f" | Response: {extra['response_time_ms']:.2f}ms"
+    
+    log_message = f"Admin Stop - {operation.upper()}{user_info}{latency_info}"
     
     if level == "DEBUG":
         logger.debug(log_message, extra={"extra": log_data})
@@ -50,17 +57,11 @@ def log_operation(operation: str, level: str = "INFO", extra: Optional[Dict[str,
     elif level == "CRITICAL":
         logger.critical(log_message, extra={"extra": log_data})
 
-# Get admin ID from environment variable
-ADMIN_USER_IDS = os.getenv('ADMIN_USER_IDS', '').split(',') if os.getenv('ADMIN_USER_IDS') else []
-
 def is_admin(interaction: discord.Interaction) -> bool:
     """Check if the user is an admin with enhanced logging."""
     try:
-        from utils.config import Config
-        
         # Get admin user IDs from environment
         admin_ids = []
-        import os
         admin_env = os.getenv('ADMIN_USER_IDS', '')
         if admin_env:
             admin_ids = [int(uid.strip()) for uid in admin_env.split(',') if uid.strip().isdigit()]
@@ -99,21 +100,21 @@ def is_admin(interaction: discord.Interaction) -> bool:
         }, e)
         return False
 
-class AdminCommands(app_commands.Group):
-    """Admin commands for the Quran Bot."""
+class StopCommand(app_commands.Group):
+    """Stop command for the Quran Bot."""
     
     def __init__(self):
-        super().__init__(name="admin", description="Admin commands for Quran Bot")
-        log_operation("init", "INFO", {"component": "AdminCommands"})
+        super().__init__(name="stop", description="Stop the Quran Bot")
+        log_operation("init", "INFO", {"component": "StopCommand"})
     
-    @app_commands.command(name="restart", description="Restart the Quran Bot")
-    async def restart(self, interaction: discord.Interaction):
-        """Restart the bot with enhanced logging and error handling."""
+    @app_commands.command(name="stop", description="Stop the Quran Bot")
+    async def stop(self, interaction: discord.Interaction):
+        """Stop the bot with enhanced logging and error handling."""
         try:
             log_operation("command", "INFO", {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
-                "command": "restart",
+                "command": "stop",
                 "guild_id": interaction.guild.id if interaction.guild else None,
                 "channel_id": interaction.channel.id if interaction.channel else None
             })
@@ -123,7 +124,7 @@ class AdminCommands(app_commands.Group):
                 log_operation("auth", "WARNING", {
                     "user_id": interaction.user.id,
                     "user_name": interaction.user.name,
-                    "command": "restart",
+                    "command": "stop",
                     "reason": "not_admin"
                 })
                 embed = discord.Embed(
@@ -137,45 +138,50 @@ class AdminCommands(app_commands.Group):
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
-            # Create restart embed
+            # Create stop embed
             embed = discord.Embed(
-                title="🔄 Bot Restart",
-                description="Restarting the Quran Bot...",
-                color=discord.Color.orange()
+                title="🛑 Bot Stop",
+                description="Stopping the Quran Bot...",
+                color=discord.Color.red()
             )
             embed.add_field(
                 name="⏱️ Status",
-                value="The bot will restart in 3 seconds.",
+                value="The bot will stop in 3 seconds.",
+                inline=False
+            )
+            embed.add_field(
+                name="⚠️ Warning",
+                value="The bot will completely stop and need to be manually restarted.",
                 inline=False
             )
             embed.set_footer(text=f"Requested by {interaction.user.name} • {datetime.now().strftime('%m-%d | %I:%M:%S %p')}")
             
             await interaction.response.send_message(embed=embed, ephemeral=True)
             
-            log_operation("restart", "INFO", {
+            log_operation("stop", "INFO", {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
-                "command": "restart",
-                "status": "restart_initiated"
+                "command": "stop",
+                "status": "stop_initiated"
             })
             
-            # Wait 3 seconds then restart
+            # Wait 3 seconds then stop
             await asyncio.sleep(3)
             
-            # Trigger restart
+            # Stop the bot
             await interaction.client.close()
             
         except Exception as e:
             log_operation("command", "ERROR", {
                 "user_id": interaction.user.id if interaction.user else None,
-                "command": "restart",
-                "error_details": "restart_command_failed"
+                "command": "stop",
+                "error_details": "stop_command_failed"
             }, e)
             
             try:
                 embed = discord.Embed(
                     title="❌ Error",
-                    description="An error occurred while restarting the bot. Please try again.",
+                    description="An error occurred while stopping the bot. Please try again.",
                     color=discord.Color.red()
                 )
                 embed.add_field(name="Status", value="Failed", inline=True)
@@ -186,24 +192,25 @@ class AdminCommands(app_commands.Group):
                 pass
 
 async def setup(bot):
-    """Setup the admin commands with enhanced logging."""
+    """Setup the stop command with enhanced logging."""
     try:
         log_operation("init", "INFO", {
             "component": "setup",
             "bot_name": bot.user.name if bot.user else "Unknown"
         })
         
-        admin_commands = AdminCommands()
-        bot.tree.add_command(admin_commands)
+        stop_command = StopCommand()
+        bot.tree.add_command(stop_command)
         
         log_operation("success", "INFO", {
             "component": "setup",
-            "action": "admin_commands_loaded",
-            "commands": ["restart"]
+            "action": "stop_command_loaded",
+            "commands": ["stop"]
         })
         
     except Exception as e:
-        log_operation("error", "CRITICAL", {
+        log_operation("init", "ERROR", {
             "component": "setup",
-            "error_details": "setup_failed"
-        }, e) 
+            "action": "stop_command_failed"
+        }, e)
+        raise 

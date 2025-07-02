@@ -2,6 +2,7 @@
 Professional logging configuration for the Discord Quran Bot.
 Provides structured logging with file rotation and console output.
 Enhanced with comprehensive monitoring for latency, disconnections, and bugs.
+No emojis for clean, professional logs with consistent pipe alignment.
 """
 
 import logging
@@ -199,15 +200,15 @@ logger.setLevel(logging.DEBUG)  # Capture all levels
 for handler in logger.handlers[:]:
     logger.removeHandler(handler)
 
-# File formatter (no colors for file logs)
+# File formatter (no colors for file logs) - Fixed width for consistent pipe alignment
 file_formatter = logging.Formatter(
-    '%(asctime)s | %(name)s | %(levelname)s | %(message)s',
+    '%(asctime)-20s | %(name)-10s | %(levelname)-8s | %(message)s',
     datefmt='%m-%d | %I:%M:%S %p'
 )
 
-# Console formatter (with colors but no emojis)
+# Console formatter (with colors but no emojis) - Fixed width for consistent pipe alignment
 console_formatter = EnhancedFormatter(
-    '%(asctime)s | %(levelname)s | %(message)s',
+    '%(asctime)-20s | %(levelname)-8s | %(message)s',
     datefmt='%m-%d | %I:%M:%S %p'
 )
 

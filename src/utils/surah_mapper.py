@@ -213,22 +213,8 @@ def get_surah_display_name(surah_number: int, include_number: bool = True) -> st
 
 def get_surah_emoji(surah_number: int) -> str:
     """Get an appropriate emoji for a surah based on its theme or name."""
-    # Special emojis for well-known surahs
-    special_emojis = {
-        1: "🕋",   # Al-Fatiha (The Opening)
-        2: "🐄",   # Al-Baqarah (The Cow)
-        18: "🕳️",  # Al-Kahf (The Cave)
-        19: "👸",  # Maryam (Mary)
-        36: "📖",  # Ya-Sin
-        55: "🌙",  # Ar-Rahman (The Beneficent)
-        67: "👑",  # Al-Mulk (The Sovereignty)
-        97: "✨",  # Al-Qadr (The Power)
-        112: "💎", # Al-Ikhlas (The Sincerity)
-        113: "🌅", # Al-Falaq (The Daybreak)
-        114: "👥"  # An-Nas (The Mankind)
-    }
-    
-    return special_emojis.get(surah_number, "📖")
+    # Return empty string instead of emojis for clean, professional appearance
+    return ""
 
 def create_custom_mapping_template() -> Dict[str, int]:
     """Create a template for custom surah mapping."""

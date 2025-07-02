@@ -1,7 +1,7 @@
 """
-Professional logging configuration for the Discord Quran Bot.
-Provides structured logging with file rotation and console output.
-Enhanced with comprehensive monitoring for latency, disconnections, and bugs.
+Enhanced logging configuration for the Discord Quran Bot.
+Provides structured logging with comprehensive monitoring for latency, disconnections, and bugs.
+No emojis for clean, professional logs.
 """
 
 import logging

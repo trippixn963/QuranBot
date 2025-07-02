@@ -1,0 +1,39 @@
+[Unit]
+Description=QuranBot Discord Bot
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/quranbot
+Environment=PATH=/opt/quranbot/venv/bin
+ExecStart=/opt/quranbot/venv/bin/python run.py
+Restart=always
+RestartSec=30
+StartLimitInterval=300
+StartLimitBurst=5
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=quranbot
+
+# Resource limits
+LimitNOFILE=65536
+MemoryMax=512M
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/quranbot
+
+# Health checks
+ExecReload=/bin/kill -HUP $MAINPID
+TimeoutStartSec=60
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target 

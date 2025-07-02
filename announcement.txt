@@ -1,0 +1,53 @@
+## 🕌 **QuranBot - 24/7 Quran Streaming Bot** 📢
+
+**Assalamu alaikum!** We're excited to announce the launch of our new **QuranBot** - a professional 24/7 Quran streaming bot for our server!
+
+### ✨ **What is QuranBot?**
+QuranBot is a dedicated Discord bot that provides **continuous Quran recitation** with multiple professional reciters, interactive controls, and a beautiful user interface.
+
+### 🎤 **Available Reciters**
+- **Saad Al Ghamdi** (Default)
+- **Maher Al Muaiqly**
+- **Muhammad Al Luhaidan**
+- **Rashid Al Afasy**
+
+### 🎮 **Features**
+- **24/7 Continuous Streaming** - Never-ending Quran recitation
+- **114 Complete Surahs** - Full Quran with all surahs
+- **Interactive Control Panel** - Easy navigation and playback control
+- **Multi-Reciter Support** - Switch between different reciters
+- **Voice Channel Integration** - Seamless Discord experience
+- **Dynamic Rich Presence** - Shows current surah and reciter
+
+### 🎮 **How to Use**
+1. **Join the voice channel** 🕋┃Quran
+2. **Use the Control Panel** - Click the panel in the bot channel
+3. **Select your preferred reciter** from the dropdown
+4. **Choose any surah** from the paginated selection
+5. **Control playback** with Previous/Next/Loop/Shuffle buttons
+
+### 🔧 **Technical Details**
+- **Framework**: Discord.py
+- **Audio Quality**: 128k MP3
+- **Auto-Reconnect**: Enabled
+- **Health Monitoring**: Active
+
+### ⚠️ **Beta Testing Notice**
+This bot is currently in **beta testing**. If you encounter any bugs or issues, please DM <@259725211664908288> to report them. Your feedback helps improve the bot!
+
+### 🛠️ **Developer**
+**Developer**: <@259725211664908288>
+**GitHub**: [QuranBot Repository](https://github.com/JohnHamwi/QuranAudioBot)
+
+### 💝 **Made with ❤️**
+This bot was created with love for the Muslim Ummah, providing easy access to Quran recitation 24/7.
+
+---
+
+**Join the voice channel now and experience the beautiful recitation of the Quran!** 🎵
+
+*May Allah bless us all and accept our efforts.* 🤲
+
+---
+
+**Note**: The bot is currently running on our VPS and will continue streaming even when the developer is offline. Enjoy the continuous Quran recitation! 🕌✨ 

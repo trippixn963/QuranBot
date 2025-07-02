@@ -41,6 +41,7 @@ from typing import Optional, Dict, List
 import time
 import itertools
 import signal
+import aiofiles
 
 # Add src directory to Python path for module imports
 # This allows importing from utils.config, utils.logger, etc.
@@ -49,7 +50,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Import utility modules
 from utils.config import Config
 from utils.logger import (
-    logger, log_bot_startup, log_audio_playback, log_crossfade_generation,
+    logger, log_bot_startup, log_audio_playback,
     log_connection_attempt, log_connection_success, log_connection_failure,
     log_health_report, log_state_save, log_state_load, log_performance,
     log_error, log_discord_event, log_ffmpeg_operation, log_security_event,
@@ -85,6 +86,8 @@ class QuranBot(discord.Client):
         presence_messages (List[tuple]): Dynamic presence messages
         current_presence_index (int): Current presence message index
         presence_task (Optional[asyncio.Task]): Presence cycling task
+        user_join_times (Dict[int, float]): User join times
+        user_interaction_counts (Dict[int, int]): User interaction counts
     """
     
     def __init__(self):
@@ -108,6 +111,10 @@ class QuranBot(discord.Client):
         self._voice_clients: Dict[int, discord.VoiceClient] = {}
         self.is_streaming = False
         self.current_audio_file: Optional[str] = None
+        
+        # User tracking for voice channel joins/leaves
+        self.user_join_times: Dict[int, float] = {}  # user_id -> join_timestamp
+        self.user_interaction_counts: Dict[int, int] = {}  # user_id -> interaction count
         
         # Reciter management - store folder name internally, use display name for UI
         default_reciter_display = Config.DEFAULT_RECITER
@@ -135,6 +142,93 @@ class QuranBot(discord.Client):
         signal.signal(signal.SIGINT, self.signal_handler)   # Ctrl+C
         signal.signal(signal.SIGTERM, self.signal_handler)  # Termination signal
         
+    async def send_hourly_log_task(self):
+        await self.wait_until_ready()
+        channel_id = 1389683881078423567
+        while not self.is_closed():
+            try:
+                channel = self.get_channel(channel_id)
+                if channel and isinstance(channel, discord.TextChannel):
+                    log_path = self.get_latest_log_file()
+                    if log_path:
+                        async with aiofiles.open(log_path, 'r', encoding='utf-8') as f:
+                            lines = await f.readlines()
+                        last_lines = lines[-50:] if len(lines) > 50 else lines
+                        log_content = ''.join(last_lines)
+                        # Discord message limit is 2000 chars
+                        for chunk in [log_content[i:i+1900] for i in range(0, len(log_content), 1900)]:
+                            embed = discord.Embed(
+                                title="📋 Hourly Log Report",
+                                description=f"```{chunk}```",
+                                color=discord.Color.blue()
+                            )
+                            
+                            # Add bot avatar as thumbnail
+                            if self.user and self.user.avatar:
+                                embed.set_thumbnail(url=self.user.avatar.url)
+                            
+                            embed.set_footer(text="QuranBot Hourly Log • Auto-generated")
+                            embed.timestamp = discord.utils.utcnow()
+                            await channel.send(embed=embed)
+                else:
+                    logger.warning(f"Log channel {channel_id} not found or not a TextChannel.")
+            except Exception as e:
+                logger.error(f"Failed to send hourly log: {e}")
+            await asyncio.sleep(3600)  # 1 hour
+
+    def get_latest_log_file(self):
+        import glob, os
+        log_dir = os.path.join(os.getcwd(), 'logs')
+        log_files = glob.glob(os.path.join(log_dir, '*.log'))
+        if not log_files:
+            return None
+        return max(log_files, key=os.path.getctime)
+
+    async def log_user_interaction(self, interaction, extra_info=None):
+        channel_id = 1389683881078423567
+        channel = self.get_channel(channel_id)
+        user = getattr(interaction, 'user', None) or getattr(interaction, 'author', None)
+        user_str = f"{user} ({user.id})" if user else "Unknown user"
+        content = f"User interaction: {user_str}\nCommand: {getattr(interaction, 'command', 'N/A')}\nChannel: {getattr(interaction.channel, 'name', 'N/A')}"
+        if extra_info:
+            content += f"\nExtra: {extra_info}"
+        if user and hasattr(user, 'id') and user.id in self.user_join_times:
+            # Increment interaction count for user while in voice channel
+            self.user_interaction_counts[user.id] = self.user_interaction_counts.get(user.id, 0) + 1
+        if channel and isinstance(channel, discord.TextChannel):
+            embed = discord.Embed(
+                title="👤 User Interaction Log",
+                description=content,
+                color=discord.Color.green()
+            )
+            
+            # Add user avatar as thumbnail
+            if user and user.avatar:
+                embed.set_thumbnail(url=user.avatar.url)
+            
+            embed.add_field(name="User", value=user_str, inline=True)
+            embed.add_field(name="Channel", value=getattr(interaction.channel, 'name', 'N/A'), inline=True)
+            embed.set_footer(text="QuranBot Interaction Logger")
+            embed.timestamp = discord.utils.utcnow()
+            await channel.send(embed=embed)
+            
+            confirmation_embed = discord.Embed(
+                title="✅ Interaction Captured",
+                description=f"Successfully captured interaction from {user_str}",
+                color=discord.Color.blue()
+            )
+            
+            # Add user avatar as thumbnail
+            if user and user.avatar:
+                confirmation_embed.set_thumbnail(url=user.avatar.url)
+            
+            confirmation_embed.add_field(name="Status", value="Logged", inline=True)
+            confirmation_embed.set_footer(text="QuranBot Interaction Logger")
+            confirmation_embed.timestamp = discord.utils.utcnow()
+            await channel.send(embed=confirmation_embed)
+        else:
+            logger.warning(f"Log channel {channel_id} not found or not a TextChannel for user interaction log.")
+
     async def setup_hook(self):
         """
         Discord.py setup hook for bot initialization.
@@ -180,6 +274,9 @@ class QuranBot(discord.Client):
         
         t1 = time.time()
         log_performance("setup_hook", t1-t0)
+        await super().setup_hook()
+        # Start background log sender
+        self.bg_log_task = asyncio.create_task(self.send_hourly_log_task())
     
     async def load_extension(self, extension_name: str):
         """
@@ -230,11 +327,11 @@ class QuranBot(discord.Client):
             
             # Initialize dynamic rich presence system
             self.presence_messages = [
-                (discord.ActivityType.listening, "📖 Quran 24/7"),
-                (discord.ActivityType.playing, "🕋 Surah Al-Fatiha"),
-                (discord.ActivityType.watching, "🕌 for your requests"),
-                (discord.ActivityType.listening, "🎧 Beautiful Recitations"),
-                (discord.ActivityType.playing, "📿 Dhikr & Remembrance")
+                (discord.ActivityType.listening, "Quran 24/7"),
+                (discord.ActivityType.playing, "Surah Al-Fatiha"),
+                (discord.ActivityType.watching, "for your requests"),
+                (discord.ActivityType.listening, "Beautiful Recitations"),
+                (discord.ActivityType.playing, "Dhikr & Remembrance")
             ]
             self.current_presence_index = 0
             self.presence_cycle = self._presence_cycle()
@@ -319,22 +416,76 @@ class QuranBot(discord.Client):
         
     async def on_voice_state_update(self, member, before, after):
         """
-        Handle Discord voice state updates for reconnection logic.
+        Handle Discord voice state updates for reconnection logic and user tracking.
         
         This method monitors voice state changes and handles automatic
         reconnection when the bot is disconnected from voice channels.
+        Also tracks user joins and leaves with duration logging.
         
         Features:
         - Detects when the bot is disconnected
         - Implements progressive reconnection delays
         - Limits reconnection attempts to prevent infinite loops
         - Updates streaming status and health monitoring
+        - Logs user joins and leaves with duration tracking
         
         Args:
             member: The Discord member whose voice state changed
             before: The previous voice state
             after: The new voice state
         """
+        # Handle user joins and leaves (excluding bot itself)
+        if member is not None and self.user is not None and member.id != self.user.id:
+            current_time = time.time()
+            
+            # User joined a voice channel
+            if not before.channel and after.channel:
+                self.user_join_times[member.id] = current_time
+                self.user_interaction_counts[member.id] = 0
+                logger.info(f"User joined voice channel: {member.display_name} ({member.id}) joined {after.channel.name} in {after.channel.guild.name}", 
+                           extra={'event': 'USER_JOIN', 'user_id': member.id, 'user_name': member.display_name, 
+                                 'channel_name': after.channel.name, 'guild_name': after.channel.guild.name})
+                
+                # Send to Discord log channel
+                await self.log_user_voice_activity(member, "joined", after.channel)
+            
+            # User left a voice channel
+            elif before.channel and not after.channel:
+                join_time = self.user_join_times.get(member.id)
+                duration = None
+                if join_time:
+                    duration = current_time - join_time
+                    del self.user_join_times[member.id]
+                interaction_count = self.user_interaction_counts.get(member.id, 0)
+                if member.id in self.user_interaction_counts:
+                    del self.user_interaction_counts[member.id]
+                duration_str = self.format_duration(duration) if duration else "Unknown duration"
+                logger.info(f"User left voice channel: {member.display_name} ({member.id}) left {before.channel.name} in {before.channel.guild.name} - Stayed for {duration_str} | Interactions: {interaction_count}", 
+                           extra={'event': 'USER_LEAVE', 'user_id': member.id, 'user_name': member.display_name, 
+                                 'channel_name': before.channel.name, 'guild_name': before.channel.guild.name, 'duration': duration, 'interactions': interaction_count})
+                
+                # Send to Discord log channel
+                await self.log_user_voice_activity(member, "left", before.channel, duration, interaction_count=interaction_count)
+            
+            # User moved between voice channels
+            elif before.channel and after.channel and before.channel != after.channel:
+                join_time = self.user_join_times.get(member.id)
+                duration = None
+                if join_time:
+                    duration = current_time - join_time
+                    # Update join time for new channel
+                    self.user_join_times[member.id] = current_time
+                
+                duration_str = self.format_duration(duration) if duration else "Unknown duration"
+                logger.info(f"User moved voice channels: {member.display_name} ({member.id}) moved from {before.channel.name} to {after.channel.name} in {after.channel.guild.name} - Was in previous channel for {duration_str}", 
+                           extra={'event': 'USER_MOVE', 'user_id': member.id, 'user_name': member.display_name, 
+                                 'from_channel': before.channel.name, 'to_channel': after.channel.name, 
+                                 'guild_name': after.channel.guild.name, 'duration': duration})
+                
+                # Send to Discord log channel
+                await self.log_user_voice_activity(member, "moved", after.channel, duration, from_channel=before.channel)
+        
+        # Handle bot voice state changes (existing logic)
         if self.user and member.id == self.user.id:
             if before.channel and not after.channel:
                 # Bot was disconnected from voice channel
@@ -379,10 +530,48 @@ class QuranBot(discord.Client):
                 log_connection_success(after.channel.name, after.channel.guild.name)
 
     async def on_disconnect(self):
-        """Handle bot disconnection."""
+        """Handle bot disconnection with enhanced recovery."""
         log_disconnection("Discord", "Bot disconnected from Discord")
         self.is_streaming = False
         self.health_monitor.set_streaming_status(False)
+        
+        # Start automatic reconnection after a delay
+        logger.info("Bot disconnected from Discord. Starting automatic reconnection in 30 seconds...", 
+                   extra={'event': 'AUTO_RECONNECT'})
+        asyncio.create_task(self.auto_reconnect_after_disconnect())
+    
+    async def auto_reconnect_after_disconnect(self):
+        """Automatically attempt to reconnect after Discord disconnection."""
+        await asyncio.sleep(30)  # Wait 30 seconds before attempting reconnection
+        
+        if not self.is_ready():
+            logger.info("Bot not ready yet, waiting for reconnection...", 
+                       extra={'event': 'WAITING_FOR_READY'})
+            return
+        
+        logger.info("Attempting automatic reconnection to Discord...", 
+                   extra={'event': 'AUTO_RECONNECT_ATTEMPT'})
+        
+        # Try to reconnect to voice channel
+        try:
+            await self.find_and_join_channel()
+        except Exception as e:
+            logger.error(f"Auto-reconnection failed: {e}", 
+                        extra={'event': 'AUTO_RECONNECT_FAILED'})
+            # Try again in 5 minutes
+            asyncio.create_task(self.retry_reconnection_later())
+    
+    async def retry_reconnection_later(self):
+        """Retry reconnection after a longer delay."""
+        await asyncio.sleep(300)  # Wait 5 minutes
+        if self.is_ready() and not self.is_streaming:
+            logger.info("Retrying reconnection after delay...", 
+                       extra={'event': 'RETRY_RECONNECTION'})
+            try:
+                await self.find_and_join_channel()
+            except Exception as e:
+                logger.error(f"Retry reconnection failed: {e}", 
+                            extra={'event': 'RETRY_RECONNECT_FAILED'})
 
     async def handle_voice_session_expired(self, guild_id):
         """Handle voice session expired (4006) errors."""
@@ -712,6 +901,10 @@ class QuranBot(discord.Client):
             t2 = time.time()
             log_performance("playback_init", t2-t1)
             consecutive_failures = 0
+            last_successful_playback = time.time()
+            
+            # Start health monitoring task
+            health_task = asyncio.create_task(self.monitor_playback_health(voice_client, last_successful_playback))
             
             while self.is_streaming and voice_client.is_connected():
                 # Handle loop mode - if enabled, play current surah repeatedly
@@ -727,15 +920,16 @@ class QuranBot(discord.Client):
                             self.health_monitor.update_current_song(file_name)
                             await self.update_presence_for_surah(surah_info)
                             success = await self.play_surah_with_retries(voice_client, mp3_file)
-                            if not success:
+                            if success:
+                                last_successful_playback = time.time()
+                                consecutive_failures = 0
+                            else:
                                 consecutive_failures += 1
                                 if consecutive_failures >= 3:
                                     logger.error(f"Multiple consecutive FFmpeg failures with reciter {self.current_reciter}. Check your audio files and FFmpeg installation.", 
                                                extra={"event": "FFMPEG", "reciter": self.current_reciter})
                                     consecutive_failures = 0
                                 continue
-                            else:
-                                consecutive_failures = 0
                             # Small gap between loops for smooth transition
                             if self.is_streaming and voice_client.is_connected():
                                 await asyncio.sleep(1)
@@ -743,6 +937,7 @@ class QuranBot(discord.Client):
                         except Exception as e:
                             log_error(e, f"playing {mp3_file}")
                             self.health_monitor.record_error(e, f"audio_playback_{file_name}")
+                            consecutive_failures += 1
                             continue
                 
                 # Normal playback mode - play through playlist
@@ -762,21 +957,23 @@ class QuranBot(discord.Client):
                         self.current_audio_file = file_name
                         await self.update_presence_for_surah(surah_info)
                         success = await self.play_surah_with_retries(voice_client, mp3_file)
-                        if not success:
+                        if success:
+                            last_successful_playback = time.time()
+                            consecutive_failures = 0
+                        else:
                             consecutive_failures += 1
                             if consecutive_failures >= 3:
                                 logger.error(f"Multiple consecutive FFmpeg failures with reciter {self.current_reciter}. Check your audio files and FFmpeg installation.", 
                                            extra={"event": "FFMPEG", "reciter": self.current_reciter})
                                 consecutive_failures = 0
                             continue
-                        else:
-                            consecutive_failures = 0
                         # Small gap between surahs for smooth transition
                         if self.is_streaming and voice_client.is_connected():
                             await asyncio.sleep(1)
                     except Exception as e:
                         log_error(e, f"playing {mp3_file}")
                         self.health_monitor.record_error(e, f"audio_playback_{file_name}")
+                        consecutive_failures += 1
                         continue
                         
                 # Reset to beginning for next cycle (unless loop mode is enabled)
@@ -785,13 +982,37 @@ class QuranBot(discord.Client):
                     self.state_manager.set_current_song_index(0)
                 if self.is_streaming:
                     await asyncio.sleep(2)
+            
+            # Cancel health monitoring task
+            health_task.cancel()
+            
         except Exception as e:
             log_error(e, "play_quran_files")
             self.is_streaming = False
             self.health_monitor.set_streaming_status(False)
         t3 = time.time()
         log_performance("play_quran_files_total", t3-t0)
+    
+    async def monitor_playback_health(self, voice_client, last_successful_playback):
+        """Monitor playback health and restart if needed."""
+        while self.is_streaming and voice_client.is_connected():
+            await asyncio.sleep(60)  # Check every minute
             
+            # If no successful playback in 30 minutes, restart playback
+            if time.time() - last_successful_playback > 1800:  # 30 minutes
+                logger.warning("No successful audio playback in 30 minutes. Restarting playback...", 
+                              extra={'event': 'PLAYBACK_HEALTH_RESTART'})
+                try:
+                    # Restart playback
+                    self.is_streaming = False
+                    await asyncio.sleep(5)
+                    self.is_streaming = True
+                    asyncio.create_task(self.play_quran_files(voice_client, voice_client.channel))
+                    break
+                except Exception as e:
+                    logger.error(f"Failed to restart playback: {e}", 
+                               extra={'event': 'PLAYBACK_RESTART_FAILED'})
+
     async def close(self):
         """
         Cleanup method called when the bot is shutting down.
@@ -940,6 +1161,68 @@ class QuranBot(discord.Client):
             logger.debug(f"Set initial presence to: {message}")
         except Exception as e:
             log_error(e, "set_presence")
+
+    def format_duration(self, duration_seconds: float) -> str:
+        """Format duration in seconds to a human-readable string."""
+        if duration_seconds is None:
+            return "Unknown duration"
+        
+        if duration_seconds < 60:
+            return f"{int(duration_seconds)} seconds"
+        elif duration_seconds < 3600:
+            minutes = int(duration_seconds // 60)
+            seconds = int(duration_seconds % 60)
+            return f"{minutes}m {seconds}s"
+        else:
+            hours = int(duration_seconds // 3600)
+            minutes = int((duration_seconds % 3600) // 60)
+            return f"{hours}h {minutes}m"
+
+    async def log_user_voice_activity(self, member, action: str, channel, duration: Optional[float] = None, from_channel=None, interaction_count: Optional[int] = None):
+        """Log user voice activity to Discord channel."""
+        channel_id = 1389683881078423567
+        log_channel = self.get_channel(channel_id)
+        
+        if not log_channel or not isinstance(log_channel, discord.TextChannel):
+            return
+        
+        # Determine color and title based on action
+        if action == "joined":
+            color = discord.Color.green()
+            title = "User Joined Voice Channel"
+        elif action == "left":
+            color = discord.Color.red()
+            title = "User Left Voice Channel"
+        else:  # moved
+            color = discord.Color.blue()
+            title = "User Moved Voice Channels"
+        
+        embed = discord.Embed(
+            title=title,
+            color=color,
+            timestamp=discord.utils.utcnow()
+        )
+        
+        # Add user avatar as thumbnail
+        if member.avatar:
+            embed.set_thumbnail(url=member.avatar.url)
+        
+        embed.add_field(name="User", value=f"{member.display_name} ({member.id})", inline=True)
+        embed.add_field(name="Channel", value=channel.name, inline=True)
+        embed.add_field(name="Server", value=channel.guild.name, inline=True)
+        
+        if action == "left" and duration is not None:
+            embed.add_field(name="Duration", value=self.format_duration(duration), inline=True)
+        if action == "left" and interaction_count is not None:
+            embed.add_field(name="Interactions", value=str(interaction_count), inline=True)
+        if from_channel:
+            embed.add_field(name="From Channel", value=from_channel.name, inline=True)
+        
+        embed.set_footer(text="QuranBot Voice Activity Logger • Professional Log")
+        try:
+            await log_channel.send(embed=embed)
+        except Exception as e:
+            logger.error(f"Failed to send voice activity log to Discord: {e}")
 
 def main():
     """
