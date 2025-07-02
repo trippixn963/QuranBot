@@ -90,6 +90,8 @@ class QuranBot(discord.Client):
         presence_task (Optional[asyncio.Task]): Presence cycling task
         user_join_times (Dict[int, float]): User join times
         user_interaction_counts (Dict[int, int]): User interaction counts
+        presence_locked (bool): Flag to prevent conflicts between presence update methods
+        current_surah_playing (Optional[str]): Currently playing surah
     """
     
     def __init__(self):
@@ -119,18 +121,38 @@ class QuranBot(discord.Client):
         self.user_interaction_counts: Dict[int, int] = {}
         
         # Reciter management - store folder name internally, use display name for UI
-        default_reciter_display = Config.DEFAULT_RECITER
-        self.current_reciter: str = Config.get_folder_name_from_display(default_reciter_display)
+        self.current_reciter = Config.DEFAULT_RECITER
+        self.current_audio_file = None
+        
+        # Playback control
+        self.loop_enabled = False
+        self.shuffle_enabled = False
+        
+        # Updated presence messages
+        self.presence_messages = [
+            (discord.ActivityType.listening, "🕋 The Holy Quran"),
+            (discord.ActivityType.listening, "📖 Recitation of Allah's Words"),
+            (discord.ActivityType.listening, "🕌 Beautiful Quranic Verses"),
+            (discord.ActivityType.listening, "🌟 Divine Revelation"),
+            (discord.ActivityType.listening, "💫 Sacred Scripture"),
+            (discord.ActivityType.listening, "🕯️ Illuminating Verses"),
+            (discord.ActivityType.listening, "🌙 Blessed Recitation"),
+            (discord.ActivityType.listening, "✨ Words of Guidance"),
+            (discord.ActivityType.listening, "🕊️ Peaceful Verses"),
+            (discord.ActivityType.listening, "🎵 Melodic Quran"),
+        ]
+        self.current_presence_index = 0
+        self.presence_cycle = self._presence_cycle()
+        self.presence_task = None
+        
+        # Presence control flag to prevent conflicts
+        self.presence_locked = False
+        self.current_surah_playing = None
         
         # Connection failure tracking
         self.connection_failures = 0
         self.max_connection_failures = 5  # Stop trying after 5 consecutive failures
         self.start_time = time.time()     # For uptime calculation
-        
-        # Playback control settings
-        self.loop_enabled = False         # Loop current surah
-        self.shuffle_enabled = False      # Shuffle surah order
-        self.original_playlist = []       # Store original playlist for shuffle
         
         # Initialize monitoring and management systems
         self.health_monitor = HealthMonitor()
@@ -143,20 +165,6 @@ class QuranBot(discord.Client):
         # Setup graceful shutdown signal handlers
         signal.signal(signal.SIGINT, self.signal_handler)   # Ctrl+C
         signal.signal(signal.SIGTERM, self.signal_handler)  # Termination signal
-        
-        # Updated presence messages
-        self.presence_messages = [
-            (discord.ActivityType.listening, "📖 Quran 24/7"),
-            (discord.ActivityType.playing, "🕌 Surah Al-Fatiha"),
-            (discord.ActivityType.watching, "👀 for your requests"),
-            (discord.ActivityType.listening, "🎵 Beautiful Recitations"),
-            (discord.ActivityType.playing, "🕊️ Dhikr & Remembrance")
-        ]
-        
-        # Initialize playback variables
-        t0 = time.time()
-        consecutive_failures = 0
-        last_successful_playback = time.time()
         
         # Track notifications to avoid spam in loop mode
         last_notified_surah = None
@@ -390,11 +398,16 @@ class QuranBot(discord.Client):
             
             # Initialize dynamic rich presence system
             self.presence_messages = [
-                (discord.ActivityType.listening, "📖 Quran 24/7"),
-                (discord.ActivityType.playing, "🕌 Surah Al-Fatiha"),
-                (discord.ActivityType.watching, "👀 for your requests"),
-                (discord.ActivityType.listening, "🎵 Beautiful Recitations"),
-                (discord.ActivityType.playing, "🕊️ Dhikr & Remembrance")
+                (discord.ActivityType.listening, "�� The Holy Quran"),
+                (discord.ActivityType.listening, "📖 Recitation of Allah's Words"),
+                (discord.ActivityType.listening, "🕌 Beautiful Quranic Verses"),
+                (discord.ActivityType.listening, "🌟 Divine Revelation"),
+                (discord.ActivityType.listening, "💫 Sacred Scripture"),
+                (discord.ActivityType.listening, "🕯️ Illuminating Verses"),
+                (discord.ActivityType.listening, "🌙 Blessed Recitation"),
+                (discord.ActivityType.listening, "✨ Words of Guidance"),
+                (discord.ActivityType.listening, "🕊️ Peaceful Verses"),
+                (discord.ActivityType.listening, "🎵 Melodic Quran"),
             ]
             self.current_presence_index = 0
             self.presence_cycle = self._presence_cycle()
@@ -551,6 +564,11 @@ class QuranBot(discord.Client):
         log_disconnection("Discord", "Bot disconnected from Discord")
         self.is_streaming = False
         self.health_monitor.set_streaming_status(False)
+        
+        # Unlock presence when streaming stops
+        self.presence_locked = False
+        self.current_surah_playing = None
+        logger.debug("Unlocked presence after streaming stopped")
         
         # Start automatic reconnection after a delay
         logger.info("Bot disconnected from Discord. Starting automatic reconnection in 30 seconds...", 
@@ -838,7 +856,9 @@ class QuranBot(discord.Client):
                         type=discord.ActivityType.listening, 
                         name=presence_str,
                     )
-                    await self.change_presence(activity=activity)
+                    # Only update if not locked by another process
+                    if not self.presence_locked or self.current_surah_playing == surah_info['english_name']:
+                        await self.change_presence(activity=activity)
                     # Wait 5 seconds or until playback ends
                     for _ in range(5):
                         if not voice_client.is_playing() or not voice_client.is_connected():
@@ -857,6 +877,12 @@ class QuranBot(discord.Client):
                     await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=presence_str))
                 # Additional buffer
                 await asyncio.sleep(3)
+                
+                # Unlock presence when this surah finishes
+                if self.current_surah_playing == surah_info['english_name']:
+                    self.presence_locked = False
+                    self.current_surah_playing = None
+                    logger.debug(f"Unlocked presence after finishing {surah_info['english_name']}")
                 
                 # Send Discord notification for surah change
                 asyncio.create_task(self.send_surah_change_notification(
@@ -887,6 +913,11 @@ class QuranBot(discord.Client):
                         await asyncio.sleep(1)
                 await asyncio.sleep(2)  # Short delay before retry
         logger.error(f"FFmpeg failed for {file_name} after {max_retries+1} attempts. Skipping.", extra={"event": "FFMPEG", "file": file_name})
+        # Unlock presence if this was the current surah
+        if self.current_surah_playing == surah_info['english_name']:
+            self.presence_locked = False
+            self.current_surah_playing = None
+            logger.debug(f"Unlocked presence after FFmpeg failure for {surah_info['english_name']}")
         return False
 
     async def play_quran_files(self, voice_client: discord.VoiceClient, channel: discord.VoiceChannel):
@@ -1143,6 +1174,10 @@ class QuranBot(discord.Client):
                              'number' and 'english_name'
         """
         try:
+            # Lock presence updates to prevent conflicts
+            self.presence_locked = True
+            self.current_surah_playing = surah_info['english_name']
+            
             emoji = get_surah_emoji(surah_info['number'])
             activity_type = discord.ActivityType.listening
             message = f"{emoji} {surah_info['english_name']}"
@@ -1151,6 +1186,9 @@ class QuranBot(discord.Client):
             logger.debug(f"Updated presence to: {message}")
         except Exception as e:
             log_error(e, "update_presence_for_surah")
+        finally:
+            # Keep locked while surah is playing
+            pass
 
     async def cycle_presence(self):
         """
@@ -1160,16 +1198,20 @@ class QuranBot(discord.Client):
         to show either the currently playing surah or general Quran-related messages.
         """
         while True:
-            # Check if we're currently playing a surah
-            if hasattr(self, 'current_audio_file') and self.current_audio_file:
-                surah_info = get_surah_from_filename(self.current_audio_file)
-                await self.update_presence_for_surah(surah_info)
-            else:
-                # Fallback to cycling through general messages
-                activity_type, message = next(self.presence_cycle)
-                await self.change_presence(activity=discord.Activity(type=activity_type, name=message))
-            
-            await asyncio.sleep(120)  # 2 minutes instead of 5
+            try:
+                # Only update if not locked (no surah currently playing)
+                if not self.presence_locked:
+                    # Fallback to cycling through general messages
+                    activity_type, message = next(self.presence_cycle)
+                    await self.change_presence(activity=discord.Activity(type=activity_type, name=message))
+                    logger.debug(f"Cycled presence to: {message}")
+                else:
+                    logger.debug(f"Presence locked, skipping cycle (playing: {self.current_surah_playing})")
+                
+                await asyncio.sleep(120)  # 2 minutes
+            except Exception as e:
+                log_error(e, "cycle_presence")
+                await asyncio.sleep(120)  # Continue cycling even if there's an error
 
     def signal_handler(self, signum, frame):
         """
@@ -1204,6 +1246,11 @@ class QuranBot(discord.Client):
             # Stop streaming and update health status
             self.is_streaming = False
             self.health_monitor.set_streaming_status(False)
+            
+            # Unlock presence when streaming stops
+            self.presence_locked = False
+            self.current_surah_playing = None
+            logger.debug("Unlocked presence after streaming stopped")
             
             # Stop health reporting system
             if self.health_reporter:
