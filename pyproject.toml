@@ -9,7 +9,7 @@ description = "Professional 24/7 Quran streaming Discord bot"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "QuranBot Team", email = "contact@quranbot.com"}
+    {name = "Trippixn (Discord)", email = "contact@quranbot.com"}
 ]
 keywords = ["discord", "bot", "quran", "islam", "muslim", "audio", "streaming"]
 classifiers = [

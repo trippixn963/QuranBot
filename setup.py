@@ -20,7 +20,7 @@ def read_requirements():
 setup(
     name="quranbot",
     version="2.1.0",
-    author="QuranBot Team",
+    author="Trippixn (Discord)",
     author_email="contact@quranbot.com",
     description="Professional 24/7 Quran streaming Discord bot",
     long_description=read_readme(),

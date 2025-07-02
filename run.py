@@ -30,7 +30,7 @@ Dependencies:
     - psutil >= 5.9.0
     - colorama >= 0.4.6
 
-Author: QuranBot Team
+Author: Trippixn (Discord)
 License: MIT
 Version: 2.1.0
 """

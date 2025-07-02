@@ -28,7 +28,7 @@ Environment Variables:
     FFMPEG_PATH: Path to FFmpeg installation (default: 'C:\\ffmpeg\\bin')
     AUDIO_QUALITY: Audio quality for streaming (default: '128k')
 
-Author: QuranBot Team
+Author: Trippixn (Discord)
 License: MIT
 Version: 2.1.0
 """

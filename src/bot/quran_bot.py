@@ -25,7 +25,7 @@ Dependencies:
     - FFmpeg: Audio processing
     - Custom utils: config, logger, health, state_manager, surah_mapper
 
-Author: QuranBot Team
+Author: Trippixn (Discord)
 License: MIT
 Version: 2.1.0
 """
