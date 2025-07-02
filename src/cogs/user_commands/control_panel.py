@@ -1565,21 +1565,21 @@ async def setup(bot):
                     shuffle_status = "🔀 OFF"
                     streaming_status = "⏸️ Stopped"
                 
-                                    # Get last change info
-                    last_change, last_change_time = bot.state_manager.get_last_change()
-                    last_change_display = ""
-                    if last_change:
-                        try:
-                            # Ensure we have a valid Unix timestamp
-                            if isinstance(last_change_time, int):
-                                # Use Discord timestamp formatting for automatic timezone conversion
-                                time_str = f"<t:{last_change_time}:t>"  # Short time format with AM/PM in user's timezone
-                                last_change_display = f"\n\n**Last Change:** {last_change} at {time_str}"
-                            else:
-                                # Fallback for old ISO format or other issues
-                                last_change_display = f"\n\n**Last Change:** {last_change}"
-                        except:
+                # Get last change info (outside the try block to ensure it's always available)
+                last_change, last_change_time = bot.state_manager.get_last_change()
+                last_change_display = ""
+                if last_change:
+                    try:
+                        # Ensure we have a valid Unix timestamp
+                        if isinstance(last_change_time, int):
+                            # Use Discord timestamp formatting for automatic timezone conversion
+                            time_str = f"<t:{last_change_time}:t>"  # Short time format with AM/PM in user's timezone
+                            last_change_display = f"\n\n**Last Change:** {last_change} at {time_str}"
+                        else:
+                            # Fallback for old ISO format or other issues
                             last_change_display = f"\n\n**Last Change:** {last_change}"
+                    except:
+                        last_change_display = f"\n\n**Last Change:** {last_change}"
                 
                 # Create the control panel embed with dynamic status
                 embed = discord.Embed(
