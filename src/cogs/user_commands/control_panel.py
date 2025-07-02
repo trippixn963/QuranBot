@@ -515,66 +515,106 @@ class ControlPanelView(View):
             "timestamp": datetime.now().isoformat()
         })
         
-        # Create credits embed
-        credits_embed = discord.Embed(
-            title="📋 QuranBot Credits & Information",
-            description="**Thank you for using QuranBot!** 🎵\n\nThis bot provides 24/7 Quran streaming with multiple reciters and interactive controls.",
+        # Get available reciters
+        bot = interaction.client
+        reciters = getattr(bot, 'get_available_reciters', lambda: [])()
+        reciters_text = "\n".join([f"• {reciter}" for reciter in reciters])
+        
+        # Create credits embed (exact same as /credits command)
+        embed = discord.Embed(
+            title="🕌 QuranBot Credits & Information",
+            description="A 24/7 Quran streaming bot with multiple reciters and interactive controls.",
             color=discord.Color.blue()
         )
         
         # Bot Information
-        credits_embed.add_field(
-            name="🤖 **Bot Information**",
-            value=f"• **Name**: {interaction.client.user.name}\n• **Version**: 2.0.0\n• **Status**: Online ✅\n• **Uptime**: {self.bot.health_monitor.get_uptime() if hasattr(self.bot, 'health_monitor') else 'Unknown'}",
+        embed.add_field(
+            name="🤖 Bot Information",
+            value=f"**Name:** Syrian Quran\n"
+                  f"**Version:** 2.0.0\n"
+                  f"**Status:** 24/7 Streaming\n"
+                  f"**Current Reciter:** {getattr(interaction.client, 'current_reciter', 'Unknown')}\n"
+                  f"**Total Surahs:** 114",
+            inline=False
+        )
+        
+        # Creator Information
+        embed.add_field(
+            name="👨‍💻 Creator",
+            value="**Developer:** <@259725211664908288>\n"
+                  "**Role:** Full-Stack Developer & Bot Creator\n"
+                  "**GitHub:** [QuranBot Repository](https://github.com/JohnHamwi/QuranAudioBot)",
+            inline=False
+        )
+        
+        # Available Reciters
+        embed.add_field(
+            name=f"🎤 Available Reciters ({len(reciters)})",
+            value=reciters_text if reciters else "No reciters available",
+            inline=False
+        )
+        
+        # Technologies Used
+        embed.add_field(
+            name="🛠️ Technologies Used",
+            value="**Core Framework:** Discord.py\n"
+                  "**Audio Processing:** FFmpeg\n"
+                  "**Language:** Python 3.13\n"
+                  "**Database:** SQLite (State Management)\n"
+                  "**Logging:** Enhanced Structured Logging\n"
+                  "**Architecture:** Service-Oriented Design",
             inline=False
         )
         
         # Features
-        credits_embed.add_field(
-            name="✨ **Features**",
-            value="• **Multi-Reciter Support** - Switch between different reciters\n• **114 Surahs** - Complete Quran with all surahs\n• **Interactive Controls** - Easy navigation and playback control\n• **24/7 Streaming** - Continuous Quran recitation\n• **Voice Channel Integration** - Seamless Discord integration",
+        embed.add_field(
+            name="✨ Features",
+            value="• 24/7 Continuous Quran Streaming\n"
+                  "• Multiple Reciter Support\n"
+                  "• Interactive Control Panel\n"
+                  "• Dynamic Rich Presence",
             inline=False
         )
         
-        # Current Status
-        current_reciter = self.bot.get_current_reciter()
-        current_song = self.bot.state_manager.get_current_song_name() if hasattr(self.bot, 'state_manager') else "Unknown"
-        current_surah = current_song.split('.')[0] if current_song and '.' in current_song else "Unknown"
-        
-        credits_embed.add_field(
-            name="📊 **Current Status**",
-            value=f"• **Active Reciter**: {current_reciter}\n• **Current Surah**: {current_surah}\n• **Streaming**: {'Yes' if self.bot.is_streaming else 'No'}\n• **Loop Mode**: {'Enabled' if self.bot.loop_enabled else 'Disabled'}\n• **Shuffle Mode**: {'Enabled' if self.bot.shuffle_enabled else 'Disabled'}",
+        # Beta Testing Warning
+        embed.add_field(
+            name="⚠️ Beta Testing Notice",
+            value="**This bot is currently in beta testing.**\n\n"
+                  "If you encounter any bugs or issues, please DM <@259725211664908288> to report them.\n\n"
+                  "Your feedback helps improve the bot!",
             inline=False
         )
         
-        # Technical Information
-        credits_embed.add_field(
-            name="🔧 **Technical Details**",
-            value="• **Framework**: Discord.py\n• **Audio Engine**: FFmpeg\n• **Audio Quality**: 128k MP3\n• **Auto-Reconnect**: Enabled\n• **Health Monitoring**: Active",
-            inline=False
-        )
+        embed.set_footer(text="Made with ❤️ for the Muslim Ummah • QuranBot v2.0.0")
+        embed.timestamp = discord.utils.utcnow()
         
-        # GitHub Repository
-        credits_embed.add_field(
-            name="📂 **GitHub Repository**",
-            value="[QuranBot Repository](https://github.com/JohnHamwi/QuranAudioBot)\n\nView the source code, report issues, and contribute to the project!",
-            inline=False
-        )
+        # Set creator's Discord profile picture
+        try:
+            creator_user = await interaction.client.fetch_user(259725211664908288)
+            if creator_user and creator_user.avatar:
+                embed.set_thumbnail(url=creator_user.avatar.url)
+        except Exception as e:
+            log_operation("credits", "WARNING", {
+                "user_id": interaction.user.id,
+                "user_name": interaction.user.name,
+                "action": "creator_avatar_fetch_failed",
+                "error": str(e)
+            })
+            # Fallback to guild icon if creator avatar fails
+            try:
+                if interaction.guild and interaction.guild.icon:
+                    embed.set_thumbnail(url=interaction.guild.icon.url)
+            except:
+                pass
         
-        # Footer
-        credits_embed.set_footer(text="QuranBot v2.0.0 • Made with ❤️ for the Muslim community")
-        credits_embed.timestamp = discord.utils.utcnow()
-        
-        # Send as ephemeral message
-        await interaction.response.send_message(embed=credits_embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         
         log_operation("credits", "INFO", {
             "user_id": interaction.user.id,
             "user_name": interaction.user.name,
             "action": "credits_displayed",
-            "current_reciter": current_reciter,
-            "current_surah": current_surah,
-            "bot_status": "online"
+            "reciters_count": len(reciters),
+            "current_reciter": getattr(interaction.client, 'current_reciter', 'Unknown')
         })
     
     # Row 3: Playback Controls
