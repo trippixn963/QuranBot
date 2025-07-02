@@ -1411,7 +1411,7 @@ async def setup(bot):
         
         # Create the control panel in the specified channel
         try:
-            from utils.config import Config
+            from core.config.config import Config
             panel_channel_id = Config.PANEL_CHANNEL_ID
         except ImportError as e:
             log_operation("error", "CRITICAL", {
@@ -1524,7 +1524,7 @@ async def setup(bot):
                     # Get current surah info
                     if current_song:
                         try:
-                            from utils.surah_mapper import get_surah_from_filename, get_surah_display_name, get_surah_emoji
+                            from core.mapping.surah_mapper import get_surah_from_filename, get_surah_display_name, get_surah_emoji
                             surah_info = get_surah_from_filename(current_song)
                             surah_display = get_surah_display_name(surah_info['number'], include_number=False)
                             surah_emoji = get_surah_emoji(surah_info['number'])
