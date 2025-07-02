@@ -745,15 +745,22 @@ class ControlPanelView(View):
             else:
                 current_surah_display = "Not Playing"
             
-            # Create status indicators
-            loop_status = "🔁 ON" if loop_enabled else "🔁 OFF"
+            # Create status indicators with user tracking
+            if loop_enabled:
+                loop_user_id, loop_username = self.bot.state_manager.get_loop_enabled_by()
+                if loop_user_id and loop_username:
+                    loop_status = f"🔁 ON - <@{loop_user_id}>"
+                else:
+                    loop_status = "🔁 ON"
+            else:
+                loop_status = "🔁 OFF"
             shuffle_status = "🔀 ON" if shuffle_enabled else "🔀 OFF"
             streaming_status = "▶️ Playing" if is_streaming else "⏸️ Stopped"
             
             # Create updated embed
             embed = discord.Embed(
                 title="🎵 QuranBot Control Panel",
-                description=f"Welcome to QuranBot! Use the controls below to manage your Quran streaming experience.\n\n\n**📊 Current Status**\n• **Now Playing**: {current_surah_display}\n• **Reciter**: {current_reciter}\n• **Status**: {streaming_status}\n• **Loop**: {loop_status}\n• **Shuffle**: {shuffle_status}\n\n\n**📖 Surah Selection**\nChoose any surah from all 114 surahs using the dropdown above. Navigate through pages with the buttons below.\n\n\n**🎤 Reciter Selection**\nSwitch between different reciters while maintaining your current surah position.\n\n\n**Playback Controls**\n• ⏮️ Previous - Go to previous surah\n• ⏭️ Next - Go to next surah\n• 🔁 Loop - Toggle repeat mode\n• 🔀 Shuffle - Toggle random playback\n\n\n**Information**\n• 📋 Credits - View bot information and credits\n\n\n**⚠️ Beta Testing Notice**\nThis bot is currently in beta testing. If you encounter any bugs or issues, please DM <@259725211664908288> to report them. Your feedback helps improve the bot!",
+                description=f"**📊 Current Status**\n• **Now Playing**: {current_surah_display}\n• **Reciter**: {current_reciter}\n• **Status**: {streaming_status}\n• **Loop**: {loop_status}\n• **Shuffle**: {shuffle_status}\n\n\n\n\n\n\n\n**⚠️ Beta Testing Notice**\nThis bot is currently in beta testing. If you encounter any bugs or issues, please DM <@259725211664908288> to report them. Your feedback helps improve the bot!",
                 color=discord.Color.green()
             )
             
@@ -1092,7 +1099,7 @@ class ControlPanelView(View):
             return
         
         # Toggle loop mode
-        loop_enabled = self.bot.toggle_loop()
+        loop_enabled = self.bot.toggle_loop(interaction.user.id, interaction.user.name)
         
         # Update button appearance
         if loop_enabled:
@@ -1464,8 +1471,15 @@ async def setup(bot):
                     else:
                         current_surah_display = "Not Playing"
                     
-                    # Create status indicators
-                    loop_status = "🔁 ON" if loop_enabled else "🔁 OFF"
+                    # Create status indicators with user tracking
+                    if loop_enabled:
+                        loop_user_id, loop_username = bot.state_manager.get_loop_enabled_by()
+                        if loop_user_id and loop_username:
+                            loop_status = f"🔁 ON - <@{loop_user_id}>"
+                        else:
+                            loop_status = "🔁 ON"
+                    else:
+                        loop_status = "🔁 OFF"
                     shuffle_status = "🔀 ON" if shuffle_enabled else "🔀 OFF"
                     streaming_status = "▶️ Playing" if is_streaming else "⏸️ Stopped"
                     
@@ -1480,7 +1494,7 @@ async def setup(bot):
                 # Create the control panel embed with dynamic status
                 embed = discord.Embed(
                     title="🎵 QuranBot Control Panel",
-                    description=f"Welcome to QuranBot! Use the controls below to manage your Quran streaming experience.\n\n\n**📊 Current Status**\n• **Now Playing**: {current_surah_display}\n• **Reciter**: {current_reciter}\n• **Status**: {streaming_status}\n• **Loop**: {loop_status}\n• **Shuffle**: {shuffle_status}\n\n\n**📖 Surah Selection**\nChoose any surah from all 114 surahs using the dropdown above. Navigate through pages with the buttons below.\n\n\n**🎤 Reciter Selection**\nSwitch between different reciters while maintaining your current surah position.\n\n\n**Playback Controls**\n• ⏮️ Previous - Go to previous surah\n• ⏭️ Next - Go to next surah\n• 🔁 Loop - Toggle repeat mode\n• 🔀 Shuffle - Toggle random playback\n\n\n**Information**\n• 📋 Credits - View bot information and credits\n\n\n**⚠️ Beta Testing Notice**\nThis bot is currently in beta testing. If you encounter any bugs or issues, please DM <@259725211664908288> to report them. Your feedback helps improve the bot!",
+                    description=f"**📊 Current Status**\n• **Now Playing**: {current_surah_display}\n• **Reciter**: {current_reciter}\n• **Status**: {streaming_status}\n• **Loop**: {loop_status}\n• **Shuffle**: {shuffle_status}\n\n\n\n\n\n\n\n**⚠️ Beta Testing Notice**\nThis bot is currently in beta testing. If you encounter any bugs or issues, please DM <@259725211664908288> to report them. Your feedback helps improve the bot!",
                     color=discord.Color.green()
                 )
                 

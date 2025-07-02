@@ -126,7 +126,9 @@ class StateManager:
             'total_songs_played': 0,
             'last_played_time': None,
             'bot_start_count': 0,
-            'last_state_save': None
+            'last_state_save': None,
+            'loop_enabled_by': None,  # Stores user ID who enabled loop
+            'loop_enabled_by_name': None  # Stores username who enabled loop
         }
         
         if os.path.exists(self.state_file):
@@ -454,6 +456,85 @@ class StateManager:
             'last_state_save': self.state.get('last_state_save')
         }
         
+    def set_loop_enabled_by(self, user_id: int, username: str):
+        """Set who enabled the loop mode with comprehensive logging."""
+        try:
+            log_operation("loop_user", "INFO", {
+                "action": "set_loop_enabled_by",
+                "user_id": user_id,
+                "username": username,
+                "previous_user_id": self.state.get('loop_enabled_by'),
+                "previous_username": self.state.get('loop_enabled_by_name')
+            })
+            
+            self.state['loop_enabled_by'] = user_id
+            self.state['loop_enabled_by_name'] = username
+            self._save_state()
+            
+            # Emit state update event
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(self._emit_event('state_updated', {
+                        'type': 'loop_user_changed',
+                        'user_id': user_id,
+                        'username': username
+                    }))
+            except RuntimeError:
+                log_operation("loop_user", "DEBUG", {
+                    "action": "no_event_loop_for_loop_user_event"
+                })
+                
+        except Exception as e:
+            log_operation("loop_user", "ERROR", {
+                "action": "set_loop_enabled_by_failed",
+                "user_id": user_id,
+                "username": username,
+                "error": str(e),
+                "error_type": type(e).__name__
+            }, e)
+    
+    def clear_loop_enabled_by(self):
+        """Clear who enabled loop mode (when loop is disabled) with comprehensive logging."""
+        try:
+            old_user_id = self.state.get('loop_enabled_by')
+            old_username = self.state.get('loop_enabled_by_name')
+            
+            log_operation("loop_user", "INFO", {
+                "action": "clear_loop_enabled_by",
+                "previous_user_id": old_user_id,
+                "previous_username": old_username
+            })
+            
+            self.state['loop_enabled_by'] = None
+            self.state['loop_enabled_by_name'] = None
+            self._save_state()
+            
+            # Emit state update event
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(self._emit_event('state_updated', {
+                        'type': 'loop_user_cleared'
+                    }))
+            except RuntimeError:
+                log_operation("loop_user", "DEBUG", {
+                    "action": "no_event_loop_for_loop_clear_event"
+                })
+                
+        except Exception as e:
+            log_operation("loop_user", "ERROR", {
+                "action": "clear_loop_enabled_by_failed",
+                "error": str(e),
+                "error_type": type(e).__name__
+            }, e)
+    
+    def get_loop_enabled_by(self) -> tuple:
+        """Get who enabled loop mode as (user_id, username)."""
+        return (self.state.get('loop_enabled_by'), self.state.get('loop_enabled_by_name'))
+
     def reset_state(self):
         """Reset state to default values."""
         self.state = {
@@ -462,6 +543,8 @@ class StateManager:
             'total_songs_played': 0,
             'last_played_time': None,
             'bot_start_count': self.state.get('bot_start_count', 0),
-            'last_state_save': None
+            'last_state_save': None,
+            'loop_enabled_by': None,
+            'loop_enabled_by_name': None
         }
         self._save_state() 
