@@ -226,50 +226,33 @@ class QuranBot(discord.Client):
         log_performance("find_and_join_channel_total", t2-t0)
         
     async def on_voice_state_update(self, member, before, after):
-        """Handle voice state updates for reconnection logic and user tracking."""
-        # Handle bot's own voice state changes
+        """Handle voice state updates for reconnection logic."""
         if self.user and member.id == self.user.id:
             if before.channel and not after.channel:
                 # Bot was disconnected
                 log_disconnection(before.channel.name, "Disconnected from voice channel")
                 await self.discord_logger.log_bot_disconnected(before.channel.name, "Disconnected from voice channel")
                 self.is_streaming = False
-                self._intended_streaming = False  # Reset streaming intent on disconnect
                 self.health_monitor.set_streaming_status(False)
                 
-                # Increment failure counter
+                # Check if we've had too many failures
                 self.connection_failures += 1
+                if self.connection_failures >= self.max_connection_failures:
+                    logger.error(f"Too many connection failures ({self.connection_failures}). Stopping reconnection attempts.", 
+                               extra={'event': 'CONNECTION_FAILURE_LIMIT'})
+                    self.is_streaming = False
+                    return
                 
-                # SMART AUTO-RECONNECTION SYSTEM - TEMPORARILY DISABLED
-                # Disable auto-reconnection to prevent loop issues
-                should_reconnect = False  # DISABLED TO PREVENT LOOPS
+                # Wait much longer before reconnecting to break the reconnection loop
+                wait_time = min(60 * self.connection_failures, 300)  # Progressive delay up to 5 minutes
+                logger.info(f"Waiting {wait_time} seconds before reconnection attempt {self.connection_failures}/{self.max_connection_failures}...", 
+                           extra={'event': 'RECONNECT_WAIT', 'wait_time': wait_time, 'failures': self.connection_failures})
+                await asyncio.sleep(wait_time)
                 
-                if should_reconnect:
-                    # Progressive delay: 30s, 60s, 120s, 240s, 300s (max 5 min)
-                    wait_time = min(30 * (2 ** (self.connection_failures - 1)), 300)
-                    logger.info(f"Smart reconnection scheduled in {wait_time}s. Attempt {self.connection_failures}/{self.max_connection_failures}",
-                               extra={'event': 'SMART_RECONNECT', 'wait_time': wait_time, 'failures': self.connection_failures})
-                    
-                    # Schedule reconnection after delay
-                    async def delayed_reconnect():
-                        await asyncio.sleep(wait_time)
-                        # Double-check conditions before reconnecting
-                        if (self.connection_failures < self.max_connection_failures and 
-                            hasattr(self, '_intended_streaming') and self._intended_streaming):
-                            logger.info("Executing smart reconnection...", 
-                                       extra={'event': 'RECONNECT_EXECUTE'})
-                            await self.find_and_join_channel()
-                    
-                    asyncio.create_task(delayed_reconnect())
-                else:
-                    logger.warning(f"Reconnection conditions not met. Failures: {self.connection_failures}/{self.max_connection_failures}, Intended streaming: {getattr(self, '_intended_streaming', False)}",
-                                 extra={'event': 'RECONNECT_SKIPPED', 'failures': self.connection_failures})
-                    # Stop streaming if we've exceeded limits
-                    if self.connection_failures >= self.max_connection_failures:
-                        logger.error(f"Too many connection failures ({self.connection_failures}). Stopping reconnection attempts.",
-                                   extra={'event': 'CONNECTION_FAILURE_LIMIT'})
-                        self.is_streaming = False
-                        self._intended_streaming = False
+                if self.is_streaming:
+                    logger.info("Attempting to reconnect after disconnection...", 
+                               extra={'event': 'RECONNECT_ATTEMPT'})
+                    await self.find_and_join_channel()
             elif not before.channel and after.channel:
                 # Bot connected to voice
                 log_connection_success(after.channel.name, after.channel.guild.name)
@@ -350,39 +333,28 @@ class QuranBot(discord.Client):
             self.health_monitor.record_error(error, f"voice_error_guild_{guild_id}")
 
     async def start_stream(self, channel: discord.VoiceChannel):
-        """Start streaming Quran to the voice channel with optimized connection."""
+        """Start streaming Quran to the voice channel with improved error handling."""
         t0 = time.time()
-        max_retries = 2  # Reduced retries for faster connection
-        retry_delay = 15   # Reduced initial delay
-        
-        # Mark that we intend to stream
-        self._intended_streaming = True
+        max_retries = 3  # Reduced retries to prevent spam
+        retry_delay = 30   # Start with longer delay
         
         for attempt in range(max_retries):
             try:
                 guild_id = channel.guild.id
                 
-                # Quick disconnect check - don't wait if already clean
+                # Disconnect if already connected
                 if guild_id in self._voice_clients:
                     try:
-                        voice_client = self._voice_clients[guild_id]
-                        if voice_client.is_connected():
-                            await voice_client.disconnect(force=True)
-                        del self._voice_clients[guild_id]
-                        await asyncio.sleep(2)  # Reduced wait time
+                        await self._voice_clients[guild_id].disconnect()
+                        await asyncio.sleep(5)  # Wait longer for disconnect to complete
                     except Exception as e:
                         log_error(e, "disconnect_old_client")
                         self.health_monitor.record_error(e, "disconnect_old_client")
                     
-                # Connect to voice channel with timeout
+                # Connect to voice channel
                 log_connection_attempt(channel.name, attempt + 1, max_retries)
                 t1 = time.time()
-                
-                # Use timeout for connection to prevent hanging
-                voice_client = await asyncio.wait_for(
-                    channel.connect(timeout=10.0), 
-                    timeout=15.0
-                )
+                voice_client = await channel.connect()
                 
                 t2 = time.time()
                 log_performance("voice_connect", t2-t1)
@@ -392,11 +364,11 @@ class QuranBot(discord.Client):
                 log_connection_success(channel.name, channel.guild.name)
                 self.health_monitor.record_reconnection()
                 
-                # Start playback immediately after connection
+                # Start playbook in background task
                 asyncio.create_task(self.play_quran_files(voice_client, channel))
                 break
                 
-            except (discord.ClientException, asyncio.TimeoutError) as e:
+            except discord.ClientException as e:
                 if "Already connected to a voice channel" in str(e):
                     # Already connected, just start playback
                     guild_id = channel.guild.id
@@ -408,9 +380,9 @@ class QuranBot(discord.Client):
                     log_connection_failure(channel.name, e, attempt + 1)
                     self.health_monitor.record_error(e, "voice_connection")
             
-            # Shorter retry delay for faster reconnection
+            # Exponential backoff with longer delays for 4006 errors
             if attempt < max_retries - 1:
-                delay = retry_delay * (attempt + 1)  # Linear backoff: 15s, 30s
+                delay = min(retry_delay * (3 ** attempt), 300)  # Cap at 5 minutes, use 3x multiplier
                 logger.info(f"Retrying connection in {delay} seconds...", 
                            extra={'event': 'RETRY', 'attempt': attempt + 1, 'delay': delay})
                 await asyncio.sleep(delay)
