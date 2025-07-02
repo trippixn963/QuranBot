@@ -171,12 +171,13 @@ for handler in logger.handlers[:]:
 class SafeFormatter(logging.Formatter):
     def format(self, record):
         # Ensure extra field exists
-        if not hasattr(record, 'extra') or record.extra is None:
-            record.extra = ''
+        extra_value = getattr(record, 'extra', None)
+        if extra_value is None:
+            setattr(record, 'extra', '')
         else:
             # If extra is a dict, convert to string
-            if isinstance(record.extra, dict):
-                record.extra = str(record.extra)
+            if isinstance(extra_value, dict):
+                setattr(record, 'extra', str(extra_value))
         return super().format(record)
 
 file_formatter = SafeFormatter(
