@@ -126,11 +126,13 @@ def is_in_voice_channel(interaction: discord.Interaction) -> bool:
         return False
 
 class SurahSelect(Select):
-    def __init__(self, bot):
+    def __init__(self, bot, page=0):
         from utils.surah_mapper import get_surah_display_name
         current_reciter = getattr(bot, 'current_reciter', None)
         audio_files = bot.get_audio_files() if current_reciter else []
-        surah_options = []
+        
+        # Get all available surahs
+        all_surahs = []
         seen = set()
         for file in audio_files:
             name = os.path.basename(file)
@@ -141,11 +143,36 @@ class SurahSelect(Select):
                     try:
                         surah_num_int = int(surah_num)
                         surah_name = get_surah_display_name(surah_num_int)
-                        surah_options.append(discord.SelectOption(label=f"{surah_num.zfill(3)} - {surah_name}", value=surah_num))
+                        all_surahs.append((surah_num_int, surah_num, surah_name))
                     except Exception:
                         continue
-        super().__init__(placeholder="Select Surah...", min_values=1, max_values=1, options=surah_options[:25], custom_id="select_surah")
+        
+        # Sort by surah number
+        all_surahs.sort(key=lambda x: x[0])
+        
+        # Calculate pagination
+        items_per_page = 25
+        total_pages = (len(all_surahs) + items_per_page - 1) // items_per_page
+        start_idx = page * items_per_page
+        end_idx = min(start_idx + items_per_page, len(all_surahs))
+        
+        # Create options for current page
+        surah_options = []
+        for surah_num_int, surah_num, surah_name in all_surahs[start_idx:end_idx]:
+            surah_options.append(discord.SelectOption(
+                label=f"{surah_num.zfill(3)} - {surah_name}", 
+                value=surah_num,
+                description=f"Surah {surah_num_int}"
+            ))
+        
+        # Create placeholder with page info
+        placeholder = f"Select Surah... (Page {page + 1}/{total_pages})"
+        
+        super().__init__(placeholder=placeholder, min_values=1, max_values=1, options=surah_options, custom_id=f"select_surah_page_{page}")
         self.bot = bot
+        self.page = page
+        self.total_pages = total_pages
+        self.all_surahs = all_surahs
     async def callback(self, interaction: discord.Interaction):
         # Intensive logging for surah selection
         log_operation("surah", "INFO", {
@@ -372,10 +399,179 @@ class ControlPanelView(View):
     def __init__(self, bot):
         super().__init__(timeout=None)
         self.bot = bot
-        self.add_item(SurahSelect(bot))
+        self.current_surah_page = 0
+        self.surah_select = SurahSelect(bot, self.current_surah_page)
+        self.add_item(self.surah_select)
         self.add_item(ReciterSelect(bot))
     
-    @discord.ui.button(label="⏮️ Previous", style=discord.ButtonStyle.blurple, custom_id="previous")
+    def update_surah_select(self):
+        """Update the surah select dropdown with current page"""
+        # Remove old surah select
+        for item in self.children[:]:
+            if isinstance(item, SurahSelect):
+                self.remove_item(item)
+                break
+        
+        # Create new surah select for current page
+        self.surah_select = SurahSelect(self.bot, self.current_surah_page)
+        
+        # Find the position of the reciter select to insert surah select before it
+        reciter_index = None
+        for i, item in enumerate(self.children):
+            if isinstance(item, ReciterSelect):
+                reciter_index = i
+                break
+        
+        # Insert surah select at the beginning (before reciter)
+        if reciter_index is not None:
+            self.children.insert(0, self.surah_select)
+        else:
+            self.add_item(self.surah_select)
+    
+    # Row 1: Surah & Reciter Selection (Main Controls)
+    # Row 2: Page Navigation
+    @discord.ui.button(label="◀️ Previous Page", style=discord.ButtonStyle.secondary, custom_id="surah_prev_page", row=2)
+    async def surah_prev_page(self, interaction: discord.Interaction, button: Button):
+        if not is_in_voice_channel(interaction):
+            await interaction.response.send_message("❌ You must be in the voice channel to use this!", ephemeral=True)
+            return
+        
+        if self.current_surah_page > 0:
+            self.current_surah_page -= 1
+            
+            # Create a new view with the updated page
+            new_view = ControlPanelView(self.bot)
+            new_view.current_surah_page = self.current_surah_page
+            
+            # Update the surah select to the new page
+            for item in new_view.children[:]:
+                if isinstance(item, SurahSelect):
+                    new_view.remove_item(item)
+                    break
+            new_view.add_item(SurahSelect(self.bot, self.current_surah_page))
+            
+            # Update the message with new view
+            embed = interaction.message.embeds[0] if interaction.message and interaction.message.embeds else None
+            await interaction.response.edit_message(embed=embed, view=new_view)
+            
+            log_operation("page", "INFO", {
+                "user_id": interaction.user.id,
+                "user_name": interaction.user.name,
+                "action": "surah_prev_page",
+                "new_page": self.current_surah_page + 1,
+                "total_pages": SurahSelect(self.bot, self.current_surah_page).total_pages
+            })
+        else:
+            await interaction.response.send_message("⚠️ Already on the first page.", ephemeral=True)
+    
+    @discord.ui.button(label="Next Page ▶️", style=discord.ButtonStyle.secondary, custom_id="surah_next_page", row=2)
+    async def surah_next_page(self, interaction: discord.Interaction, button: Button):
+        if not is_in_voice_channel(interaction):
+            await interaction.response.send_message("❌ You must be in the voice channel to use this!", ephemeral=True)
+            return
+        
+        if self.current_surah_page < self.surah_select.total_pages - 1:
+            self.current_surah_page += 1
+            
+            # Create a new view with the updated page
+            new_view = ControlPanelView(self.bot)
+            new_view.current_surah_page = self.current_surah_page
+            
+            # Update the surah select to the new page
+            for item in new_view.children[:]:
+                if isinstance(item, SurahSelect):
+                    new_view.remove_item(item)
+                    break
+            new_view.add_item(SurahSelect(self.bot, self.current_surah_page))
+            
+            # Update the message with new view
+            embed = interaction.message.embeds[0] if interaction.message and interaction.message.embeds else None
+            await interaction.response.edit_message(embed=embed, view=new_view)
+            
+            log_operation("page", "INFO", {
+                "user_id": interaction.user.id,
+                "user_name": interaction.user.name,
+                "action": "surah_next_page", 
+                "new_page": self.current_surah_page + 1,
+                "total_pages": SurahSelect(self.bot, self.current_surah_page).total_pages
+            })
+        else:
+            await interaction.response.send_message("⚠️ Already on the last page.", ephemeral=True)
+    
+    @discord.ui.button(label="📋 Credits", style=discord.ButtonStyle.primary, custom_id="credits", row=2)
+    async def credits_button(self, interaction: discord.Interaction, button: Button):
+        # Intensive logging for credits button
+        channel_name = getattr(interaction.channel, 'name', 'DM') if interaction.channel else None
+        
+        log_operation("credits", "INFO", {
+            "user_id": interaction.user.id,
+            "user_name": interaction.user.name,
+            "user_display_name": interaction.user.display_name,
+            "guild_id": interaction.guild.id if interaction.guild else None,
+            "guild_name": interaction.guild.name if interaction.guild else None,
+            "channel_id": interaction.channel.id if interaction.channel else None,
+            "channel_name": channel_name,
+            "action": "credits_button_clicked",
+            "timestamp": datetime.now().isoformat()
+        })
+        
+        # Create credits embed
+        credits_embed = discord.Embed(
+            title="📋 QuranBot Credits & Information",
+            description="**Thank you for using QuranBot!** 🎵\n\nThis bot provides 24/7 Quran streaming with multiple reciters and interactive controls.",
+            color=discord.Color.blue()
+        )
+        
+        # Bot Information
+        credits_embed.add_field(
+            name="🤖 **Bot Information**",
+            value=f"• **Name**: {interaction.client.user.name}\n• **Version**: 2.0.0\n• **Status**: Online ✅\n• **Uptime**: {self.bot.health_monitor.get_uptime() if hasattr(self.bot, 'health_monitor') else 'Unknown'}",
+            inline=False
+        )
+        
+        # Features
+        credits_embed.add_field(
+            name="✨ **Features**",
+            value="• **Multi-Reciter Support** - Switch between different reciters\n• **114 Surahs** - Complete Quran with all surahs\n• **Interactive Controls** - Easy navigation and playback control\n• **24/7 Streaming** - Continuous Quran recitation\n• **Voice Channel Integration** - Seamless Discord integration",
+            inline=False
+        )
+        
+        # Current Status
+        current_reciter = self.bot.get_current_reciter()
+        current_song = self.bot.state_manager.get_current_song_name() if hasattr(self.bot, 'state_manager') else "Unknown"
+        current_surah = current_song.split('.')[0] if current_song and '.' in current_song else "Unknown"
+        
+        credits_embed.add_field(
+            name="📊 **Current Status**",
+            value=f"• **Active Reciter**: {current_reciter}\n• **Current Surah**: {current_surah}\n• **Streaming**: {'Yes' if self.bot.is_streaming else 'No'}\n• **Loop Mode**: {'Enabled' if self.bot.loop_enabled else 'Disabled'}\n• **Shuffle Mode**: {'Enabled' if self.bot.shuffle_enabled else 'Disabled'}",
+            inline=False
+        )
+        
+        # Technical Information
+        credits_embed.add_field(
+            name="🔧 **Technical Details**",
+            value="• **Framework**: Discord.py\n• **Audio Engine**: FFmpeg\n• **Audio Quality**: 128k MP3\n• **Auto-Reconnect**: Enabled\n• **Health Monitoring**: Active",
+            inline=False
+        )
+        
+        # Footer
+        credits_embed.set_footer(text="QuranBot v2.0.0 • Made with ❤️ for the Muslim community")
+        credits_embed.timestamp = discord.utils.utcnow()
+        
+        # Send as ephemeral message
+        await interaction.response.send_message(embed=credits_embed, ephemeral=True)
+        
+        log_operation("credits", "INFO", {
+            "user_id": interaction.user.id,
+            "user_name": interaction.user.name,
+            "action": "credits_displayed",
+            "current_reciter": current_reciter,
+            "current_surah": current_surah,
+            "bot_status": "online"
+        })
+    
+    # Row 3: Playback Controls
+    @discord.ui.button(label="⏮️ Previous", style=discord.ButtonStyle.danger, custom_id="previous", row=3)
     async def previous_button(self, interaction: discord.Interaction, button: Button):
         # Intensive logging for previous button
         channel_name = getattr(interaction.channel, 'name', 'DM') if interaction.channel else None
@@ -474,7 +670,7 @@ class ControlPanelView(View):
             })
             await interaction.response.send_message("⚠️ Already at the first surah.", ephemeral=True)
     
-    @discord.ui.button(label="🔁 Loop", style=discord.ButtonStyle.secondary, custom_id="loop")
+    @discord.ui.button(label="🔁 Loop", style=discord.ButtonStyle.secondary, custom_id="loop", row=3)
     async def loop_button(self, interaction: discord.Interaction, button: Button):
         # Intensive logging for loop button
         channel_name = getattr(interaction.channel, 'name', 'DM') if interaction.channel else None
@@ -524,7 +720,7 @@ class ControlPanelView(View):
         
         await interaction.response.send_message(status_message, ephemeral=True)
     
-    @discord.ui.button(label="🔀 Shuffle", style=discord.ButtonStyle.secondary, custom_id="shuffle")
+    @discord.ui.button(label="🔀 Shuffle", style=discord.ButtonStyle.secondary, custom_id="shuffle", row=3)
     async def shuffle_button(self, interaction: discord.Interaction, button: Button):
         # Intensive logging for shuffle button
         channel_name = getattr(interaction.channel, 'name', 'DM') if interaction.channel else None
@@ -574,7 +770,7 @@ class ControlPanelView(View):
         
         await interaction.response.send_message(status_message, ephemeral=True)
     
-    @discord.ui.button(label="⏭️ Next", style=discord.ButtonStyle.green, custom_id="skip")
+    @discord.ui.button(label="⏭️ Next", style=discord.ButtonStyle.success, custom_id="skip", row=3)
     async def skip_button(self, interaction: discord.Interaction, button: Button):
         # Intensive logging for next button
         channel_name = getattr(interaction.channel, 'name', 'DM') if interaction.channel else None
@@ -675,122 +871,7 @@ class ControlPanelView(View):
             })
             await interaction.response.send_message("⚠️ Already at the last surah.", ephemeral=True)
     
-    @discord.ui.button(label="📋 Credits", style=discord.ButtonStyle.gray, custom_id="credits")
-    async def credits_button(self, interaction: discord.Interaction, button: Button):
-        # Intensive logging for credits button
-        channel_name = getattr(interaction.channel, 'name', 'DM') if interaction.channel else None
-        
-        log_operation("credits", "INFO", {
-            "user_id": interaction.user.id,
-            "user_name": interaction.user.name,
-            "user_display_name": interaction.user.display_name,
-            "guild_id": interaction.guild.id if interaction.guild else None,
-            "guild_name": interaction.guild.name if interaction.guild else None,
-            "channel_id": interaction.channel.id if interaction.channel else None,
-            "channel_name": channel_name,
-            "action": "credits_button_clicked",
-            "timestamp": datetime.now().isoformat()
-        })
-        
-        # Get available reciters
-        reciters = self.bot.get_available_reciters()
-        reciters_text = "\n".join([f"• {reciter}" for reciter in reciters])
-        
-        # Create credits embed
-        embed = discord.Embed(
-            title="🕌 QuranBot Credits & Information",
-            description="A 24/7 Quran streaming bot with multiple reciters and interactive controls.",
-            color=discord.Color.blue()
-        )
-        
-        # Bot Information
-        embed.add_field(
-            name="🤖 Bot Information",
-            value=f"**Name:** Syrian Quran\n"
-                  f"**Version:** 2.0.0\n"
-                  f"**Status:** 24/7 Streaming\n"
-                  f"**Current Reciter:** {getattr(self.bot, 'current_reciter', 'Unknown')}\n"
-                  f"**Total Surahs:** 114",
-            inline=False
-        )
-        
-        # Creator Information
-        embed.add_field(
-            name="👨‍💻 Creator",
-            value="**Developer:** <@259725211664908288>\n"
-                  "**Role:** Full-Stack Developer & Bot Creator",
-            inline=False
-        )
-        
-        # Available Reciters
-        embed.add_field(
-            name=f"🎤 Available Reciters ({len(reciters)})",
-            value=reciters_text if reciters else "No reciters available",
-            inline=False
-        )
-        
-        # Technologies Used
-        embed.add_field(
-            name="🛠️ Technologies Used",
-            value="**Core Framework:** Discord.py\n"
-                  "**Audio Processing:** FFmpeg\n"
-                  "**Language:** Python 3.13\n"
-                  "**Database:** SQLite (State Management)\n"
-                  "**Logging:** Enhanced Structured Logging\n"
-                  "**Architecture:** Service-Oriented Design",
-            inline=False
-        )
-        
-        # Features
-        embed.add_field(
-            name="✨ Features",
-            value="• 24/7 Continuous Quran Streaming\n"
-                  "• Multiple Reciter Support\n"
-                  "• Interactive Control Panel\n"
-                  "• Dynamic Rich Presence",
-            inline=False
-        )
-        
-        # Beta Testing Warning
-        embed.add_field(
-            name="⚠️ Beta Testing Notice",
-            value="**This bot is currently in beta testing.**\n\n"
-                  "If you encounter any bugs or issues, please DM <@259725211664908288> to report them.\n\n"
-                  "Your feedback helps improve the bot!",
-            inline=False
-        )
-        
-        embed.set_footer(text="Made with ❤️ for the Muslim Ummah • QuranBot v2.0.0")
-        embed.timestamp = discord.utils.utcnow()
-        
-        # Set creator's Discord profile picture
-        try:
-            creator_user = await self.bot.fetch_user(259725211664908288)
-            if creator_user and creator_user.avatar:
-                embed.set_thumbnail(url=creator_user.avatar.url)
-        except Exception as e:
-            log_operation("credits", "WARNING", {
-                "user_id": interaction.user.id,
-                "user_name": interaction.user.name,
-                "action": "creator_avatar_fetch_failed",
-                "error": str(e)
-            })
-            # Fallback to guild icon if creator avatar fails
-            try:
-                if interaction.guild and interaction.guild.icon:
-                    embed.set_thumbnail(url=interaction.guild.icon.url)
-            except:
-                pass
-        
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        
-        log_operation("credits", "INFO", {
-            "user_id": interaction.user.id,
-            "user_name": interaction.user.name,
-            "action": "credits_displayed",
-            "reciters_count": len(reciters),
-            "current_reciter": getattr(self.bot, 'current_reciter', 'Unknown')
-        })
+
 
 async def setup(bot):
     """Setup the control panel and create the panel with enhanced logging."""
@@ -910,19 +991,11 @@ async def setup(bot):
                 # Create the control panel embed
                 embed = discord.Embed(
                     title="🎵 QuranBot Control Panel",
-                    description="Use the controls below to interact with QuranBot!\n",
+                    description="Welcome to QuranBot! Use the controls below to manage your Quran streaming experience.\n\n\n**📖 Surah Selection**\nChoose any surah from all 114 surahs using the dropdown above. Navigate through pages with the buttons below.\n\n\n**🎤 Reciter Selection**\nSwitch between different reciters while maintaining your current surah position.\n\n\n**Playback Controls**\n• ⏮️ Previous - Go to previous surah\n• ⏭️ Next - Go to next surah\n• 🔁 Loop - Toggle repeat mode\n• 🔀 Shuffle - Toggle random playback\n\n\n**Information**\n• 📋 Credits - View bot information and credits\n\n\n**⚠️ Beta Testing Notice**\nThis bot is currently in beta testing. If you encounter any bugs or issues, please DM <@259725211664908288> to report them. Your feedback helps improve the bot!",
                     color=discord.Color.green()
                 )
                 
-                embed.add_field(name="📖 Select Surah", value="Jump to any surah available for the current reciter.\n", inline=False)
-                embed.add_field(name="🎤 Select Reciter", value="Switch reciter and continue from the current surah.\n", inline=False)
-                embed.add_field(name="⏮️ Previous", value="Play the previous surah.\n", inline=True)
-                embed.add_field(name="🔁 Loop", value="Toggle loop mode.\n", inline=True)
-                embed.add_field(name="🔀 Shuffle", value="Toggle shuffle mode.\n", inline=True)
-                embed.add_field(name="⏭️ Next", value="Play the next surah.\n", inline=True)
-                embed.add_field(name="📋 Credits", value="View bot info and credits.\n", inline=True)
-                
-                embed.set_footer(text="QuranBot Control Panel • Only works for voice channel users")
+                embed.set_footer(text="QuranBot v2.0.0 • Only works for voice channel users")
                 embed.timestamp = discord.utils.utcnow()
                 
                 # Send the panel with buttons

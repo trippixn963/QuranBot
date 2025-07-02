@@ -39,7 +39,7 @@ class QuranBot(discord.Client):
         intents = discord.Intents.default()
         intents.message_content = True
         intents.voice_states = True
-        
+
         super().__init__(intents=intents)
         
         # Initialize command tree for slash commands
@@ -49,7 +49,10 @@ class QuranBot(discord.Client):
         self._voice_clients: Dict[int, discord.VoiceClient] = {}
         self.is_streaming = False
         self.current_audio_file: Optional[str] = None
-        self.current_reciter: str = Config.get_current_reciter()
+        # Store the folder name internally, but use display name for UI
+        # Get the default reciter display name and convert to folder name
+        default_reciter_display = Config.DEFAULT_RECITER
+        self.current_reciter: str = Config.get_folder_name_from_display(default_reciter_display)
         self.connection_failures = 0  # Track connection failures
         self.max_connection_failures = 5  # Stop trying after 5 failures
         self.start_time = time.time()  # For uptime calculation
@@ -136,42 +139,49 @@ class QuranBot(discord.Client):
                 (discord.ActivityType.listening, "📖 Quran 24/7"),
                 (discord.ActivityType.playing, "🕋 Surah Al-Fatiha"),
                 (discord.ActivityType.watching, "🕌 for your requests"),
-                (discord.ActivityType.listening, "🌙 beautiful recitation"),
-                (discord.ActivityType.playing, "🕊️ Quranic verses"),
-                (discord.ActivityType.watching, "✨ over the Ummah"),
-                (discord.ActivityType.listening, "📖 Reciting the Quran"),
-                (discord.ActivityType.playing, "🕌 Surah Al-Baqarah"),
-                (discord.ActivityType.watching, "🌙 the night"),
-                (discord.ActivityType.listening, "✨ Peaceful verses"),
-                (discord.ActivityType.playing, "🕋 Holy Quran"),
-                (discord.ActivityType.watching, "🕊️ the believers")
+                (discord.ActivityType.listening, "🎧 Beautiful Recitations"),
+                (discord.ActivityType.playing, "📿 Dhikr & Remembrance")
             ]
-            self.presence_cycle = itertools.cycle(self.presence_messages)
-            self.presence_task = self.loop.create_task(self.cycle_presence())
+            self.current_presence_index = 0
+            self.presence_cycle = self._presence_cycle()
+            await self.set_presence()
+            
+            # Start presence cycling
+            self.presence_task = asyncio.create_task(self.cycle_presence())
+            
+            # Initialize health monitoring
+            self.health_reporter = HealthReporter(self, self.health_monitor, Config.LOGS_CHANNEL_ID)
+            await self.health_reporter.start()
+            
+            # Initialize state manager
+            self.state_manager = StateManager()
+            
+            # Find and join target voice channel
             t2 = time.time()
-            log_performance("set_presence", t2-t1)
+            logger.info(f"Auto voice connect setting: {Config.AUTO_VOICE_CONNECT}", 
+                       extra={'event': 'CONFIG_CHECK', 'auto_voice_connect': Config.AUTO_VOICE_CONNECT})
+            await self.find_and_join_channel()
+            if Config.AUTO_VOICE_CONNECT:
+                logger.info("Bot ready - voice connection enabled", extra={'event': 'READY'})
+            else:
+                logger.info("Bot ready - voice connection disabled", extra={'event': 'READY'})
+            t3 = time.time()
+            log_performance("find_and_join_channel", t3-t2)
             
             # Log health status
             logger.info("Bot health monitoring initialized", extra={'event': 'HEALTH'})
+            logger.info("DEBUG: About to initialize state management", extra={'event': 'DEBUG_STATE_INIT'})
             
             # Initialize state management
             self.state_manager.increment_bot_start_count()
             start_count = self.state_manager.get_bot_start_count()
             log_state_load("bot_start_count", {"start_count": start_count})
-            t3 = time.time()
-            log_performance("state_manager_init", t3-t2)
-            
-            # Start health reporting
-            self.health_reporter = HealthReporter(self, self.health_monitor, Config.LOGS_CHANNEL_ID)
-            await self.health_reporter.start()
-            logger.info("Health reporting started", extra={'event': 'HEALTH'})
             t4 = time.time()
-            log_performance("health_reporter_start", t4-t3)
+            log_performance("state_manager_init", t4-t3)
             
-            # Find and join target channel
-            await self.find_and_join_channel()
+            logger.info("Health reporting started", extra={'event': 'HEALTH'})
             t5 = time.time()
-            log_performance("find_and_join_channel", t5-t4)
+            log_performance("health_reporter_start", t5-t4)
         
     async def find_and_join_channel(self):
         """Find the target channel and join it."""
@@ -190,8 +200,13 @@ class QuranBot(discord.Client):
         
         t1 = time.time()
         log_performance("guild_channel_search", t1-t0)
+        
         if target_channel:
-            await self.start_stream(target_channel)
+            if Config.AUTO_VOICE_CONNECT:
+                await self.start_stream(target_channel)
+            else:
+                logger.info("Automatic voice connection disabled - bot will start without voice connection", 
+                           extra={'event': 'VOICE_DISABLED'})
         else:
             log_error(Exception("Channel not found"), "find_and_join_channel", 
                      additional_data={"channel_id": Config.TARGET_CHANNEL_ID})
@@ -295,8 +310,8 @@ class QuranBot(discord.Client):
     async def start_stream(self, channel: discord.VoiceChannel):
         """Start streaming Quran to the voice channel with improved error handling."""
         t0 = time.time()
-        max_retries = 5  # Increased retries
-        retry_delay = 3   # Start with shorter delay
+        max_retries = 3  # Reduced retries to prevent spam
+        retry_delay = 30   # Start with longer delay
         
         for attempt in range(max_retries):
             try:
@@ -306,11 +321,11 @@ class QuranBot(discord.Client):
                 if guild_id in self._voice_clients:
                     try:
                         await self._voice_clients[guild_id].disconnect()
-                        await asyncio.sleep(2)  # Wait for disconnect to complete
+                        await asyncio.sleep(5)  # Wait longer for disconnect to complete
                     except Exception as e:
                         log_error(e, "disconnect_old_client")
                         self.health_monitor.record_error(e, "disconnect_old_client")
-                        
+                    
                 # Connect to voice channel
                 log_connection_attempt(channel.name, attempt + 1, max_retries)
                 t1 = time.time()
@@ -325,8 +340,8 @@ class QuranBot(discord.Client):
                 log_connection_success(channel.name, channel.guild.name)
                 self.health_monitor.record_reconnection()
                 
-                # Start playback
-                await self.play_quran_files(voice_client, channel)
+                # Start playback in background task
+                asyncio.create_task(self.play_quran_files(voice_client, channel))
                 break
                 
             except discord.ClientException as e:
@@ -335,19 +350,15 @@ class QuranBot(discord.Client):
                     guild_id = channel.guild.id
                     if guild_id in self._voice_clients:
                         voice_client = self._voice_clients[guild_id]
-                        await self.play_quran_files(voice_client, channel)
+                        asyncio.create_task(self.play_quran_files(voice_client, channel))
                         break
                 else:
                     log_connection_failure(channel.name, e, attempt + 1)
                     self.health_monitor.record_error(e, "voice_connection")
-                    
-            except Exception as e:
-                log_connection_failure(channel.name, e, attempt + 1)
-                self.health_monitor.record_error(e, "voice_connection")
-                
-            # Exponential backoff with cap
+            
+            # Exponential backoff with longer delays for 4006 errors
             if attempt < max_retries - 1:
-                delay = min(retry_delay * (2 ** attempt), 30)  # Cap at 30 seconds
+                delay = min(retry_delay * (3 ** attempt), 300)  # Cap at 5 minutes, use 3x multiplier
                 logger.info(f"Retrying connection in {delay} seconds...", 
                            extra={'event': 'RETRY', 'attempt': attempt + 1, 'delay': delay})
                 await asyncio.sleep(delay)
@@ -364,19 +375,29 @@ class QuranBot(discord.Client):
         return Config.get_available_reciters()
     
     def get_current_reciter(self) -> str:
-        """Get the current active reciter."""
-        return self.current_reciter
+        """Get the current active reciter display name."""
+        return Config.get_reciter_display_name(self.current_reciter)
     
     def set_current_reciter(self, reciter_name: str) -> bool:
         """Set the current reciter and validate it exists."""
-        available_reciters = self.get_available_reciters()
-        if reciter_name in available_reciters:
-            self.current_reciter = reciter_name
-            logger.info(f"Switched to reciter: {reciter_name}", extra={'event': 'RECITER_CHANGE', 'reciter': reciter_name})
-            return True
-        else:
-            logger.warning(f"Reciter not found: {reciter_name}", extra={'event': 'RECITER_NOT_FOUND', 'reciter': reciter_name})
-            return False
+        # Convert display name to folder name if needed
+        folder_name = Config.get_folder_name_from_display(reciter_name)
+        
+        # Check if the folder exists
+        reciter_path = os.path.join(Config.AUDIO_FOLDER, folder_name)
+        if os.path.exists(reciter_path) and os.path.isdir(reciter_path):
+            # Check if the folder contains MP3 files
+            has_mp3 = any(f.lower().endswith('.mp3') for f in os.listdir(reciter_path))
+            if has_mp3:
+                self.current_reciter = folder_name  # Store the folder name
+                self.original_playlist = []  # Reset playlist cache on reciter switch
+                logger.info(f"Switched to reciter: {reciter_name} (folder: {folder_name})", 
+                           extra={'event': 'RECITER_CHANGE', 'reciter': reciter_name, 'folder': folder_name})
+                return True
+        
+        logger.warning(f"Reciter not found: {reciter_name} (folder: {folder_name})", 
+                      extra={'event': 'RECITER_NOT_FOUND', 'reciter': reciter_name, 'folder': folder_name})
+        return False
     
     def toggle_loop(self) -> bool:
         """Toggle loop mode for current surah."""
@@ -637,13 +658,13 @@ class QuranBot(discord.Client):
                         log_error(e, f"playing {mp3_file}")
                         self.health_monitor.record_error(e, f"audio_playback_{file_name}")
                         continue
-                
+                        
                 # Reset to beginning for next cycle (unless loop mode is enabled)
                 if not self.loop_enabled:
                     current_index = 0
                     self.state_manager.set_current_song_index(0)
-                    if self.is_streaming:
-                        await asyncio.sleep(2)
+                if self.is_streaming:
+                    await asyncio.sleep(2)
         except Exception as e:
             log_error(e, "play_quran_files")
             self.is_streaming = False
@@ -737,6 +758,21 @@ class QuranBot(discord.Client):
         finally:
             # Force exit after cleanup
             sys.exit(0)
+
+    def _presence_cycle(self):
+        """Generator for cycling through presence messages."""
+        while True:
+            for activity_type, message in self.presence_messages:
+                yield activity_type, message
+
+    async def set_presence(self):
+        """Set initial presence for the bot."""
+        try:
+            activity_type, message = next(self.presence_cycle)
+            await self.change_presence(activity=discord.Activity(type=activity_type, name=message))
+            logger.debug(f"Set initial presence to: {message}")
+        except Exception as e:
+            log_error(e, "set_presence")
 
 def main():
     """Main entry point for the Quran Bot."""

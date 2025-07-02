@@ -11,7 +11,7 @@ from typing import Dict, Any, Optional
 class StateManager:
     """Manages persistent state for the Quran Bot."""
     
-    def __init__(self, state_file: str = "bot_state.json"):
+    def __init__(self, state_file: str = "data/bot_state.json"):
         """Initialize the state manager."""
         self.state_file = state_file
         self.state = self._load_state()

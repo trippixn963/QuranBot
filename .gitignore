@@ -1,8 +1,12 @@
-# Virtual Environment
-.venv/
-venv/
-env/
-ENV/
+# =============================================================================
+# QuranBot - Git Ignore File
+# =============================================================================
+
+# Environment Variables
+.env
+.env.local
+.env.production
+.env.staging
 
 # Python
 __pycache__/
@@ -22,31 +26,76 @@ parts/
 sdist/
 var/
 wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
 
-# Logs
-*.log
-logs/
-quran_bot.log
+# Virtual Environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
 
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# IDE
+# IDE and Editor Files
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+.DS_Store
+Thumbs.db
 
-# OS
+# Logs
+logs/
+*.log
+*.log.*
+
+# Audio Files (Large files - exclude from git)
+audio/
+*.mp3
+*.wav
+*.flac
+*.m4a
+*.ogg
+
+# Bot State and Configuration
+# Note: bot_state.json and custom_surah_mapping.json are now in data/ folder
+# and should be tracked in git for open source distribution
+
+# Temporary Files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Backup Files
+backup/
+*.bak
+*.backup
+
+# Deployment Files
+deploy_temp/
+
+# Test Files
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# Documentation Build
+docs/_build/
+docs/build/
+
+# OS Generated Files
 .DS_Store
 .DS_Store?
 ._*
@@ -55,24 +104,52 @@ quran_bot.log
 ehthumbs.db
 Thumbs.db
 
-# Discord Bot specific
-config.py
-token.txt
-*.token
+# Windows
+*.lnk
 
-# Temporary files
-*.tmp
-*.temp
-temp/
-tmp/
+# Linux
+*~
 
-# Audio files (if any are downloaded)
-*.mp3
-*.wav
-*.ogg
-*.flac
+# macOS
+.AppleDouble
+.LSOverride
+Icon
+._*
 
-# Database files
+# SSH Keys (if accidentally committed)
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+
+# Database Files
 *.db
 *.sqlite
-*.sqlite3 
+*.sqlite3
+
+# Cache Directories
+.cache/
+.pytest_cache/
+.mypy_cache/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# pyup
+safety.txt
+
+# bandit
+.bandit
+
+# Local Development
+local_config.py
+test_config.py 

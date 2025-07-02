@@ -1,19 +1,51 @@
+# =============================================================================
 # Discord Quran Bot - Python Dependencies
 # Professional 24/7 Quran streaming bot
+# =============================================================================
 
-# Discord API wrapper
+# Core Discord API
 discord.py>=2.3.0
 
-# Environment configuration
+# Environment and Configuration
 python-dotenv>=1.0.0
 
-# Audio processing (if needed for future features)
-# PyNaCl>=1.5.0
-
-# System monitoring
+# System Monitoring and Performance
 psutil>=5.9.0
 
-# Development dependencies (optional)
+# Console Output and Logging
+colorama>=0.4.6
+
+# Audio Processing
+PyNaCl>=1.5.0
+
+# =============================================================================
+# Development Dependencies (Optional)
+# Uncomment these for development work
+# =============================================================================
+
+# Testing Framework
 # pytest>=7.0.0
+# pytest-asyncio>=0.21.0
+
+# Code Quality and Formatting
 # black>=22.0.0
-# flake8>=5.0.0 
+# flake8>=5.0.0
+# isort>=5.12.0
+
+# Type Checking
+# mypy>=1.0.0
+
+# Documentation
+# sphinx>=5.0.0
+# sphinx-rtd-theme>=1.0.0
+
+# =============================================================================
+# Production Dependencies
+# These are required for VPS deployment
+# =============================================================================
+
+# System Dependencies (install via package manager):
+# - ffmpeg (audio processing)
+# - python3
+# - python3-pip
+# - python3-venv 

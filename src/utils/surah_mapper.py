@@ -3,6 +3,10 @@ Surah mapping utility for the Quran Bot.
 Maps surah numbers to their names and provides utility functions.
 """
 
+import json
+import os
+from typing import Optional, Dict, Any
+
 # Complete mapping of surah numbers to their names
 SURAH_NAMES = {
     1: ("Al-Fatiha", "الفاتحة", "The Opening"),
@@ -121,6 +125,29 @@ SURAH_NAMES = {
     114: ("An-Nas", "الناس", "The Mankind")
 }
 
+# Custom mapping file path
+CUSTOM_MAPPING_FILE = "data/custom_surah_mapping.json"
+
+def load_custom_mapping() -> Dict[str, int]:
+    """Load custom surah mapping from file."""
+    if os.path.exists(CUSTOM_MAPPING_FILE):
+        try:
+            with open(CUSTOM_MAPPING_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading custom mapping: {e}")
+    return {}
+
+def save_custom_mapping(mapping: Dict[str, int]) -> bool:
+    """Save custom surah mapping to file."""
+    try:
+        with open(CUSTOM_MAPPING_FILE, 'w', encoding='utf-8') as f:
+            json.dump(mapping, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        print(f"Error saving custom mapping: {e}")
+        return False
+
 def get_surah_info(surah_number: int) -> dict:
     """Get information about a surah by its number."""
     if surah_number not in SURAH_NAMES:
@@ -140,10 +167,34 @@ def get_surah_info(surah_number: int) -> dict:
     }
 
 def get_surah_from_filename(filename: str) -> dict:
-    """Extract surah information from a filename like '001.mp3'."""
+    """Extract surah information from a filename like '001.mp3', '1.mp3', '10.mp3', etc."""
     try:
-        # Extract number from filename (e.g., "001.mp3" -> 1)
-        surah_number = int(filename.split('.')[0])
+        # Check custom mapping first
+        custom_mapping = load_custom_mapping()
+        if filename in custom_mapping:
+            surah_number = custom_mapping[filename]
+            return get_surah_info(surah_number)
+        
+        # Handle different filename formats
+        # Remove .mp3 extension
+        name_without_ext = filename.replace('.mp3', '')
+        
+        # Try to extract number from various formats
+        if name_without_ext.isdigit():
+            # Handle: 1.mp3, 2.mp3, 10.mp3, 100.mp3, etc.
+            surah_number = int(name_without_ext)
+        elif '.' in name_without_ext:
+            # Handle: 001.mp3, 002.mp3, etc.
+            surah_number = int(name_without_ext.split('.')[0])
+        else:
+            # Try to extract any number from the filename
+            import re
+            numbers = re.findall(r'\d+', name_without_ext)
+            if numbers:
+                surah_number = int(numbers[0])
+            else:
+                raise ValueError("No number found in filename")
+        
         return get_surah_info(surah_number)
     except (ValueError, IndexError):
         return {
@@ -177,4 +228,56 @@ def get_surah_emoji(surah_number: int) -> str:
         114: "👥"  # An-Nas (The Mankind)
     }
     
-    return special_emojis.get(surah_number, "📖") 
+    return special_emojis.get(surah_number, "📖")
+
+def create_custom_mapping_template() -> Dict[str, int]:
+    """Create a template for custom surah mapping."""
+    template = {}
+    for i in range(1, 115):
+        template[f"{i:03d}.mp3"] = i
+    return template
+
+def verify_and_fix_mapping(reciter_name: str) -> Dict[str, int]:
+    """Create a verification script to help fix surah mapping."""
+    print(f"🔍 Surah Mapping Verification for {reciter_name}")
+    print("=" * 60)
+    print("This will help you create a custom mapping to fix misnamed audio files.")
+    print("For each file, enter the actual surah number (1-114) that the file contains.")
+    print("Press Enter to skip a file or use the default mapping.")
+    print()
+    
+    custom_mapping = {}
+    audio_folder = f"audio/{reciter_name}"
+    
+    if not os.path.exists(audio_folder):
+        print(f"❌ Reciter folder not found: {audio_folder}")
+        return custom_mapping
+    
+    # Get all MP3 files
+    mp3_files = [f for f in os.listdir(audio_folder) if f.lower().endswith('.mp3')]
+    mp3_files.sort()
+    
+    for filename in mp3_files:
+        current_surah = get_surah_from_filename(filename)
+        print(f"File: {filename}")
+        print(f"Current mapping: {current_surah['english_name']} (Surah {current_surah['number']})")
+        
+        user_input = input(f"Enter actual surah number (1-114) or press Enter to keep current: ").strip()
+        
+        if user_input:
+            try:
+                surah_number = int(user_input)
+                if 1 <= surah_number <= 114:
+                    custom_mapping[filename] = surah_number
+                    actual_surah = get_surah_info(surah_number)
+                    print(f"✅ Mapped {filename} to {actual_surah['english_name']}")
+                else:
+                    print(f"❌ Invalid surah number: {surah_number}")
+            except ValueError:
+                print(f"❌ Invalid input: {user_input}")
+        else:
+            print(f"⏭️  Skipped {filename}")
+        
+        print()
+    
+    return custom_mapping 
