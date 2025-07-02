@@ -215,7 +215,7 @@ def get_surah_emoji(surah_number: int) -> str:
     """Get an appropriate emoji for a surah based on its theme or name."""
     emoji_mapping = {
         1: "🤲",    # Al-Fatiha - Opening prayer
-        2: "📚",    # Al-Baqarah - The Cow (longest surah, like a book)
+        2: "🐄",    # Al-Baqarah - The Cow
         3: "👨‍👩‍👧‍👦",    # Al-Imran - Family of Imran
         4: "👨‍👩‍👧‍👦",    # An-Nisa - Women
         5: "🍽️",    # Al-Ma'idah - The Table

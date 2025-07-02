@@ -8,6 +8,7 @@ import traceback
 import logging
 from typing import Optional, Dict, Any
 from datetime import datetime
+from utils.surah_mapper import get_surah_emoji
 
 # Use the main logger from utils
 from utils.logger import logger
@@ -128,40 +129,29 @@ def is_in_voice_channel(interaction: discord.Interaction) -> bool:
 
 class SurahSelect(Select):
     def __init__(self, bot, page=0):
-        from utils.surah_mapper import get_surah_display_name
-        current_reciter = getattr(bot, 'current_reciter', None)
-        audio_files = bot.get_audio_files() if current_reciter else []
-        
-        # Get all available surahs
+        # Get all surahs with their numbers and names
         all_surahs = []
-        seen = set()
-        for file in audio_files:
-            name = os.path.basename(file)
-            if name.endswith('.mp3'):
-                surah_num = name.split('.')[0]
-                if surah_num not in seen:
-                    seen.add(surah_num)
-                    try:
-                        surah_num_int = int(surah_num)
-                        surah_name = get_surah_display_name(surah_num_int)
-                        all_surahs.append((surah_num_int, surah_num, surah_name))
-                    except Exception:
-                        continue
+        for i in range(1, 115):  # 1 to 114
+            surah_info = bot.get_surah_info(i) if hasattr(bot, 'get_surah_info') else {
+                'number': i,
+                'english_name': f'Surah {i}'
+            }
+            all_surahs.append((i, str(i).zfill(3), surah_info.get('english_name', f'Surah {i}')))
         
-        # Sort by surah number
-        all_surahs.sort(key=lambda x: x[0])
+        # Pagination: 25 surahs per page
+        surahs_per_page = 25
+        total_pages = (len(all_surahs) + surahs_per_page - 1) // surahs_per_page
+        page = min(max(0, page), total_pages - 1)  # Ensure page is within bounds
         
-        # Calculate pagination
-        items_per_page = 25
-        total_pages = (len(all_surahs) + items_per_page - 1) // items_per_page
-        start_idx = page * items_per_page
-        end_idx = min(start_idx + items_per_page, len(all_surahs))
+        start_idx = page * surahs_per_page
+        end_idx = min(start_idx + surahs_per_page, len(all_surahs))
         
         # Create options for current page
         surah_options = []
         for surah_num_int, surah_num, surah_name in all_surahs[start_idx:end_idx]:
+            emoji = get_surah_emoji(surah_num_int)
             surah_options.append(discord.SelectOption(
-                label=f"{surah_num.zfill(3)} - {surah_name}", 
+                label=f"{emoji} {surah_num.zfill(3)} - {surah_name}", 
                 value=surah_num,
                 description=f"Surah {surah_num_int}"
             ))
