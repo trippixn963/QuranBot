@@ -17,7 +17,6 @@ import colorama
 from colorama import Fore, Back, Style
 import psutil
 import asyncio
-from .log_helpers import log_function_call, log_operation
 
 # Initialize colorama for Windows
 colorama.init()
