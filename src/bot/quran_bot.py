@@ -234,21 +234,15 @@ class QuranBot(discord.Client):
                 log_disconnection(before.channel.name, "Disconnected from voice channel")
                 await self.discord_logger.log_bot_disconnected(before.channel.name, "Disconnected from voice channel")
                 self.is_streaming = False
+                self._intended_streaming = False  # Reset streaming intent on disconnect
                 self.health_monitor.set_streaming_status(False)
                 
                 # Increment failure counter
                 self.connection_failures += 1
                 
-                # SMART AUTO-RECONNECTION SYSTEM  
-                # Only reconnect if:
-                # 1. We haven't exceeded max failures
-                # 2. Bot was intentionally streaming
-                # 3. Disconnect wasn't manual
-                should_reconnect = (
-                    self.connection_failures < self.max_connection_failures and
-                    hasattr(self, '_intended_streaming') and self._intended_streaming and
-                    before.channel and before.channel.id == Config.TARGET_CHANNEL_ID
-                )
+                # SMART AUTO-RECONNECTION SYSTEM - TEMPORARILY DISABLED
+                # Disable auto-reconnection to prevent loop issues
+                should_reconnect = False  # DISABLED TO PREVENT LOOPS
                 
                 if should_reconnect:
                     # Progressive delay: 30s, 60s, 120s, 240s, 300s (max 5 min)
