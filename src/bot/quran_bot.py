@@ -1219,22 +1219,17 @@ class QuranBot(discord.Client):
             color=color,
             timestamp=discord.utils.utcnow()
         )
-        
-        # Add user avatar as thumbnail (for user logs)
-        if member and member.avatar:
-            embed.set_thumbnail(url=member.avatar.url)
-        
-        embed.add_field(name="User", value=f"<@{member.id}> ({member.display_name})", inline=True)
+        # Do NOT set a thumbnail for user logs
+        embed.add_field(name="User", value=f"<@{member.id}>", inline=True)
+        embed.add_field(name="User ID", value=str(member.id), inline=True)
         embed.add_field(name="Channel", value=channel.name, inline=True)
         embed.add_field(name="Server", value=channel.guild.name, inline=True)
-        
         if action == "left" and duration is not None:
             embed.add_field(name="Duration", value=self.format_duration(duration), inline=True)
         if action == "left" and interaction_count is not None:
             embed.add_field(name="Interactions", value=str(interaction_count), inline=True)
         if from_channel:
             embed.add_field(name="From Channel", value=from_channel.name, inline=True)
-        
         embed.set_footer(text="QuranBot Voice Activity Logger • Professional Log")
         if getattr(self, 'user', None) and getattr(self.user, 'avatar', None):
             embed.set_author(name=self.user.display_name, icon_url=self.user.avatar.url)
