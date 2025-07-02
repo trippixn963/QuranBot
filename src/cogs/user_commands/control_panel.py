@@ -361,7 +361,7 @@ def log_select_interaction(func):
 
 class SurahSelect(Select):
     def __init__(self, bot, page=0):
-        from utils.surah_mapper import get_surah_display_name, get_surah_emoji
+        from core.mapping.surah_mapper import get_surah_display_name, get_surah_emoji
         current_reciter = getattr(bot, 'current_reciter', None)
         audio_files = bot.get_audio_files() if current_reciter else []
         
@@ -395,7 +395,7 @@ class SurahSelect(Select):
         for surah_num_int, surah_num, surah_name in all_surahs[start_idx:end_idx]:
             emoji = get_surah_emoji(surah_num_int)
             # Get just the surah name without the number for cleaner display
-            from utils.surah_mapper import get_surah_display_name
+            from core.mapping.surah_mapper import get_surah_display_name
             clean_name = get_surah_display_name(surah_num_int, include_number=False)
             surah_options.append(discord.SelectOption(
                 label=f"{emoji} {clean_name}",
@@ -467,7 +467,7 @@ class SurahSelect(Select):
         
         # Track the surah change
         try:
-            from utils.surah_mapper import get_surah_display_name
+            from core.mapping.surah_mapper import get_surah_display_name
             surah_name = get_surah_display_name(int(surah_num), include_number=False)
             self.bot.state_manager.set_last_change("Surah changed", interaction.user.id, interaction.user.name, surah_name)
         except:
@@ -762,7 +762,7 @@ class ControlPanelView(View):
             # Get current surah info
             if current_song:
                 try:
-                    from utils.surah_mapper import get_surah_from_filename, get_surah_display_name, get_surah_emoji
+                    from core.mapping.surah_mapper import get_surah_from_filename, get_surah_display_name, get_surah_emoji
                     surah_info = get_surah_from_filename(current_song)
                     surah_display = get_surah_display_name(surah_info['number'], include_number=False)
                     surah_emoji = get_surah_emoji(surah_info['number'])
@@ -1022,7 +1022,7 @@ class ControlPanelView(View):
             new_song = self.bot.state_manager.get_current_song_name()
             
             # Get surah info for display
-            from utils.surah_mapper import get_surah_from_filename, get_surah_display_name
+            from core.mapping.surah_mapper import get_surah_from_filename, get_surah_display_name
             try:
                 if new_song:
                     surah_info = get_surah_from_filename(new_song)
@@ -1310,7 +1310,7 @@ class ControlPanelView(View):
             new_song = self.bot.state_manager.get_current_song_name()
             
             # Get surah info for display
-            from utils.surah_mapper import get_surah_from_filename, get_surah_display_name
+            from core.mapping.surah_mapper import get_surah_from_filename, get_surah_display_name
             try:
                 if new_song:
                     surah_info = get_surah_from_filename(new_song)
