@@ -96,17 +96,6 @@ class LogCommands(commands.Cog):
                 timestamp=datetime.now()
             )
             
-            # Add creator as author and bot as thumbnail
-            try:
-                creator = await self.bot.fetch_user(259725211664908288)
-                if creator and creator.avatar:
-                    embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
-            except Exception as e:
-                pass
-            
-            if self.bot.user and self.bot.user.avatar:
-                embed.set_thumbnail(url=self.bot.user.avatar.url)
-            
             # System info
             embed.add_field(
                 name="💻 System",
@@ -216,17 +205,6 @@ class LogCommands(commands.Cog):
                 timestamp=datetime.now()
             )
             
-            # Add creator as author and bot as thumbnail
-            try:
-                creator = await self.bot.fetch_user(259725211664908288)
-                if creator and creator.avatar:
-                    embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
-            except Exception as e:
-                pass
-            
-            if self.bot.user and self.bot.user.avatar:
-                embed.set_thumbnail(url=self.bot.user.avatar.url)
-            
             embed.add_field(
                 name="📊 Summary",
                 value=f"Showing {len(log_lines)} lines from {log_files[0]}",
@@ -259,17 +237,7 @@ class LogCommands(commands.Cog):
                 timestamp=datetime.now()
             )
             
-            # Add creator as author and bot as thumbnail
-            try:
-                creator = await self.bot.fetch_user(259725211664908288)
-                if creator and creator.avatar:
-                    embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
-            except Exception as e:
-                pass
-            
-            if self.bot.user and self.bot.user.avatar:
-                embed.set_thumbnail(url=self.bot.user.avatar.url)
-            
+            # System info
             embed.add_field(
                 name="💻 Platform",
                 value=f"OS: {platform.system()} {platform.release()}\nArchitecture: {platform.machine()}\nPython: {platform.python_version()}",
@@ -326,17 +294,6 @@ class LogCommands(commands.Cog):
                 color=0x00ff00 if self.bot.is_ready() else 0xff0000,
                 timestamp=datetime.now()
             )
-            
-            # Add creator as author and bot as thumbnail
-            try:
-                creator = await self.bot.fetch_user(259725211664908288)
-                if creator and creator.avatar:
-                    embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
-            except Exception as e:
-                pass
-            
-            if self.bot.user and self.bot.user.avatar:
-                embed.set_thumbnail(url=self.bot.user.avatar.url)
             
             # Connection status
             status_emoji = "🟢" if self.bot.is_ready() else "🔴"
@@ -448,17 +405,6 @@ class LogCommands(commands.Cog):
                 color=0xff9900,
                 timestamp=datetime.now()
             )
-            
-            # Add creator as author and bot as thumbnail
-            try:
-                creator = await self.bot.fetch_user(259725211664908288)
-                if creator and creator.avatar:
-                    embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
-            except Exception as e:
-                pass
-            
-            if self.bot.user and self.bot.user.avatar:
-                embed.set_thumbnail(url=self.bot.user.avatar.url)
             
             embed.add_field(
                 name="📊 Summary",

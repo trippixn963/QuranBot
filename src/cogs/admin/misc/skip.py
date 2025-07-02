@@ -20,17 +20,6 @@ async def skip(interaction: discord.Interaction):
         color=discord.Color.orange()
     )
     
-    # Add creator as author and bot as thumbnail
-    try:
-        creator = await interaction.client.fetch_user(259725211664908288)
-        if creator and creator.avatar:
-            embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
-    except Exception as e:
-        pass
-    
-    if interaction.client.user and interaction.client.user.avatar:
-        embed.set_thumbnail(url=interaction.client.user.avatar.url)
-    
     # Stop current playback
     if hasattr(interaction.client, '_voice_clients') and interaction.client._voice_clients:
         for voice_client in interaction.client._voice_clients.values():
@@ -53,16 +42,6 @@ async def skip_error(interaction: discord.Interaction, error: app_commands.AppCo
             description="This command is only available to the bot administrator.",
             color=discord.Color.red()
         )
-        # Add creator as author and bot as thumbnail
-        try:
-            creator = await interaction.client.fetch_user(259725211664908288)
-            if creator and creator.avatar:
-                embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
-        except Exception as e:
-            pass
-        
-        if interaction.client.user and interaction.client.user.avatar:
-            embed.set_thumbnail(url=interaction.client.user.avatar.url)
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
     else:
@@ -71,16 +50,6 @@ async def skip_error(interaction: discord.Interaction, error: app_commands.AppCo
             description=f"An error occurred: {str(error)}",
             color=discord.Color.red()
         )
-        # Add creator as author and bot as thumbnail
-        try:
-            creator = await interaction.client.fetch_user(259725211664908288)
-            if creator and creator.avatar:
-                embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
-        except Exception as e:
-            pass
-        
-        if interaction.client.user and interaction.client.user.avatar:
-            embed.set_thumbnail(url=interaction.client.user.avatar.url)
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
 

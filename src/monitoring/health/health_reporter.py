@@ -70,11 +70,10 @@ class HealthReporter:
             )
             
             # Add fields
-            embed.add_field(
-                name="⏱️ Uptime",
-                value=health_status['uptime'],
-                inline=True
-            )
+            embed.add_field(name="🔋 Uptime", value=health_status['uptime'], inline=True)
+            embed.add_field(name="��️ Files", value=f"{health_status['files_count']} files", inline=True)
+            embed.add_field(name="💿 Disk Free", value=f"{health_status['disk_free_gb']:.1f} GB", inline=True)
+            embed.add_field(name="⚠️ Errors (24h)", value=f"{health_status['recent_errors']}", inline=True)
             
             embed.add_field(
                 name="🎵 Songs Played",
@@ -122,9 +121,6 @@ class HealthReporter:
                     inline=False
                 )
                 
-            # Add footer
-            embed.set_footer(text="Quran Bot Health Monitor")
-            
             # Send the report
             await channel.send(embed=embed)
             

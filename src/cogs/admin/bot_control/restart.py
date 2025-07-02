@@ -133,13 +133,13 @@ class AdminCommands(app_commands.Group):
                 )
                 embed.add_field(name="Required", value="Admin permissions", inline=True)
                 embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
-                embed.set_footer(text="Admin Commands")
+
                 
                 # Add creator as author and bot as thumbnail
                 try:
                     creator = await interaction.client.fetch_user(259725211664908288)
                     if creator and creator.avatar:
-                        embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+
                 except Exception as e:
                     log_operation("auth", "WARNING", {"error": str(e)})
                 
@@ -160,7 +160,7 @@ class AdminCommands(app_commands.Group):
                 value="The bot will restart in 3 seconds.",
                 inline=False
             )
-            embed.set_footer(text=f"Requested by {interaction.user.name} • {datetime.now().strftime('%m-%d | %I:%M:%S %p')}")
+
             
             await interaction.response.send_message(embed=embed, ephemeral=True)
             

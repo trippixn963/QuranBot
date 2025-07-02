@@ -95,8 +95,6 @@ async def status(interaction: discord.Interaction):
         )
     
     # Add bot avatar as author
-    if interaction.client.user and interaction.client.user.avatar:
-        embed.set_author(name=interaction.client.user.display_name, icon_url=interaction.client.user.avatar.url)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 def get_uptime(bot) -> str:

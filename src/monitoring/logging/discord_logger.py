@@ -153,10 +153,6 @@ class DiscordEmbedLogger:
         embed.add_field(name="📍 Channel", value=channel_name, inline=True)
         embed.add_field(name="🏠 Server", value=guild_name, inline=True)
         embed.add_field(name="⏰ Status", value="Ready to stream", inline=True)
-        if self.bot.user and self.bot.user.avatar:
-            embed.set_footer(text="QuranBot Activity Log", icon_url=self.bot.user.avatar.url)
-        else:
-            embed.set_footer(text="QuranBot Activity Log")
         
         await self._send_embed(embed)
     
@@ -171,10 +167,6 @@ class DiscordEmbedLogger:
         embed.add_field(name="📍 Channel", value=channel_name, inline=True)
         embed.add_field(name="❌ Reason", value=reason, inline=True)
         embed.add_field(name="⏰ Status", value="Offline", inline=True)
-        if self.bot.user and self.bot.user.avatar:
-            embed.set_footer(text="QuranBot Activity Log", icon_url=self.bot.user.avatar.url)
-        else:
-            embed.set_footer(text="QuranBot Activity Log")
         
         await self._send_embed(embed)
     
@@ -195,11 +187,6 @@ class DiscordEmbedLogger:
         if surah_info.get('translation'):
             embed.add_field(name="📝 Translation", value=surah_info.get('translation'), inline=False)
         
-        if self.bot.user and self.bot.user.avatar:
-            embed.set_footer(text="QuranBot Activity Log", icon_url=self.bot.user.avatar.url)
-        else:
-            embed.set_footer(text="QuranBot Activity Log")
-        
         await self._send_embed(embed)
     
     async def log_reciter_changed(self, old_reciter: str, new_reciter: str, user_name: str):
@@ -213,10 +200,6 @@ class DiscordEmbedLogger:
         embed.add_field(name="🔄 From", value=old_reciter, inline=True)
         embed.add_field(name="➡️ To", value=new_reciter, inline=True)
         embed.add_field(name="👤 Changed By", value=user_name, inline=True)
-        if self.bot.user and self.bot.user.avatar:
-            embed.set_footer(text="QuranBot Activity Log", icon_url=self.bot.user.avatar.url)
-        else:
-            embed.set_footer(text="QuranBot Activity Log")
         
         await self._send_embed(embed)
     
@@ -257,11 +240,6 @@ class DiscordEmbedLogger:
         if member.avatar:
             embed.set_thumbnail(url=member.avatar.url)
         
-        if self.bot.user and self.bot.user.avatar:
-            embed.set_footer(text="QuranBot Activity Log", icon_url=self.bot.user.avatar.url)
-        else:
-            embed.set_footer(text="QuranBot Activity Log")
-        
         await self._send_embed(embed)
     
     async def log_user_left_vc(self, member: discord.Member, channel_name: str):
@@ -301,11 +279,6 @@ class DiscordEmbedLogger:
         if member.avatar:
             embed.set_thumbnail(url=member.avatar.url)
         
-        if self.bot.user and self.bot.user.avatar:
-            embed.set_footer(text="QuranBot Activity Log", icon_url=self.bot.user.avatar.url)
-        else:
-            embed.set_footer(text="QuranBot Activity Log")
-        
         await self._send_embed(embed)
     
     async def log_user_button_click(self, interaction: discord.Interaction, button_name: str, action_result: str = None):
@@ -325,11 +298,6 @@ class DiscordEmbedLogger:
         
         if interaction.user.avatar:
             embed.set_thumbnail(url=interaction.user.avatar.url)
-        
-        if self.bot.user and self.bot.user.avatar:
-            embed.set_footer(text="QuranBot Activity Log", icon_url=self.bot.user.avatar.url)
-        else:
-            embed.set_footer(text="QuranBot Activity Log")
         
         await self._send_embed(embed)
     
@@ -351,11 +319,6 @@ class DiscordEmbedLogger:
         
         if interaction.user.avatar:
             embed.set_thumbnail(url=interaction.user.avatar.url)
-        
-        if self.bot.user and self.bot.user.avatar:
-            embed.set_footer(text="QuranBot Activity Log", icon_url=self.bot.user.avatar.url)
-        else:
-            embed.set_footer(text="QuranBot Activity Log")
         
         await self._send_embed(embed)
     

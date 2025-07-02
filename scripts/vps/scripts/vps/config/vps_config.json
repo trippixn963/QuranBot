@@ -1,0 +1,21 @@
+{
+  "vps": {
+    "host": "159.89.90.90",
+    "user": "root",
+    "ssh_key": "C:/Users/hanna/.ssh/id_rsa",
+    "port": 22,
+    "connection_timeout": 30,
+    "command_timeout": 60
+  },
+  "bot": {
+    "service_name": "quranbot",
+    "install_path": "/opt/quranbot",
+    "log_path": "/opt/quranbot/logs",
+    "data_path": "/opt/quranbot/data",
+    "backup_path": "/opt/quranbot/backups"
+  },
+  "local": {
+    "log_download_path": "./logs/vps",
+    "backup_download_path": "./backups/vps"
+  }
+}

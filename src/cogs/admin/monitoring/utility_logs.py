@@ -83,7 +83,6 @@ async def info(interaction: discord.Interaction, lines: int = 10):
             inline=False
         )
     
-    embed.set_footer(text=f"Requested by {interaction.user.name}")
     embed.timestamp = discord.utils.utcnow()
     
     await interaction.response.send_message(embed=embed, ephemeral=True)

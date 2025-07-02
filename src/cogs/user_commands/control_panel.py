@@ -1710,7 +1710,7 @@ async def create_standard_embed(interaction: discord.Interaction, title: str, de
     try:
         creator = await interaction.client.fetch_user(259725211664908288)
         if creator and creator.avatar and creator.display_name:
-            embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+
     except Exception as e:
         log_operation("error", "WARNING", {
             "action": "creator_avatar_fetch_failed",

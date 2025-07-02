@@ -139,7 +139,12 @@ async def credits_command(interaction: discord.Interaction):
         inline=False
     )
     
-    embed.set_footer(text="Made with ❤️ for the Muslim Ummah • QuranBot v2.0.0")
+    embed.add_field(
+        name="📞 Contact & Support",
+        value="Join our [Discord Community](https://discord.gg/yourserver) for:\n• 📝 **Feature Requests**\n• 🐛 **Bug Reports**\n• 💬 **General Support**\n• 🤝 **Community Discussion**",
+        inline=False
+    )
+    
     embed.timestamp = discord.utils.utcnow()
     
     # Set creator's Discord profile picture
@@ -161,7 +166,7 @@ async def credits_command(interaction: discord.Interaction):
         except:
             pass
     
-    await interaction.response.send_message(embed=embed, ephemeral=False)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
     
     log_operation("credits", "INFO", {
         "user_id": interaction.user.id,

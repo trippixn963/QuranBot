@@ -136,7 +136,7 @@ class StopCommand(app_commands.Group):
                 )
                 embed.add_field(name="Required", value="Admin permissions", inline=True)
                 embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
-                embed.set_footer(text="Admin Commands")
+
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
@@ -156,7 +156,7 @@ class StopCommand(app_commands.Group):
                 value="The bot will completely stop and need to be manually restarted.",
                 inline=False
             )
-            embed.set_footer(text=f"Requested by {interaction.user.name} • {datetime.now().strftime('%m-%d | %I:%M:%S %p')}")
+
             
             await interaction.response.send_message(embed=embed, ephemeral=True)
             
@@ -188,7 +188,7 @@ class StopCommand(app_commands.Group):
                 )
                 embed.add_field(name="Status", value="Failed", inline=True)
                 embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
-                embed.set_footer(text="Admin Commands")
+
                 await interaction.response.send_message(embed=embed, ephemeral=True)
             except:
                 pass
