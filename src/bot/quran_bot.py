@@ -262,11 +262,9 @@ class QuranBot(discord.Client):
                     logger.info(f"Connection successful! Reset failure counter from {self.connection_failures} to 0.", 
                                extra={'event': 'CONNECTION_SUCCESS'})
                     self.connection_failures = 0
-                # Resume streaming if it was active
-                if self.is_streaming:
-                    logger.info("Resuming streaming after reconnection...", 
-                               extra={'event': 'STREAM_RESUME'})
-                    await self.start_stream(after.channel)
+                # TEMPORARILY DISABLE RESUME - Test if connection stays stable
+                logger.info("Voice connected but auto-resume disabled for testing", 
+                           extra={'event': 'STREAM_RESUME_DISABLED'})
             elif before.channel and after.channel and before.channel != after.channel:
                 # Bot moved to different channel
                 log_connection_success(after.channel.name, after.channel.guild.name)
