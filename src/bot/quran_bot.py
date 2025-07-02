@@ -68,8 +68,8 @@ class QuranBot(discord.Client):
         self.health_monitor = HealthMonitor()  # Initialize immediately
         self.discord_logger = DiscordEmbedLogger(
             self, 
-            1389683881078423567,  # logs channel
-            1389675580253016144   # target VC to track
+            Config.LOGS_CHANNEL_ID,  # Use channel ID from config
+            Config.TARGET_CHANNEL_ID  # Use target VC ID from config
         )
         self.state_manager = StateManager()  # Initialize immediately
         
