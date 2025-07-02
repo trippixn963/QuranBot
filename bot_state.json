@@ -1,0 +1,14 @@
+{
+  "current_song_index": 0,
+  "current_song_name": "001.mp3",
+  "total_songs_played": 1,
+  "last_played_time": "2025-07-02T19:21:50.187111",
+  "bot_start_count": 1,
+  "last_state_save": "2025-07-02T19:21:50.188334",
+  "loop_enabled_by": null,
+  "loop_enabled_by_name": null,
+  "shuffle_enabled_by": null,
+  "shuffle_enabled_by_name": null,
+  "last_change": null,
+  "last_change_time": null
+}

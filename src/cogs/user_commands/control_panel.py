@@ -940,28 +940,19 @@ class ControlPanelView(View):
     @log_button_interaction
     @discord.ui.button(label="📋 Credits", style=discord.ButtonStyle.primary, custom_id="credits", row=2)
     async def credits_button(self, interaction: discord.Interaction, button: Button):
-        # Intensive logging for credits button
-        channel_name = getattr(interaction.channel, 'name', 'DM') if interaction.channel else None
-        
+        # Log the button click
         log_operation("credits", "INFO", {
             "user_id": interaction.user.id,
             "user_name": interaction.user.name,
-            "user_display_name": interaction.user.display_name,
-            "guild_id": interaction.guild.id if interaction.guild else None,
-            "guild_name": interaction.guild.name if interaction.guild else None,
-            "channel_id": interaction.channel.id if interaction.channel else None,
-            "channel_name": channel_name,
             "action": "credits_button_clicked",
             "timestamp": datetime.now().isoformat()
         })
         
-        # Create credits embed
-        credits_embed = await create_standard_embed(
-            interaction,
-            "📋 QuranBot Credits & Information",
-            f"**Thank you for using QuranBot!** 🎵\n\nThis bot provides 24/7 Quran streaming with multiple reciters and interactive controls.\n\n**Current Status:**\n• **Reciter**: {self.bot.get_current_reciter()}\n• **Version**: 2.0.0\n• **Status**: Online ✅",
-            discord.Color.blue()
-        )
+        # Import and use the new clean credits embed
+        from cogs.admin.misc.credits import create_credits_embed
+        
+        # Create the clean credits embed
+        credits_embed = await create_credits_embed(self.bot, interaction)
         
         # Send as ephemeral message
         await interaction.response.send_message(embed=credits_embed, ephemeral=True)
@@ -970,9 +961,7 @@ class ControlPanelView(View):
             "user_id": interaction.user.id,
             "user_name": interaction.user.name,
             "action": "credits_displayed",
-            "current_reciter": self.bot.get_current_reciter(),
-            "current_surah": self.bot.state_manager.get_current_song_name().split('.')[0] if self.bot.state_manager.get_current_song_name() else 'Unknown',
-            "bot_status": "online"
+            "current_reciter": self.bot.get_current_reciter()
         })
     
     # Row 3: Playback Controls
@@ -1710,7 +1699,7 @@ async def create_standard_embed(interaction: discord.Interaction, title: str, de
     try:
         creator = await interaction.client.fetch_user(259725211664908288)
         if creator and creator.avatar and creator.display_name:
-
+            pass  # No author settings as requested in cleanup
     except Exception as e:
         log_operation("error", "WARNING", {
             "action": "creator_avatar_fetch_failed",
