@@ -10,6 +10,7 @@ import os
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
 from monitoring.logging.logger import logger
+import traceback
 
 class DiscordEmbedLogger:
     """Handles sending formatted embed logs to Discord channels."""
@@ -66,12 +67,21 @@ class DiscordEmbedLogger:
     async def get_logs_channel(self) -> Optional[discord.TextChannel]:
         """Get the logs channel."""
         try:
+            logger.debug(f"Looking for logs channel with ID {self.logs_channel_id}")
             channel = self.bot.get_channel(self.logs_channel_id)
             if not channel:
                 logger.warning(f"Discord logger: Could not find logs channel {self.logs_channel_id}")
+                # Try fetching the channel
+                try:
+                    channel = await self.bot.fetch_channel(self.logs_channel_id)
+                    logger.debug(f"Successfully fetched channel {channel.name} ({channel.id})")
+                except Exception as e:
+                    logger.error(f"Failed to fetch channel: {str(e)}")
+            else:
+                logger.debug(f"Found channel {channel.name} ({channel.id})")
             return channel
         except Exception as e:
-            logger.error(f"Discord logger error getting channel: {e}")
+            logger.error(f"Discord logger error getting channel: {str(e)}\nTraceback: {traceback.format_exc()}")
             return None
     
     def _load_sessions(self):
@@ -280,7 +290,7 @@ class DiscordEmbedLogger:
         
         await self._send_embed(embed)
     
-    async def log_user_button_click(self, interaction: discord.Interaction, button_name: str, action_result: str = None):
+    async def log_user_button_click(self, interaction: discord.Interaction, button_name: str, action_result: Optional[str] = None):
         """Log when a user clicks a button."""
         embed = discord.Embed(
             title="📝 User Interaction Log",
@@ -300,8 +310,8 @@ class DiscordEmbedLogger:
         embed.add_field(name="User ID", value=str(interaction.user.id), inline=True)
         
         # Voice status and duration if available
-        voice_state = interaction.user.voice
-        if voice_state:
+        member = interaction.guild.get_member(interaction.user.id) if interaction.guild else None
+        if member and member.voice:
             # Calculate session duration if user is in VC
             session_info = self.user_sessions.get(interaction.user.id, {})
             if session_info and 'joined_at' in session_info:
@@ -320,13 +330,15 @@ class DiscordEmbedLogger:
         embed.add_field(name="Bot Latency", value=f"{round(interaction.client.latency * 1000)}ms", inline=True)
         
         # Current song if playing
-        if hasattr(self, 'current_song') and self.current_song:
-            song_name = self.current_song.replace('.mp3', '')
-            embed.add_field(name="Current Surah", value=song_name, inline=False)
+        if hasattr(interaction.client, 'current_audio_file'):
+            current_song = getattr(interaction.client, 'current_audio_file', 'Unknown')
+            if current_song:
+                song_name = current_song.replace('.mp3', '')
+                embed.add_field(name="Current Surah", value=song_name, inline=False)
         
         await self._send_embed(embed)
     
-    async def log_user_select_interaction(self, interaction: discord.Interaction, select_name: str, selected_value: str, action_result: str = None):
+    async def log_user_select_interaction(self, interaction: discord.Interaction, select_name: str, selected_value: str, action_result: Optional[str] = None):
         """Log when a user interacts with a select menu."""
         embed = discord.Embed(
             title="📝 User Interaction Log",
@@ -344,7 +356,13 @@ class DiscordEmbedLogger:
 
         # Second row
         embed.add_field(name="User ID", value=str(interaction.user.id), inline=True)
-        embed.add_field(name="Voice Status", value="In Voice" if interaction.user.voice else "Not In Voice", inline=True)
+        
+        # Voice status
+        member = interaction.guild.get_member(interaction.user.id) if interaction.guild else None
+        voice_status = "In Voice" if member and member.voice else "Not In Voice"
+        embed.add_field(name="Voice Status", value=voice_status, inline=True)
+        
+        # Bot latency
         embed.add_field(name="Bot Latency", value=f"{interaction.client.latency * 1000:.0f} ms", inline=True)
 
         # Server info
@@ -354,10 +372,12 @@ class DiscordEmbedLogger:
         # Current song info if available
         if hasattr(interaction.client, 'current_audio_file'):
             current_song = getattr(interaction.client, 'current_audio_file', 'Unknown')
-            embed.add_field(name="Current Song", value=current_song.replace('.mp3', ''), inline=True)
+            if current_song:
+                song_name = current_song.replace('.mp3', '')
+                embed.add_field(name="Current Song", value=song_name, inline=True)
         
         # Channel info at bottom
-        channel_name = self._get_channel_name(interaction.channel)
+        channel_name = self._get_channel_name(interaction.channel) or "Unknown"
         embed.add_field(name="Channel", value=f"📻 | {channel_name} • {datetime.now().strftime('%I:%M %p')}", inline=False)
         
         await self._send_embed(embed)
@@ -376,11 +396,13 @@ class DiscordEmbedLogger:
     async def _send_embed(self, embed: discord.Embed):
         """Send embed to logs channel."""
         try:
+            logger.debug(f"Attempting to send embed to logs channel {self.logs_channel_id}")
             channel = await self.get_logs_channel()
             if channel:
+                logger.debug(f"Found logs channel {channel.name} ({channel.id})")
                 await channel.send(embed=embed)
-                logger.debug(f"Discord embed sent to channel {self.logs_channel_id}")
+                logger.debug(f"Successfully sent Discord embed to channel {self.logs_channel_id}")
             else:
                 logger.warning(f"Could not send Discord embed - channel {self.logs_channel_id} not found")
         except Exception as e:
-            logger.error(f"Failed to send Discord embed: {e}") 
+            logger.error(f"Failed to send Discord embed: {str(e)}\nTraceback: {traceback.format_exc()}") 
