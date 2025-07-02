@@ -1,7 +1,7 @@
 import discord
 from discord import app_commands
 import os
-from utils.log_helpers import log_async_function_call, log_function_call, log_operation
+from monitoring.logging.log_helpers import log_async_function_call, log_function_call, log_operation
 
 # Get admin ID from environment variable
 ADMIN_USER_ID = int(os.getenv('ADMIN_USER_ID', '0'))
