@@ -92,6 +92,14 @@ class QuranBot(discord.Client):
         user_interaction_counts (Dict[int, int]): User interaction counts
         presence_locked (bool): Flag to prevent conflicts between presence update methods
         current_surah_playing (Optional[str]): Currently playing surah
+        current_audio_source (Optional[discord.FFmpegPCMAudio]): Track current FFmpeg audio source
+        playback_lock (asyncio.Lock): Prevent multiple surahs playing simultaneously
+        connection_stable (bool): Track connection stability
+        last_connection_check (float): Timestamp of the last connection check
+        heartbeat_interval (int): Heartbeat check interval in seconds
+        max_retry_attempts (int): Maximum retry attempts for connections
+        retry_delay_base (int): Base delay for retries (exponential backoff)
+        network_timeout (int): Network operation timeout in seconds
     """
     
     def __init__(self):
@@ -171,6 +179,15 @@ class QuranBot(discord.Client):
         last_notified_surah = None
         
         self.load_voice_joins()
+        
+        self.current_audio_source = None  # Track current FFmpeg audio source
+        self.playback_lock = asyncio.Lock()  # Prevent multiple surahs playing simultaneously
+        self.connection_stable = True  # Track connection stability
+        self.last_connection_check = time.time()
+        self.heartbeat_interval = 30  # Heartbeat check interval in seconds
+        self.max_retry_attempts = 3   # Maximum retry attempts for connections
+        self.retry_delay_base = 5     # Base delay for retries (exponential backoff)
+        self.network_timeout = 10     # Network operation timeout in seconds
         
     def load_voice_joins(self):
         if os.path.exists(VOICE_JOINS_FILE):
@@ -653,64 +670,41 @@ class QuranBot(discord.Client):
             self.health_monitor.record_error(error, f"voice_error_guild_{guild_id}")
 
     async def start_stream(self, channel: discord.VoiceChannel):
-        """Start streaming Quran to the voice channel with improved error handling."""
+        """Enhanced stream start with better error handling and stability."""
         t0 = time.time()
-        max_retries = 3  # Reduced retries to prevent spam
-        retry_delay = 30   # Start with longer delay
-        
-        for attempt in range(max_retries):
-            try:
-                guild_id = channel.guild.id
-                
-                # Disconnect if already connected
-                if guild_id in self._voice_clients:
-                    try:
-                        await self._voice_clients[guild_id].disconnect()
-                        await asyncio.sleep(5)  # Wait longer for disconnect to complete
-                    except Exception as e:
-                        log_error(e, "disconnect_old_client")
-                        self.health_monitor.record_error(e, "disconnect_old_client")
-                    
-                # Connect to voice channel
-                log_connection_attempt(channel.name, attempt + 1, max_retries)
-                t1 = time.time()
-                voice_client = await channel.connect()
-                t2 = time.time()
-                log_performance("voice_connect", t2-t1)
-                self._voice_clients[guild_id] = voice_client
-                
-                # Voice client connected successfully
-                
-                # Record successful connection
-                log_connection_success(channel.name, channel.guild.name)
-                self.health_monitor.record_reconnection()
-                
-                # Start playback in background task
-                asyncio.create_task(self.play_quran_files(voice_client, channel))
-                break
-                
-            except discord.ClientException as e:
-                if "Already connected to a voice channel" in str(e):
-                    # Already connected, just start playback
-                    guild_id = channel.guild.id
-                    if guild_id in self._voice_clients:
-                        voice_client = self._voice_clients[guild_id]
-                        asyncio.create_task(self.play_quran_files(voice_client, channel))
-                        break
-                else:
-                    log_connection_failure(channel.name, e, attempt + 1)
-                    self.health_monitor.record_error(e, "voice_connection")
+        try:
+            logger.info(f"Starting stream in channel: {channel.name}", extra={'event': 'stream_start', 'channel': channel.name})
             
-            # Exponential backoff with longer delays for 4006 errors
-            if attempt < max_retries - 1:
-                delay = min(retry_delay * (3 ** attempt), 300)  # Cap at 5 minutes, use 3x multiplier
-                logger.info(f"Retrying connection in {delay} seconds...", 
-                           extra={'event': 'RETRY', 'attempt': attempt + 1, 'delay': delay})
-                await asyncio.sleep(delay)
+            # Use robust connection method
+            voice_client = await self.robust_voice_connect(channel)
+            if not voice_client:
+                log_connection_failure(channel.name, "Failed to establish voice connection", 1)
+                return False
                 
-        t3 = time.time()
-        log_performance("start_stream_total", t3-t0)
-        
+            # Store voice client
+            self._voice_clients[channel.guild.id] = voice_client
+            
+            # Reset connection stability flags
+            self.connection_stable = True
+            self.last_connection_check = time.time()
+            
+            # Start playback with enhanced error handling
+            try:
+                await self.play_quran_files(voice_client, channel)
+            except Exception as e:
+                logger.error(f"Playback error: {e}", extra={'event': 'PLAYBACK_ERROR'})
+                await self.handle_voice_error_robust(voice_client, e)
+                
+            t1 = time.time()
+            log_performance("start_stream_total", t1-t0)
+            return True
+            
+        except Exception as e:
+            log_error(e, "start_stream")
+            t1 = time.time()
+            log_performance("start_stream_total", t1-t0)
+            return False
+
     def get_audio_files(self) -> list:
         """Get list of audio files from the current reciter."""
         return Config.get_audio_files(self.current_reciter)
@@ -823,103 +817,138 @@ class QuranBot(discord.Client):
 
     async def play_surah_with_retries(self, voice_client, mp3_file, max_retries=2):
         """Play a surah with retries and robust FFmpeg error handling. Also updates dynamic presence timer."""
-        file_name = os.path.basename(mp3_file)
-        surah_info = get_surah_from_filename(file_name)
-        surah_display = get_surah_display_name(surah_info['number'])
-        total_duration = self.get_audio_duration(mp3_file)
-        for attempt in range(max_retries + 1):
-            try:
-                # Ensure previous audio is stopped
-                if voice_client.is_playing():
-                    voice_client.stop()
-                    # Wait up to 5 seconds for audio to stop
-                    for _ in range(5):
-                        if not voice_client.is_playing():
-                            break
-                        await asyncio.sleep(1)
-                    if voice_client.is_playing():
-                        logger.warning(f"Previous audio did not stop in time, skipping {file_name}", extra={"event": "AUDIO", "file": file_name})
+        async with self.playback_lock:  # Ensure only one surah plays at a time
+            file_name = os.path.basename(mp3_file)
+            surah_info = get_surah_from_filename(file_name)
+            surah_display = get_surah_display_name(surah_info['number'])
+            total_duration = self.get_audio_duration(mp3_file)
+            for attempt in range(max_retries + 1):
+                try:
+                    # Check connection stability before starting playback
+                    if not voice_client.is_connected():
+                        logger.warning(f"Voice client not connected, skipping {file_name}", extra={"event": "VOICE_NOT_CONNECTED", "file": file_name})
                         return False
-                source = discord.FFmpegPCMAudio(mp3_file)
-                voice_client.play(source)
-                wait_count = 0
-                max_wait = int(total_duration) if total_duration else 900
-                start_time = time.time()
-                # Dynamic presence update loop
-                while voice_client.is_playing() and voice_client.is_connected() and wait_count < max_wait:
-                    elapsed = int(time.time() - start_time)
-                    # Format elapsed and total
-                    elapsed_str = f"{elapsed//60}:{elapsed%60:02d}"
-                    total_str = f"{int(total_duration)//60}:{int(total_duration)%60:02d}" if total_duration else "?"
-                    emoji = get_surah_emoji(surah_info['number'])
-                    presence_str = f"{emoji} {surah_info['english_name']} — {elapsed_str} / {total_str}"
-                    activity = discord.Activity(
-                        type=discord.ActivityType.listening, 
-                        name=presence_str,
+                    
+                    # Ensure previous audio is stopped
+                    if voice_client.is_playing():
+                        voice_client.stop()
+                        # Wait up to 5 seconds for audio to stop
+                        for _ in range(5):
+                            if not voice_client.is_playing():
+                                break
+                            await asyncio.sleep(1)
+                        if voice_client.is_playing():
+                            logger.warning(f"Previous audio did not stop in time, skipping {file_name}", extra={"event": "AUDIO", "file": file_name})
+                            return False
+                    # --- PATCH START: Ensure previous FFmpeg process is cleaned up ---
+                    if self.current_audio_source is not None:
+                        try:
+                            self.current_audio_source.cleanup()
+                        except Exception as cleanup_err:
+                            logger.warning(f"Failed to cleanup previous FFmpeg source: {cleanup_err}")
+                        self.current_audio_source = None
+                    # --- PATCH END ---
+                    
+                    # Double-check connection before creating FFmpeg source
+                    if not voice_client.is_connected():
+                        logger.warning(f"Voice client disconnected before FFmpeg creation, skipping {file_name}", extra={"event": "VOICE_DISCONNECTED", "file": file_name})
+                        return False
+                    
+                    source = discord.FFmpegPCMAudio(mp3_file)
+                    self.current_audio_source = source
+                    voice_client.play(source)
+                    wait_count = 0
+                    max_wait = int(total_duration) if total_duration else 900
+                    start_time = time.time()
+                    # Dynamic presence update loop
+                    while voice_client.is_playing() and voice_client.is_connected() and wait_count < max_wait:
+                        elapsed = int(time.time() - start_time)
+                        # Format elapsed and total
+                        elapsed_str = f"{elapsed//60}:{elapsed%60:02d}"
+                        total_str = f"{int(total_duration)//60}:{int(total_duration)%60:02d}" if total_duration else "?"
+                        emoji = get_surah_emoji(surah_info['number'])
+                        presence_str = f"{emoji} {surah_info['english_name']} — {elapsed_str} / {total_str}"
+                        activity = discord.Activity(
+                            type=discord.ActivityType.listening, 
+                            name=presence_str,
+                        )
+                        # Only update if not locked by another process
+                        if not self.presence_locked or self.current_surah_playing == surah_info['english_name']:
+                            await self.change_presence(activity=activity)
+                        # Wait 5 seconds or until playback ends
+                        for _ in range(5):
+                            if not voice_client.is_playing() or not voice_client.is_connected():
+                                break
+                            await asyncio.sleep(1)
+                            wait_count += 1
+                    
+                    # Wait for playback to actually finish (FFmpeg might have terminated but audio could still be buffered)
+                    if voice_client.is_connected():
+                        # Give a small buffer for any remaining audio
+                        await asyncio.sleep(2)
+                    # Final update to show full duration
+                    if total_duration:
+                        emoji = get_surah_emoji(surah_info['number'])
+                        presence_str = f"{emoji} {surah_info['english_name']} — {int(total_duration)//60}:{int(total_duration)%60:02d} / {int(total_duration)//60}:{int(total_duration)%60:02d}"
+                        await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=presence_str))
+                    # Additional buffer
+                    await asyncio.sleep(3)
+                    
+                    # Unlock presence when this surah finishes
+                    if self.current_surah_playing == surah_info['english_name']:
+                        self.presence_locked = False
+                        self.current_surah_playing = None
+                        logger.debug(f"Unlocked presence after finishing {surah_info['english_name']}")
+                    
+                    # Send Discord notification for surah change
+                    await self.send_surah_change_notification(
+                        surah_info, 
+                        Config.get_reciter_display_name(self.current_reciter), 
+                        voice_client.channel
                     )
-                    # Only update if not locked by another process
-                    if not self.presence_locked or self.current_surah_playing == surah_info['english_name']:
-                        await self.change_presence(activity=activity)
-                    # Wait 5 seconds or until playback ends
-                    for _ in range(5):
-                        if not voice_client.is_playing() or not voice_client.is_connected():
-                            break
-                        await asyncio.sleep(1)
-                        wait_count += 1
-                
-                # Wait for playback to actually finish (FFmpeg might have terminated but audio could still be buffered)
-                if voice_client.is_connected():
-                    # Give a small buffer for any remaining audio
-                    await asyncio.sleep(2)
-                # Final update to show full duration
-                if total_duration:
-                    emoji = get_surah_emoji(surah_info['number'])
-                    presence_str = f"{emoji} {surah_info['english_name']} — {int(total_duration)//60}:{int(total_duration)%60:02d} / {int(total_duration)//60}:{int(total_duration)%60:02d}"
-                    await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=presence_str))
-                # Additional buffer
-                await asyncio.sleep(3)
-                
-                # Unlock presence when this surah finishes
-                if self.current_surah_playing == surah_info['english_name']:
-                    self.presence_locked = False
-                    self.current_surah_playing = None
-                    logger.debug(f"Unlocked presence after finishing {surah_info['english_name']}")
-                
-                # Send Discord notification for surah change
-                asyncio.create_task(self.send_surah_change_notification(
-                    surah_info, 
-                    Config.get_reciter_display_name(self.current_reciter), 
-                    voice_client.channel
-                ))
-                
-                return True  # Success
-            except discord.errors.ConnectionClosed as e:
-                if "4006" in str(e) or "session expired" in str(e).lower():
-                    # Handle session expired error
-                    guild_id = voice_client.guild.id if voice_client.guild else None
-                    await self.handle_voice_session_expired(guild_id)
-                    return False
-                else:
-                    log_error(e, f"voice_connection_{file_name}", additional_data={"attempt": attempt+1})
-                    self.health_monitor.record_error(e, f"voice_connection_{file_name}")
-            except Exception as e:
-                log_error(e, f"ffmpeg_playback_{file_name}", additional_data={"attempt": attempt+1})
-                self.health_monitor.record_error(e, f"ffmpeg_playback_{file_name}")
-                # Try to forcibly stop playback if stuck
-                if voice_client.is_playing():
-                    voice_client.stop()
-                    for _ in range(5):
-                        if not voice_client.is_playing():
-                            break
-                        await asyncio.sleep(1)
-                await asyncio.sleep(2)  # Short delay before retry
-        logger.error(f"FFmpeg failed for {file_name} after {max_retries+1} attempts. Skipping.", extra={"event": "FFMPEG", "file": file_name})
-        # Unlock presence if this was the current surah
-        if self.current_surah_playing == surah_info['english_name']:
-            self.presence_locked = False
-            self.current_surah_playing = None
-            logger.debug(f"Unlocked presence after FFmpeg failure for {surah_info['english_name']}")
-        return False
+                    
+                    return True  # Success
+                except discord.errors.ConnectionClosed as e:
+                    if "4006" in str(e) or "session expired" in str(e).lower():
+                        # Handle session expired error
+                        guild_id = voice_client.guild.id if voice_client.guild else None
+                        await self.handle_voice_session_expired(guild_id)
+                        return False
+                    else:
+                        log_error(e, f"voice_connection_{file_name}", additional_data={"attempt": attempt+1})
+                        self.health_monitor.record_error(e, f"voice_connection_{file_name}")
+                except Exception as e:
+                    log_error(e, f"ffmpeg_playback_{file_name}", additional_data={"attempt": attempt+1})
+                    self.health_monitor.record_error(e, f"ffmpeg_playback_{file_name}")
+                    # Try to forcibly stop playback if stuck
+                    if voice_client.is_playing():
+                        voice_client.stop()
+                        for _ in range(5):
+                            if not voice_client.is_playing():
+                                break
+                            await asyncio.sleep(1)
+                    # --- PATCH: Cleanup on error ---
+                    if self.current_audio_source is not None:
+                        try:
+                            self.current_audio_source.cleanup()
+                        except Exception as cleanup_err:
+                            logger.warning(f"Failed to cleanup FFmpeg source after error: {cleanup_err}")
+                        self.current_audio_source = None
+                    await asyncio.sleep(2)  # Short delay before retry
+            logger.error(f"FFmpeg failed for {file_name} after {max_retries+1} attempts. Skipping.", extra={"event": "FFMPEG", "file": file_name})
+            # Unlock presence if this was the current surah
+            if self.current_surah_playing == surah_info['english_name']:
+                self.presence_locked = False
+                self.current_surah_playing = None
+                logger.debug(f"Unlocked presence after FFmpeg failure for {surah_info['english_name']}")
+            # --- PATCH: Cleanup on final failure ---
+            if self.current_audio_source is not None:
+                try:
+                    self.current_audio_source.cleanup()
+                except Exception as cleanup_err:
+                    logger.warning(f"Failed to cleanup FFmpeg source after final failure: {cleanup_err}")
+                self.current_audio_source = None
+            return False
 
     async def play_quran_files(self, voice_client: discord.VoiceClient, channel: discord.VoiceChannel):
         """Play Quran MP3 files in a continuous loop with robust FFmpeg handling."""
@@ -960,8 +989,10 @@ class QuranBot(discord.Client):
             
             # Start health monitoring task
             health_task = asyncio.create_task(self.monitor_playback_health(voice_client, last_successful_playback))
+            # Start connection monitoring task
+            connection_task = asyncio.create_task(self.monitor_connection_stability(voice_client))
             
-            while self.is_streaming and voice_client.is_connected():
+            while self.is_streaming and voice_client.is_connected() and self.connection_stable:
                 # Handle loop mode - if enabled, play current surah repeatedly
                 if self.loop_enabled and self.current_audio_file:
                     mp3_file = os.path.join(Config.AUDIO_FOLDER, self.current_reciter, self.current_audio_file)
@@ -977,11 +1008,11 @@ class QuranBot(discord.Client):
                             
                             # Send Discord notification for surah change (only once per surah in loop mode)
                             if last_notified_surah != surah_info['number']:
-                                asyncio.create_task(self.send_surah_change_notification(
+                                await self.send_surah_change_notification(
                                     surah_info, 
                                     Config.get_reciter_display_name(self.current_reciter), 
-                                    channel
-                                ))
+                                    voice_client.channel
+                                )
                                 last_notified_surah = surah_info['number']
                             
                             success = await self.play_surah_with_retries(voice_client, mp3_file)
@@ -1023,11 +1054,11 @@ class QuranBot(discord.Client):
                         await self.update_presence_for_surah(surah_info)
                         
                         # Send Discord notification for surah change
-                        asyncio.create_task(self.send_surah_change_notification(
+                        await self.send_surah_change_notification(
                             surah_info, 
                             Config.get_reciter_display_name(self.current_reciter), 
-                            channel
-                        ))
+                            voice_client.channel
+                        )
                         
                         success = await self.play_surah_with_retries(voice_client, mp3_file)
                         if success:
@@ -1056,8 +1087,9 @@ class QuranBot(discord.Client):
                 if self.is_streaming:
                     await asyncio.sleep(2)
             
-            # Cancel health monitoring task
+            # Cancel monitoring tasks
             health_task.cancel()
+            connection_task.cancel()
             
         except Exception as e:
             log_error(e, "play_quran_files")
@@ -1085,6 +1117,163 @@ class QuranBot(discord.Client):
                 except Exception as e:
                     logger.error(f"Failed to restart playback: {e}", 
                                extra={'event': 'PLAYBACK_RESTART_FAILED'})
+
+    async def monitor_connection_stability(self, voice_client):
+        """Monitor voice connection stability and handle reconnections."""
+        consecutive_failures = 0
+        while self.is_streaming and voice_client.is_connected():
+            try:
+                await asyncio.sleep(self.heartbeat_interval)
+                
+                # Check basic connection status
+                if not voice_client.is_connected():
+                    logger.warning("Voice connection lost, attempting reconnection...", extra={'event': 'VOICE_CONNECTION_LOST'})
+                    self.connection_stable = False
+                    consecutive_failures += 1
+                    break
+                    
+                # Check if voice client is responsive
+                if hasattr(voice_client, 'ws') and voice_client.ws and voice_client.ws.closed:
+                    logger.warning("Voice WebSocket closed, attempting reconnection...", extra={'event': 'VOICE_WS_CLOSED'})
+                    self.connection_stable = False
+                    consecutive_failures += 1
+                    break
+                
+                # Check for excessive latency
+                if hasattr(voice_client, 'latency') and voice_client.latency > 1.0:
+                    logger.warning(f"High voice latency detected: {voice_client.latency:.2f}s", extra={'event': 'HIGH_LATENCY', 'latency': voice_client.latency})
+                
+                # Reset failure counter on successful check
+                consecutive_failures = 0
+                self.connection_stable = True
+                self.last_connection_check = time.time()
+                
+            except Exception as e:
+                logger.error(f"Error in connection monitoring: {e}", extra={'event': 'CONNECTION_MONITOR_ERROR'})
+                consecutive_failures += 1
+                self.connection_stable = False
+                
+                # If too many consecutive failures, break to trigger reconnection
+                if consecutive_failures >= self.max_retry_attempts:
+                    logger.error(f"Too many consecutive connection failures ({consecutive_failures}), breaking monitoring", extra={'event': 'MAX_FAILURES_REACHED'})
+                    break
+                
+                # Exponential backoff for retries
+                await asyncio.sleep(self.retry_delay_base * (2 ** (consecutive_failures - 1)))
+
+    async def robust_voice_connect(self, channel, max_attempts=None):
+        """Robust voice connection with retry logic and error handling."""
+        if max_attempts is None:
+            max_attempts = self.max_retry_attempts
+            
+        for attempt in range(max_attempts):
+            try:
+                logger.info(f"Connecting to voice channel: {channel.name} (Attempt {attempt + 1}/{max_attempts})")
+                
+                # Set timeout for connection attempt
+                voice_client = await asyncio.wait_for(
+                    channel.connect(timeout=20.0),
+                    timeout=self.network_timeout
+                )
+                
+                # Verify connection is stable
+                await asyncio.sleep(2)
+                if voice_client.is_connected():
+                    logger.info(f"Successfully connected to {channel.name} in {channel.guild.name}")
+                    return voice_client
+                else:
+                    raise Exception("Voice client not connected after connection attempt")
+                    
+            except asyncio.TimeoutError:
+                logger.warning(f"Connection attempt {attempt + 1} timed out", extra={'event': 'CONNECTION_TIMEOUT', 'attempt': attempt + 1})
+            except Exception as e:
+                logger.warning(f"Connection attempt {attempt + 1} failed: {e}", extra={'event': 'CONNECTION_FAILED', 'attempt': attempt + 1})
+            
+            # Wait before retry with exponential backoff
+            if attempt < max_attempts - 1:
+                wait_time = self.retry_delay_base * (2 ** attempt)
+                logger.info(f"Waiting {wait_time} seconds before retry...")
+                await asyncio.sleep(wait_time)
+        
+        logger.error(f"Failed to connect to voice channel after {max_attempts} attempts")
+        return None
+
+    async def safe_playback_start(self, voice_client, mp3_file):
+        """Safely start playback with comprehensive error checking."""
+        try:
+            # Pre-flight checks
+            if not voice_client or not voice_client.is_connected():
+                logger.warning("Voice client not available or connected for playback")
+                return False
+                
+            if not os.path.exists(mp3_file):
+                logger.error(f"Audio file not found: {mp3_file}")
+                return False
+                
+            # Check file size to ensure it's not corrupted
+            file_size = os.path.getsize(mp3_file)
+            if file_size < 1024:  # Less than 1KB
+                logger.warning(f"Audio file seems too small: {mp3_file} ({file_size} bytes)")
+                return False
+                
+            # Stop any existing playback
+            if voice_client.is_playing():
+                voice_client.stop()
+                await asyncio.sleep(1)
+                
+            # Cleanup previous FFmpeg source
+            if self.current_audio_source:
+                try:
+                    self.current_audio_source.cleanup()
+                except Exception as e:
+                    logger.warning(f"Failed to cleanup previous source: {e}")
+                self.current_audio_source = None
+                
+            # Create new FFmpeg source with error handling
+            try:
+                source = discord.FFmpegPCMAudio(mp3_file)
+                self.current_audio_source = source
+                voice_client.play(source)
+                return True
+            except Exception as e:
+                logger.error(f"Failed to create FFmpeg source: {e}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error in safe playback start: {e}")
+            return False
+
+    async def handle_voice_error_robust(self, voice_client, error):
+        """Enhanced voice error handling with recovery strategies."""
+        try:
+            error_str = str(error)
+            logger.error(f"Voice error occurred: {error_str}", extra={'event': 'VOICE_ERROR', 'error': error_str})
+            
+            # Handle specific error types
+            if "4006" in error_str or "session expired" in error_str.lower():
+                logger.warning("Discord session expired, attempting reconnection...")
+                guild_id = voice_client.guild.id if voice_client.guild else None
+                await self.handle_voice_session_expired(guild_id)
+                
+            elif "not connected" in error_str.lower():
+                logger.warning("Voice client not connected, attempting reconnection...")
+                if voice_client.channel:
+                    await self.robust_voice_connect(voice_client.channel)
+                    
+            elif "ffmpeg" in error_str.lower():
+                logger.warning("FFmpeg error detected, cleaning up and retrying...")
+                if self.current_audio_source:
+                    try:
+                        self.current_audio_source.cleanup()
+                    except:
+                        pass
+                    self.current_audio_source = None
+                    
+            # Record error for health monitoring
+            self.health_monitor.record_error(error, "voice_error")
+            
+        except Exception as e:
+            logger.error(f"Error in voice error handler: {e}")
 
     async def close(self):
         """
