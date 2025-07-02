@@ -233,6 +233,9 @@ def log_button_interaction(func):
         logger.debug(f"BUTTON_CONTEXT_DETAILED | UserContext: {user_context} | BotStateBefore: {bot_state_before} | SystemMetricsBefore: {system_metrics_before}")
         
         try:
+            # Log to Discord
+            await self.bot.discord_logger.log_user_button_click(interaction, button_name)
+            
             # Execute the button function
             result = await func(self, interaction, button)
             
@@ -308,6 +311,9 @@ def log_select_interaction(func):
         logger.debug(f"SELECT_CONTEXT_DETAILED | UserContext: {user_context} | BotStateBefore: {bot_state_before} | SystemMetricsBefore: {system_metrics_before}")
         
         try:
+            # Log to Discord
+            await self.bot.discord_logger.log_user_select_interaction(interaction, select_name, selected_value)
+            
             # Execute the select function
             result = await func(self, interaction)
             
