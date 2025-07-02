@@ -1,147 +1,326 @@
-# QuranBot 🤖📖
+# 📖 QuranBot - Discord 24/7 Quran Streaming Bot
 
-A professional, fully automated 24/7 Discord bot that streams Quran recitations in a specific voice channel. Features enhanced logging, dynamic rich presence, health monitoring, and interactive control panels.
+> **🚨 Disclaimer:** This project is provided as-is, with no support or warranty. Issues and pull requests may not be reviewed or answered. See [SUPPORT.md](SUPPORT.md) for details.
 
-## Features ✨
+A professional Discord bot for continuous Quran recitation with multiple reciters, interactive controls, and comprehensive monitoring.
 
-- **24/7 Quran Streaming** 📻 - Continuous playback of all 114 surahs
-- **Dynamic Rich Presence** 🎮 - Shows current surah with elapsed/total time
-- **Enhanced Logging** 📝 - Emoji-enhanced logs with structured data
-- **Health Monitoring** 💚 - Hourly health reports and performance tracking
-- **Interactive Control Panel** 🎛️ - User-friendly buttons and menus
-- **Admin Commands** ⚙️ - Restart, status, skip, reconnect functionality
-- **Graceful Shutdown** 🔄 - Clean state saving and disconnection
-- **Cross-Platform** 💻 - Works on Windows, Linux, and macOS
+---
 
-## Commands 🎯
+## 📄 License
 
-### Admin Commands (Restricted Access)
-- `/restart` - Restart the bot
-- `/status` - Show detailed bot status
-- `/skip` - Skip current surah
-- `/reconnect` - Reconnect to voice channel
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
-### Utility Commands
-- `/logs` - View recent bot logs
+## 🤝 Contributing & Security
 
-### User Commands
-- `/panel` - Create interactive control panel (Voice channel users only)
+- See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
+- See [SECURITY.md](SECURITY.md) for security policy.
+- See [SUPPORT.md](SUPPORT.md) for support policy.
 
-## Control Panel Features 🎛️
+---
 
-The control panel provides an interactive interface with buttons for:
-- **🎵 Now Playing** - Check current surah and bot status
-- **📊 Bot Status** - View detailed bot information
-- **📖 Surah List** - See available surahs and current playing
+## 🌟 Features
 
-## Setup 🚀
+- **24/7 Quran Streaming** - Continuous playback of all 114 surahs
+- **Multiple Reciters** - Support for 4+ professional reciters
+- **Interactive Control Panel** - Rich Discord embed with playback controls
+- **Slash Commands** - Modern Discord interaction system
+- **Health Monitoring** - Real-time bot health and performance tracking
+- **Auto-Reconnection** - Robust error handling and recovery
+- **Rich Presence** - Dynamic Discord status updates
+- **Comprehensive Logging** - Emoji-enhanced structured logging
+- **VPS Ready** - Optimized for server deployment
 
-1. **Install Dependencies**
+## 🎵 Supported Reciters
+
+- **Saad Al Ghamdi** - Beautiful, clear recitation
+- **Maher Al Muaiqly** - Popular and melodious
+- **Muhammad Al Luhaidan** - Traditional style
+- **Rashid Al Afasy** - Modern and engaging
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Python 3.8+
+- FFmpeg installed
+- Discord Bot Token
+- Discord Server with voice channel
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd QuranBot
+   ```
+
+2. **Install dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-2. **Install FFmpeg**
-   - **Windows**: Run `scripts/windows/check_and_update_ffmpeg.bat`
-   - **Linux/macOS**: Run `scripts/linux/check_and_update_ffmpeg.sh`
+3. **Setup environment**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your Discord bot configuration
+   ```
 
-3. **Configure Environment**
-   - Copy `.env.example` to `.env`
-   - Fill in your Discord bot token and channel IDs
+4. **Add audio files**
+   - Create `audio/` directory
+   - Add reciter folders with MP3 files (1-114.mp3)
 
-4. **Download Quran Audio**
-   - Place 114 MP3 files (001.mp3 to 114.mp3) in the `audio/` directory
-   - Run validation script: `scripts/windows/validate_mp3s_with_ffmpeg.bat`
-
-5. **Run the Bot**
+5. **Run the bot**
    ```bash
    python run.py
    ```
 
-## File Structure 📁
+## ⚙️ Configuration
+
+### Environment Variables (.env)
+
+```env
+# Discord Configuration
+DISCORD_TOKEN=your_bot_token_here
+TARGET_CHANNEL_ID=your_voice_channel_id
+PANEL_CHANNEL_ID=your_control_panel_channel_id
+LOGS_CHANNEL_ID=your_logs_channel_id
+
+# Audio Configuration
+AUDIO_FOLDER=audio
+DEFAULT_RECITER=Saad Al Ghamdi
+AUDIO_QUALITY=128k
+
+# FFmpeg Configuration
+FFMPEG_PATH=C:\ffmpeg\bin  # Windows
+# FFMPEG_PATH=/usr/bin     # Linux/macOS
+```
+
+### Audio File Structure
+
+```
+audio/
+├── Saad Al Ghamdi/
+│   ├── 1.mp3
+│   ├── 2.mp3
+│   └── ... (114.mp3)
+├── Maher Al Muaiqly/
+│   ├── 1.mp3
+│   └── ... (114.mp3)
+└── ... (other reciters)
+```
+
+## 🎮 Commands
+
+### Slash Commands
+
+- `/control` - Open interactive control panel
+- `/status` - Show bot status and health
+- `/restart` - Restart the bot (Admin only)
+- `/skip` - Skip current surah
+- `/reconnect` - Reconnect to voice channel
+- `/credits` - Show bot credits
+- `/logs` - View recent logs
+
+### Control Panel Features
+
+- **Surah Selection** - Paginated surah browser
+- **Reciter Selection** - Dropdown with available reciters
+- **Playback Controls** - Play, pause, skip, loop
+- **Real-time Status** - Current surah and reciter info
+
+## 🏗️ Project Structure
 
 ```
 QuranBot/
-├── audio/                 # Quran MP3 files (001.mp3 to 114.mp3)
-├── logs/                  # Daily rotating log files
-├── scripts/               # Cross-platform utility scripts
 ├── src/
 │   ├── bot/
-│   │   └── quran_bot.py   # Main bot implementation
+│   │   └── quran_bot.py          # Main bot implementation
 │   ├── cogs/
-│   │   ├── admin_commands/    # Admin-only commands
-│   │   ├── utility_commands/  # Utility commands
-│   │   └── user_commands/     # User control panel
-│   └── utils/             # Utilities and helpers
-├── run.py                 # Bot entry point
-└── requirements.txt       # Python dependencies
+│   │   ├── admin_commands/       # Admin slash commands
+│   │   ├── user_commands/        # User slash commands
+│   │   └── utility_commands/     # Utility commands
+│   └── utils/
+│       ├── config.py             # Configuration management
+│       ├── logger.py             # Enhanced logging system
+│       ├── health.py             # Health monitoring
+│       ├── state_manager.py      # Bot state persistence
+│       └── surah_mapper.py       # Surah name mapping
+├── scripts/
+│   ├── vps/                      # VPS management scripts
+│   ├── windows/                  # Windows utilities
+│   ├── linux/                    # Linux utilities
+│   └── macos/                    # macOS utilities
+├── audio/                        # Audio files (not in git)
+├── logs/                         # Log files
+├── backup/                       # Backup versions
+├── requirements.txt              # Python dependencies
+├── run.py                        # Entry point
+└── README.md                     # This file
 ```
 
-## Configuration ⚙️
+## 🖥️ VPS Deployment
 
-### Environment Variables (.env)
-- `DISCORD_TOKEN` - Your Discord bot token
-- `TARGET_CHANNEL_ID` - Voice channel ID for streaming
-- `PANEL_CHANNEL_ID` - Text channel ID for control panel (default: 1389716643512455219)
-- `LOGS_CHANNEL_ID` - Channel ID for health reports
-- `ADMIN_USER_ID` - Your Discord user ID for admin commands
+### Automated Setup
 
-### Audio Files
-- Format: MP3 files named `001.mp3` to `114.mp3`
-- Location: `audio/` directory
-- Validation: Use provided scripts to check file integrity
+```bash
+# Upload files to VPS
+scp -r . root@your-vps-ip:/opt/quranbot/
 
-## Logging 📝
+# Run setup script
+ssh root@your-vps-ip "cd /opt/quranbot && chmod +x deploy_temp/setup_vps.sh && ./deploy_temp/setup_vps.sh"
+```
 
-The bot uses enhanced logging with:
-- **Emoji-enhanced messages** 🎯
-- **Structured data** with extra fields
-- **Daily rotating files** in `logs/` directory
-- **Console output** with colors
-- **Performance tracking** and error monitoring
+### Manual Setup
 
-## Health Monitoring 💚
+1. **Install system dependencies**
+   ```bash
+   apt update && apt upgrade -y
+   apt install -y python3 python3-pip python3-venv ffmpeg
+   ```
 
-- **Hourly health reports** sent to logs channel
-- **Performance metrics** tracking
-- **Connection status** monitoring
-- **Audio playback** statistics
-- **Error tracking** and reporting
+2. **Setup Python environment**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
 
-## Troubleshooting 🔧
+3. **Create systemd service**
+   ```bash
+   # Copy the service file from deploy_temp/setup_vps.sh
+   systemctl daemon-reload
+   systemctl enable quranbot
+   systemctl start quranbot
+   ```
+
+### VPS Management Scripts
+
+```bash
+# Start bot
+./scripts/vps/start_bot.sh
+
+# Stop bot
+./scripts/vps/stop_bot.sh
+
+# Restart bot
+./scripts/vps/restart_bot.sh
+
+# Check status
+./scripts/vps/status_bot.sh
+
+# View logs
+./scripts/vps/logs_bot.sh
+```
+
+## 📊 Monitoring & Logging
+
+### Log Levels
+
+- 🔍 **DEBUG** - Detailed debugging information
+- ℹ️ **INFO** - General information
+- ⚠️ **WARNING** - Warning messages
+- ❌ **ERROR** - Error messages
+- 🔥 **CRITICAL** - Critical errors
+
+### Health Monitoring
+
+- **Uptime tracking**
+- **Memory usage**
+- **CPU usage**
+- **Connection status**
+- **Audio playback status**
+- **Error rate monitoring**
+
+### Log Files
+
+- **Daily rotation** - `logs/YYYY-MM-DD.log`
+- **Console output** - Colored, emoji-enhanced
+- **Structured data** - JSON-formatted for analysis
+
+## 🔧 Development
+
+### Code Style
+
+- **Black** - Code formatting
+- **Flake8** - Linting
+- **Type hints** - Type annotations
+- **Docstrings** - Comprehensive documentation
+
+### Testing
+
+```bash
+# Install development dependencies
+pip install -r requirements-dev.txt
+
+# Run tests
+pytest
+
+# Format code
+black src/
+
+# Lint code
+flake8 src/
+```
+
+### Adding New Reciters
+
+1. **Add audio files** to `audio/Reciter Name/`
+2. **Update config** in `src/utils/config.py`
+3. **Test reciter** with control panel
+4. **Update documentation**
+
+## 🛠️ Troubleshooting
 
 ### Common Issues
-1. **FFmpeg not found**: Run the FFmpeg installation script
-2. **Audio files missing**: Download and place MP3 files in `audio/` directory
-3. **Voice disconnections**: Bot automatically reconnects with exponential backoff
-4. **Permission errors**: Ensure bot has proper Discord permissions
 
-### Validation Scripts
-- **Windows**: `scripts/windows/validate_mp3s_with_ffmpeg.bat`
-- **Linux/macOS**: `scripts/linux/validate_mp3s_with_ffmpeg.sh`
+**Bot won't connect to voice channel**
+- Check channel permissions
+- Verify bot token
+- Ensure voice channel exists
 
-## Development 🛠️
+**Audio not playing**
+- Verify FFmpeg installation
+- Check audio file format (MP3)
+- Ensure file naming (1.mp3, 2.mp3, etc.)
 
-### Adding New Commands
-1. Create command file in appropriate `cogs/` directory
-2. Implement command with proper error handling
-3. Add to bot's command loading list in `quran_bot.py`
-4. Test thoroughly before deployment
+**High memory usage**
+- Monitor with `/status` command
+- Check for memory leaks in logs
+- Restart bot if necessary
 
-### Logging Best Practices
-- Use emoji-enhanced log messages
-- Include structured data with `extra` field
-- Use appropriate log levels (DEBUG, INFO, WARNING, ERROR)
-- Track performance metrics where relevant
+### Debug Mode
 
-## License 📄
+```bash
+# Enable debug logging
+export LOG_LEVEL=DEBUG
+python run.py
+```
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+## 📝 License
 
-## Support 💬
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-For support and questions:
-- Check the troubleshooting section
-- Review logs in the `logs/` directory
-- Use the `/status` command for bot diagnostics
-- Run validation scripts for audio file issues 
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## 📞 Support
+
+- **Discord Server** - Join our community
+- **Issues** - Report bugs on GitHub
+- **Documentation** - Check the docs folder
+
+## 🙏 Acknowledgments
+
+- **Discord.py** - Excellent Discord API wrapper
+- **FFmpeg** - Powerful audio processing
+- **Quran Reciters** - Beautiful recitations
+- **Community** - All contributors and users
+
+---
+
+**Made with ❤️ for the Muslim community** 
