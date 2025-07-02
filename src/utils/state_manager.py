@@ -128,7 +128,9 @@ class StateManager:
             'bot_start_count': 0,
             'last_state_save': None,
             'loop_enabled_by': None,  # Stores user ID who enabled loop
-            'loop_enabled_by_name': None  # Stores username who enabled loop
+            'loop_enabled_by_name': None,  # Stores username who enabled loop
+            'last_change': None,  # Stores the last user action
+            'last_change_time': None  # Stores when the last change happened
         }
         
         if os.path.exists(self.state_file):
@@ -534,6 +536,80 @@ class StateManager:
     def get_loop_enabled_by(self) -> tuple:
         """Get who enabled loop mode as (user_id, username)."""
         return (self.state.get('loop_enabled_by'), self.state.get('loop_enabled_by_name'))
+    
+    def set_last_change(self, action: str, user_id: int, username: str, details: Optional[str] = None):
+        """Set the last change made by a user with comprehensive logging."""
+        try:
+            change_time = datetime.now().isoformat()
+            change_description = f"{action} by <@{user_id}>"
+            if details:
+                change_description += f" to {details}"
+            
+            log_operation("last_change", "INFO", {
+                "action": "set_last_change",
+                "user_id": user_id,
+                "username": username,
+                "change_action": action,
+                "details": details,
+                "change_time": change_time,
+                "previous_change": self.state.get('last_change')
+            })
+            
+            self.state['last_change'] = change_description
+            self.state['last_change_time'] = change_time
+            self._save_state()
+            
+            # Emit state update event
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(self._emit_event('state_updated', {
+                        'type': 'last_change_updated',
+                        'change': change_description,
+                        'user_id': user_id,
+                        'username': username,
+                        'action': action,
+                        'details': details
+                    }))
+            except RuntimeError:
+                log_operation("last_change", "DEBUG", {
+                    "action": "no_event_loop_for_change_event"
+                })
+                
+        except Exception as e:
+            log_operation("last_change", "ERROR", {
+                "action": "set_last_change_failed",
+                "user_id": user_id,
+                "username": username,
+                "change_action": action,
+                "error": str(e),
+                "error_type": type(e).__name__
+            }, e)
+    
+    def get_last_change(self) -> tuple:
+        """Get the last change as (description, timestamp)."""
+        return (self.state.get('last_change'), self.state.get('last_change_time'))
+    
+    def clear_last_change(self):
+        """Clear the last change info (on bot restart)."""
+        try:
+            log_operation("last_change", "INFO", {
+                "action": "clear_last_change",
+                "previous_change": self.state.get('last_change'),
+                "previous_time": self.state.get('last_change_time')
+            })
+            
+            self.state['last_change'] = None
+            self.state['last_change_time'] = None
+            self._save_state()
+            
+        except Exception as e:
+            log_operation("last_change", "ERROR", {
+                "action": "clear_last_change_failed",
+                "error": str(e),
+                "error_type": type(e).__name__
+            }, e)
 
     def reset_state(self):
         """Reset state to default values."""
@@ -545,6 +621,8 @@ class StateManager:
             'bot_start_count': self.state.get('bot_start_count', 0),
             'last_state_save': None,
             'loop_enabled_by': None,
-            'loop_enabled_by_name': None
+            'loop_enabled_by_name': None,
+            'last_change': None,
+            'last_change_time': None
         }
         self._save_state() 

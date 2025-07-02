@@ -178,6 +178,9 @@ class QuranBot(discord.Client):
             self.state_manager.increment_bot_start_count()
             start_count = self.state_manager.get_bot_start_count()
             log_state_load("bot_start_count", {"start_count": start_count})
+            
+            # Clear last change on restart (always starts fresh)
+            self.state_manager.clear_last_change()
             t4 = time.time()
             log_performance("state_manager_init", t4-t3)
             

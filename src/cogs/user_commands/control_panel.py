@@ -465,6 +465,14 @@ class SurahSelect(Select):
         self.bot.state_manager.set_current_song_index_by_surah(surah_num, self.bot.get_audio_files())
         new_index = self.bot.state_manager.get_current_song_index()
         
+        # Track the surah change
+        try:
+            from utils.surah_mapper import get_surah_display_name
+            surah_name = get_surah_display_name(int(surah_num), include_number=False)
+            self.bot.state_manager.set_last_change("Surah changed", interaction.user.id, interaction.user.name, surah_name)
+        except:
+            self.bot.state_manager.set_last_change("Surah changed", interaction.user.id, interaction.user.name, f"Surah {surah_num}")
+        
         # Do the heavy work in the background
         async def restart_playback():
             try:
@@ -578,6 +586,10 @@ class ReciterSelect(Select):
         
         # Switch reciter
         success = self.bot.set_current_reciter(reciter)
+        if success:
+            # Track the reciter change
+            self.bot.state_manager.set_last_change("Reciter changed", interaction.user.id, interaction.user.name, reciter)
+        
         if not success:
             log_operation("reciter", "ERROR", {
                 "user_id": interaction.user.id,
@@ -757,10 +769,22 @@ class ControlPanelView(View):
             shuffle_status = "🔀 ON" if shuffle_enabled else "🔀 OFF"
             streaming_status = "▶️ Playing" if is_streaming else "⏸️ Stopped"
             
+            # Get last change info
+            last_change, last_change_time = self.bot.state_manager.get_last_change()
+            last_change_display = ""
+            if last_change:
+                try:
+                    from datetime import datetime
+                    change_time = datetime.fromisoformat(last_change_time)
+                    time_str = change_time.strftime("%H:%M")
+                    last_change_display = f"\n\n**Last Change:** {last_change} at {time_str}"
+                except:
+                    last_change_display = f"\n\n**Last Change:** {last_change}"
+            
             # Create updated embed
             embed = discord.Embed(
-                title="🎵 QuranBot Control Panel",
-                description=f"**📊 Current Status**\n• **Now Playing**: {current_surah_display}\n• **Reciter**: {current_reciter}\n• **Status**: {streaming_status}\n• **Loop**: {loop_status}\n• **Shuffle**: {shuffle_status}\n\n\n\n\n\n\n\n**⚠️ Beta Testing Notice**\nThis bot is currently in beta testing. If you encounter any bugs or issues, please DM <@259725211664908288> to report them. Your feedback helps improve the bot!",
+                title="",
+                description=f"• **Now Playing**: {current_surah_display}\n• **Reciter**: {current_reciter}\n• **Status**: {streaming_status}\n• **Loop**: {loop_status}\n• **Shuffle**: {shuffle_status}{last_change_display}\n\n\n\n\n\n\n\n**⚠️ Beta Testing Notice**\nThis bot is currently in beta testing. If you encounter any bugs or issues, please DM <@259725211664908288> to report them. Your feedback helps improve the bot!",
                 color=discord.Color.green()
             )
             
@@ -987,10 +1011,17 @@ class ControlPanelView(View):
                 if new_song:
                     surah_info = get_surah_from_filename(new_song)
                     surah_display = get_surah_display_name(surah_info['number'])
+                    surah_name = get_surah_display_name(surah_info['number'], include_number=False)
+                    # Track the surah change
+                    self.bot.state_manager.set_last_change("Surah skipped back", interaction.user.id, interaction.user.name, surah_name)
                 else:
                     surah_display = "Unknown Surah"
+                    # Track the change anyway
+                    self.bot.state_manager.set_last_change("Surah skipped back", interaction.user.id, interaction.user.name, "Unknown Surah")
             except:
                 surah_display = "Unknown Surah"
+                # Track the change anyway
+                self.bot.state_manager.set_last_change("Surah skipped back", interaction.user.id, interaction.user.name, "Unknown Surah")
             
             # Create previous surah embed
             prev_embed = await create_standard_embed(
@@ -1101,6 +1132,12 @@ class ControlPanelView(View):
         # Toggle loop mode
         loop_enabled = self.bot.toggle_loop(interaction.user.id, interaction.user.name)
         
+        # Track the loop change
+        if loop_enabled:
+            self.bot.state_manager.set_last_change("Loop enabled", interaction.user.id, interaction.user.name)
+        else:
+            self.bot.state_manager.set_last_change("Loop disabled", interaction.user.id, interaction.user.name)
+        
         # Update button appearance
         if loop_enabled:
             button.style = discord.ButtonStyle.success
@@ -1170,6 +1207,12 @@ class ControlPanelView(View):
         
         # Toggle shuffle mode
         shuffle_enabled = self.bot.toggle_shuffle()
+        
+        # Track the shuffle change
+        if shuffle_enabled:
+            self.bot.state_manager.set_last_change("Shuffle enabled", interaction.user.id, interaction.user.name)
+        else:
+            self.bot.state_manager.set_last_change("Shuffle disabled", interaction.user.id, interaction.user.name)
         
         # Update button appearance
         if shuffle_enabled:
@@ -1256,10 +1299,17 @@ class ControlPanelView(View):
                 if new_song:
                     surah_info = get_surah_from_filename(new_song)
                     surah_display = get_surah_display_name(surah_info['number'])
+                    surah_name = get_surah_display_name(surah_info['number'], include_number=False)
+                    # Track the surah change
+                    self.bot.state_manager.set_last_change("Surah skipped", interaction.user.id, interaction.user.name, surah_name)
                 else:
                     surah_display = "Unknown Surah"
+                    # Track the change anyway
+                    self.bot.state_manager.set_last_change("Surah skipped", interaction.user.id, interaction.user.name, "Unknown Surah")
             except:
                 surah_display = "Unknown Surah"
+                # Track the change anyway
+                self.bot.state_manager.set_last_change("Surah skipped", interaction.user.id, interaction.user.name, "Unknown Surah")
             
             # Create next surah embed
             next_embed = await create_standard_embed(
@@ -1412,10 +1462,11 @@ async def setup(bot):
                 # Check if a control panel already exists and delete it
                 try:
                     async for message in panel_channel.history(limit=50):
-                        # Check if this message has our control panel embed
+                        # Check if this message has our control panel embed (check for beta notice since we removed title)
                         if (message.embeds and 
-                            message.embeds[0].title == "🎵 QuranBot Control Panel" and
-                            message.author == bot.user):
+                            message.author == bot.user and
+                            message.embeds[0].description and 
+                            "Beta Testing Notice" in message.embeds[0].description):
                             
                             log_operation("check", "INFO", {
                                 "component": "create_panel",
@@ -1491,10 +1542,22 @@ async def setup(bot):
                     shuffle_status = "🔀 OFF"
                     streaming_status = "⏸️ Stopped"
                 
+                # Get last change info
+                last_change, last_change_time = bot.state_manager.get_last_change()
+                last_change_display = ""
+                if last_change:
+                    try:
+                        from datetime import datetime
+                        change_time = datetime.fromisoformat(last_change_time)
+                        time_str = change_time.strftime("%H:%M")
+                        last_change_display = f"\n\n**Last Change:** {last_change} at {time_str}"
+                    except:
+                        last_change_display = f"\n\n**Last Change:** {last_change}"
+                
                 # Create the control panel embed with dynamic status
                 embed = discord.Embed(
-                    title="🎵 QuranBot Control Panel",
-                    description=f"**📊 Current Status**\n• **Now Playing**: {current_surah_display}\n• **Reciter**: {current_reciter}\n• **Status**: {streaming_status}\n• **Loop**: {loop_status}\n• **Shuffle**: {shuffle_status}\n\n\n\n\n\n\n\n**⚠️ Beta Testing Notice**\nThis bot is currently in beta testing. If you encounter any bugs or issues, please DM <@259725211664908288> to report them. Your feedback helps improve the bot!",
+                    title="",
+                    description=f"• **Now Playing**: {current_surah_display}\n• **Reciter**: {current_reciter}\n• **Status**: {streaming_status}\n• **Loop**: {loop_status}\n• **Shuffle**: {shuffle_status}{last_change_display}\n\n\n\n\n\n\n\n**⚠️ Beta Testing Notice**\nThis bot is currently in beta testing. If you encounter any bugs or issues, please DM <@259725211664908288> to report them. Your feedback helps improve the bot!",
                     color=discord.Color.green()
                 )
                 
