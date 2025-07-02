@@ -150,7 +150,6 @@ class DiscordEmbedLogger:
             color=0x00ff00,
             timestamp=datetime.now()
         )
-        embed.add_field(name="📍 Channel", value=channel_name, inline=True)
         embed.add_field(name="🏠 Server", value=guild_name, inline=True)
         embed.add_field(name="⏰ Status", value="Ready to stream", inline=True)
         
@@ -164,7 +163,6 @@ class DiscordEmbedLogger:
             color=0xff0000,
             timestamp=datetime.now()
         )
-        embed.add_field(name="📍 Channel", value=channel_name, inline=True)
         embed.add_field(name="❌ Reason", value=reason, inline=True)
         embed.add_field(name="⏰ Status", value="Offline", inline=True)
         
@@ -272,7 +270,6 @@ class DiscordEmbedLogger:
         )
         embed.add_field(name="👤 User", value=f"<@{interaction.user.id}>", inline=True)
         embed.add_field(name="🔘 Button", value=button_name, inline=True)
-        embed.add_field(name="📍 Channel", value=self._get_channel_name(interaction.channel), inline=True)
         
         if action_result:
             embed.add_field(name="✅ Result", value=action_result, inline=False)
@@ -293,7 +290,6 @@ class DiscordEmbedLogger:
         embed.add_field(name="👤 User", value=f"<@{interaction.user.id}>", inline=True)
         embed.add_field(name="📋 Menu", value=select_name, inline=True)
         embed.add_field(name="✅ Selected", value=selected_value, inline=True)
-        embed.add_field(name="📍 Channel", value=self._get_channel_name(interaction.channel), inline=True)
         
         if action_result:
             embed.add_field(name="🎯 Result", value=action_result, inline=False)
