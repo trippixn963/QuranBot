@@ -1472,41 +1472,36 @@ async def setup(bot):
                     })
                     return
                 
-                # Check if a control panel already exists and delete it
+                # Delete ALL bot messages in the panel channel to ensure fresh start
                 try:
-                    async for message in panel_channel.history(limit=50):
-                        # Check if this message has our control panel embed (check for specific format since we removed title)
-                        if (message.embeds and 
-                            message.author == bot.user and
-                            message.embeds[0].description and 
-                            "• **Now Playing**:" in message.embeds[0].description and
-                            "• **Reciter**:" in message.embeds[0].description):
-                            
-                            log_operation("check", "INFO", {
-                                "component": "create_panel",
-                                "action": "existing_panel_found",
-                                "message_id": message.id,
-                                "channel_name": panel_channel.name
-                            })
-                            
-                            # Delete the existing panel
+                    deleted_count = 0
+                    async for message in panel_channel.history(limit=100):
+                        # Delete ALL messages from this bot to ensure clean slate
+                        if message.author == bot.user:
                             try:
                                 await message.delete()
+                                deleted_count += 1
                                 log_operation("delete", "INFO", {
                                     "component": "create_panel",
-                                    "action": "existing_panel_deleted",
+                                    "action": "bot_message_deleted",
                                     "message_id": message.id,
                                     "channel_name": panel_channel.name
                                 })
                             except Exception as e:
                                 log_operation("delete", "WARNING", {
                                     "component": "create_panel",
-                                    "action": "panel_deletion_failed",
+                                    "action": "message_deletion_failed",
                                     "message_id": message.id,
                                     "error": str(e)
                                 })
-                            
-                            break  # Found and deleted the panel, break out of the loop
+                    
+                    log_operation("cleanup", "INFO", {
+                        "component": "create_panel",
+                        "action": "cleanup_completed",
+                        "messages_deleted": deleted_count,
+                        "channel_name": panel_channel.name
+                    })
+                    
                 except Exception as e:
                     log_operation("check", "WARNING", {
                         "component": "create_panel",
@@ -1636,11 +1631,58 @@ async def setup(bot):
             try:
                 log_operation("init", "INFO", {
                     "component": "delayed_create_panel",
-                    "delay_seconds": 3
+                    "delay_seconds": 10
                 })
                 
-                await asyncio.sleep(3)  # Wait 3 seconds for bot to fully connect
-                await create_panel()
+                await asyncio.sleep(10)  # Wait 10 seconds for bot to fully connect
+                
+                # Wait for bot to be properly connected to guilds and ready
+                max_retries = 5
+                for attempt in range(max_retries):
+                    if bot.guilds and bot.is_ready():  # Bot is connected to guilds and fully ready
+                        log_operation("init", "INFO", {
+                            "component": "delayed_create_panel",
+                            "attempt": attempt + 1,
+                            "guilds_connected": len(bot.guilds),
+                            "guild_names": [guild.name for guild in bot.guilds],
+                            "bot_ready": bot.is_ready(),
+                            "bot_user": str(bot.user) if bot.user else None
+                        })
+                        break
+                    else:
+                        log_operation("init", "WARNING", {
+                            "component": "delayed_create_panel",
+                            "attempt": attempt + 1,
+                            "message": "Bot not fully ready yet, waiting longer...",
+                            "guilds_connected": len(bot.guilds) if bot.guilds else 0,
+                            "bot_ready": bot.is_ready(),
+                            "waiting_seconds": 5
+                        })
+                        await asyncio.sleep(5)  # Wait additional 5 seconds
+                
+                # Try to create panel with retry logic
+                max_panel_retries = 3
+                for panel_attempt in range(max_panel_retries):
+                    try:
+                        await create_panel()
+                        log_operation("success", "INFO", {
+                            "component": "delayed_create_panel",
+                            "action": "panel_creation_successful",
+                            "attempt": panel_attempt + 1
+                        })
+                        break  # Success, exit retry loop
+                    except Exception as panel_error:
+                        log_operation("error", "WARNING", {
+                            "component": "delayed_create_panel",
+                            "action": "panel_creation_failed",
+                            "attempt": panel_attempt + 1,
+                            "error": str(panel_error),
+                            "retrying": panel_attempt < max_panel_retries - 1
+                        })
+                        if panel_attempt < max_panel_retries - 1:
+                            await asyncio.sleep(5)  # Wait before retry
+                        else:
+                            raise  # Final attempt failed, re-raise the error
                 
             except Exception as e:
                 log_operation("error", "ERROR", {
