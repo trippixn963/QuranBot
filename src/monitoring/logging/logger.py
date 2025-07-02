@@ -167,12 +167,23 @@ logger.setLevel(logging.DEBUG)  # Capture all levels
 for handler in logger.handlers[:]:
     logger.removeHandler(handler)
 
-# Professional log format, no emojis
-file_formatter = logging.Formatter(
+# Professional log format, no emojis - use defaults when extra is missing
+class SafeFormatter(logging.Formatter):
+    def format(self, record):
+        # Ensure extra field exists
+        if not hasattr(record, 'extra') or record.extra is None:
+            record.extra = ''
+        else:
+            # If extra is a dict, convert to string
+            if isinstance(record.extra, dict):
+                record.extra = str(record.extra)
+        return super().format(record)
+
+file_formatter = SafeFormatter(
     '%(asctime)s | %(name)s | %(levelname)s | %(message)s | %(extra)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
-console_formatter = logging.Formatter(
+console_formatter = SafeFormatter(
     '%(asctime)s | %(levelname)s | %(message)s | %(extra)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
