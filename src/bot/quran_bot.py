@@ -170,7 +170,7 @@ class QuranBot(discord.Client):
                     if log_path:
                         async with aiofiles.open(log_path, 'r', encoding='utf-8') as f:
                             lines = await f.readlines()
-                        last_lines = lines[-50:] if len(lines) > 50 else lines
+                        last_lines = lines[-10:] if len(lines) > 10 else lines
                         log_content = ''.join(last_lines)
                         # Discord message limit is 2000 chars
                         for chunk in [log_content[i:i+1900] for i in range(0, len(log_content), 1900)]:
