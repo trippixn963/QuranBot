@@ -18,20 +18,19 @@ import signal
 # Add src to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.config.config import Config
-from monitoring.logging.logger import (
-    logger, log_bot_startup, log_audio_playback,
+from utils.config import Config
+from utils.logger import (
+    logger, log_bot_startup, log_audio_playback, log_crossfade_generation,
     log_connection_attempt, log_connection_success, log_connection_failure,
     log_health_report, log_state_save, log_state_load, log_performance,
     log_error, log_discord_event, log_ffmpeg_operation, log_security_event,
     log_retry_operation, log_shutdown, log_disconnection, track_performance
 )
-from monitoring.health.health import HealthMonitor
-from monitoring.health.health_reporter import HealthReporter
-from monitoring.logging.discord_logger import DiscordEmbedLogger
-from core.state.state_manager import StateManager
-from core.mapping.surah_mapper import get_surah_from_filename, get_surah_emoji, get_surah_display_name
-from monitoring.logging.log_helpers import log_async_function_call, log_function_call, log_operation, get_system_metrics, get_discord_context, get_bot_state
+from utils.health import HealthMonitor
+from utils.health_reporter import HealthReporter
+from utils.state_manager import StateManager
+from utils.surah_mapper import get_surah_from_filename, get_surah_emoji, get_surah_display_name
+from utils.log_helpers import log_async_function_call, log_function_call, log_operation, get_system_metrics, get_discord_context, get_bot_state
 
 class QuranBot(discord.Client):
     """Professional Discord bot for 24/7 Quran streaming."""
@@ -70,13 +69,6 @@ class QuranBot(discord.Client):
         # Health reporting
         self.health_reporter = None
         
-        # Discord embed logging
-        self.discord_logger = DiscordEmbedLogger(
-            self, 
-            1389683881078423567,  # logs channel
-            1389675580253016144   # target VC to track
-        )
-        
         # State management
         self.state_manager = StateManager()
         
@@ -94,12 +86,12 @@ class QuranBot(discord.Client):
         
         # Load individual command files
         commands_to_load = [
-            'src.cogs.admin.bot_control.restart',
-            'src.cogs.admin.monitoring.status',
-            'src.cogs.admin.misc.skip',
-            'src.cogs.admin.bot_control.reconnect',
-            'src.cogs.admin.misc.credits',
-            'src.cogs.admin.monitoring.utility_logs',
+            'src.cogs.admin_commands.restart',
+            'src.cogs.admin_commands.status',
+            'src.cogs.admin_commands.skip',
+            'src.cogs.admin_commands.reconnect',
+            'src.cogs.admin_commands.credits',
+            'src.cogs.utility_commands.logs',
             'src.cogs.user_commands.control_panel'
         ]
         
@@ -162,9 +154,6 @@ class QuranBot(discord.Client):
             # Initialize health monitoring
             self.health_reporter = HealthReporter(self, self.health_monitor, Config.LOGS_CHANNEL_ID)
             await self.health_reporter.start()
-            
-            # Initialize Discord logger sessions for users already in VC
-            await self.discord_logger.initialize_existing_users()
             
             # Initialize state manager
             self.state_manager = StateManager()
@@ -231,13 +220,11 @@ class QuranBot(discord.Client):
         log_performance("find_and_join_channel_total", t2-t0)
         
     async def on_voice_state_update(self, member, before, after):
-        """Handle voice state updates for reconnection logic and user tracking."""
-        # Handle bot's own voice state changes
+        """Handle voice state updates for reconnection logic."""
         if self.user and member.id == self.user.id:
             if before.channel and not after.channel:
                 # Bot was disconnected
                 log_disconnection(before.channel.name, "Disconnected from voice channel")
-                await self.discord_logger.log_bot_disconnected(before.channel.name, "Disconnected from voice channel")
                 self.is_streaming = False
                 self.health_monitor.set_streaming_status(False)
                 
@@ -262,7 +249,6 @@ class QuranBot(discord.Client):
             elif not before.channel and after.channel:
                 # Bot connected to voice
                 log_connection_success(after.channel.name, after.channel.guild.name)
-                await self.discord_logger.log_bot_connected(after.channel.name, after.channel.guild.name)
                 # Reset connection failure counter on successful connection
                 if self.connection_failures > 0:
                     logger.info(f"Connection successful! Reset failure counter from {self.connection_failures} to 0.", 
@@ -276,18 +262,6 @@ class QuranBot(discord.Client):
             elif before.channel and after.channel and before.channel != after.channel:
                 # Bot moved to different channel
                 log_connection_success(after.channel.name, after.channel.guild.name)
-                
-        # Handle user voice state changes (not the bot) - only track target Quran VC
-        elif member != self.user:
-            target_vc_id = self.discord_logger.target_vc_id
-            
-            # User joined the target Quran VC from nowhere or different channel
-            if after.channel and after.channel.id == target_vc_id and (not before.channel or before.channel.id != target_vc_id):
-                await self.discord_logger.log_user_joined_vc(member, after.channel.name)
-            
-            # User left the target Quran VC to nowhere or different channel  
-            elif before.channel and before.channel.id == target_vc_id and (not after.channel or after.channel.id != target_vc_id):
-                await self.discord_logger.log_user_left_vc(member, before.channel.name)
 
     async def on_disconnect(self):
         """Handle bot disconnection."""
@@ -664,8 +638,6 @@ class QuranBot(discord.Client):
                                 log_audio_playback(f"{surah_display} ({file_name}) - Reciter: {self.current_reciter} [LOOP]")
                                 self.state_manager.increment_songs_played()
                                 self.health_monitor.update_current_song(file_name)
-                                # Log surah change to Discord (loop mode)
-                                await self.discord_logger.log_surah_changed(surah_info, Config.get_reciter_display_name(self.current_reciter))
                                 await self.update_presence_for_surah(surah_info)
                                 success = await self.play_surah_with_retries(voice_client, mp3_file)
                                 if not success:
@@ -711,8 +683,6 @@ class QuranBot(discord.Client):
                         self.state_manager.increment_songs_played()
                         self.health_monitor.update_current_song(file_name)
                         self.current_audio_file = file_name
-                        # Log surah change to Discord
-                        await self.discord_logger.log_surah_changed(surah_info, Config.get_reciter_display_name(self.current_reciter))
                         await self.update_presence_for_surah(surah_info)
                         success = await self.play_surah_with_retries(voice_client, mp3_file)
                         if not success:
@@ -779,7 +749,7 @@ class QuranBot(discord.Client):
 
     def signal_handler(self, signum, frame):
         """Handle shutdown signals gracefully."""
-        logger.warning(f"\n🛑 Received signal {signum}. Starting graceful shutdown...")
+        print(f"\n🛑 Received signal {signum}. Starting graceful shutdown...")
         asyncio.create_task(self.graceful_shutdown())
         
     async def graceful_shutdown(self):
@@ -795,10 +765,6 @@ class QuranBot(discord.Client):
             if self.health_reporter:
                 await self.health_reporter.stop()
                 logger.info("Health reporting stopped")
-            
-            # Cleanup Discord logger sessions
-            if hasattr(self, 'discord_logger'):
-                await self.discord_logger.cleanup_sessions()
             
             # Stop presence cycling
             if self.presence_task and not self.presence_task.done():
@@ -827,11 +793,11 @@ class QuranBot(discord.Client):
             await self.close()
             
             log_shutdown("Graceful shutdown completed")
-            logger.info("✅ Graceful shutdown completed successfully!")
+            print("✅ Graceful shutdown completed successfully!")
             
         except Exception as e:
             log_error(e, "graceful_shutdown")
-            logger.error(f"❌ Error during shutdown: {e}")
+            print(f"❌ Error during shutdown: {e}")
         finally:
             # Force exit after cleanup
             sys.exit(0)
@@ -855,10 +821,10 @@ def main():
     """Main entry point for the Quran Bot."""
     # Validate configuration
     if not Config.validate():
-        logger.critical("❌ Configuration validation failed!")
+        print("❌ Configuration validation failed!")
         return
     if not Config.DISCORD_TOKEN:
-        logger.critical("❌ Discord token not set in environment!")
+        print("❌ Discord token not set in environment!")
         return
     # Create bot instance
     bot = QuranBot()
@@ -867,7 +833,7 @@ def main():
         bot.run(Config.DISCORD_TOKEN)
     except Exception as e:
         log_error(e, "main")
-        logger.critical(f"❌ Failed to start bot: {e}")
+        print(f"❌ Failed to start bot: {e}")
 
 if __name__ == "__main__":
     main() 

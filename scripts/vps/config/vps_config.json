@@ -1,0 +1,58 @@
+{
+  "vps": {
+    "host": "159.89.90.90",
+    "user": "root",
+    "ssh_key": "C:/Users/hanna/.ssh/id_rsa",
+    "port": 22,
+    "connection_timeout": 30,
+    "command_timeout": 60
+  },
+  "bot": {
+    "service_name": "quranbot",
+    "install_path": "/opt/quranbot",
+    "log_path": "/opt/quranbot/logs",
+    "data_path": "/opt/quranbot/data",
+    "backup_path": "/opt/quranbot/backups",
+    "systemd_path": "/etc/systemd/system/quranbot.service",
+    "repo_url": "https://github.com/yourusername/QuranBot.git",
+    "branch": "master",
+    "python_path": "/usr/bin/python3",
+    "venv_path": "/opt/quranbot/venv"
+  },
+  "monitoring": {
+    "health_check_interval": 300,
+    "log_retention_days": 30,
+    "alert_on_failure": true,
+    "discord_webhook": "",
+    "email_alerts": false,
+    "performance_monitoring": true
+  },
+  "backup": {
+    "enabled": true,
+    "frequency": "daily",
+    "retention_days": 7,
+    "include_logs": false,
+    "include_data": true,
+    "remote_backup": false
+  },
+  "deployment": {
+    "auto_restart_on_update": true,
+    "run_tests_before_deploy": true,
+    "backup_before_deploy": true,
+    "rollback_on_failure": true,
+    "migration_timeout": 300
+  },
+  "security": {
+    "fail2ban_enabled": true,
+    "firewall_enabled": true,
+    "auto_security_updates": true,
+    "log_security_events": true
+  },
+  "local": {
+    "log_download_path": "./logs/vps",
+    "backup_download_path": "./backups/vps",
+    "temp_path": "./temp/vps",
+    "editor": "notepad",
+    "browser": "chrome"
+  }
+} 

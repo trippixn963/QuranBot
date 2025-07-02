@@ -11,9 +11,9 @@ from discord.ui import View, Select, Button
 import functools
 
 # Use the main logger from utils
-from monitoring.logging.logger import logger
-from monitoring.logging.log_helpers import log_async_function_call, log_function_call, log_operation, get_system_metrics, get_discord_context, get_bot_state
-from core.state.panel_manager import panel_manager
+from utils.logger_fixed import logger
+from utils.log_helpers import log_async_function_call, log_function_call, log_operation, get_system_metrics, get_discord_context, get_bot_state
+from utils.panel_manager import panel_manager
 
 def get_system_metrics():
     """Get comprehensive system metrics"""
@@ -584,24 +584,9 @@ class ReciterSelect(Select):
             except Exception:
                 pass
         
-        # Get current reciter for logging
-        old_reciter = self.bot.get_current_reciter()
-        
         # Switch reciter
         success = self.bot.set_current_reciter(reciter)
         if success:
-            # Log reciter change to Discord
-            try:
-                if hasattr(self.bot, 'discord_logger'):
-                    await self.bot.discord_logger.log_reciter_changed(
-                        old_reciter, 
-                        reciter, 
-                        interaction.user.display_name
-                    )
-            except Exception as discord_log_error:
-                from monitoring.logging.logger import logger
-                logger.warning(f"Failed to log reciter change to Discord: {discord_log_error}")
-            
             # Track the reciter change
             self.bot.state_manager.set_last_change("Reciter changed", interaction.user.id, interaction.user.name, reciter)
         
@@ -1607,8 +1592,7 @@ async def setup(bot):
                 })
                 
             except Exception as e:
-                from monitoring.logging.logger import logger
-            logger.error(f"Unexpected error in create_panel: {traceback.format_exc()}")
+                print(traceback.format_exc())
                 log_operation("error", "ERROR", {
                     "component": "create_panel",
                     "error_details": "panel_creation_failed",
