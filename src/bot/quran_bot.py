@@ -127,6 +127,7 @@ class QuranBot(discord.Client):
         # Playback control
         self.loop_enabled = False
         self.shuffle_enabled = False
+        self.original_playlist = []  # Store original playlist for shuffle
         
         # Updated presence messages
         self.presence_messages = [
