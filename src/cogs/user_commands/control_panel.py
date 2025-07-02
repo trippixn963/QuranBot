@@ -132,11 +132,13 @@ class SurahSelect(Select):
         # Get all surahs with their numbers and names
         all_surahs = []
         for i in range(1, 115):  # 1 to 114
-            surah_info = bot.get_surah_info(i) if hasattr(bot, 'get_surah_info') else {
-                'number': i,
-                'english_name': f'Surah {i}'
-            }
-            all_surahs.append((i, str(i).zfill(3), surah_info.get('english_name', f'Surah {i}')))
+            surah_info = bot.get_surah_info(i) if hasattr(bot, 'get_surah_info') else None
+            if surah_info and 'english_name' in surah_info:
+                surah_name = surah_info['english_name']
+            else:
+                from utils.surah_mapper import get_surah_info
+                surah_name = get_surah_info(i)['english_name']
+            all_surahs.append((i, str(i).zfill(3), surah_name))
         
         # Pagination: 25 surahs per page
         surahs_per_page = 25
