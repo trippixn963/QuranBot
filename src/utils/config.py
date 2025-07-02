@@ -151,6 +151,7 @@ class Config:
             "Muhammad Al Luhaidan": "Muhammad Al Luhaidan",
             "Rashid Al Afasy": "Rashid Al Afasy",
             "Abdul Basit Abdul Samad": "Abdul Basit Abdul Samad",
+            "Yasser Al Dosari": "Yasser Al Dosari",
             # Add more mappings as needed
         }
         return display_names.get(folder_name, folder_name)
@@ -175,7 +176,8 @@ class Config:
                         "Maher Al Muaiqly",
                         "Muhammad Al Luhaidan",
                         "Rashid Al Afasy",
-                        "Abdul Basit Abdul Samad"
+                        "Abdul Basit Abdul Samad",
+                        "Yasser Al Dosari"
                     ]:
                         reciters.append(display_name)
         return sorted(reciters)
@@ -189,6 +191,7 @@ class Config:
             "Muhammad Al Luhaidan": "Muhammad Al Luhaidan",
             "Rashid Al Afasy": "Rashid Al Afasy",
             "Abdul Basit Abdul Samad": "Abdul Basit Abdul Samad",
+            "Yasser Al Dosari": "Yasser Al Dosari",
             # Add more mappings as needed
         }
         
