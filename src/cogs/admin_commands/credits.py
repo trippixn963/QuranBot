@@ -96,7 +96,8 @@ async def credits_command(interaction: discord.Interaction):
     embed.add_field(
         name="👨‍💻 Creator",
         value="**Developer:** <@259725211664908288>\n"
-              "**Role:** Full-Stack Developer & Bot Creator",
+              "**Role:** Full-Stack Developer & Bot Creator\n"
+              "**GitHub:** [QuranBot Repository](https://github.com/JohnHamwi/QuranAudioBot)",
         inline=False
     )
     

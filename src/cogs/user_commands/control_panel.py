@@ -554,6 +554,13 @@ class ControlPanelView(View):
             inline=False
         )
         
+        # GitHub Repository
+        credits_embed.add_field(
+            name="📂 **GitHub Repository**",
+            value="[QuranBot Repository](https://github.com/JohnHamwi/QuranAudioBot)\n\nView the source code, report issues, and contribute to the project!",
+            inline=False
+        )
+        
         # Footer
         credits_embed.set_footer(text="QuranBot v2.0.0 • Made with ❤️ for the Muslim community")
         credits_embed.timestamp = discord.utils.utcnow()
