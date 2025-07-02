@@ -7,7 +7,7 @@ import time
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 from dataclasses import dataclass, asdict
-from .log_helpers import log_function_call, log_operation
+from ..logging.log_helpers import log_function_call, log_operation
 
 @dataclass
 class BotMetrics:

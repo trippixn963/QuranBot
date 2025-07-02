@@ -28,7 +28,7 @@ from monitoring.logging.logger import (
     log_dependency_check, log_system_event, log_health_check_component,
     log_metrics_summary, performance_tracker, system_monitor
 )
-from .log_helpers import log_function_call, log_operation
+from ..logging.log_helpers import log_function_call, log_operation
 
 async def test_basic_logging():
     """Test basic logging functions."""
