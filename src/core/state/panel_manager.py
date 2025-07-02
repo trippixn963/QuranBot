@@ -6,7 +6,7 @@ Manages panel updates through event-driven system.
 import discord
 import asyncio
 from typing import Optional, TYPE_CHECKING
-from .log_helpers import log_operation
+from monitoring.logging.log_helpers import log_operation
 
 if TYPE_CHECKING:
     from cogs.user_commands.control_panel import ControlPanelView

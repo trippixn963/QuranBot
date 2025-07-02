@@ -7,7 +7,7 @@ import json
 import os
 from datetime import datetime
 from typing import Dict, Any, Optional, List, Callable
-from .log_helpers import log_function_call, log_operation
+from monitoring.logging.log_helpers import log_function_call, log_operation
 
 class StateManager:
     """Manages persistent state for the Quran Bot with event notifications."""
