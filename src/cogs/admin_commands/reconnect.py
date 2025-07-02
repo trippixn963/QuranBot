@@ -4,12 +4,17 @@ import os
 import time
 import asyncio
 
-# Get admin ID from environment variable
-ADMIN_USER_ID = int(os.getenv('ADMIN_USER_ID', '0'))
+# Get admin IDs from environment variable (comma-separated)
+def get_admin_ids():
+    admin_env = os.getenv('ADMIN_USER_IDS', '')
+    if admin_env:
+        return [int(uid.strip()) for uid in admin_env.split(',') if uid.strip().isdigit()]
+    return []
 
 def is_admin(interaction: discord.Interaction) -> bool:
-    """Check if the user is the admin."""
-    return interaction.user.id == ADMIN_USER_ID
+    """Check if the user is an admin."""
+    admin_ids = get_admin_ids()
+    return interaction.user.id in admin_ids
 
 @app_commands.command(name="reconnect", description="Reconnect to voice channel (Admin only)")
 @app_commands.check(is_admin)
@@ -20,6 +25,17 @@ async def reconnect(interaction: discord.Interaction):
         description="Attempting to reconnect to voice channel...",
         color=discord.Color.blue()
     )
+    
+    # Add creator as author and bot as thumbnail
+    try:
+        creator = await interaction.client.fetch_user(259725211664908288)
+        if creator and creator.avatar:
+            embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+    except Exception as e:
+        pass
+    
+    if interaction.client.user and interaction.client.user.avatar:
+        embed.set_thumbnail(url=interaction.client.user.avatar.url)
     
     await interaction.response.send_message(embed=embed, ephemeral=True)
     
@@ -50,6 +66,18 @@ async def reconnect_error(interaction: discord.Interaction, error: app_commands.
             description="This command is only available to the bot administrator.",
             color=discord.Color.red()
         )
+        
+        # Add creator as author and bot as thumbnail
+        try:
+            creator = await interaction.client.fetch_user(259725211664908288)
+            if creator and creator.avatar:
+                embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+        except Exception as e:
+            pass
+        
+        if interaction.client.user and interaction.client.user.avatar:
+            embed.set_thumbnail(url=interaction.client.user.avatar.url)
+        
         await interaction.response.send_message(embed=embed, ephemeral=True)
     else:
         embed = discord.Embed(
@@ -57,8 +85,20 @@ async def reconnect_error(interaction: discord.Interaction, error: app_commands.
             description=f"An error occurred: {str(error)}",
             color=discord.Color.red()
         )
+        
+        # Add creator as author and bot as thumbnail
+        try:
+            creator = await interaction.client.fetch_user(259725211664908288)
+            if creator and creator.avatar:
+                embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+        except Exception as e:
+            pass
+        
+        if interaction.client.user and interaction.client.user.avatar:
+            embed.set_thumbnail(url=interaction.client.user.avatar.url)
+        
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 async def setup(bot):
     """Setup the reconnect command."""
-    bot.tree.add_command(reconnect) 
+    bot.tree.add_command(reconnect)

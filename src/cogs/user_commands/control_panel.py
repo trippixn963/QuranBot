@@ -208,6 +208,18 @@ class SurahSelect(Select):
                 embed.add_field(name="Required", value="Join the Quran voice channel", inline=True)
                 embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
                 embed.set_footer(text="QuranBot Control Panel")
+                # Add creator as author and bot as thumbnail
+                try:
+                    creator = await interaction.client.fetch_user(259725211664908288)
+                    if creator and creator.avatar:
+                        embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+                except Exception as e:
+                    log_operation("error", "WARNING", {
+                        "action": "creator_avatar_fetch_failed",
+                        "error": str(e)
+                    })
+                if self.bot.user and self.bot.user.avatar:
+                    embed.set_thumbnail(url=self.bot.user.avatar.url)
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
@@ -222,6 +234,18 @@ class SurahSelect(Select):
             embed.add_field(name="Selected Surah", value=f"Surah {surah_num}", inline=True)
             embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
             embed.set_footer(text="QuranBot Control Panel")
+            # Add creator as author and bot as thumbnail
+            try:
+                creator = await interaction.client.fetch_user(259725211664908288)
+                if creator and creator.avatar:
+                    embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+            except Exception as e:
+                log_operation("error", "WARNING", {
+                    "action": "creator_avatar_fetch_failed",
+                    "error": str(e)
+                })
+            if self.bot.user and self.bot.user.avatar:
+                embed.set_thumbnail(url=self.bot.user.avatar.url)
             await interaction.response.send_message(embed=embed, ephemeral=True)
             
             # Get current state before change
@@ -336,6 +360,18 @@ class ReciterSelect(Select):
                 embed.add_field(name="Required", value="Join the Quran voice channel", inline=True)
                 embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
                 embed.set_footer(text="QuranBot Control Panel")
+                # Add creator as author and bot as thumbnail
+                try:
+                    creator = await interaction.client.fetch_user(259725211664908288)
+                    if creator and creator.avatar:
+                        embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+                except Exception as e:
+                    log_operation("error", "WARNING", {
+                        "action": "creator_avatar_fetch_failed",
+                        "error": str(e)
+                    })
+                if self.bot.user and self.bot.user.avatar:
+                    embed.set_thumbnail(url=self.bot.user.avatar.url)
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
@@ -367,6 +403,18 @@ class ReciterSelect(Select):
                 embed.add_field(name="Reciter", value=reciter, inline=True)
                 embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
                 embed.set_footer(text="QuranBot Control Panel")
+                # Add creator as author and bot as thumbnail
+                try:
+                    creator = await interaction.client.fetch_user(259725211664908288)
+                    if creator and creator.avatar:
+                        embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+                except Exception as e:
+                    log_operation("error", "WARNING", {
+                        "action": "creator_avatar_fetch_failed",
+                        "error": str(e)
+                    })
+                if self.bot.user and self.bot.user.avatar:
+                    embed.set_thumbnail(url=self.bot.user.avatar.url)
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
@@ -379,6 +427,18 @@ class ReciterSelect(Select):
             embed.add_field(name="New Reciter", value=reciter, inline=True)
             embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
             embed.set_footer(text="QuranBot Control Panel")
+            # Add creator as author and bot as thumbnail
+            try:
+                creator = await interaction.client.fetch_user(259725211664908288)
+                if creator and creator.avatar:
+                    embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+            except Exception as e:
+                log_operation("error", "WARNING", {
+                    "action": "creator_avatar_fetch_failed",
+                    "error": str(e)
+                })
+            if self.bot.user and self.bot.user.avatar:
+                embed.set_thumbnail(url=self.bot.user.avatar.url)
             await interaction.response.send_message(embed=embed, ephemeral=True)
             
             # Get new audio files for the new reciter
@@ -504,6 +564,18 @@ class ControlPanelView(View):
                 embed.add_field(name="Required", value="Join the Quran voice channel", inline=True)
                 embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
                 embed.set_footer(text="QuranBot Control Panel")
+                # Add creator as author and bot as thumbnail
+                try:
+                    creator = await interaction.client.fetch_user(259725211664908288)
+                    if creator and creator.avatar:
+                        embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+                except Exception as e:
+                    log_operation("error", "WARNING", {
+                        "action": "creator_avatar_fetch_failed",
+                        "error": str(e)
+                    })
+                if self.bot.user and self.bot.user.avatar:
+                    embed.set_thumbnail(url=self.bot.user.avatar.url)
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
@@ -541,6 +613,18 @@ class ControlPanelView(View):
                 embed.add_field(name="Current Page", value="1", inline=True)
                 embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
                 embed.set_footer(text="QuranBot Control Panel")
+                # Add creator as author and bot as thumbnail
+                try:
+                    creator = await interaction.client.fetch_user(259725211664908288)
+                    if creator and creator.avatar:
+                        embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+                except Exception as e:
+                    log_operation("error", "WARNING", {
+                        "action": "creator_avatar_fetch_failed",
+                        "error": str(e)
+                    })
+                if self.bot.user and self.bot.user.avatar:
+                    embed.set_thumbnail(url=self.bot.user.avatar.url)
                 await interaction.response.send_message(embed=embed, ephemeral=True)
             
             end_time = time.perf_counter()
@@ -564,6 +648,18 @@ class ControlPanelView(View):
                 embed.add_field(name="Required", value="Join the Quran voice channel", inline=True)
                 embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
                 embed.set_footer(text="QuranBot Control Panel")
+                # Add creator as author and bot as thumbnail
+                try:
+                    creator = await interaction.client.fetch_user(259725211664908288)
+                    if creator and creator.avatar:
+                        embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+                except Exception as e:
+                    log_operation("error", "WARNING", {
+                        "action": "creator_avatar_fetch_failed",
+                        "error": str(e)
+                    })
+                if self.bot.user and self.bot.user.avatar:
+                    embed.set_thumbnail(url=self.bot.user.avatar.url)
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
@@ -601,6 +697,18 @@ class ControlPanelView(View):
                 embed.add_field(name="Current Page", value=str(self.surah_select.total_pages), inline=True)
                 embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
                 embed.set_footer(text="QuranBot Control Panel")
+                # Add creator as author and bot as thumbnail
+                try:
+                    creator = await interaction.client.fetch_user(259725211664908288)
+                    if creator and creator.avatar:
+                        embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+                except Exception as e:
+                    log_operation("error", "WARNING", {
+                        "action": "creator_avatar_fetch_failed",
+                        "error": str(e)
+                    })
+                if self.bot.user and self.bot.user.avatar:
+                    embed.set_thumbnail(url=self.bot.user.avatar.url)
                 await interaction.response.send_message(embed=embed, ephemeral=True)
             
             end_time = time.perf_counter()
@@ -703,24 +811,20 @@ class ControlPanelView(View):
             embed.set_footer(text="Made with ❤️ for the Muslim Ummah • QuranBot v2.0.0")
             embed.timestamp = discord.utils.utcnow()
             
-            # Set creator's Discord profile picture
+            # Add creator as author and bot as thumbnail
             try:
-                creator_user = await interaction.client.fetch_user(259725211664908288)
-                if creator_user and creator_user.avatar:
-                    embed.set_thumbnail(url=creator_user.avatar.url)
+                creator = await interaction.client.fetch_user(259725211664908288)
+                if creator and creator.avatar:
+                    embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
             except Exception as e:
-                log_operation("credits", "WARNING", {
-                    "user_id": interaction.user.id,
-                    "user_name": interaction.user.name,
+                log_operation("error", "WARNING", {
                     "action": "creator_avatar_fetch_failed",
                     "error": str(e)
                 })
-                # Fallback to guild icon if creator avatar fails
-                try:
-                    if interaction.guild and interaction.guild.icon:
-                        embed.set_thumbnail(url=interaction.guild.icon.url)
-                except:
-                    pass
+            
+            # Add bot avatar as thumbnail
+            if self.bot.user and self.bot.user.avatar:
+                embed.set_thumbnail(url=self.bot.user.avatar.url)
             
             await interaction.response.send_message(embed=embed, ephemeral=True)
             
@@ -769,6 +873,18 @@ class ControlPanelView(View):
                 embed.add_field(name="Required", value="Join the Quran voice channel", inline=True)
                 embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
                 embed.set_footer(text="QuranBot Control Panel")
+                # Add creator as author and bot as thumbnail
+                try:
+                    creator = await interaction.client.fetch_user(259725211664908288)
+                    if creator and creator.avatar:
+                        embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+                except Exception as e:
+                    log_operation("error", "WARNING", {
+                        "action": "creator_avatar_fetch_failed",
+                        "error": str(e)
+                    })
+                if self.bot.user and self.bot.user.avatar:
+                    embed.set_thumbnail(url=self.bot.user.avatar.url)
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
@@ -791,6 +907,18 @@ class ControlPanelView(View):
                 embed.add_field(name="Action", value="Previous surah", inline=True)
                 embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
                 embed.set_footer(text="QuranBot Control Panel")
+                # Add creator as author and bot as thumbnail
+                try:
+                    creator = await interaction.client.fetch_user(259725211664908288)
+                    if creator and creator.avatar:
+                        embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+                except Exception as e:
+                    log_operation("error", "WARNING", {
+                        "action": "creator_avatar_fetch_failed",
+                        "error": str(e)
+                    })
+                if self.bot.user and self.bot.user.avatar:
+                    embed.set_thumbnail(url=self.bot.user.avatar.url)
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 
                 # Do the heavy work in the background
@@ -851,6 +979,18 @@ class ControlPanelView(View):
                 embed.add_field(name="Current Surah", value="1", inline=True)
                 embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
                 embed.set_footer(text="QuranBot Control Panel")
+                # Add creator as author and bot as thumbnail
+                try:
+                    creator = await interaction.client.fetch_user(259725211664908288)
+                    if creator and creator.avatar:
+                        embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+                except Exception as e:
+                    log_operation("error", "WARNING", {
+                        "action": "creator_avatar_fetch_failed",
+                        "error": str(e)
+                    })
+                if self.bot.user and self.bot.user.avatar:
+                    embed.set_thumbnail(url=self.bot.user.avatar.url)
                 await interaction.response.send_message(embed=embed, ephemeral=True)
             
             end_time = time.perf_counter()
@@ -889,6 +1029,18 @@ class ControlPanelView(View):
                 embed.add_field(name="Required", value="Join the Quran voice channel", inline=True)
                 embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
                 embed.set_footer(text="QuranBot Control Panel")
+                # Add creator as author and bot as thumbnail
+                try:
+                    creator = await interaction.client.fetch_user(259725211664908288)
+                    if creator and creator.avatar:
+                        embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+                except Exception as e:
+                    log_operation("error", "WARNING", {
+                        "action": "creator_avatar_fetch_failed",
+                        "error": str(e)
+                    })
+                if self.bot.user and self.bot.user.avatar:
+                    embed.set_thumbnail(url=self.bot.user.avatar.url)
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
@@ -921,6 +1073,18 @@ class ControlPanelView(View):
             embed.add_field(name="Status", value="Loop mode toggled", inline=True)
             embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
             embed.set_footer(text="QuranBot Control Panel")
+            # Add creator as author and bot as thumbnail
+            try:
+                creator = await interaction.client.fetch_user(259725211664908288)
+                if creator and creator.avatar:
+                    embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+            except Exception as e:
+                log_operation("error", "WARNING", {
+                    "action": "creator_avatar_fetch_failed",
+                    "error": str(e)
+                })
+            if self.bot.user and self.bot.user.avatar:
+                embed.set_thumbnail(url=self.bot.user.avatar.url)
             await interaction.response.send_message(embed=embed, ephemeral=True)
             
             end_time = time.perf_counter()
@@ -959,6 +1123,18 @@ class ControlPanelView(View):
                 embed.add_field(name="Required", value="Join the Quran voice channel", inline=True)
                 embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
                 embed.set_footer(text="QuranBot Control Panel")
+                # Add creator as author and bot as thumbnail
+                try:
+                    creator = await interaction.client.fetch_user(259725211664908288)
+                    if creator and creator.avatar:
+                        embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+                except Exception as e:
+                    log_operation("error", "WARNING", {
+                        "action": "creator_avatar_fetch_failed",
+                        "error": str(e)
+                    })
+                if self.bot.user and self.bot.user.avatar:
+                    embed.set_thumbnail(url=self.bot.user.avatar.url)
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
@@ -991,6 +1167,18 @@ class ControlPanelView(View):
             embed.add_field(name="Status", value="Shuffle mode toggled", inline=True)
             embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
             embed.set_footer(text="QuranBot Control Panel")
+            # Add creator as author and bot as thumbnail
+            try:
+                creator = await interaction.client.fetch_user(259725211664908288)
+                if creator and creator.avatar:
+                    embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+            except Exception as e:
+                log_operation("error", "WARNING", {
+                    "action": "creator_avatar_fetch_failed",
+                    "error": str(e)
+                })
+            if self.bot.user and self.bot.user.avatar:
+                embed.set_thumbnail(url=self.bot.user.avatar.url)
             await interaction.response.send_message(embed=embed, ephemeral=True)
             
             end_time = time.perf_counter()
@@ -1029,6 +1217,18 @@ class ControlPanelView(View):
                 embed.add_field(name="Required", value="Join the Quran voice channel", inline=True)
                 embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
                 embed.set_footer(text="QuranBot Control Panel")
+                # Add creator as author and bot as thumbnail
+                try:
+                    creator = await interaction.client.fetch_user(259725211664908288)
+                    if creator and creator.avatar:
+                        embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+                except Exception as e:
+                    log_operation("error", "WARNING", {
+                        "action": "creator_avatar_fetch_failed",
+                        "error": str(e)
+                    })
+                if self.bot.user and self.bot.user.avatar:
+                    embed.set_thumbnail(url=self.bot.user.avatar.url)
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
@@ -1044,6 +1244,18 @@ class ControlPanelView(View):
                 embed.add_field(name="Action", value="Next surah", inline=True)
                 embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
                 embed.set_footer(text="QuranBot Control Panel")
+                # Add creator as author and bot as thumbnail
+                try:
+                    creator = await interaction.client.fetch_user(259725211664908288)
+                    if creator and creator.avatar:
+                        embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+                except Exception as e:
+                    log_operation("error", "WARNING", {
+                        "action": "creator_avatar_fetch_failed",
+                        "error": str(e)
+                    })
+                if self.bot.user and self.bot.user.avatar:
+                    embed.set_thumbnail(url=self.bot.user.avatar.url)
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 
                 # Get current state before change
@@ -1112,6 +1324,18 @@ class ControlPanelView(View):
                 embed.add_field(name="Current Surah", value=str(len(files)), inline=True)
                 embed.add_field(name="User", value=f"<@{interaction.user.id}>", inline=True)
                 embed.set_footer(text="QuranBot Control Panel")
+                # Add creator as author and bot as thumbnail
+                try:
+                    creator = await interaction.client.fetch_user(259725211664908288)
+                    if creator and creator.avatar:
+                        embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+                except Exception as e:
+                    log_operation("error", "WARNING", {
+                        "action": "creator_avatar_fetch_failed",
+                        "error": str(e)
+                    })
+                if self.bot.user and self.bot.user.avatar:
+                    embed.set_thumbnail(url=self.bot.user.avatar.url)
                 await interaction.response.send_message(embed=embed, ephemeral=True)
             
             end_time = time.perf_counter()
@@ -1245,9 +1469,20 @@ async def setup(bot):
                 embed.set_footer(text="QuranBot v2.0.0 • Only works for voice channel users")
                 embed.timestamp = discord.utils.utcnow()
                 
-                # Add bot avatar as author
+                # Add creator as author and bot as thumbnail
+                try:
+                    creator = await bot.fetch_user(259725211664908288)
+                    if creator and creator.avatar:
+                        embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+                except Exception as e:
+                    log_operation("error", "WARNING", {
+                        "action": "creator_avatar_fetch_failed",
+                        "error": str(e)
+                    })
+                
+                # Add bot avatar as thumbnail
                 if bot.user and bot.user.avatar:
-                    embed.set_author(name=bot.user.display_name, icon_url=bot.user.avatar.url)
+                    embed.set_thumbnail(url=bot.user.avatar.url)
                 
                 # Send the panel with buttons
                 view = ControlPanelView(bot)
@@ -1335,9 +1570,20 @@ async def send_interaction_log_embed(bot, interaction, action, response_time_ms,
         embed.add_field(name="❌ Error", value=str(error), inline=False)
     embed.set_footer(text=f"Channel: {getattr(interaction.channel, 'name', 'N/A')}")
     
-    # Add bot avatar as author
-    if bot.user and bot.user.avatar:
-        embed.set_author(name=bot.user.display_name, icon_url=bot.user.avatar.url)
+    # Add creator as author
+    try:
+        creator = await bot.fetch_user(259725211664908288)
+        if creator and creator.avatar:
+            embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+    except Exception as e:
+        log_operation("error", "WARNING", {
+            "action": "creator_avatar_fetch_failed",
+            "error": str(e)
+        })
+    
+    # Add user avatar as thumbnail since this is a user interaction log
+    if user and user.avatar:
+        embed.set_thumbnail(url=user.avatar.url)
     
     if channel and isinstance(channel, discord.TextChannel):
         await channel.send(embed=embed) 

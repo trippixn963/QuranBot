@@ -141,15 +141,11 @@ async def credits_command(interaction: discord.Interaction):
     embed.set_footer(text="Made with ❤️ for the Muslim Ummah • QuranBot v2.0.0")
     embed.timestamp = discord.utils.utcnow()
     
-    # Add bot avatar as author
-    if interaction.client.user and interaction.client.user.avatar:
-        embed.set_author(name=interaction.client.user.display_name, icon_url=interaction.client.user.avatar.url)
-    
-    # Set creator's Discord profile picture
+    # Add creator as author and bot as thumbnail
     try:
-        creator_user = await interaction.client.fetch_user(259725211664908288)
-        if creator_user and creator_user.avatar:
-            embed.set_thumbnail(url=creator_user.avatar.url)
+        creator = await interaction.client.fetch_user(259725211664908288)
+        if creator and creator.avatar:
+            embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
     except Exception as e:
         log_operation("credits", "WARNING", {
             "user_id": interaction.user.id,
@@ -157,12 +153,10 @@ async def credits_command(interaction: discord.Interaction):
             "action": "creator_avatar_fetch_failed",
             "error": str(e)
         })
-        # Fallback to guild icon if creator avatar fails
-        try:
-            if interaction.guild and interaction.guild.icon:
-                embed.set_thumbnail(url=interaction.guild.icon.url)
-        except:
-            pass
+    
+    # Add bot avatar as thumbnail
+    if interaction.client.user and interaction.client.user.avatar:
+        embed.set_thumbnail(url=interaction.client.user.avatar.url)
     
     await interaction.response.send_message(embed=embed, ephemeral=False)
     

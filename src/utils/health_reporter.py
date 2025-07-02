@@ -67,6 +67,17 @@ class HealthReporter:
                 timestamp=datetime.now()
             )
             
+            # Add creator as author and bot as thumbnail
+            try:
+                creator = await self.bot.fetch_user(259725211664908288)
+                if creator and creator.avatar:
+                    embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+            except Exception as e:
+                print(f"Failed to set creator avatar: {e}")
+            
+            if self.bot.user and self.bot.user.avatar:
+                embed.set_thumbnail(url=self.bot.user.avatar.url)
+            
             # Add fields
             embed.add_field(
                 name="⏱️ Uptime",

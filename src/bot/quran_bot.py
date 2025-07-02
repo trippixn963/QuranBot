@@ -151,6 +151,14 @@ class QuranBot(discord.Client):
             (discord.ActivityType.playing, "🕊️ Dhikr & Remembrance")
         ]
         
+        # Initialize playback variables
+        t0 = time.time()
+        consecutive_failures = 0
+        last_successful_playback = time.time()
+        
+        # Track notifications to avoid spam in loop mode
+        last_notified_surah = None
+        
     async def send_hourly_log_task(self):
         await self.wait_until_ready()
         channel_id = 1389683881078423567
@@ -171,11 +179,17 @@ class QuranBot(discord.Client):
                                 description=f"```py\n{chunk}\n```",
                                 color=discord.Color.blue()
                             )
-                            # Add bot avatar as thumbnail
-                            if getattr(self, 'user', None) and getattr(self.user, 'avatar', None):
+                            # Add creator as author and bot as thumbnail
+                            try:
+                                creator = await self.fetch_user(259725211664908288)
+                                if creator and creator.avatar:
+                                    embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+                            except Exception as e:
+                                logger.warning(f"Failed to set creator avatar: {e}")
+                            
+                            if self.user and self.user.avatar:
                                 embed.set_thumbnail(url=self.user.avatar.url)
-                            if getattr(self, 'user', None) and getattr(self.user, 'display_name', None) and getattr(self.user, 'avatar', None):
-                                embed.set_author(name=self.user.display_name, icon_url=self.user.avatar.url)
+                            
                             embed.set_footer(text="QuranBot Hourly Log • Auto-generated")
                             embed.timestamp = discord.utils.utcnow()
                             await channel.send(embed=embed)
@@ -210,12 +224,19 @@ class QuranBot(discord.Client):
                 description=content,
                 color=discord.Color.green()
             )
-            # Add user avatar as thumbnail
+            
+            # Add creator as author
+            try:
+                creator = await self.fetch_user(259725211664908288)
+                if creator and creator.avatar:
+                    embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+            except Exception as e:
+                logger.warning(f"Failed to set creator avatar: {e}")
+            
+            # Add user avatar as thumbnail since this is a user interaction log
             if user and user.avatar:
                 embed.set_thumbnail(url=user.avatar.url)
-            # Add bot avatar as author
-            if getattr(self, 'user', None) and getattr(self.user, 'avatar', None):
-                embed.set_author(name=self.user.display_name, icon_url=self.user.avatar.url)
+            
             if user:
                 embed.add_field(name="User", value=f"<@{user.id}> ({user})", inline=True)
             embed.add_field(name="Channel", value=getattr(interaction.channel, 'name', 'N/A'), inline=True)
@@ -229,12 +250,18 @@ class QuranBot(discord.Client):
                 color=discord.Color.blue()
             )
             
-            # Add user avatar as thumbnail
+            # Add creator as author
+            try:
+                creator = await self.fetch_user(259725211664908288)
+                if creator and creator.avatar:
+                    confirmation_embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+            except Exception as e:
+                logger.warning(f"Failed to set creator avatar: {e}")
+            
+            # Add user avatar as thumbnail since this is a user interaction log
             if user and user.avatar:
                 confirmation_embed.set_thumbnail(url=user.avatar.url)
-            # Add bot avatar as author
-            if getattr(self, 'user', None) and getattr(self.user, 'avatar', None):
-                confirmation_embed.set_author(name=self.user.display_name, icon_url=self.user.avatar.url)
+            
             if user:
                 confirmation_embed.add_field(name="User", value=f"<@{user.id}> ({user})", inline=True)
             confirmation_embed.add_field(name="Status", value="Logged", inline=True)
@@ -430,38 +457,19 @@ class QuranBot(discord.Client):
         log_performance("find_and_join_channel_total", t2-t0)
         
     async def on_voice_state_update(self, member, before, after):
-        """
-        Handle Discord voice state updates for reconnection logic and user tracking.
-        
-        This method monitors voice state changes and handles automatic
-        reconnection when the bot is disconnected from voice channels.
-        Also tracks user joins and leaves with duration logging.
-        
-        Features:
-        - Detects when the bot is disconnected
-        - Implements progressive reconnection delays
-        - Limits reconnection attempts to prevent infinite loops
-        - Updates streaming status and health monitoring
-        - Logs user joins and leaves with duration tracking
-        
-        Args:
-            member: The Discord member whose voice state changed
-            before: The previous voice state
-            after: The new voice state
-        """
         # Handle user joins and leaves (excluding bot itself)
-        if member and member.id != self.user.id:
+        if member and hasattr(member, 'id') and self.user and hasattr(self.user, 'id') and member.id != self.user.id:
             current_time = time.time()
             target_channel_id = 1389675580253016144
-            # User joined the target voice channel
-            if not before.channel and after.channel and after.channel.id == target_channel_id:
+            # User joins the Quran channel (from anywhere)
+            if (after.channel and after.channel.id == target_channel_id) and (not before.channel or before.channel.id != target_channel_id):
                 self.user_join_times[member.id] = current_time
                 logger.info(f"User joined voice channel: {member.display_name} ({member.id}) joined {after.channel.name} in {after.channel.guild.name}", 
                            extra={'event': 'USER_JOIN', 'user_id': member.id, 'user_name': member.display_name, 
                                  'channel_name': after.channel.name, 'guild_name': after.channel.guild.name})
                 await self.log_user_voice_activity(member, "joined", after.channel)
-            # User left the target voice channel
-            elif before.channel and not after.channel and before.channel.id == target_channel_id:
+            # User leaves the Quran channel (by disconnecting or moving to another channel)
+            elif (before.channel and before.channel.id == target_channel_id) and (not after.channel or after.channel.id != target_channel_id):
                 join_time = self.user_join_times.get(member.id)
                 duration = None
                 if join_time:
@@ -475,46 +483,13 @@ class QuranBot(discord.Client):
                            extra={'event': 'USER_LEAVE', 'user_id': member.id, 'user_name': member.display_name, 
                                  'channel_name': before.channel.name, 'guild_name': before.channel.guild.name, 'duration': duration, 'interactions': interaction_count})
                 await self.log_user_voice_activity(member, "left", before.channel, duration, interaction_count=interaction_count)
-            # User moved channels
-            elif before.channel and after.channel and before.channel != after.channel:
-                # If moving from Quran channel to anywhere else, treat as leave
-                if before.channel.id == target_channel_id and after.channel.id != target_channel_id:
-                    join_time = self.user_join_times.get(member.id)
-                    duration = None
-                    if join_time:
-                        duration = current_time - join_time
-                        del self.user_join_times[member.id]
-                    interaction_count = self.user_interaction_counts.get(member.id, 0)
-                    if member.id in self.user_interaction_counts:
-                        del self.user_interaction_counts[member.id]
-                    duration_str = self.format_duration(duration) if duration else "Unknown duration"
-                    logger.info(f"User left voice channel (moved): {member.display_name} ({member.id}) left {before.channel.name} in {before.channel.guild.name} - Stayed for {duration_str} | Interactions: {interaction_count}", 
-                               extra={'event': 'USER_LEAVE', 'user_id': member.id, 'user_name': member.display_name, 
-                                     'channel_name': before.channel.name, 'guild_name': before.channel.guild.name, 'duration': duration, 'interactions': interaction_count})
-                    await self.log_user_voice_activity(member, "left", before.channel, duration, interaction_count=interaction_count)
-                # If moving to Quran channel, treat as join
-                elif after.channel.id == target_channel_id and before.channel.id != target_channel_id:
-                    self.user_join_times[member.id] = current_time
-                    logger.info(f"User joined voice channel (moved): {member.display_name} ({member.id}) joined {after.channel.name} in {after.channel.guild.name}", 
-                               extra={'event': 'USER_JOIN', 'user_id': member.id, 'user_name': member.display_name, 
-                                     'channel_name': after.channel.name, 'guild_name': after.channel.guild.name})
-                    await self.log_user_voice_activity(member, "joined", after.channel)
-                # Only log move if both before and after are not the Quran channel
-                elif before.channel.id != target_channel_id and after.channel.id != target_channel_id:
-                    logger.info(f"User moved voice channels: {member.display_name} ({member.id}) moved from {before.channel.name} to {after.channel.name} in {after.channel.guild.name}", 
-                               extra={'event': 'USER_MOVE', 'user_id': member.id, 'user_name': member.display_name, 
-                                     'from_channel': before.channel.name, 'to_channel': after.channel.name, 
-                                     'guild_name': after.channel.guild.name})
-                    await self.log_user_voice_activity(member, "moved", after.channel, from_channel=before.channel)
-        
         # Handle bot voice state changes (existing logic)
-        if self.user and member.id == self.user.id:
+        if self.user and member and member.id == self.user.id:
             if before.channel and not after.channel:
                 # Bot was disconnected from voice channel
                 log_disconnection(before.channel.name, "Disconnected from voice channel")
                 self.is_streaming = False
                 self.health_monitor.set_streaming_status(False)
-                
                 # Increment connection failure counter
                 self.connection_failures += 1
                 if self.connection_failures >= self.max_connection_failures:
@@ -522,14 +497,11 @@ class QuranBot(discord.Client):
                                extra={'event': 'CONNECTION_FAILURE_LIMIT'})
                     self.is_streaming = False
                     return
-                
                 # Implement progressive delay to prevent rapid reconnection loops
-                # Wait longer between each attempt, up to 5 minutes maximum
                 wait_time = min(60 * self.connection_failures, 300)  # Progressive delay up to 5 minutes
                 logger.info(f"Waiting {wait_time} seconds before reconnection attempt {self.connection_failures}/{self.max_connection_failures}...", 
                            extra={'event': 'RECONNECT_WAIT', 'wait_time': wait_time, 'failures': self.connection_failures})
                 await asyncio.sleep(wait_time)
-                
                 if self.is_streaming:
                     logger.info("Attempting to reconnect after disconnection...", 
                                extra={'event': 'RECONNECT_ATTEMPT'})
@@ -862,6 +834,14 @@ class QuranBot(discord.Client):
                     await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=presence_str))
                 # Additional buffer
                 await asyncio.sleep(3)
+                
+                # Send Discord notification for surah change
+                asyncio.create_task(self.send_surah_change_notification(
+                    surah_info, 
+                    Config.get_reciter_display_name(self.current_reciter), 
+                    voice_client.channel
+                ))
+                
                 return True  # Success
             except discord.errors.ConnectionClosed as e:
                 if "4006" in str(e) or "session expired" in str(e).lower():
@@ -920,6 +900,9 @@ class QuranBot(discord.Client):
             consecutive_failures = 0
             last_successful_playback = time.time()
             
+            # Track notifications to avoid spam in loop mode
+            last_notified_surah = None
+            
             # Start health monitoring task
             health_task = asyncio.create_task(self.monitor_playback_health(voice_client, last_successful_playback))
             
@@ -936,6 +919,16 @@ class QuranBot(discord.Client):
                             self.state_manager.increment_songs_played()
                             self.health_monitor.update_current_song(file_name)
                             await self.update_presence_for_surah(surah_info)
+                            
+                            # Send Discord notification for surah change (only once per surah in loop mode)
+                            if last_notified_surah != surah_info['number']:
+                                asyncio.create_task(self.send_surah_change_notification(
+                                    surah_info, 
+                                    Config.get_reciter_display_name(self.current_reciter), 
+                                    channel
+                                ))
+                                last_notified_surah = surah_info['number']
+                            
                             success = await self.play_surah_with_retries(voice_client, mp3_file)
                             if success:
                                 last_successful_playback = time.time()
@@ -973,6 +966,14 @@ class QuranBot(discord.Client):
                         self.health_monitor.update_current_song(file_name)
                         self.current_audio_file = file_name
                         await self.update_presence_for_surah(surah_info)
+                        
+                        # Send Discord notification for surah change
+                        asyncio.create_task(self.send_surah_change_notification(
+                            surah_info, 
+                            Config.get_reciter_display_name(self.current_reciter), 
+                            channel
+                        ))
+                        
                         success = await self.play_surah_with_retries(voice_client, mp3_file)
                         if success:
                             last_successful_playback = time.time()
@@ -1040,6 +1041,75 @@ class QuranBot(discord.Client):
         if self.health_reporter:
             await self.health_reporter.stop()
         await super().close()
+
+    async def send_surah_change_notification(self, surah_info, reciter_name, channel=None):
+        """
+        Send a Discord embed notification when the bot changes surahs.
+        
+        Args:
+            surah_info (dict): Dictionary containing surah information
+            reciter_name (str): Name of the current reciter
+            channel (discord.VoiceChannel, optional): Voice channel the bot is connected to
+        """
+        try:
+            from utils.config import Config
+            
+            logs_channel = self.get_channel(Config.LOGS_CHANNEL_ID)
+            if not logs_channel or not isinstance(logs_channel, discord.TextChannel):
+                return
+            
+            emoji = get_surah_emoji(surah_info['number'])
+            
+            # Create embed
+            embed = discord.Embed(
+                title=f"🎵 Now Playing",
+                description=f"{emoji} **{surah_info['english_name']}**",
+                color=discord.Color.green()
+            )
+            
+            embed.add_field(
+                name="📖 Surah",
+                value=f"#{surah_info['number']:03d} - {surah_info['english_name']}",
+                inline=True
+            )
+            
+            embed.add_field(
+                name="🎤 Reciter",
+                value=reciter_name,
+                inline=True
+            )
+            
+            if channel and hasattr(channel, 'name'):
+                embed.add_field(
+                    name="🔊 Voice Channel",
+                    value=channel.name,
+                    inline=True
+                )
+            
+            embed.add_field(
+                name="📈 Progress",
+                value=f"Surah {self.state_manager.get_current_song_index() + 1} of {len(self.get_audio_files())}",
+                inline=False
+            )
+            
+            # Add creator as author and bot as thumbnail
+            try:
+                creator = await self.fetch_user(259725211664908288)
+                if creator and hasattr(creator, 'avatar') and creator.avatar:
+                    embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+            except Exception as e:
+                logger.debug(f"Could not fetch creator for surah notification: {e}")
+            
+            if self.user and hasattr(self.user, 'avatar') and self.user.avatar:
+                embed.set_thumbnail(url=self.user.avatar.url)
+            
+            embed.set_footer(text=f"QuranBot • {datetime.now().strftime('%m-%d | %I:%M:%S %p')}")
+            
+            await logs_channel.send(embed=embed)
+            logger.debug(f"Sent surah change notification for {surah_info['english_name']}")
+            
+        except Exception as e:
+            logger.error(f"Failed to send surah change notification: {e}")
 
     async def update_presence_for_surah(self, surah_info):
         """
@@ -1199,10 +1269,8 @@ class QuranBot(discord.Client):
         """Log user voice activity to Discord channel."""
         channel_id = 1389683881078423567
         log_channel = self.get_channel(channel_id)
-        
         if not log_channel or not isinstance(log_channel, discord.TextChannel):
             return
-        
         # Determine color and title based on action
         if action == "joined":
             color = discord.Color.green()
@@ -1210,16 +1278,14 @@ class QuranBot(discord.Client):
         elif action == "left":
             color = discord.Color.red()
             title = "User Left Voice Channel"
-        else:  # moved
+        else:
             color = discord.Color.blue()
-            title = "User Moved Voice Channels"
-        
+            title = "User Voice Channel Activity"
         embed = discord.Embed(
             title=title,
             color=color,
             timestamp=discord.utils.utcnow()
         )
-        # Do NOT set a thumbnail for user logs
         embed.add_field(name="User", value=f"<@{member.id}>", inline=True)
         embed.add_field(name="User ID", value=str(member.id), inline=True)
         embed.add_field(name="Channel", value=channel.name, inline=True)
@@ -1228,11 +1294,20 @@ class QuranBot(discord.Client):
             embed.add_field(name="Duration", value=self.format_duration(duration), inline=True)
         if action == "left" and interaction_count is not None:
             embed.add_field(name="Interactions", value=str(interaction_count), inline=True)
-        if from_channel:
-            embed.add_field(name="From Channel", value=from_channel.name, inline=True)
         embed.set_footer(text="QuranBot Voice Activity Logger • Professional Log")
-        if getattr(self, 'user', None) and getattr(self.user, 'avatar', None):
-            embed.set_author(name=self.user.display_name, icon_url=self.user.avatar.url)
+        
+        # Add creator as author
+        try:
+            creator = await self.fetch_user(259725211664908288)
+            if creator and creator.avatar:
+                embed.set_author(name=creator.display_name, icon_url=creator.avatar.url)
+        except Exception as e:
+            logger.warning(f"Failed to set creator avatar: {e}")
+        
+        # Set user avatar as thumbnail
+        if member and member.avatar:
+            embed.set_thumbnail(url=member.avatar.url)
+        
         try:
             await log_channel.send(embed=embed)
         except Exception as e:
