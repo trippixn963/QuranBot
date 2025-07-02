@@ -27,7 +27,7 @@ A professional Discord bot for continuous Quran recitation with multiple reciter
 - **Rich Control Panel** - Beautiful Discord embeds with playback controls
 - **Slash Commands** - Modern Discord interaction system
 - **Real-time Status Updates** - Dynamic presence with current surah info
-- **User Activity Tracking** - Monitor voice channel activity with duration tracking
+- **User Activity Tracking** - Monitor voice channel activity with session duration tracking
 
 ### 🛡️ **Enterprise Stability** ⭐ **LATEST**
 - **Robust Connection Handling** - Advanced voice connection management with heartbeat monitoring
@@ -39,9 +39,11 @@ A professional Discord bot for continuous Quran recitation with multiple reciter
 - **Playback Locking** - Prevents multiple surahs from playing simultaneously
 - **Voice Session Management** - Handles Discord voice session expirations gracefully
 
-### 🎨 **Professional UI**
-- **Branded Embeds** - Consistent, beautiful Discord embeds
-- **Avatar Integration** - User profile pictures in interactions
+### 🎨 **Professional UI** ✨ **UPDATED**
+- **Clean Embed Design** - Minimal, clutter-free Discord embeds without redundant information
+- **Clickable User Mentions** - Interactive user fields with @mention format
+- **Session-Based Time Tracking** - Focus on current session duration instead of lifetime totals
+- **Streamlined Activity Logs** - Cleaner join/leave notifications without unnecessary channel info
 - **Dynamic Presence** - Themed emojis and real surah names
 - **Rich Notifications** - Surah change alerts with reciter info
 
@@ -291,6 +293,20 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🆘 Support
 
 For support information, see [SUPPORT.md](SUPPORT.md).
+
+## 🆕 Recent Improvements (Latest Update)
+
+### 🧹 **Embed System Overhaul**
+- **Removed Footer Clutter** - All embeds now have clean, minimal design without footers
+- **Eliminated Redundant Fields** - Removed unnecessary "Channel" fields since bot operates on single channel
+- **Enhanced User Interaction** - All user fields now use clickable @mention format for better UX
+- **Simplified Time Tracking** - Session duration resets on leave, focusing on current activity
+
+### 📊 **Activity Logging Improvements**
+- **Cleaner Join/Leave Messages** - Streamlined format with essential information only
+- **Better User Identification** - Clickable user mentions replace plain display names
+- **Session-Focused Tracking** - Time tracking resets each session for relevant data
+- **Reduced Visual Noise** - Removed redundant channel information across all embeds
 
 ---
 
