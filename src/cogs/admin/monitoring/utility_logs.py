@@ -25,7 +25,7 @@ async def info(interaction: discord.Interaction, lines: int = 10):
     
     # Configuration section
     try:
-        from utils.config import Config
+        from core.config.config import Config
         
         config_info = {
             "Target Channel ID": str(Config.TARGET_CHANNEL_ID),

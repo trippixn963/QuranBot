@@ -56,7 +56,7 @@ ADMIN_USER_IDS = os.getenv('ADMIN_USER_IDS', '').split(',') if os.getenv('ADMIN_
 def is_admin(interaction: discord.Interaction) -> bool:
     """Check if the user is an admin with enhanced logging."""
     try:
-        from utils.config import Config
+        from core.config.config import Config
         
         # Get admin user IDs from environment
         admin_ids = []

@@ -532,7 +532,7 @@ class SurahSelect(Select):
 
 class ReciterSelect(Select):
     def __init__(self, bot):
-        from utils.config import Config
+        from core.config.config import Config
         reciters = bot.get_available_reciters()
         current_reciter = getattr(bot, 'current_reciter', None)
         options = [discord.SelectOption(label=r, value=r, default=(r==current_reciter)) for r in reciters]
