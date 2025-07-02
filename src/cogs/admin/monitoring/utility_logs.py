@@ -89,7 +89,6 @@ async def info(interaction: discord.Interaction, lines: int = 10):
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 @info.error
-@log_function_call
 async def info_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
     """Handle errors for info command."""
     if isinstance(error, app_commands.CheckFailure):
