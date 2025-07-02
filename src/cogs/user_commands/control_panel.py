@@ -157,7 +157,7 @@ def is_in_voice_channel(interaction: discord.Interaction) -> bool:
             "check_type": "voice_channel"
         })
         
-        from utils.config import Config
+        from core.config.config import Config
         target_channel_id = Config.TARGET_CHANNEL_ID
         
         # Check if user has voice state (Member objects have voice state)
