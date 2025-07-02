@@ -38,47 +38,46 @@ class QuranBot(discord.Client):
     
     def __init__(self):
         """Initialize the Quran Bot."""
+        # Discord intents
         intents = discord.Intents.default()
         intents.message_content = True
         intents.voice_states = True
-
+        intents.guilds = True
+        intents.members = True  # Add members intent for user tracking
+        
         super().__init__(intents=intents)
         
         # Initialize command tree for slash commands
         self.tree = discord.app_commands.CommandTree(self)
         
-        # Bot state
-        self._voice_clients: Dict[int, discord.VoiceClient] = {}
+        # Initialize bot state
+        self.current_song_index = 0
         self.is_streaming = False
-        self.current_audio_file: Optional[str] = None
-        # Store the folder name internally, but use display name for UI
-        # Get the default reciter display name and convert to folder name
-        default_reciter_display = Config.DEFAULT_RECITER
-        self.current_reciter: str = Config.get_folder_name_from_display(default_reciter_display)
-        self.connection_failures = 0  # Track connection failures
-        self.max_connection_failures = 5  # Stop trying after 5 failures
-        self.start_time = time.time()  # For uptime calculation
+        self._intended_streaming = False  # Track if we want to be streaming
+        self.current_reciter = Config.DEFAULT_RECITER
+        self.original_playlist = []  # Store original order for shuffle
+        self.loop_enabled = False
+        self.shuffle_enabled = False
         
-        # Playback control
-        self.loop_enabled = False  # Loop current surah
-        self.shuffle_enabled = False  # Shuffle surah order
-        self.original_playlist = []  # Store original playlist for shuffle
+        # Connection management
+        self.connection_failures = 0
+        self.max_connection_failures = 5
+        self._voice_clients = {}
         
-        # Health monitoring
-        self.health_monitor = HealthMonitor()
-        
-        # Health reporting
-        self.health_reporter = None
-        
-        # Discord embed logging
+        # Initialize components
+        self.health_monitor = HealthMonitor()  # Initialize immediately
         self.discord_logger = DiscordEmbedLogger(
             self, 
             1389683881078423567,  # logs channel
             1389675580253016144   # target VC to track
         )
+        self.state_manager = StateManager()  # Initialize immediately
         
-        # State management
-        self.state_manager = StateManager()
+        # Playback control
+        self.start_time = time.time()  # For uptime calculation
+        
+        # Health reporting
+        self.health_reporter = None  # Will be initialized in setup_hook
         
         # Setup environment
         Config.setup_environment()
@@ -166,8 +165,13 @@ class QuranBot(discord.Client):
             # Initialize Discord logger sessions for users already in VC
             await self.discord_logger.initialize_existing_users()
             
-            # Initialize state manager
-            self.state_manager = StateManager()
+            # Initialize state management
+            self.state_manager.increment_bot_start_count()
+            start_count = self.state_manager.get_bot_start_count()
+            log_state_load("bot_start_count", {"start_count": start_count})
+            
+            # Clear last change on restart (always starts fresh)
+            self.state_manager.clear_last_change()
             
             # Find and join target voice channel
             t2 = time.time()
@@ -183,15 +187,6 @@ class QuranBot(discord.Client):
             
             # Log health status
             logger.info("Bot health monitoring initialized", extra={'event': 'HEALTH'})
-            logger.info("DEBUG: About to initialize state management", extra={'event': 'DEBUG_STATE_INIT'})
-            
-            # Initialize state management
-            self.state_manager.increment_bot_start_count()
-            start_count = self.state_manager.get_bot_start_count()
-            log_state_load("bot_start_count", {"start_count": start_count})
-            
-            # Clear last change on restart (always starts fresh)
-            self.state_manager.clear_last_change()
             t4 = time.time()
             log_performance("state_manager_init", t4-t3)
             
@@ -241,30 +236,46 @@ class QuranBot(discord.Client):
                 self.is_streaming = False
                 self.health_monitor.set_streaming_status(False)
                 
-                # Check if we've had too many failures
+                # Increment failure counter
                 self.connection_failures += 1
-                if self.connection_failures >= self.max_connection_failures:
-                    logger.error(f"Too many connection failures ({self.connection_failures}). Stopping reconnection attempts.", 
-                               extra={'event': 'CONNECTION_FAILURE_LIMIT'})
-                    self.is_streaming = False
-                    return
                 
-                # TEMPORARILY DISABLE AUTO-RECONNECTION TO BREAK THE LOOP
-                logger.warning(f"Connection lost. Auto-reconnection temporarily disabled to prevent loops. Failures: {self.connection_failures}/{self.max_connection_failures}",
-                             extra={'event': 'RECONNECT_DISABLED', 'failures': self.connection_failures})
-                # Stop streaming to break the reconnection cycle
-                self.is_streaming = False
+                # SMART AUTO-RECONNECTION SYSTEM  
+                # Only reconnect if:
+                # 1. We haven't exceeded max failures
+                # 2. Bot was intentionally streaming
+                # 3. Disconnect wasn't manual
+                should_reconnect = (
+                    self.connection_failures < self.max_connection_failures and
+                    hasattr(self, '_intended_streaming') and self._intended_streaming and
+                    before.channel and before.channel.id == Config.TARGET_CHANNEL_ID
+                )
                 
-                # Uncomment below to re-enable auto-reconnection after testing
-                # wait_time = min(60 * self.connection_failures, 300)  # Progressive delay up to 5 minutes
-                # logger.info(f"Waiting {wait_time} seconds before reconnection attempt {self.connection_failures}/{self.max_connection_failures}...", 
-                #            extra={'event': 'RECONNECT_WAIT', 'wait_time': wait_time, 'failures': self.connection_failures})
-                # await asyncio.sleep(wait_time)
-                # 
-                # if self.is_streaming:
-                #     logger.info("Attempting to reconnect after disconnection...", 
-                #                extra={'event': 'RECONNECT_ATTEMPT'})
-                #     await self.find_and_join_channel()
+                if should_reconnect:
+                    # Progressive delay: 30s, 60s, 120s, 240s, 300s (max 5 min)
+                    wait_time = min(30 * (2 ** (self.connection_failures - 1)), 300)
+                    logger.info(f"Smart reconnection scheduled in {wait_time}s. Attempt {self.connection_failures}/{self.max_connection_failures}",
+                               extra={'event': 'SMART_RECONNECT', 'wait_time': wait_time, 'failures': self.connection_failures})
+                    
+                    # Schedule reconnection after delay
+                    async def delayed_reconnect():
+                        await asyncio.sleep(wait_time)
+                        # Double-check conditions before reconnecting
+                        if (self.connection_failures < self.max_connection_failures and 
+                            hasattr(self, '_intended_streaming') and self._intended_streaming):
+                            logger.info("Executing smart reconnection...", 
+                                       extra={'event': 'RECONNECT_EXECUTE'})
+                            await self.find_and_join_channel()
+                    
+                    asyncio.create_task(delayed_reconnect())
+                else:
+                    logger.warning(f"Reconnection conditions not met. Failures: {self.connection_failures}/{self.max_connection_failures}, Intended streaming: {getattr(self, '_intended_streaming', False)}",
+                                 extra={'event': 'RECONNECT_SKIPPED', 'failures': self.connection_failures})
+                    # Stop streaming if we've exceeded limits
+                    if self.connection_failures >= self.max_connection_failures:
+                        logger.error(f"Too many connection failures ({self.connection_failures}). Stopping reconnection attempts.",
+                                   extra={'event': 'CONNECTION_FAILURE_LIMIT'})
+                        self.is_streaming = False
+                        self._intended_streaming = False
             elif not before.channel and after.channel:
                 # Bot connected to voice
                 log_connection_success(after.channel.name, after.channel.guild.name)
@@ -345,43 +356,53 @@ class QuranBot(discord.Client):
             self.health_monitor.record_error(error, f"voice_error_guild_{guild_id}")
 
     async def start_stream(self, channel: discord.VoiceChannel):
-        """Start streaming Quran to the voice channel with improved error handling."""
+        """Start streaming Quran to the voice channel with optimized connection."""
         t0 = time.time()
-        max_retries = 3  # Reduced retries to prevent spam
-        retry_delay = 30   # Start with longer delay
+        max_retries = 2  # Reduced retries for faster connection
+        retry_delay = 15   # Reduced initial delay
+        
+        # Mark that we intend to stream
+        self._intended_streaming = True
         
         for attempt in range(max_retries):
             try:
                 guild_id = channel.guild.id
                 
-                # Disconnect if already connected
+                # Quick disconnect check - don't wait if already clean
                 if guild_id in self._voice_clients:
                     try:
-                        await self._voice_clients[guild_id].disconnect()
-                        await asyncio.sleep(5)  # Wait longer for disconnect to complete
+                        voice_client = self._voice_clients[guild_id]
+                        if voice_client.is_connected():
+                            await voice_client.disconnect(force=True)
+                        del self._voice_clients[guild_id]
+                        await asyncio.sleep(2)  # Reduced wait time
                     except Exception as e:
                         log_error(e, "disconnect_old_client")
                         self.health_monitor.record_error(e, "disconnect_old_client")
                     
-                # Connect to voice channel
+                # Connect to voice channel with timeout
                 log_connection_attempt(channel.name, attempt + 1, max_retries)
                 t1 = time.time()
-                voice_client = await channel.connect()
+                
+                # Use timeout for connection to prevent hanging
+                voice_client = await asyncio.wait_for(
+                    channel.connect(timeout=10.0), 
+                    timeout=15.0
+                )
+                
                 t2 = time.time()
                 log_performance("voice_connect", t2-t1)
                 self._voice_clients[guild_id] = voice_client
-                
-                # Voice client connected successfully
                 
                 # Record successful connection
                 log_connection_success(channel.name, channel.guild.name)
                 self.health_monitor.record_reconnection()
                 
-                # Start playback in background task
+                # Start playback immediately after connection
                 asyncio.create_task(self.play_quran_files(voice_client, channel))
                 break
                 
-            except discord.ClientException as e:
+            except (discord.ClientException, asyncio.TimeoutError) as e:
                 if "Already connected to a voice channel" in str(e):
                     # Already connected, just start playback
                     guild_id = channel.guild.id
@@ -393,15 +414,20 @@ class QuranBot(discord.Client):
                     log_connection_failure(channel.name, e, attempt + 1)
                     self.health_monitor.record_error(e, "voice_connection")
             
-            # Exponential backoff with longer delays for 4006 errors
+            # Shorter retry delay for faster reconnection
             if attempt < max_retries - 1:
-                delay = min(retry_delay * (3 ** attempt), 300)  # Cap at 5 minutes, use 3x multiplier
+                delay = retry_delay * (attempt + 1)  # Linear backoff: 15s, 30s
                 logger.info(f"Retrying connection in {delay} seconds...", 
                            extra={'event': 'RETRY', 'attempt': attempt + 1, 'delay': delay})
                 await asyncio.sleep(delay)
                 
         t3 = time.time()
         log_performance("start_stream_total", t3-t0)
+        
+        # Log warning if still slow
+        if (t3-t0) > 3.0:
+            logger.warning(f"Connection took {t3-t0:.2f}s - consider Discord server issues", 
+                          extra={'event': 'SLOW_CONNECTION', 'duration': t3-t0})
         
     def get_audio_files(self) -> list:
         """Get list of audio files from the current reciter."""

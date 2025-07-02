@@ -11,7 +11,7 @@ import psutil
 import platform
 from datetime import datetime, timedelta
 import re
-from utils.log_helpers import log_async_function_call, log_function_call, log_operation
+from monitoring.logging.log_helpers import log_async_function_call, log_function_call, log_operation
 
 class LogCommands(commands.Cog):
     """Log management command."""

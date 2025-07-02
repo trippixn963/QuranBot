@@ -10,7 +10,7 @@ import asyncio
 import logging
 from datetime import datetime
 import traceback
-from utils.log_helpers import log_async_function_call, log_function_call, log_operation
+from monitoring.logging.log_helpers import log_async_function_call, log_function_call, log_operation
 
 # Enhanced logger for admin commands
 logger = logging.getLogger(__name__)
