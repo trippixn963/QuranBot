@@ -42,6 +42,7 @@ import time
 import itertools
 import signal
 import aiofiles
+import json
 
 # Add src directory to Python path for module imports
 # This allows importing from utils.config, utils.logger, etc.
@@ -61,6 +62,7 @@ from utils.health_reporter import HealthReporter
 from utils.state_manager import StateManager
 from utils.surah_mapper import get_surah_from_filename, get_surah_emoji, get_surah_display_name
 
+VOICE_JOINS_FILE = os.path.join('data', 'voice_joins.json')
 
 class QuranBot(discord.Client):
     """
@@ -113,8 +115,8 @@ class QuranBot(discord.Client):
         self.current_audio_file: Optional[str] = None
         
         # User tracking for voice channel joins/leaves
-        self.user_join_times: Dict[int, float] = {}  # user_id -> join_timestamp
-        self.user_interaction_counts: Dict[int, int] = {}  # user_id -> interaction count
+        self.user_join_times: Dict[int, float] = {}
+        self.user_interaction_counts: Dict[int, int] = {}
         
         # Reciter management - store folder name internally, use display name for UI
         default_reciter_display = Config.DEFAULT_RECITER
@@ -159,6 +161,25 @@ class QuranBot(discord.Client):
         # Track notifications to avoid spam in loop mode
         last_notified_surah = None
         
+        self.load_voice_joins()
+        
+    def load_voice_joins(self):
+        if os.path.exists(VOICE_JOINS_FILE):
+            try:
+                with open(VOICE_JOINS_FILE, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                self.user_join_times = {int(k): v for k, v in data.items()}
+            except Exception as e:
+                print(f"Failed to load voice joins: {e}")
+
+    def save_voice_joins(self):
+        try:
+            os.makedirs(os.path.dirname(VOICE_JOINS_FILE), exist_ok=True)
+            with open(VOICE_JOINS_FILE, 'w', encoding='utf-8') as f:
+                json.dump(self.user_join_times, f)
+        except Exception as e:
+            print(f"Failed to save voice joins: {e}")
+
     async def send_hourly_log_task(self):
         await self.wait_until_ready()
         channel_id = 1389683881078423567
@@ -464,6 +485,7 @@ class QuranBot(discord.Client):
             # User joins the Quran channel (from anywhere)
             if (after.channel and after.channel.id == target_channel_id) and (not before.channel or before.channel.id != target_channel_id):
                 self.user_join_times[member.id] = current_time
+                self.save_voice_joins()
                 logger.info(f"User joined voice channel: {member.display_name} ({member.id}) joined {after.channel.name} in {after.channel.guild.name}", 
                            extra={'event': 'USER_JOIN', 'user_id': member.id, 'user_name': member.display_name, 
                                  'channel_name': after.channel.name, 'guild_name': after.channel.guild.name})
@@ -475,6 +497,7 @@ class QuranBot(discord.Client):
                 if join_time:
                     duration = current_time - join_time
                     del self.user_join_times[member.id]
+                    self.save_voice_joins()
                 interaction_count = self.user_interaction_counts.get(member.id, 0)
                 if member.id in self.user_interaction_counts:
                     del self.user_interaction_counts[member.id]
