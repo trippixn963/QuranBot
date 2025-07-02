@@ -146,15 +146,24 @@ class DiscordEmbedLogger:
         """Log when bot connects to voice channel."""
         embed = discord.Embed(
             title="🟢 Bot Connected",
-            description=f"Successfully connected to voice channel",
+            description="Successfully connected to voice channel",
             color=0x00ff00
         )
-        embed.add_field(name="🏠 Server", value=guild_name, inline=True)
-        embed.add_field(name="⏰ Status", value="Ready to stream", inline=True)
         
-        # Add bot profile picture
+        # Add bot's profile picture
         if self.bot.user and self.bot.user.avatar:
             embed.set_thumbnail(url=self.bot.user.avatar.url)
+        
+        # Voice channel info
+        embed.add_field(name="🎙️ Channel", value=channel_name, inline=True)
+        
+        # Current reciter if available
+        if hasattr(self.bot, 'current_reciter'):
+            reciter = getattr(self.bot, 'current_reciter', 'Not set')
+            embed.add_field(name="🗣️ Reciter", value=reciter, inline=True)
+        
+        # Playback status
+        embed.add_field(name="⏯️ Status", value="Ready to stream", inline=True)
         
         await self._send_embed(embed)
     
