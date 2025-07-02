@@ -1608,7 +1608,7 @@ async def setup(bot):
                 
             except Exception as e:
                 from monitoring.logging.logger import logger
-            logger.error(f"Unexpected error in create_panel: {traceback.format_exc()}")
+                logger.error(f"Unexpected error in create_panel: {traceback.format_exc()}")
                 log_operation("error", "ERROR", {
                     "component": "create_panel",
                     "error_details": "panel_creation_failed",
