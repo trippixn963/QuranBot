@@ -812,7 +812,7 @@ class ControlPanelView(View):
             # Create updated embed
             embed = discord.Embed(
                 title="",
-                description=f"• **Now Playing**: {current_surah_display}\n• **Reciter**: {current_reciter}\n• **Status**: {streaming_status}\n• **Loop**: {loop_status}\n• **Shuffle**: {shuffle_status}{last_change_display}",
+                description=f"🎵 **Now Playing**: {current_surah_display}\n🎤 **Reciter**: {current_reciter}\n\n📊 **Playback Status**\n{streaming_status}\n\n⚙️ **Controls**\n{loop_status}\n{shuffle_status}{last_change_display}",
                 color=discord.Color.green()
             )
             
@@ -1582,7 +1582,7 @@ async def setup(bot):
                 # Create the control panel embed with dynamic status
                 embed = discord.Embed(
                     title="",
-                    description=f"• **Now Playing**: {current_surah_display}\n• **Reciter**: {current_reciter}\n• **Status**: {streaming_status}\n• **Loop**: {loop_status}\n• **Shuffle**: {shuffle_status}{last_change_display}",
+                    description=f"🎵 **Now Playing**: {current_surah_display}\n🎤 **Reciter**: {current_reciter}\n\n📊 **Playback Status**\n{streaming_status}\n\n⚙️ **Controls**\n{loop_status}\n{shuffle_status}{last_change_display}",
                     color=discord.Color.green()
                 )
                 
