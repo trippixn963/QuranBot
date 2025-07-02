@@ -249,16 +249,22 @@ class QuranBot(discord.Client):
                     self.is_streaming = False
                     return
                 
-                # Wait much longer before reconnecting to break the reconnection loop
-                wait_time = min(60 * self.connection_failures, 300)  # Progressive delay up to 5 minutes
-                logger.info(f"Waiting {wait_time} seconds before reconnection attempt {self.connection_failures}/{self.max_connection_failures}...", 
-                           extra={'event': 'RECONNECT_WAIT', 'wait_time': wait_time, 'failures': self.connection_failures})
-                await asyncio.sleep(wait_time)
+                # TEMPORARILY DISABLE AUTO-RECONNECTION TO BREAK THE LOOP
+                logger.warning(f"Connection lost. Auto-reconnection temporarily disabled to prevent loops. Failures: {self.connection_failures}/{self.max_connection_failures}",
+                             extra={'event': 'RECONNECT_DISABLED', 'failures': self.connection_failures})
+                # Stop streaming to break the reconnection cycle
+                self.is_streaming = False
                 
-                if self.is_streaming:
-                    logger.info("Attempting to reconnect after disconnection...", 
-                               extra={'event': 'RECONNECT_ATTEMPT'})
-                    await self.find_and_join_channel()
+                # Uncomment below to re-enable auto-reconnection after testing
+                # wait_time = min(60 * self.connection_failures, 300)  # Progressive delay up to 5 minutes
+                # logger.info(f"Waiting {wait_time} seconds before reconnection attempt {self.connection_failures}/{self.max_connection_failures}...", 
+                #            extra={'event': 'RECONNECT_WAIT', 'wait_time': wait_time, 'failures': self.connection_failures})
+                # await asyncio.sleep(wait_time)
+                # 
+                # if self.is_streaming:
+                #     logger.info("Attempting to reconnect after disconnection...", 
+                #                extra={'event': 'RECONNECT_ATTEMPT'})
+                #     await self.find_and_join_channel()
             elif not before.channel and after.channel:
                 # Bot connected to voice
                 log_connection_success(after.channel.name, after.channel.guild.name)
