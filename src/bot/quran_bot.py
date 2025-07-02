@@ -74,7 +74,14 @@ class QuranBot(discord.Client):
         self.state_manager = StateManager()  # Initialize immediately
         
         # Playback control
-        self.start_time = time.time()  # For uptime calculation
+        self.start_time = datetime.now()  # For uptime calculation
+        
+        # Health checks tracking
+        self.health_checks = {
+            'failed': [],  # List of failed checks
+            'last_check': None,  # Timestamp of last check
+            'status': 'Not Started'  # Overall status
+        }
         
         # Health reporting
         self.health_reporter = None  # Will be initialized in setup_hook
@@ -90,6 +97,28 @@ class QuranBot(discord.Client):
         """Setup hook for bot initialization."""
         t0 = time.time()
         logger.info("Setting up Quran Bot...", extra={'event': 'STARTUP'})
+        
+        # Run initial health checks
+        try:
+            self.health_checks['status'] = 'Running'
+            self.health_checks['last_check'] = datetime.now()
+            
+            # Basic checks
+            checks = [
+                ('Audio Files', os.path.exists('audio')),
+                ('Config', hasattr(Config, 'DEFAULT_RECITER')),
+                ('Permissions', os.access('audio', os.R_OK)),
+                ('FFmpeg', self._check_ffmpeg())
+            ]
+            
+            self.health_checks['failed'] = [name for name, passed in checks if not passed]
+            self.health_checks['status'] = 'OK' if not self.health_checks['failed'] else 'Issues Found'
+            
+            logger.info(f"Health checks completed: {self.health_checks['status']}")
+        except Exception as e:
+            logger.error(f"Failed to run health checks: {e}")
+            self.health_checks['status'] = 'Error'
+            self.health_checks['failed'].append('Health Check System')
         
         # Load individual command files
         commands_to_load = [
@@ -867,6 +896,14 @@ class QuranBot(discord.Client):
             logger.debug(f"Set initial presence to: {message}")
         except Exception as e:
             log_error(e, "set_presence")
+
+    def _check_ffmpeg(self) -> bool:
+        """Check if FFmpeg is available and working."""
+        try:
+            subprocess.run(['ffmpeg', '-version'], capture_output=True, check=True)
+            return True
+        except (subprocess.SubprocessError, FileNotFoundError):
+            return False
 
 def main():
     """Main entry point for the Quran Bot."""
