@@ -662,8 +662,6 @@ class QuranBot(discord.Client):
                                 log_audio_playback(f"{surah_display} ({file_name}) - Reciter: {self.current_reciter} [LOOP]")
                                 self.state_manager.increment_songs_played()
                                 self.health_monitor.update_current_song(file_name)
-                                # Log surah change to Discord (loop mode)
-                                await self.discord_logger.log_surah_changed(surah_info, Config.get_reciter_display_name(self.current_reciter))
                                 await self.update_presence_for_surah(surah_info)
                                 success = await self.play_surah_with_retries(voice_client, mp3_file)
                                 if not success:
@@ -709,8 +707,6 @@ class QuranBot(discord.Client):
                         self.state_manager.increment_songs_played()
                         self.health_monitor.update_current_song(file_name)
                         self.current_audio_file = file_name
-                        # Log surah change to Discord
-                        await self.discord_logger.log_surah_changed(surah_info, Config.get_reciter_display_name(self.current_reciter))
                         await self.update_presence_for_surah(surah_info)
                         success = await self.play_surah_with_retries(voice_client, mp3_file)
                         if not success:
