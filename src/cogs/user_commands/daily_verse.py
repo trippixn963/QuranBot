@@ -14,6 +14,7 @@ from typing import Optional, Dict, Any, List, cast
 import asyncio
 from monitoring.logging.logger import logger
 from monitoring.logging.log_helpers import log_operation
+from core.config.config import Config
 
 class DailyVerseManager:
     """Daily verse manager that handles verse scheduling and sending."""
@@ -179,7 +180,10 @@ class DailyVerseManager:
         return embed
     
     def get_daily_verse_channel(self) -> Optional[discord.TextChannel]:
-        channel_id = 1350540215797940245
+        channel_id = getattr(Config, 'DAILY_VERSE_CHANNEL_ID', None)
+        if not channel_id:
+            logger.error('DAILY_VERSE_CHANNEL_ID is not set in the environment/config!', extra={'event': 'VERSE_CHANNEL_ID_MISSING'})
+            return None
         channel = self.bot.get_channel(channel_id)
         if isinstance(channel, discord.TextChannel):
             return channel
@@ -214,7 +218,7 @@ class DailyVerseManager:
             # Always use the specified channel
             text_channel = self.get_daily_verse_channel()
             if text_channel is None:
-                logger.error(f"Could not find verse channel 1350540215797940245 or it is not a TextChannel", extra={'event': 'VERSE_CHANNEL_NOT_FOUND'})
+                logger.error(f"Could not find verse channel {text_channel} or it is not a TextChannel", extra={'event': 'VERSE_CHANNEL_NOT_FOUND'})
                 return
             
             # Get next verse from queue
@@ -236,7 +240,7 @@ class DailyVerseManager:
             self.save_last_sent_verse(verse)
             
             logger.info(f"Daily verse sent: {verse['surah_name']} {verse['ayah']}", 
-                       extra={'event': 'VERSE_SENT', 'surah': verse['surah'], 'ayah': verse['ayah'], 'channel_id': 1350540215797940245})
+                       extra={'event': 'VERSE_SENT', 'surah': verse['surah'], 'ayah': verse['ayah'], 'channel_id': text_channel.id})
             
         except Exception as e:
             logger.error(f"Failed to send daily verse: {e}", extra={'event': 'VERSE_SEND_ERROR'})
@@ -325,7 +329,7 @@ async def setup(bot):
                 
                 embed.add_field(
                     name="Channel",
-                    value=f"<#1350540215797940245>",
+                    value=f"<#{daily_verse_manager.get_daily_verse_channel().id}>",
                     inline=True
                 )
                 

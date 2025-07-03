@@ -7,6 +7,7 @@ import os
 # Import the main project logger
 from monitoring.logging.logger import logger
 from monitoring.logging.log_helpers import log_async_function_call, log_function_call, log_operation
+from core.config.config import Config
 
 def log_operation(operation: str, level: str = "INFO", extra: Optional[Dict[str, Any]] = None, error: Optional[Exception] = None):
     """Enhanced logging for admin credits command with emoji-structured format."""
@@ -59,6 +60,9 @@ async def create_credits_embed(bot, interaction: discord.Interaction) -> discord
     current_reciter = getattr(bot, 'current_reciter', 'Unknown')
     reciters = getattr(bot, 'get_available_reciters', lambda: [])()
     
+    developer_id = getattr(Config, 'DEVELOPER_ID', None)
+    developer_mention = f"<@{developer_id}>" if developer_id else "Unknown"
+    
     embed = discord.Embed(
         title="🕌 QuranBot - Credits",
         description="**24/7 Quran streaming bot** with multiple reciters and interactive controls.\n"
@@ -88,7 +92,7 @@ async def create_credits_embed(bot, interaction: discord.Interaction) -> discord
     # Developer
     embed.add_field(
         name="👨‍💻 Developer", 
-        value="Developed by <@259725211664908288>", 
+        value=f"Developed by {developer_mention}", 
         inline=True
     )
     

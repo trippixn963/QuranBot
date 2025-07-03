@@ -123,6 +123,7 @@ DISCORD_TOKEN=your_bot_token_here
 TARGET_CHANNEL_ID=your_voice_channel_id
 PANEL_CHANNEL_ID=your_control_panel_channel_id
 LOGS_CHANNEL_ID=your_logs_channel_id
+DAILY_VERSE_CHANNEL_ID=your_daily_verse_text_channel_id
 
 # Audio Configuration
 AUDIO_FOLDER=audio

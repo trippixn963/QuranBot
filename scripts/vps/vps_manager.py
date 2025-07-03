@@ -217,7 +217,7 @@ class VPSManager:
         self.send_discord_notification("Starting bot deployment...")
         
         # Pull latest changes
-        pull_cmd = f"cd {self.config['bot_directory']} && git pull origin main"
+        pull_cmd = f"cd {self.config['bot_directory']} && git pull origin master"
         result = self.run_ssh_command(pull_cmd)
         
         if result.returncode != 0:

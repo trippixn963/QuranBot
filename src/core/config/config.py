@@ -23,6 +23,7 @@ class Config:
     PANEL_CHANNEL_ID: int = int(os.getenv('PANEL_CHANNEL_ID', '1389716643512455219'))
     LOGS_CHANNEL_ID: int = int(os.getenv('LOGS_CHANNEL_ID', '1389683881078423567'))
     TARGET_GUILD_ID: Optional[int] = None
+    DAILY_VERSE_CHANNEL_ID: int = int(os.getenv('DAILY_VERSE_CHANNEL_ID'))
     
     # Audio Configuration
     AUDIO_FOLDER: str = os.getenv('AUDIO_FOLDER', 'audio')
@@ -54,6 +55,8 @@ class Config:
     loop_user_id = None
     shuffle_user_id = None
     user_timezones = {}  # user_id -> timezone string
+    
+    DEVELOPER_ID: int = int(os.getenv('DEVELOPER_ID'))
     
     @classmethod
     @log_function_call

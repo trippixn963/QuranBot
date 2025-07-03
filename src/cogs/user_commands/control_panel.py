@@ -985,6 +985,9 @@ class ControlPanelView(View):
                     current_time = 0
                     if hasattr(self.bot, 'get_current_playback_time'):
                         current_time = self.bot.get_current_playback_time()
+                    # Clamp current_time to total_duration
+                    if total_duration is not None:
+                        current_time = min(current_time, total_duration)
                     minutes = int(current_time // 60)
                     seconds = int(current_time % 60)
                     total_minutes = int(total_duration // 60)
@@ -1564,6 +1567,9 @@ async def setup(bot):
                 current_time = 0
                 if hasattr(bot, 'get_current_playback_time'):
                     current_time = bot.get_current_playback_time()
+                # Clamp current_time to total_duration
+                if total_duration is not None:
+                    current_time = min(current_time, total_duration)
                 minutes = int(current_time // 60)
                 seconds = int(current_time % 60)
                 total_minutes = int(total_duration // 60)
