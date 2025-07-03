@@ -1,6 +1,6 @@
 {
   "259725211664908288": {
-    "joined_at": "2025-07-03T00:09:47.664933",
+    "joined_at": "2025-07-03T05:59:33.945968",
     "channel_name": "\ud83d\udd4b\u2503Quran",
     "username": "\u062d\u064e\u0640\u0640\u0640\u0640\u0640\u0646\u0651\u064e\u0640\u0640\u0640\u0640\u0640\u0627",
     "total_time": 0.0
@@ -9,6 +9,12 @@
     "joined_at": "2025-07-02T22:34:19.245841",
     "channel_name": "\ud83d\udd4b\u2503Quran",
     "username": "abdullah",
+    "total_time": 0.0
+  },
+  "765451832221892608": {
+    "joined_at": "2025-07-03T02:02:30.736248",
+    "channel_name": "\ud83d\udd4b\u2503Quran",
+    "username": "Al-Ghazali",
     "total_time": 0.0
   }
 }

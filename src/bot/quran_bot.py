@@ -53,6 +53,7 @@ class QuranBot(discord.Client):
         self._was_streaming_before_disconnect = False
         self.connection_failures = 0
         self.max_connection_failures = 5  # Maximum number of consecutive failures before giving up
+        self.playback_start_time = None
         
         # Initialize command tree for slash commands
         self.tree = discord.app_commands.CommandTree(self)
@@ -704,6 +705,7 @@ class QuranBot(discord.Client):
                 current_index = 0
             self.is_streaming = True
             self.health_monitor.set_streaming_status(True)
+            self.playback_start_time = time.time()  # Start timer when playback starts
             t2 = time.time()
             log_performance("playback_init", t2-t1)
             consecutive_failures = 0
@@ -944,6 +946,11 @@ class QuranBot(discord.Client):
         except Exception as e:
             logger.error(f"Error restarting audio playback: {e}")
             log_error(e, "play_audio")
+
+    def get_current_playback_time(self):
+        if self.playback_start_time:
+            return time.time() - self.playback_start_time
+        return 0
 
 def main():
     """Main entry point for the Quran Bot."""

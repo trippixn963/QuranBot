@@ -7,7 +7,8 @@ import asyncio
 import discord
 import json
 import os
-from datetime import datetime, timedelta
+import time
+from datetime import datetime, timedelta, date
 from typing import Optional, Dict, Any, List
 from monitoring.logging.logger import logger
 import traceback
@@ -23,9 +24,39 @@ class DiscordEmbedLogger:
         self.target_vc_id = target_vc_id  # Only track this specific VC
         self.sessions_file = "data/user_vc_sessions.json"
         self.user_sessions: Dict[int, Dict[str, Any]] = {}  # Track user VC sessions
+        self.daily_joins: Dict[int, Dict[str, int]] = {}  # Track daily joins per user: {user_id: {date: count}}
         
         # Load existing sessions on startup
         self._load_sessions()
+        
+    def _get_daily_join_count(self, user_id: int) -> int:
+        """Get the number of times a user has joined today."""
+        today = date.today().isoformat()
+        return self.daily_joins.get(user_id, {}).get(today, 0)
+    
+    def _increment_daily_join_count(self, user_id: int):
+        """Increment the daily join count for a user."""
+        today = date.today().isoformat()
+        if user_id not in self.daily_joins:
+            self.daily_joins[user_id] = {}
+        if today not in self.daily_joins[user_id]:
+            self.daily_joins[user_id][today] = 0
+        self.daily_joins[user_id][today] += 1
+        
+        # Clean up old dates (keep only last 7 days)
+        for user_id_key in list(self.daily_joins.keys()):
+            for old_date in list(self.daily_joins[user_id_key].keys()):
+                try:
+                    old_date_obj = date.fromisoformat(old_date)
+                    if (date.today() - old_date_obj).days > 7:
+                        del self.daily_joins[user_id_key][old_date]
+                except ValueError:
+                    # Invalid date format, remove it
+                    del self.daily_joins[user_id_key][old_date]
+            
+            # Remove user if no dates left
+            if not self.daily_joins[user_id_key]:
+                del self.daily_joins[user_id_key]
         
     async def initialize_existing_users(self):
         """Initialize sessions for users already in the target VC when bot starts."""
@@ -41,13 +72,15 @@ class DiscordEmbedLogger:
                                 'joined_at': datetime.now(),
                                 'channel_name': channel.name,
                                 'username': member.display_name,
-                                'total_time': 0.0
+                                'total_time': 0.0,
+                                'interactions': 0
                             }
                             logger.info(f"Initialized session for {member.display_name} already in VC")
                         else:
                             # Update their join time to now (since we don't know when they actually joined during downtime)
                             self.user_sessions[member.id]['joined_at'] = datetime.now()
                             self.user_sessions[member.id]['username'] = member.display_name
+                            self.user_sessions[member.id]['interactions'] = 0  # Reset interactions for new session
                             logger.info(f"Resumed session for {member.display_name} already in VC")
                 
                 self._save_sessions()
@@ -98,7 +131,8 @@ class DiscordEmbedLogger:
                             'joined_at': datetime.fromisoformat(session_data['joined_at']),
                             'channel_name': session_data['channel_name'],
                             'username': session_data['username'],
-                            'total_time': session_data.get('total_time', 0.0)  # Accumulated time from previous sessions
+                            'total_time': session_data.get('total_time', 0.0),  # Accumulated time from previous sessions
+                            'interactions': session_data.get('interactions', 0)  # Interactions from previous sessions
                         }
                 logger.info(f"Loaded {len(self.user_sessions)} existing VC sessions")
             else:
@@ -118,7 +152,8 @@ class DiscordEmbedLogger:
                     'joined_at': session_data['joined_at'].isoformat(),
                     'channel_name': session_data['channel_name'],
                     'username': session_data['username'],
-                    'total_time': session_data.get('total_time', 0.0)
+                    'total_time': session_data.get('total_time', 0.0),
+                    'interactions': session_data.get('interactions', 0)
                 }
             
             with open(self.sessions_file, 'w') as f:
@@ -255,6 +290,10 @@ class DiscordEmbedLogger:
     
     async def log_user_joined_vc(self, member: discord.Member, channel_name: str):
         """Log when a user joins the voice channel."""
+        # Increment daily join count
+        self._increment_daily_join_count(member.id)
+        daily_joins = self._get_daily_join_count(member.id)
+        
         embed = discord.Embed(
             title="👋 User Joined",
             description=f"<@{member.id}> joined the voice channel",
@@ -266,25 +305,30 @@ class DiscordEmbedLogger:
             embed.set_thumbnail(url=member.avatar.url)
         
         # Start tracking session with full information
+        join_time = datetime.now()
         self.user_sessions[member.id] = {
-            'joined_at': datetime.now(),
+            'joined_at': join_time,
             'channel_name': channel_name,
             'username': member.display_name,
             'guild_id': member.guild.id if member.guild else None,
             'guild_name': member.guild.name if member.guild else None,
-            'total_time': self.user_sessions.get(member.id, {}).get('total_time', 0.0)  # Preserve total time
+            'total_time': self.user_sessions.get(member.id, {}).get('total_time', 0.0),  # Preserve total time
+            'interactions': 0  # Track interactions during this session
         }
         self._save_sessions()
         
-        # Add session info to embed
-        embed.add_field(name="Channel", value=channel_name, inline=True)
-        embed.add_field(name="User", value=member.display_name, inline=True)
-        embed.add_field(name="Time", value=datetime.now().strftime("%I:%M %p"), inline=True)
+        # Add session info to embed with Discord timestamp format
+        embed.add_field(name="User ID", value=str(member.id), inline=True)
+        embed.add_field(name="Join Time", value=f"<t:{int(join_time.timestamp())}:F>", inline=True)
+        embed.add_field(name="Daily Joins", value=f"{daily_joins} time{'s' if daily_joins != 1 else ''} today", inline=True)
         
         await self._send_embed(embed)
     
     async def log_user_left_vc(self, member: discord.Member, channel_name: str):
         """Log when a user leaves the voice channel."""
+        # Get daily join count
+        daily_joins = self._get_daily_join_count(member.id)
+        
         embed = discord.Embed(
             title="👋 User Left",
             description=f"<@{member.id}> left the voice channel",
@@ -299,7 +343,8 @@ class DiscordEmbedLogger:
         if member.id in self.user_sessions:
             session_data = self.user_sessions[member.id]
             session_start = session_data['joined_at']
-            duration = datetime.now() - session_start
+            session_end = datetime.now()
+            duration = session_end - session_start
             duration_secs = duration.total_seconds()
             
             # Update total time before removing session
@@ -309,9 +354,16 @@ class DiscordEmbedLogger:
             session_str = self.format_duration(duration_secs)
             total_str = self.format_duration(session_data['total_time'])
             
+            embed.add_field(name="User ID", value=str(member.id), inline=True)
+            embed.add_field(name="Session Start", value=f"<t:{int(session_start.timestamp())}:F>", inline=True)
+            embed.add_field(name="Session End", value=f"<t:{int(session_end.timestamp())}:F>", inline=True)
             embed.add_field(name="⏱️ Session Duration", value=session_str, inline=True)
             embed.add_field(name="⌛ Total Time", value=total_str, inline=True)
-            embed.add_field(name="Channel", value=channel_name, inline=True)
+            embed.add_field(name="Daily Joins", value=f"{daily_joins} time{'s' if daily_joins != 1 else ''} today", inline=True)
+            
+            # Add interactions count
+            interactions = session_data.get('interactions', 0)
+            embed.add_field(name="Interactions", value=f"{interactions} interaction{'s' if interactions != 1 else ''}", inline=True)
             
             # Save total time to a temporary dict before deleting session
             temp_total = session_data['total_time']
@@ -327,11 +379,20 @@ class DiscordEmbedLogger:
             }
             
             self._save_sessions()
+        else:
+            # User wasn't tracked, show basic info
+            embed.add_field(name="User ID", value=str(member.id), inline=True)
+            embed.add_field(name="Leave Time", value=f"<t:{int(datetime.now().timestamp())}:F>", inline=True)
+            embed.add_field(name="Daily Joins", value=f"{daily_joins} time{'s' if daily_joins != 1 else ''} today", inline=True)
         
         await self._send_embed(embed)
     
     async def log_user_button_click(self, interaction: discord.Interaction, button_name: str, action_result: Optional[str] = None):
         """Log when a user clicks a button."""
+        # Increment interaction count for user if they have an active session
+        if interaction.user.id in self.user_sessions:
+            self.user_sessions[interaction.user.id]['interactions'] = self.user_sessions[interaction.user.id].get('interactions', 0) + 1
+        
         embed = discord.Embed(
             title="📝 User Interaction Log",
             color=0x9b59b6  # Discord purple color
@@ -393,12 +454,15 @@ class DiscordEmbedLogger:
         
         # Add timestamp
         embed.timestamp = datetime.now()
-        embed.set_footer(text=f"Server: {interaction.guild.name if interaction.guild else 'DM'}")
         
         await self._send_embed(embed)
     
     async def log_user_select_interaction(self, interaction: discord.Interaction, select_name: str, selected_value: str, action_result: Optional[str] = None):
         """Log when a user interacts with a select menu."""
+        # Increment interaction count for user if they have an active session
+        if interaction.user.id in self.user_sessions:
+            self.user_sessions[interaction.user.id]['interactions'] = self.user_sessions[interaction.user.id].get('interactions', 0) + 1
+        
         embed = discord.Embed(
             title="📝 User Interaction Log",
             color=0x9b59b6  # Discord purple color
@@ -465,7 +529,6 @@ class DiscordEmbedLogger:
         
         # Add timestamp
         embed.timestamp = datetime.now()
-        embed.set_footer(text=f"Server: {interaction.guild.name if interaction.guild else 'DM'}")
         
         await self._send_embed(embed)
     
@@ -474,7 +537,7 @@ class DiscordEmbedLogger:
     def _get_surah_emoji(self, surah_number: int) -> str:
         """Get emoji for surah (simplified version)."""
         special_emojis = {
-            1: "🕋", 2: "🐄", 3: "👨‍👩‍👧‍👦", 4: "👩", 5: "🍽️", 6: "🐪", 7: "⛰️", 8: "⚔️", 9: "🔄", 10: "🐋",
+            1: "🕋", 2: "🐄", 3: "👨‍👩‍👧‍", 4: "👩", 5: "🍽️", 6: "🐪", 7: "⛰️", 8: "⚔️", 9: "🔄", 10: "🐋",
             11: "👨", 12: "👑", 13: "⚡", 14: "👴", 15: "🗿", 16: "🐝", 17: "🌙", 18: "🕳️", 19: "👸", 20: "📜",
             21: "👥", 22: "🕋", 23: "🙏", 24: "💡", 25: "⚖️", 36: "📖", 55: "🌺", 67: "👑", 112: "💎", 113: "🌅", 114: "👥"
         }

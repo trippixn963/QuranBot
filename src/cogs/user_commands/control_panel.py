@@ -782,6 +782,11 @@ class ControlPanelView(View):
         panel_manager.register_panel(self)
         self.panel_message = None
         self.current_page = 0
+        # Add the select menus
+        self.surah_select = SurahSelect(bot, self.current_page)
+        self.reciter_select = ReciterSelect(bot)
+        self.add_item(self.surah_select)
+        self.add_item(self.reciter_select)
         # Start background task for periodic updates
         self._background_task = asyncio.create_task(self._periodic_update())
 
@@ -971,9 +976,10 @@ class ControlPanelView(View):
                 shuffle_status = "OFF"
 
             # Build the Markdown-style status block with extra spacing
-            status_block = (
-                f"• **Now Playing:** {surah_emoji} {surah_display}  \n"
-                f"{timer_line}\n" if timer_line else ""
+            status_block = f"• **Now Playing:** {surah_emoji} {surah_display}  \n"
+            if timer_line:
+                status_block += f"{timer_line}\n"
+            status_block += (
                 f"\n"
                 f"• **Reciter:** 🎤 {current_reciter}  \n"
                 f"\n"
@@ -1096,7 +1102,6 @@ class ControlPanelView(View):
             )
             await interaction.response.send_message(embed=error_embed, ephemeral=True, delete_after=300)
             return
-
         try:
             # Get current state
             current_index = self.bot.state_manager.get_current_song_index()
@@ -1104,8 +1109,8 @@ class ControlPanelView(View):
             if current_index is None or current_index <= 0:
                 warning_embed = await create_response_embed(
                     interaction, 
-                    "⚠️ Already at First", 
-                    "Already at the first surah!", 
+                    "⚠️ Not Playing", 
+                    "Not currently playing or at the first surah!", 
                     discord.Color.orange()
                 )
                 await interaction.response.send_message(embed=warning_embed, ephemeral=True, delete_after=300)
@@ -1113,6 +1118,13 @@ class ControlPanelView(View):
             
             # Update state
             self.bot.state_manager.set_current_song_index(current_index - 1)
+            
+            # Record last activity for previous
+            Config.set_last_activity(
+                action="Went to Previous Surah",
+                user_id=interaction.user.id,
+                user_name=interaction.user.name
+            )
             
             # Define restart_playback function
             async def restart_playback():
@@ -1145,7 +1157,13 @@ class ControlPanelView(View):
                         "user_name": interaction.user.name,
                         "error": str(e)
                     })
-                    await interaction.followup.send(f"Error restarting playback: {str(e)}", ephemeral=True, delete_after=300)
+                    error_embed = await create_response_embed(
+                        interaction,
+                        "❌ Error",
+                        f"Error restarting playback: {str(e)}",
+                        discord.Color.red()
+                    )
+                    await interaction.followup.send(embed=error_embed, ephemeral=True)
             
             # Acknowledge the interaction
             await interaction.response.defer()
@@ -1154,8 +1172,13 @@ class ControlPanelView(View):
             await restart_playback()
             
             # Send confirmation
-            await interaction.followup.send(f"Playing previous surah", ephemeral=True, delete_after=300)
-            
+            confirmation_embed = await create_response_embed(
+                interaction,
+                "✅ Previous Surah",
+                "Playing previous surah",
+                discord.Color.green()
+            )
+            await interaction.followup.send(embed=confirmation_embed, ephemeral=True)
         except Exception as e:
             log_operation("previous", "ERROR", {
                 "user_id": interaction.user.id,
@@ -1317,6 +1340,13 @@ class ControlPanelView(View):
             # Update state
             self.bot.state_manager.set_current_song_index(current_index + 1)
             
+            # Record last activity for skip
+            Config.set_last_activity(
+                action="Skipped to Next Surah",
+                user_id=interaction.user.id,
+                user_name=interaction.user.name
+            )
+            
             # Define restart_playback function
             async def restart_playback():
                 try:
@@ -1370,7 +1400,6 @@ class ControlPanelView(View):
                 discord.Color.green()
             )
             await interaction.followup.send(embed=confirmation_embed, ephemeral=True)
-            
         except Exception as e:
             log_operation("skip", "ERROR", {
                 "user_id": interaction.user.id,
@@ -1510,9 +1539,10 @@ async def setup(bot):
             shuffle_status = "OFF"
 
         # Build the Markdown-style status block with extra spacing
-        status_block = (
-            f"• **Now Playing:** {surah_emoji} {surah_display}  \n"
-            f"{timer_line}\n" if timer_line else ""
+        status_block = f"• **Now Playing:** {surah_emoji} {surah_display}  \n"
+        if timer_line:
+            status_block += f"{timer_line}\n"
+        status_block += (
             f"\n"
             f"• **Reciter:** 🎤 {current_reciter}  \n"
             f"\n"
@@ -1630,7 +1660,7 @@ async def setup(bot):
                     )
                 
                 # Send the new panel
-                panel_message = await channel.send(embed=embed, view=view, delete_after=300)
+                panel_message = await channel.send(embed=embed, view=view)
                 
                 # Store the message reference
                 view.set_panel_message(panel_message)
