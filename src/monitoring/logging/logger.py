@@ -197,11 +197,13 @@ file_handler.setFormatter(file_formatter)
 file_handler.setLevel(logging.DEBUG)
 logger.addHandler(file_handler)
 
-# Console handler
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(console_formatter)
-console_handler.setLevel(logging.DEBUG)
-logger.addHandler(console_handler)
+# Console handler - only enable in development
+# Disable console handler in production to avoid conflicts with shell redirection
+if os.getenv('ENVIRONMENT', 'production') == 'development':
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(console_formatter)
+    console_handler.setLevel(logging.DEBUG)
+    logger.addHandler(console_handler)
 
 def log_bot_startup(bot_name: str, bot_id: int):
     """Log bot startup with enhanced formatting."""
