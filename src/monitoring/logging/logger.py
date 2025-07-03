@@ -64,7 +64,16 @@ class DateNamedTimedRotatingFileHandler(TimedRotatingFileHandler):
         os.makedirs(log_dir, exist_ok=True)
         date_str = datetime.now().strftime('%Y-%m-%d')
         log_file = os.path.join(log_dir, f"{date_str}.log")
+        
+        # Initialize the parent handler
         super().__init__(log_file, when=when, backupCount=backupCount, encoding=encoding)
+        
+        # Ensure the log file exists by writing a startup message
+        try:
+            with open(log_file, 'a', encoding=encoding or 'utf-8') as f:
+                f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | QuranBot | INFO | Bot logging initialized - Daily log file created\n")
+        except Exception as e:
+            print(f"Warning: Could not write to log file {log_file}: {e}")
 
 class PerformanceTracker:
     """Track performance metrics for operations."""
@@ -204,6 +213,9 @@ if os.getenv('ENVIRONMENT', 'production') == 'development':
     console_handler.setFormatter(console_formatter)
     console_handler.setLevel(logging.DEBUG)
     logger.addHandler(console_handler)
+
+# Log startup message to ensure logging is working
+logger.info("QuranBot logging system initialized - Daily log rotation enabled")
 
 def log_bot_startup(bot_name: str, bot_id: int):
     """Log bot startup with enhanced formatting."""
