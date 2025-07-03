@@ -1,1 +1,0 @@
-# Admin commands package for QuranBot 

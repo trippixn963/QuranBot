@@ -1,1 +1,0 @@
-# Utility commands package for QuranBot 

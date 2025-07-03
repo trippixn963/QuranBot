@@ -58,7 +58,9 @@ class EnhancedFormatter(logging.Formatter):
 class DateNamedTimedRotatingFileHandler(TimedRotatingFileHandler):
     """Custom handler to name log files as logs/YYYY-MM-DD.log"""
     def __init__(self, when='midnight', backupCount=30, encoding=None):
-        log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../logs')
+        # Use absolute path to the project root directory
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        log_dir = os.path.join(project_root, 'logs')
         os.makedirs(log_dir, exist_ok=True)
         date_str = datetime.now().strftime('%Y-%m-%d')
         log_file = os.path.join(log_dir, f"{date_str}.log")
