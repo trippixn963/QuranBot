@@ -10,6 +10,9 @@ Usage:
 import sys
 import os
 
+from src.monitoring.logging.logger import logger
+logger.info("QuranBot run.py startup test log")
+
 # Add src to path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 

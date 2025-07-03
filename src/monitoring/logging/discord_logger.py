@@ -8,6 +8,7 @@ import discord
 import json
 import os
 import time
+import aiohttp
 from datetime import datetime, timedelta, date
 from typing import Optional, Dict, Any, List
 from monitoring.logging.logger import logger
@@ -148,10 +149,17 @@ class DiscordEmbedLogger:
             # Convert datetime objects to strings for JSON serialization
             serializable_data = {}
             for user_id, session_data in self.user_sessions.items():
+                # Handle missing fields gracefully
+                joined_at = session_data.get('joined_at')
+                if joined_at:
+                    joined_at_str = joined_at.isoformat() if hasattr(joined_at, 'isoformat') else str(joined_at)
+                else:
+                    joined_at_str = datetime.now().isoformat()
+                
                 serializable_data[str(user_id)] = {
-                    'joined_at': session_data['joined_at'].isoformat(),
-                    'channel_name': session_data['channel_name'],
-                    'username': session_data['username'],
+                    'joined_at': joined_at_str,
+                    'channel_name': session_data.get('channel_name', 'Unknown'),
+                    'username': session_data.get('username', 'Unknown'),
                     'total_time': session_data.get('total_time', 0.0),
                     'interactions': session_data.get('interactions', 0)
                 }
@@ -368,15 +376,8 @@ class DiscordEmbedLogger:
             # Save total time to a temporary dict before deleting session
             temp_total = session_data['total_time']
             
-            # Clean up session
+            # Clean up session - don't create incomplete session entries
             del self.user_sessions[member.id]
-            
-            # Create new session entry with just the total time
-            self.user_sessions[member.id] = {
-                'total_time': temp_total,
-                'username': member.display_name,
-                'last_seen': datetime.now().isoformat()
-            }
             
             self._save_sessions()
         else:
@@ -418,9 +419,10 @@ class DiscordEmbedLogger:
         if member and member.voice:
             duration = self.get_user_session_duration(interaction.user.id)
             if not duration:  # User is in voice but we're not tracking them
-                self.start_user_session(interaction.user.id)
-                duration = "00:00:00"
-            embed.add_field(name="Voice Status", value=f"🔊 In Voice ({duration})", inline=True)
+                duration = "🔊 In Voice (not tracked)"
+            else:
+                duration = f"🔊 In Voice ({duration})"
+            embed.add_field(name="Voice Status", value=duration, inline=True)
         else:
             self.end_user_session(interaction.user.id)  # Ensure we stop tracking if they're not in voice
             embed.add_field(name="Voice Status", value="❌ Not in Voice", inline=True)
@@ -544,25 +546,61 @@ class DiscordEmbedLogger:
         return special_emojis.get(surah_number, "📖")
     
     async def _send_embed(self, embed: discord.Embed):
-        """Send embed to logs channel."""
-        try:
-            logger.debug(f"Attempting to send embed to logs channel {self.logs_channel_id}")
-            channel = await self.get_logs_channel()
-            if channel:
+        """Send embed to logs channel with retry logic and better error handling."""
+        max_retries = 3
+        retry_delay = 2  # Start with 2 seconds
+        
+        for attempt in range(max_retries):
+            try:
+                logger.debug(f"Attempting to send embed to logs channel {self.logs_channel_id} (attempt {attempt + 1}/{max_retries})")
+                channel = await self.get_logs_channel()
+                
+                if not channel:
+                    logger.warning(f"Could not send Discord embed - channel {self.logs_channel_id} not found")
+                    return
+                
                 logger.debug(f"Found logs channel {channel.name} ({channel.id})")
                 await channel.send(embed=embed)
                 logger.debug(f"Successfully sent Discord embed to channel {self.logs_channel_id}")
-            else:
-                logger.warning(f"Could not send Discord embed - channel {self.logs_channel_id} not found")
-        except Exception as e:
-            logger.error(f"Failed to send Discord embed: {str(e)}\nTraceback: {traceback.format_exc()}")
+                return  # Success, exit the retry loop
+                
+            except discord.errors.HTTPException as e:
+                if e.status == 429:  # Rate limited
+                    retry_after = getattr(e, 'retry_after', 5)  # Safe access to retry_after
+                    logger.warning(f"Rate limited when sending embed, waiting {retry_after}s before retry {attempt + 1}/{max_retries}")
+                    await asyncio.sleep(retry_after)
+                elif e.status in [500, 502, 503, 504]:  # Server errors
+                    logger.warning(f"Discord server error {e.status} when sending embed, retrying in {retry_delay}s (attempt {attempt + 1}/{max_retries})")
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                elif e.status == 403:  # Forbidden
+                    logger.error(f"Bot lacks permissions to send messages in channel {self.logs_channel_id}")
+                    break  # Don't retry permission errors
+                else:
+                    logger.error(f"HTTP error {e.status} when sending embed: {e.text}")
+                    break  # Don't retry on other HTTP errors
+                    
+            except (aiohttp.ClientError, aiohttp.ServerDisconnectedError, ConnectionError) as e:
+                logger.warning(f"Connection error when sending embed: {str(e)}, retrying in {retry_delay}s (attempt {attempt + 1}/{max_retries})")
+                await asyncio.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+                
+            except Exception as e:
+                logger.error(f"Unexpected error when sending embed: {str(e)}")
+                if attempt == max_retries - 1:  # Only log full traceback on final attempt
+                    logger.error(f"Full traceback: {traceback.format_exc()}")
+                break  # Don't retry unexpected errors
+        
+        if attempt == max_retries - 1:
+            logger.error(f"Failed to send Discord embed after {max_retries} attempts")
 
     def start_user_session(self, user_id: int):
         """Start tracking a user's voice session."""
-        self.user_sessions[user_id] = {
-            'joined_at': datetime.now()
-        }
-        self._save_sessions()
+        # Only create session if we have complete data
+        # This method is called from button interactions when user is in VC but not tracked
+        # We should get the member object to create a proper session
+        logger.debug(f"start_user_session called for user {user_id} but incomplete data - skipping")
+        # Don't create incomplete sessions - let the proper join event handle it
 
     def end_user_session(self, user_id: int):
         """End tracking a user's voice session."""

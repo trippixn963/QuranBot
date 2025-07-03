@@ -119,13 +119,21 @@ def log_function_call(func: Callable):
             response_time = (time.time() - start_time) * 1000
             system_metrics_after = get_system_metrics()
             now = get_eastern_now()
-            logger.info(f"FUNC_CALL | {func.__name__} | ResponseTime: {response_time:.2f}ms | MemoryChange: {system_metrics_after['memory_rss_mb'] - system_metrics_before['memory_rss_mb']:+.1f}MB | CPUChange: {system_metrics_after['cpu_percent'] - system_metrics_before['cpu_percent']:+.1f}% | Date: {now.strftime('%m/%d/%Y')} | Time: {now.strftime('%I:%M:%S %p')} (US/Eastern)")
+            logger.info(f"FUNC_CALL | {func.__name__}", extra={
+                "ResponseTime": f"{response_time:.2f}ms",
+                "MemoryChange": f"{system_metrics_after['memory_rss_mb'] - system_metrics_before['memory_rss_mb']:+.1f}MB",
+                "CPUChange": f"{system_metrics_after['cpu_percent'] - system_metrics_before['cpu_percent']:+.1f}%"
+            })
             return result
         except Exception as e:
             response_time = (time.time() - start_time) * 1000
             system_metrics_after = get_system_metrics()
             now = get_eastern_now()
-            logger.error(f"FUNC_ERROR | {func.__name__} | ResponseTime: {response_time:.2f}ms | Error: {str(e)} | Traceback: {traceback.format_exc()} | Date: {now.strftime('%m/%d/%Y')} | Time: {now.strftime('%I:%M:%S %p')} (US/Eastern)")
+            logger.error(f"FUNC_ERROR | {func.__name__}", extra={
+                "ResponseTime": f"{response_time:.2f}ms",
+                "Error": str(e),
+                "Traceback": traceback.format_exc()
+            })
             raise
     return wrapper
 
@@ -139,12 +147,20 @@ def log_async_function_call(func: Callable):
             response_time = (time.time() - start_time) * 1000
             system_metrics_after = get_system_metrics()
             now = get_eastern_now()
-            logger.info(f"ASYNC_FUNC_CALL | {func.__name__} | ResponseTime: {response_time:.2f}ms | MemoryChange: {system_metrics_after['memory_rss_mb'] - system_metrics_before['memory_rss_mb']:+.1f}MB | CPUChange: {system_metrics_after['cpu_percent'] - system_metrics_before['cpu_percent']:+.1f}% | Date: {now.strftime('%m/%d/%Y')} | Time: {now.strftime('%I:%M:%S %p')} (US/Eastern)")
+            logger.info(f"ASYNC_FUNC_CALL | {func.__name__}", extra={
+                "ResponseTime": f"{response_time:.2f}ms",
+                "MemoryChange": f"{system_metrics_after['memory_rss_mb'] - system_metrics_before['memory_rss_mb']:+.1f}MB",
+                "CPUChange": f"{system_metrics_after['cpu_percent'] - system_metrics_before['cpu_percent']:+.1f}%"
+            })
             return result
         except Exception as e:
             response_time = (time.time() - start_time) * 1000
             system_metrics_after = get_system_metrics()
             now = get_eastern_now()
-            logger.error(f"ASYNC_FUNC_ERROR | {func.__name__} | ResponseTime: {response_time:.2f}ms | Error: {str(e)} | Traceback: {traceback.format_exc()} | Date: {now.strftime('%m/%d/%Y')} | Time: {now.strftime('%I:%M:%S %p')} (US/Eastern)")
+            logger.error(f"ASYNC_FUNC_ERROR | {func.__name__}", extra={
+                "ResponseTime": f"{response_time:.2f}ms",
+                "Error": str(e),
+                "Traceback": traceback.format_exc()
+            })
             raise
     return wrapper 

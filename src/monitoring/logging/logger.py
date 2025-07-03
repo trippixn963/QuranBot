@@ -17,13 +17,23 @@ import colorama
 from colorama import Fore, Back, Style
 import psutil
 import asyncio
+import json
+import inspect
 
 # Initialize colorama for Windows
 colorama.init()
 
-LOG_DIR = 'logs'
-if not os.path.exists(LOG_DIR):
-    os.makedirs(LOG_DIR)
+# Get log directory from environment or default to 'logs'
+LOG_DIR = os.getenv('QURANBOT_LOG_DIR', os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), 'logs'))
+os.makedirs(LOG_DIR, exist_ok=True)
+
+# Get log level from environment or default to INFO
+LOG_LEVEL = os.getenv('QURANBOT_LOG_LEVEL', 'INFO').upper()
+FILE_LOG_LEVEL = getattr(logging, LOG_LEVEL, logging.INFO)
+CONSOLE_LOG_LEVEL = getattr(logging, os.getenv('QURANBOT_CONSOLE_LOG_LEVEL', 'WARNING').upper(), logging.WARNING)
+
+# Global flag to prevent multiple initializations
+_logger_initialized = False
 
 # Color mappings for different log levels (no emojis)
 LOG_COLORS = {
@@ -55,25 +65,135 @@ class EnhancedFormatter(logging.Formatter):
         
         return colored_message
 
+class HumanReadableFormatter(logging.Formatter):
+    """Human-readable formatter with clean, structured output."""
+    
+    def format(self, record):
+        # Base timestamp and level
+        timestamp = datetime.now().strftime('%I:%M:%S %p')
+        
+        # Level emojis and names (no colors for log files)
+        level_styles = {
+            'DEBUG': {'emoji': '🔍', 'name': 'DEBUG'},
+            'INFO': {'emoji': 'ℹ️', 'name': 'INFO'},
+            'WARNING': {'emoji': '⚠️', 'name': 'WARN'},
+            'ERROR': {'emoji': '❌', 'name': 'ERROR'},
+            'CRITICAL': {'emoji': '🚨', 'name': 'CRIT'}
+        }
+        
+        style = level_styles.get(record.levelname, {'emoji': '📝', 'name': record.levelname})
+        
+        # Start with main message line
+        formatted = f"{timestamp} | {style['emoji']} {style['name']:8} | {record.getMessage()}"
+        
+        # Collect additional info to append
+        additional_info = []
+        
+        # Add module/function info for errors only
+        if record.levelname in ['ERROR', 'CRITICAL']:
+            additional_info.append(f"📁 {record.module}:{record.lineno}")
+        
+        # Add extra data if present (simplified)
+        extra_value = getattr(record, 'extra', None)
+        if extra_value and isinstance(extra_value, dict):
+            # Only show key metrics, not all data
+            important_keys = ['operation', 'component', 'user_id', 'error', 'ResponseTime', 'duration', 'attempt']
+            extra_str = []
+            for key, value in extra_value.items():
+                if key in important_keys:
+                    if isinstance(value, (int, float)):
+                        extra_str.append(f"{key}={value}")
+                    elif isinstance(value, str) and len(value) < 30:
+                        extra_str.append(f"{key}='{value}'")
+            if extra_str:
+                additional_info.append(f"📊 {', '.join(extra_str[:3])}")
+        
+        # Add exception info if present
+        if record.exc_info and record.exc_info[0] is not None:
+            exc_type = record.exc_info[0].__name__
+            exc_msg = str(record.exc_info[1])
+            exc_text = f"{exc_type}: {exc_msg[:50]}..." if len(exc_msg) > 50 else f"{exc_type}: {exc_msg}"
+            additional_info.append(f"💥 {exc_text}")
+        
+        # If we have additional info, append it with linking symbols
+        if additional_info:
+            # Use different symbols for visual hierarchy
+            for i, info in enumerate(additional_info):
+                if i == len(additional_info) - 1:  # Last item
+                    symbol = '└─'
+                else:
+                    symbol = '├─'
+                formatted += f"\n{' ' * 11} {symbol} {info}"  # 11 spaces to align with the message
+        
+        # Check if this is a tree-like line (contains ├─ or └─)
+        is_tree_line = '├─' in record.getMessage() or '└─' in record.getMessage()
+        
+        # Only add extra spacing for main event lines, not tree-like lines
+        if is_tree_line:
+            return formatted  # No extra spacing for tree lines
+        else:
+            return formatted + "\n"  # Add extra space between main log lines
+
 class DateNamedTimedRotatingFileHandler(TimedRotatingFileHandler):
-    """Custom handler to name log files as logs/YYYY-MM-DD.log"""
-    def __init__(self, when='midnight', backupCount=30, encoding=None):
+    """Custom handler to name log files as logs/YYYY-MM-DD/filename"""
+    def __init__(self, filename_suffix=".log", when='midnight', backupCount=30, encoding=None):
         # Use absolute path to the project root directory
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        log_dir = os.path.join(project_root, 'logs')
-        os.makedirs(log_dir, exist_ok=True)
+        # __file__ is src/monitoring/logging/logger.py, so we need to go up 4 levels to get to project root
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        base_log_dir = os.path.join(project_root, 'logs')
+        os.makedirs(base_log_dir, exist_ok=True)
+        
+        # Create date-based folder structure
         date_str = datetime.now().strftime('%Y-%m-%d')
-        log_file = os.path.join(log_dir, f"{date_str}.log")
+        date_log_dir = os.path.join(base_log_dir, date_str)
+        os.makedirs(date_log_dir, exist_ok=True)
+        
+        # Create log file inside the date folder
+        log_file = os.path.join(date_log_dir, f"quranbot{filename_suffix}")
+        
+
         
         # Initialize the parent handler
         super().__init__(log_file, when=when, backupCount=backupCount, encoding=encoding)
         
         # Ensure the log file exists by writing a startup message
         try:
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            startup_msg = f"{timestamp} ℹ️ INFO     | Bot logging initialized - Daily log file created in {date_str}/"
             with open(log_file, 'a', encoding=encoding or 'utf-8') as f:
-                f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | QuranBot | INFO | Bot logging initialized - Daily log file created\n")
+                f.write(startup_msg + '\n')
         except Exception as e:
-            print(f"Warning: Could not write to log file {log_file}: {e}")
+            pass  # Silently handle startup message writing errors
+    
+    def doRollover(self):
+        """Override to create new date folder when rolling over."""
+        # Get the new date for the rollover
+        new_date_str = datetime.now().strftime('%Y-%m-%d')
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        base_log_dir = os.path.join(project_root, 'logs')
+        new_date_log_dir = os.path.join(base_log_dir, new_date_str)
+        
+        # Create new date folder if it doesn't exist
+        os.makedirs(new_date_log_dir, exist_ok=True)
+        
+        # Update the log file path to the new date folder
+        filename_suffix = os.path.splitext(self.baseFilename)[1] if '.' in os.path.basename(self.baseFilename) else '.log'
+        new_log_file = os.path.join(new_date_log_dir, f"quranbot{filename_suffix}")
+        
+        # Update the handler's filename
+        self.baseFilename = new_log_file
+        
+        # Call parent rollover
+        super().doRollover()
+        
+        # Write startup message to new log file
+        try:
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            startup_msg = f"{timestamp} ℹ️ INFO     | Bot logging continued - New daily log file created in {new_date_str}/"
+            with open(new_log_file, 'a', encoding=self.encoding or 'utf-8') as f:
+                f.write(startup_msg + '\n')
+        except Exception as e:
+            pass  # Silently handle startup message writing errors
 
 class PerformanceTracker:
     """Track performance metrics for operations."""
@@ -174,9 +294,7 @@ system_monitor = SystemMonitor()
 logger = logging.getLogger('QuranBot')
 logger.setLevel(logging.DEBUG)  # Capture all levels
 
-# Clear existing handlers
-for handler in logger.handlers[:]:
-    logger.removeHandler(handler)
+# Don't clear existing handlers - this prevents multiple log files
 
 # Professional log format, no emojis - use defaults when extra is missing
 class SafeFormatter(logging.Formatter):
@@ -191,6 +309,34 @@ class SafeFormatter(logging.Formatter):
                 setattr(record, 'extra', str(extra_value))
         return super().format(record)
 
+class JSONFormatter(logging.Formatter):
+    """Formatter for detailed JSON logs."""
+    def format(self, record):
+        log_entry = {
+            'timestamp': datetime.now().isoformat(),
+            'level': record.levelname,
+            'logger': record.name,
+            'message': record.getMessage(),
+            'module': record.module,
+            'function': record.funcName,
+            'line': record.lineno
+        }
+        # Add extra fields if they exist
+        extra_value = getattr(record, 'extra', None)
+        if extra_value:
+            if isinstance(extra_value, dict):
+                log_entry.update(extra_value)
+            else:
+                log_entry['extra'] = str(extra_value)
+        # Add exception info if present
+        if record.exc_info and record.exc_info[0] is not None:
+            log_entry['exception'] = {
+                'type': record.exc_info[0].__name__,
+                'message': str(record.exc_info[1]),
+                'traceback': traceback.format_exception(*record.exc_info)
+            }
+        return json.dumps(log_entry, ensure_ascii=False)
+
 file_formatter = SafeFormatter(
     '%(asctime)s | %(name)s | %(levelname)s | %(message)s | %(extra)s',
     datefmt='%Y-%m-%d %H:%M:%S'
@@ -200,22 +346,42 @@ console_formatter = SafeFormatter(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-# File handler with daily rotation and date-named logs
-file_handler = DateNamedTimedRotatingFileHandler(when='midnight', backupCount=30, encoding='utf-8')
-file_handler.setFormatter(file_formatter)
-file_handler.setLevel(logging.DEBUG)
-logger.addHandler(file_handler)
+# Only setup handlers if they haven't been setup already
+if not logger.handlers:
+    # Human-readable log (INFO+) - creates logs/YYYY-MM-DD/quranbot.log
+    human_handler = DateNamedTimedRotatingFileHandler(filename_suffix=".log", when='midnight', backupCount=30, encoding='utf-8')
+    human_handler.setFormatter(HumanReadableFormatter())
+    human_handler.setLevel(logging.INFO)
+    logger.addHandler(human_handler)
+
+    # Error-only log (ERROR+) - creates logs/YYYY-MM-DD/quranbot-errors.log
+    error_handler = DateNamedTimedRotatingFileHandler(filename_suffix="-errors.log", when='midnight', backupCount=30, encoding='utf-8')
+    error_handler.setFormatter(HumanReadableFormatter())
+    error_handler.setLevel(logging.ERROR)
+    logger.addHandler(error_handler)
+
+    # Detailed JSON log (DEBUG+) - creates logs/YYYY-MM-DD/quranbot.json
+    json_handler = DateNamedTimedRotatingFileHandler(filename_suffix=".json", when='midnight', backupCount=30, encoding='utf-8')
+    json_handler.setFormatter(JSONFormatter())
+    json_handler.setLevel(logging.DEBUG)
+    logger.addHandler(json_handler)
 
 # Console handler - only enable in development
-# Disable console handler in production to avoid conflicts with shell redirection
 if os.getenv('ENVIRONMENT', 'production') == 'development':
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(console_formatter)
-    console_handler.setLevel(logging.DEBUG)
-    logger.addHandler(console_handler)
+    console_handlers = [h for h in logger.handlers if isinstance(h, logging.StreamHandler)]
+    if not console_handlers:
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(console_formatter)
+        console_handler.setLevel(logging.DEBUG)
+        logger.addHandler(console_handler)
 
-# Log startup message to ensure logging is working
-logger.info("QuranBot logging system initialized - Daily log rotation enabled")
+# Only write startup message once using a module-level flag
+if not hasattr(logger, '_startup_message_written'):
+    try:
+        logger.info("QuranBot logging system initialized - Triple log rotation enabled")
+        setattr(logger, '_startup_message_written', True)
+    except Exception as e:
+        pass  # Silently handle startup message errors
 
 def log_bot_startup(bot_name: str, bot_id: int):
     """Log bot startup with enhanced formatting."""
@@ -356,3 +522,22 @@ def track_performance(operation_name: str):
 #     # ... existing code ...
 
 # Apply these decorators to all major functions throughout the file. 
+
+# Silence noisy third-party loggers
+for noisy_logger in ['discord', 'asyncio', 'websockets', 'urllib3']:
+    logging.getLogger(noisy_logger).setLevel(logging.WARNING)
+
+# Log startup message (only if not already written)
+if not hasattr(logger, '_startup_message_written'):
+    logger.info("QuranBot logging system initialized - Dual log rotation enabled")
+    setattr(logger, '_startup_message_written', True)
+
+# Periodic health/status logging (every 10 minutes)
+import threading
+
+def log_system_health_periodically():
+    stats = system_monitor.get_system_stats()
+    logger.info(f"System health check", extra=stats)
+    threading.Timer(600, log_system_health_periodically).start()  # 10 minutes
+
+log_system_health_periodically() 

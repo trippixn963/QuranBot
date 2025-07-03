@@ -108,7 +108,7 @@ if %errorlevel%==0 (
 )
 echo.
 echo Recent logs:
-ssh -i "%SSH_KEY_PATH%" %VPS_USER%@%VPS_IP% "tail -10 %BOT_DIR%/bot.log"
+ssh -i "%SSH_KEY_PATH%" %VPS_USER%@%VPS_IP% "find %BOT_DIR%/logs -name 'quranbot.log' -type f -exec tail -10 {} \; 2>/dev/null | tail -10"
 pause
 goto menu
 
@@ -178,7 +178,7 @@ goto menu
 set /p lines="Number of log lines to show (default 50): "
 if "%lines%"=="" set lines=50
 echo Showing last %lines% lines of bot logs...
-ssh -i "%SSH_KEY_PATH%" %VPS_USER%@%VPS_IP% "tail -%lines% %BOT_DIR%/bot.log"
+ssh -i "%SSH_KEY_PATH%" %VPS_USER%@%VPS_IP% "find %BOT_DIR%/logs -name 'quranbot.log' -type f -exec tail -%lines% {} \; 2>/dev/null | tail -%lines%"
 pause
 goto menu
 
@@ -192,24 +192,38 @@ if "%search_term%"=="" (
 set /p lines="Number of lines to search (default 100): "
 if "%lines%"=="" set lines=100
 echo Searching logs for '%search_term%'...
-ssh -i "%SSH_KEY_PATH%" %VPS_USER%@%VPS_IP% "grep -n '%search_term%' %BOT_DIR%/bot.log | tail -%lines%"
+ssh -i "%SSH_KEY_PATH%" %VPS_USER%@%VPS_IP% "find %BOT_DIR%/logs -name '*.log' -type f -exec grep -n '%search_term%' {} \; 2>/dev/null | tail -%lines%"
 pause
 goto menu
 
 :download_logs
-echo Downloading all log files from VPS...
+echo ================================================================================
+echo                    Download Logs from VPS
+echo ================================================================================
 echo.
-echo Step 1: Creating log archive on VPS...
-for /f "tokens=2 delims==" %%a in ('wmic OS Get localdatetime /value') do set "dt=%%a"
-set "YY=%dt:~2,2%" & set "YYYY=%dt:~0,4%" & set "MM=%dt:~4,2%" & set "DD=%dt:~6,2%"
-set "HH=%dt:~8,2%" & set "Min=%dt:~10,2%" & set "Sec=%dt:~12,2%"
-set "timestamp=%YYYY%%MM%%DD%_%HH%%Min%%Sec%"
-set "remote_logs_archive=logs_backup_%timestamp%.tar.gz"
-ssh -i "%SSH_KEY_PATH%" %VPS_USER%@%VPS_IP% "cd %BOT_DIR% && tar -czf %remote_logs_archive% logs/ *.log 2>/dev/null || echo 'No logs found'"
-if %errorlevel%==0 (
-    echo Step 1 completed successfully.
-) else (
-    echo ERROR: Failed to create log archive on VPS!
+echo Step 1: Checking available log folders on VPS...
+ssh -i "%SSH_KEY_PATH%" %VPS_USER%@%VPS_IP% "cd %BOT_DIR%/logs && ls -1d */ 2>/dev/null | sed 's|/||' | sort -r" > temp_log_folders.txt
+if not exist "temp_log_folders.txt" (
+    echo ERROR: Could not retrieve log folders from VPS!
+    pause
+    goto menu
+)
+echo.
+echo Available log folders on VPS:
+echo ================================================================================
+set folder_count=0
+for /f "delims=" %%i in (temp_log_folders.txt) do (
+    set /a folder_count+=1
+    echo !folder_count!. %%i
+)
+set /a folder_count+=1
+echo !folder_count!. Download ALL folders
+echo.
+echo ================================================================================
+set /p choice="Enter folder number to download (1-%folder_count%): "
+if "%choice%"=="" (
+    echo ERROR: No choice provided!
+    del temp_log_folders.txt 2>nul
     pause
     goto menu
 )
@@ -222,53 +236,106 @@ if not exist "%LOCAL_PROJECT%\logs" (
     echo Local logs directory already exists.
 )
 echo.
-echo Step 3: Downloading log archive...
-scp -i "%SSH_KEY_PATH%" %VPS_USER%@%VPS_IP%:%BOT_DIR%/%remote_logs_archive% "%LOCAL_PROJECT%\\logs\\"
+if "%choice%"=="%folder_count%" (
+    echo Downloading ALL log folders...
+    set "selected_folders=logs/"
+    set "archive_name=all_logs_backup"
+) else (
+    set folder_index=0
+    for /f "delims=" %%i in (temp_log_folders.txt) do (
+        set /a folder_index+=1
+        if !folder_index!==%choice% (
+            echo Downloading folder: %%i
+            set "selected_folders=logs/%%i"
+            set "archive_name=%%i_logs_backup"
+            goto :download_selected
+        )
+    )
+    echo ERROR: Invalid folder number!
+    del temp_log_folders.txt 2>nul
+    pause
+    goto menu
+)
+:download_selected
+echo.
+echo Step 3: Creating log archive on VPS...
+for /f "tokens=2 delims==" %%a in ('wmic OS Get localdatetime /value') do set "dt=%%a"
+set "YY=%dt:~2,2%" & set "YYYY=%dt:~0,4%" & set "MM=%dt:~4,2%" & set "DD=%dt:~6,2%"
+set "HH=%dt:~8,2%" & set "Min=%dt:~10,2%" & set "Sec=%dt:~12,2%"
+set "timestamp=%YYYY%%MM%%DD%_%HH%%Min%%Sec%"
+set "remote_logs_archive=%archive_name%_%timestamp%.tar.gz"
+ssh -i "%SSH_KEY_PATH%" %VPS_USER%@%VPS_IP% "cd %BOT_DIR% && tar -czf %remote_logs_archive% %selected_folders% 2>/dev/null || echo 'No logs found'"
 if %errorlevel%==0 (
     echo Step 3 completed successfully.
 ) else (
-    echo ERROR: Failed to download log archive!
+    echo ERROR: Failed to create log archive on VPS!
+    del temp_log_folders.txt 2>nul
     pause
     goto menu
 )
 echo.
-echo Step 4: Extracting logs...
+echo Step 4: Downloading log archive...
+scp -i "%SSH_KEY_PATH%" %VPS_USER%@%VPS_IP%:%BOT_DIR%/%remote_logs_archive% "%LOCAL_PROJECT%\\logs\\"
+if %errorlevel%==0 (
+    echo Step 4 completed successfully.
+) else (
+    echo ERROR: Failed to download log archive!
+    del temp_log_folders.txt 2>nul
+    pause
+    goto menu
+)
+echo.
+echo Step 5: Extracting logs...
 cd /d "%LOCAL_PROJECT%\logs"
 tar -xzf %remote_logs_archive%
 if %errorlevel%==0 (
-    echo Step 4 completed successfully.
+    echo Step 5 completed successfully.
     del %remote_logs_archive%
     echo SUCCESS: Temporary archive removed.
 ) else (
     echo ERROR: Failed to extract log archive!
+    del temp_log_folders.txt 2>nul
     pause
     goto menu
 )
 echo.
-echo Step 5: Listing downloaded files...
-dir /b *.log 2>nul
+echo Step 6: Listing downloaded files...
+if "%choice%"=="%folder_count%" (
+    dir /s /b *.log 2>nul
+) else (
+    dir /s /b %selected_folders%*.log 2>nul
+)
 if %errorlevel%==0 (
     echo.
     echo SUCCESS: Log files downloaded and extracted successfully!
 ) else (
-    echo No log files found on VPS.
+    echo No log files found in selected folder.
 )
 echo.
-echo Step 6: Cleaning up remote archive...
+echo Step 7: Cleaning up remote archive...
 ssh -i "%SSH_KEY_PATH%" %VPS_USER%@%VPS_IP% "cd %BOT_DIR% && rm -f %remote_logs_archive%"
-echo Step 6 completed.
+echo Step 7 completed.
 echo.
-echo SUCCESS: All log files downloaded to %LOCAL_PROJECT%\logs\
+echo SUCCESS: Selected log files downloaded to %LOCAL_PROJECT%\logs\
+del temp_log_folders.txt 2>nul
 pause
 goto menu
 
 :clear_logs
 echo Clearing old log files...
-ssh -i "%SSH_KEY_PATH%" %VPS_USER%@%VPS_IP% "cd %BOT_DIR% && find . -name '*.log*' -mtime +7 -delete"
+ssh -i "%SSH_KEY_PATH%" %VPS_USER%@%VPS_IP% "cd %BOT_DIR% && find logs/ -name '*.log*' -mtime +7 -delete"
 if %errorlevel%==0 (
     echo SUCCESS: Old log files cleared successfully!
 ) else (
     echo ERROR: Failed to clear log files!
+)
+echo.
+echo Clearing old log directories (older than 7 days)...
+ssh -i "%SSH_KEY_PATH%" %VPS_USER%@%VPS_IP% "cd %BOT_DIR%/logs && find . -type d -name '????-??-??' -mtime +7 -exec rm -rf {} \; 2>/dev/null || echo 'No old directories to remove'"
+if %errorlevel%==0 (
+    echo SUCCESS: Old log directories cleared successfully!
+) else (
+    echo WARNING: Some old directories may still exist.
 )
 pause
 goto menu

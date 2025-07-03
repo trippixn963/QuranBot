@@ -88,7 +88,7 @@ async def create_credits_embed(bot, interaction: discord.Interaction) -> discord
     # Developer
     embed.add_field(
         name="👨‍💻 Developer", 
-        value="Developed by <@259725211664908288> (you)", 
+        value="Developed by <@259725211664908288>", 
         inline=True
     )
     

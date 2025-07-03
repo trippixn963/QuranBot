@@ -10,6 +10,7 @@ import traceback
 import time
 import psutil
 import gc
+import aiohttp
 from datetime import datetime
 from typing import Optional, Dict, Any
 from discord.ui import View, Select, Button, Modal, TextInput
@@ -197,6 +198,26 @@ def log_button_interaction(func):
         logger.debug(f"BUTTON_CONTEXT_DETAILED | UserContext: {user_context} | BotStateBefore: {bot_state_before} | SystemMetricsBefore: {system_metrics_before}")
         
         try:
+            # Log detailed user information
+            user = interaction.user
+            member = interaction.guild.get_member(user.id) if interaction.guild else None
+            
+            logger.info(f"├─ 👤 User Details: {user.name}#{user.discriminator} (ID: {user.id})", 
+                       extra={'event': 'BUTTON_USER_DETAILS', 'user_id': user.id, 'username': user.name, 'discriminator': user.discriminator})
+            logger.info(f"├─ 🏠 Guild: {interaction.guild.name if interaction.guild else 'DM'} (ID: {interaction.guild.id if interaction.guild else 'DM'})", 
+                       extra={'event': 'BUTTON_USER_DETAILS', 'guild_id': interaction.guild.id if interaction.guild else None, 'guild_name': interaction.guild.name if interaction.guild else 'DM'})
+            logger.info(f"├─ 📅 Account Created: {user.created_at.strftime('%Y-%m-%d %H:%M:%S')}", 
+                       extra={'event': 'BUTTON_USER_DETAILS', 'account_created': user.created_at.isoformat()})
+            if member:
+                logger.info(f"├─ 🎭 Roles: {len(member.roles)} roles", 
+                           extra={'event': 'BUTTON_USER_DETAILS', 'role_count': len(member.roles)})
+                logger.info(f"├─ 📍 Joined Server: {member.joined_at.strftime('%Y-%m-%d %H:%M:%S') if member.joined_at else 'Unknown'}", 
+                           extra={'event': 'BUTTON_USER_DETAILS', 'joined_at': member.joined_at.isoformat() if member.joined_at else None})
+            channel_name = interaction.channel.name if interaction.channel and hasattr(interaction.channel, 'name') else 'DM'
+            channel_id = interaction.channel.id if interaction.channel and hasattr(interaction.channel, 'id') else 'DM'
+            logger.info(f"└─ 💬 Channel: {channel_name} (ID: {channel_id})", 
+                       extra={'event': 'BUTTON_USER_DETAILS', 'channel_id': channel_id, 'channel_name': channel_name})
+            
             # Log to Discord
             await self.bot.discord_logger.log_user_button_click(interaction, button_name)
             
@@ -275,6 +296,26 @@ def log_select_interaction(func):
         logger.debug(f"SELECT_CONTEXT_DETAILED | UserContext: {user_context} | BotStateBefore: {bot_state_before} | SystemMetricsBefore: {system_metrics_before}")
         
         try:
+            # Log detailed user information
+            user = interaction.user
+            member = interaction.guild.get_member(user.id) if interaction.guild else None
+            
+            logger.info(f"├─ 👤 User Details: {user.name}#{user.discriminator} (ID: {user.id})", 
+                       extra={'event': 'SELECT_USER_DETAILS', 'user_id': user.id, 'username': user.name, 'discriminator': user.discriminator})
+            logger.info(f"├─ 🏠 Guild: {interaction.guild.name if interaction.guild else 'DM'} (ID: {interaction.guild.id if interaction.guild else 'DM'})", 
+                       extra={'event': 'SELECT_USER_DETAILS', 'guild_id': interaction.guild.id if interaction.guild else None, 'guild_name': interaction.guild.name if interaction.guild else 'DM'})
+            logger.info(f"├─ 📅 Account Created: {user.created_at.strftime('%Y-%m-%d %H:%M:%S')}", 
+                       extra={'event': 'SELECT_USER_DETAILS', 'account_created': user.created_at.isoformat()})
+            if member:
+                logger.info(f"├─ 🎭 Roles: {len(member.roles)} roles", 
+                           extra={'event': 'SELECT_USER_DETAILS', 'role_count': len(member.roles)})
+                logger.info(f"├─ 📍 Joined Server: {member.joined_at.strftime('%Y-%m-%d %H:%M:%S') if member.joined_at else 'Unknown'}", 
+                           extra={'event': 'SELECT_USER_DETAILS', 'joined_at': member.joined_at.isoformat() if member.joined_at else None})
+            channel_name = interaction.channel.name if interaction.channel and hasattr(interaction.channel, 'name') else 'DM'
+            channel_id = interaction.channel.id if interaction.channel and hasattr(interaction.channel, 'id') else 'DM'
+            logger.info(f"└─ 💬 Channel: {channel_name} (ID: {channel_id})", 
+                       extra={'event': 'SELECT_USER_DETAILS', 'channel_id': channel_id, 'channel_name': channel_name})
+            
             # Log to Discord
             await self.bot.discord_logger.log_user_select_interaction(interaction, select_name, selected_value)
             
@@ -1015,6 +1056,19 @@ class ControlPanelView(View):
             # No footer - removed as requested
 
             await self.panel_message.edit(embed=embed)
+        except discord.errors.HTTPException as e:
+            if e.status in [500, 502, 503, 504, 429]:  # Server errors or rate limit
+                log_operation("update_panel", "WARNING", {
+                    "error": f"Discord server error {e.status}: {e.text}",
+                    "retry_later": True
+                })
+            else:
+                log_operation("update_panel", "ERROR", {"error": f"HTTP error {e.status}: {e.text}"})
+        except (aiohttp.ClientError, aiohttp.ServerDisconnectedError, ConnectionError) as e:
+            log_operation("update_panel", "WARNING", {
+                "error": f"Connection error: {str(e)}",
+                "retry_later": True
+            })
         except Exception as e:
             log_operation("update_panel", "ERROR", {"error": str(e)})
 

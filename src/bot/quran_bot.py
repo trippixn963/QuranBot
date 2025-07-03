@@ -137,7 +137,8 @@ class QuranBot(discord.Client):
             'src.cogs.admin.bot_control.reconnect',
             'src.cogs.admin.misc.credits',
             'src.cogs.admin.monitoring.utility_logs',
-            'src.cogs.user_commands.control_panel'
+            'src.cogs.user_commands.control_panel',
+            'src.cogs.user_commands.daily_verse'
         ]
         
         for command in commands_to_load:
@@ -153,6 +154,26 @@ class QuranBot(discord.Client):
             logger.info("Command tree synced successfully", extra={'event': 'COMMAND_SYNC'})
         except Exception as e:
             logger.error(f"Failed to sync command tree: {e}", extra={'event': 'COMMAND_SYNC_ERROR'})
+        
+        # Initialize log cleanup system
+        try:
+            from monitoring.logging.log_cleanup import LogCleanupManager, setup_log_cleanup_scheduler
+            
+            # Run initial cleanup
+            cleanup_manager = LogCleanupManager()
+            cleanup_results = cleanup_manager.run_full_cleanup()
+            
+            logger.info(f"Log cleanup initialized: {cleanup_results['stats']['active_folders']} active folders, "
+                       f"{cleanup_results['stats']['archived_folders']} archived, "
+                       f"{cleanup_results['stats']['total_size_mb']}MB total",
+                       extra={'event': 'LOG_CLEANUP_INIT'})
+            
+            # Start cleanup scheduler
+            self.cleanup_scheduler_task = asyncio.create_task(setup_log_cleanup_scheduler()())
+            logger.info("Log cleanup scheduler started", extra={'event': 'LOG_CLEANUP_SCHEDULER'})
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize log cleanup: {e}", extra={'event': 'LOG_CLEANUP_ERROR'})
         
         t1 = time.time()
         log_performance("setup_hook", t1-t0)
@@ -265,6 +286,10 @@ class QuranBot(discord.Client):
         
     async def on_voice_state_update(self, member, before, after):
         """Handle voice state updates for reconnection logic."""
+        # Log all voice state updates for debugging
+        logger.debug(f"Voice state update triggered: {member.display_name} ({member.id}) - Before: {before.channel.name if before.channel else 'None'} -> After: {after.channel.name if after.channel else 'None'}", 
+                    extra={'event': 'VOICE_STATE_UPDATE', 'user_id': member.id, 'user_name': member.display_name})
+        
         if self.user and member.id == self.user.id:
             if before.channel and not after.channel:
                 # Bot was disconnected
@@ -275,24 +300,28 @@ class QuranBot(discord.Client):
                 self.is_streaming = False
                 self.health_monitor.set_streaming_status(False)
                 
-                # Check if we've had too many failures
-                self.connection_failures += 1
-                if self.connection_failures >= self.max_connection_failures:
-                    logger.error(f"Too many connection failures ({self.connection_failures}). Stopping reconnection attempts.", 
-                               extra={'event': 'CONNECTION_FAILURE_LIMIT'})
-                    self.is_streaming = False
-                    return
-                
-                # Wait much longer before reconnecting to break the reconnection loop
-                wait_time = min(60 * self.connection_failures, 300)  # Progressive delay up to 5 minutes
-                logger.info(f"Waiting {wait_time} seconds before reconnection attempt {self.connection_failures}/{self.max_connection_failures}...", 
-                           extra={'event': 'RECONNECT_WAIT', 'wait_time': wait_time, 'failures': self.connection_failures})
-                await asyncio.sleep(wait_time)
-                
-                if self.is_streaming:
+                # Always attempt reconnection unless we've exceeded max failures
+                if self.connection_failures < self.max_connection_failures:
+                    # Check if we've had too many failures
+                    self.connection_failures += 1
+                    if self.connection_failures >= self.max_connection_failures:
+                        logger.error(f"Too many connection failures ({self.connection_failures}). Stopping reconnection attempts.", 
+                                   extra={'event': 'CONNECTION_FAILURE_LIMIT'})
+                        self.is_streaming = False
+                        return
+                    
+                    # Wait before reconnecting (shorter delays for more aggressive reconnection)
+                    wait_time = min(30 * self.connection_failures, 180)  # Progressive delay up to 3 minutes
+                    logger.info(f"Waiting {wait_time} seconds before reconnection attempt {self.connection_failures}/{self.max_connection_failures}...", 
+                               extra={'event': 'RECONNECT_WAIT', 'wait_time': wait_time, 'failures': self.connection_failures})
+                    await asyncio.sleep(wait_time)
+                    
                     logger.info("Attempting to reconnect after disconnection...", 
                                extra={'event': 'RECONNECT_ATTEMPT'})
                     await self.find_and_join_channel()
+                else:
+                    logger.info("Bot disconnected - max failures reached, not attempting reconnection", 
+                               extra={'event': 'DISCONNECT_MAX_FAILURES'})
             elif not before.channel and after.channel:
                 # Bot connected to voice
                 log_connection_success(after.channel.name, after.channel.guild.name)
@@ -310,9 +339,10 @@ class QuranBot(discord.Client):
                     
                     # Schedule delayed resume to ensure voice connection is stable
                     async def delayed_resume():
-                        await asyncio.sleep(3)  # Wait 3 seconds for connection to stabilize
+                        await asyncio.sleep(5)  # Wait 5 seconds for connection to stabilize
                         guild_id = after.channel.guild.id
                         if (guild_id in self._voice_clients and 
+                            hasattr(self._voice_clients[guild_id], 'is_connected') and
                             self._voice_clients[guild_id].is_connected() and
                             not self.is_streaming):  # Only resume if not already streaming
                             logger.info("Resuming streaming after stable reconnection...", 
@@ -336,12 +366,36 @@ class QuranBot(discord.Client):
         elif member != self.user:
             target_vc_id = self.discord_logger.target_vc_id
             
+            # Debug logging to see what's happening
+            logger.debug(f"Voice state update: {member.display_name} ({member.id}) - Before: {before.channel.name if before.channel else 'None'} -> After: {after.channel.name if after.channel else 'None'}", 
+                        extra={'event': 'VOICE_STATE_DEBUG', 'user_id': member.id, 'target_vc': target_vc_id})
+            
             # User joined the target Quran VC from nowhere or different channel
             if after.channel and after.channel.id == target_vc_id and (not before.channel or before.channel.id != target_vc_id):
+                logger.info(f"User {member.display_name} joined target VC {after.channel.name}", 
+                           extra={'event': 'USER_JOINED_VC', 'user_id': member.id, 'channel_id': after.channel.id})
+                logger.info(f"├─ 👤 User Details: {member.name}#{member.discriminator} (ID: {member.id})", 
+                           extra={'event': 'USER_JOINED_VC_DETAILS', 'user_id': member.id, 'username': member.name, 'discriminator': member.discriminator})
+                logger.info(f"├─ 🏠 Guild: {member.guild.name} (ID: {member.guild.id})", 
+                           extra={'event': 'USER_JOINED_VC_DETAILS', 'guild_id': member.guild.id, 'guild_name': member.guild.name})
+                logger.info(f"├─ 📅 Account Created: {member.created_at.strftime('%Y-%m-%d %H:%M:%S')}", 
+                           extra={'event': 'USER_JOINED_VC_DETAILS', 'account_created': member.created_at.isoformat()})
+                logger.info(f"└─ 🎭 Roles: {len(member.roles)} roles", 
+                           extra={'event': 'USER_JOINED_VC_DETAILS', 'role_count': len(member.roles)})
                 await self.discord_logger.log_user_joined_vc(member, after.channel.name)
             
             # User left the target Quran VC to nowhere or different channel  
             elif before.channel and before.channel.id == target_vc_id and (not after.channel or after.channel.id != target_vc_id):
+                logger.info(f"User {member.display_name} left target VC {before.channel.name}", 
+                           extra={'event': 'USER_LEFT_VC', 'user_id': member.id, 'channel_id': before.channel.id})
+                logger.info(f"├─ 👤 User Details: {member.name}#{member.discriminator} (ID: {member.id})", 
+                           extra={'event': 'USER_LEFT_VC_DETAILS', 'user_id': member.id, 'username': member.name, 'discriminator': member.discriminator})
+                logger.info(f"├─ 🏠 Guild: {member.guild.name} (ID: {member.guild.id})", 
+                           extra={'event': 'USER_LEFT_VC_DETAILS', 'guild_id': member.guild.id, 'guild_name': member.guild.name})
+                logger.info(f"├─ 📅 Account Created: {member.created_at.strftime('%Y-%m-%d %H:%M:%S')}", 
+                           extra={'event': 'USER_LEFT_VC_DETAILS', 'account_created': member.created_at.isoformat()})
+                logger.info(f"└─ 🎭 Roles: {len(member.roles)} roles", 
+                           extra={'event': 'USER_LEFT_VC_DETAILS', 'role_count': len(member.roles)})
                 await self.discord_logger.log_user_left_vc(member, before.channel.name)
 
     async def on_disconnect(self):
@@ -857,13 +911,22 @@ class QuranBot(discord.Client):
                 await self.discord_logger.cleanup_sessions()
             
             # Stop presence cycling
-            if self.presence_task and not self.presence_task.done():
+            if hasattr(self, 'presence_task') and self.presence_task and not self.presence_task.done():
                 self.presence_task.cancel()
                 try:
                     await self.presence_task
                 except asyncio.CancelledError:
                     pass
                 logger.info("Presence cycling stopped")
+            
+            # Stop log cleanup scheduler
+            if hasattr(self, 'cleanup_scheduler_task') and self.cleanup_scheduler_task and not self.cleanup_scheduler_task.done():
+                self.cleanup_scheduler_task.cancel()
+                try:
+                    await self.cleanup_scheduler_task
+                except asyncio.CancelledError:
+                    pass
+                logger.info("Log cleanup scheduler stopped")
             
             # Disconnect from all voice channels
             for guild_id, voice_client in self._voice_clients.items():

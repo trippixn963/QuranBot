@@ -157,8 +157,12 @@ audio/
 - `/restart` - Restart the bot (Admin only)
 - `/skip` - Skip current surah
 - `/reconnect` - Reconnect to voice channel
-- `/credits` - Show bot credits
+- `/credits` - Show bot credits (now without the '(you)' label)
 - `/logs` - View recent logs
+- `/sendverse` - Send a daily verse immediately (Admin only)
+- `/versestatus` - Check daily verse status
+- `/reshuffleverses` - Reshuffle the daily verse queue (Admin only)
+- `/listchannels` - List all available channels (Admin only)
 
 ### Control Panel Features
 
@@ -307,6 +311,21 @@ For support information, see [SUPPORT.md](SUPPORT.md).
 - **Better User Identification** - Clickable user mentions replace plain display names
 - **Session-Focused Tracking** - Time tracking resets each session for relevant data
 - **Reduced Visual Noise** - Removed redundant channel information across all embeds
+
+## 📅 Daily Verse Feature
+
+- **Automatic Daily Verses:** Sends a random Quran verse every 3 hours to a configurable text channel (e.g., 🌐┃chat・الدردشة).
+- **Beautiful Embeds:** Each verse is shown in a clean embed with:
+  - Arabic text in a black code block
+  - English translation in a black code block
+  - Dua emoji (🤲) reaction
+  - No time footer, and the embed color matches the bot's profile picture
+- **No Repeats:** Verses are shuffled and cycled with no immediate repeats until all are used.
+- **Admin Controls:**
+  - `/sendverse` — Send a verse immediately
+  - `/versestatus` — Check daily verse status
+  - `/reshuffleverses` — Reshuffle the verse queue
+  - `/listchannels` — List all available channels
 
 ---
 
