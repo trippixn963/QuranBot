@@ -1,99 +1,199 @@
-# QuranBot VPS Scripts
+# QuranBot VPS Management System
 
-This directory contains organized scripts for managing the QuranBot on the VPS.
+A comprehensive system for managing QuranBot on a VPS, providing tools for bot control, log management, and backups.
 
 ## 📁 Directory Structure
 
 ```
 scripts/vps/
-├── vps_manager.bat          # 🎯 Master VPS Manager (Windows)
-├── bot-control/             # 🤖 Bot Control Scripts
-│   ├── start_bot.sh         # 🚀 Start the bot
-│   ├── stop_bot.sh          # 🛑 Stop the bot
-│   ├── restart_bot.sh       # 🔄 Restart the bot
-│   ├── status_bot.sh        # 📊 Check bot status
-│   └── update_bot.sh        # ⬆️ Update bot files
-├── log-management/          # 📋 Log Management Scripts
-│   ├── stream_logs.bat      # 🔄 Stream logs (Windows)
-│   ├── stream_logs.ps1      # 🔄 Stream logs (PowerShell)
-│   ├── stream_logs.sh       # 🔄 Stream logs (Linux)
-│   ├── download_logs.bat    # 📥 Download logs (Windows)
-│   ├── download_logs.sh     # 📥 Download logs (Linux)
-│   ├── sync_logs.bat        # 🔄 Auto-sync logs
-│   ├── manage_logs.bat      # 📋 Log manager menu
-│   └── logs_bot.sh          # 📋 View bot logs
-└── utilities/               # 🛠️ Utility Scripts
-    ├── connect_vps.sh       # 🔌 Connect to VPS
-    └── kill_all_python.sh   # 💀 Kill all Python processes
+├── config/                    # ⚙️ Configuration
+│   └── vps_config.json       # Main configuration file
+├── core/                     # 🔧 Core Management System
+│   ├── __init__.py          # Package initialization
+│   ├── vps_manager.py       # Main VPS management class
+│   ├── log_manager.py       # Log management functionality
+│   └── backup_manager.py    # Backup functionality
+├── scripts/                  # 🚀 Platform-specific Scripts
+│   ├── windows/             # Windows PowerShell scripts
+│   │   ├── start.ps1       # Start bot
+│   │   ├── stop.ps1        # Stop bot
+│   │   ├── restart.ps1     # Restart bot
+│   │   ├── status.ps1      # Check bot status
+│   │   └── logs.ps1        # Log management
+│   └── linux/              # Linux shell scripts
+│       ├── start.sh        # Start bot
+│       ├── stop.sh         # Stop bot
+│       ├── restart.sh      # Restart bot
+│       ├── status.sh       # Check bot status
+│       └── logs.sh         # Log management
+└── ui/                      # 🖥️ User Interfaces
+    ├── cli.py              # Command-line interface
+    └── tui.py              # Terminal user interface
 ```
 
 ## 🚀 Quick Start
 
-### Windows Users
+1. Configure VPS settings in `config/vps_config.json`
+2. Set up SSH key authentication with your VPS
+3. Run the appropriate script for your platform:
+
+### Windows
+```powershell
+# Using PowerShell scripts
+.\scripts\windows\start.ps1    # Start bot
+.\scripts\windows\stop.ps1     # Stop bot
+.\scripts\windows\restart.ps1  # Restart bot
+.\scripts\windows\status.ps1   # Check status
+.\scripts\windows\logs.ps1     # Manage logs
+```
+
+### Linux/Mac
 ```bash
-# Use the master manager (recommended)
-.\scripts\vps\vps_manager.bat
-
-# Or use individual scripts
-.\scripts\vps\bot-control\start_bot.sh
-.\scripts\vps\log-management\stream_logs.bat
+# Using shell scripts
+./scripts/linux/start.sh     # Start bot
+./scripts/linux/stop.sh      # Stop bot
+./scripts/linux/restart.sh   # Restart bot
+./scripts/linux/status.sh    # Check status
+./scripts/linux/logs.sh      # Manage logs
 ```
 
-### Linux/Mac Users
+### Python Interfaces
 ```bash
-# Use individual scripts
-./scripts/vps/bot-control/start_bot.sh
-./scripts/vps/log-management/stream_logs.sh
+# Command-line interface
+python -m scripts.vps.ui.cli bot start
+python -m scripts.vps.ui.cli logs view --lines 100
+python -m scripts.vps.ui.cli backup create
+
+# Terminal user interface
+python -m scripts.vps.ui.tui
 ```
 
-## 📋 Script Categories
+## ⚙️ Configuration
 
-### 🤖 Bot Control
-- **start_bot.sh** - Start the QuranBot service
-- **stop_bot.sh** - Stop the QuranBot service
-- **restart_bot.sh** - Restart the QuranBot service
-- **status_bot.sh** - Check if the bot is running
-- **update_bot.sh** - Update bot files from git and restart
+The system is configured through `config/vps_config.json`. Key settings include:
 
-### 📋 Log Management
-- **stream_logs.bat/.ps1/.sh** - Stream logs in real-time
-- **download_logs.bat/.sh** - Download today's log file
-- **sync_logs.bat** - Continuously sync logs every 30 seconds
-- **manage_logs.bat** - Comprehensive log management menu
-- **logs_bot.sh** - View bot logs on VPS
+- VPS connection details (host, user, SSH key)
+- Bot service configuration
+- Monitoring thresholds
+- Logging preferences
+- Backup settings
 
-### 🛠️ Utilities
-- **connect_vps.sh** - SSH into the VPS
-- **kill_all_python.sh** - Kill all Python processes (emergency)
-
-## 🔧 Configuration
-
-All scripts use the SSH key located at:
-```
-C:/Users/hanna/.ssh/id_rsa
+Example configuration:
+```json
+{
+    "vps": {
+        "host": "your.vps.ip",
+        "user": "root",
+        "ssh_key": "~/.ssh/your_key"
+    },
+    "bot": {
+        "service_name": "quranbot",
+        "install_path": "/opt/quranbot"
+    }
+}
 ```
 
-VPS connection details:
-- **Host:** 159.89.90.90
-- **User:** root
-- **Bot Path:** /opt/quranbot
+## 🔧 Core Features
 
-## 📊 Log Files
+### Bot Control
+- Start/stop/restart bot service
+- Check bot status and health
+- Monitor system resources
 
-Log files are automatically named with the current date:
-- VPS: `/opt/quranbot/logs/YYYY-MM-DD.log`
-- Local: `logs/quranbot_vps_YYYY-MM-DD.log`
+### Log Management
+- View real-time logs
+- Download log files
+- Analyze log patterns
+- Clean up old logs
 
-## 🎯 Recommended Usage
+### Backup System
+- Create full/partial backups
+- List available backups
+- Restore from backup
+- Auto-cleanup old backups
 
-1. **Daily Management:** Use `vps_manager.bat` for most operations
-2. **Real-time Monitoring:** Use `stream_logs.bat` to watch logs live
-3. **Troubleshooting:** Use `status_bot.sh` and `logs_bot.sh` for diagnostics
-4. **Updates:** Use `update_bot.sh` to deploy changes
+## 🖥️ User Interfaces
 
-## ⚠️ Important Notes
+### Command-Line Interface (CLI)
+The CLI provides direct command execution:
 
-- All scripts require SSH access to the VPS
-- The bot runs as a systemd service (`quranbot.service`)
-- Logs are automatically rotated daily
-- The bot auto-restarts on failure 
+```bash
+# Bot control
+python -m scripts.vps.ui.cli bot start
+python -m scripts.vps.ui.cli bot stop
+python -m scripts.vps.ui.cli bot restart
+python -m scripts.vps.ui.cli bot status
+
+# Log management
+python -m scripts.vps.ui.cli logs view --lines 100
+python -m scripts.vps.ui.cli logs download --date 2024-01-01
+python -m scripts.vps.ui.cli logs analyze
+python -m scripts.vps.ui.cli logs cleanup --days 30
+
+# Backup management
+python -m scripts.vps.ui.cli backup create --name my_backup
+python -m scripts.vps.ui.cli backup list
+python -m scripts.vps.ui.cli backup restore my_backup
+python -m scripts.vps.ui.cli backup cleanup --days 30
+```
+
+### Terminal User Interface (TUI)
+The TUI provides an interactive menu-driven interface:
+
+```bash
+python -m scripts.vps.ui.tui
+```
+
+Features:
+- Easy-to-use menu system
+- Real-time feedback
+- Colorized output
+- Interactive prompts
+
+## 🔒 Security
+
+1. Use SSH key authentication only
+2. Keep your SSH key secure
+3. Use a non-root user with sudo privileges
+4. Regularly update VPS and bot
+5. Monitor logs for suspicious activity
+
+## 📋 Maintenance
+
+Regular maintenance tasks:
+
+1. Monitor system resources
+2. Check log files for errors
+3. Create regular backups
+4. Clean up old logs/backups
+5. Update bot and dependencies
+
+## 🐛 Troubleshooting
+
+Common issues and solutions:
+
+1. SSH Connection Failed
+   - Check SSH key permissions
+   - Verify VPS IP and port
+   - Ensure SSH service is running
+
+2. Bot Won't Start
+   - Check service status
+   - Review error logs
+   - Verify permissions
+
+3. Backup Failed
+   - Check disk space
+   - Verify backup paths
+   - Check file permissions
+
+## 📚 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details. 

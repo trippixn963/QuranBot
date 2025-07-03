@@ -123,7 +123,7 @@ async def credits_command(interaction: discord.Interaction):
     # Create the new clean credits embed
     embed = await create_credits_embed(bot, interaction)
     
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await interaction.response.send_message(embed=embed)
     
     log_operation("credits", "INFO", {
         "user_id": interaction.user.id,
@@ -142,13 +142,10 @@ async def setup(bot):
         # Create the command
         credits_command_obj = app_commands.Command(
             name="credits",
-            description="Show bot credits and information (Admin only)",
+            description="Show bot credits and information",
             callback=credits_command,
             parent=None
         )
-        
-        # Add default permissions
-        credits_command_obj.default_permissions = discord.Permissions(administrator=True)
         
         # Add to command tree
         bot.tree.add_command(credits_command_obj)

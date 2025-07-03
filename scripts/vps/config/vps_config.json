@@ -2,7 +2,7 @@
   "vps": {
     "host": "159.89.90.90",
     "user": "root",
-    "ssh_key": "C:/Users/hanna/.ssh/id_rsa",
+    "ssh_key": "~/.ssh/quranbot_vps",
     "port": 22,
     "connection_timeout": 30,
     "command_timeout": 60
@@ -10,30 +10,49 @@
   "bot": {
     "service_name": "quranbot",
     "install_path": "/opt/quranbot",
-    "log_path": "/opt/quranbot/logs",
     "data_path": "/opt/quranbot/data",
+    "log_path": "/var/log/quranbot",
     "backup_path": "/opt/quranbot/backups",
-    "systemd_path": "/etc/systemd/system/quranbot.service",
-    "repo_url": "https://github.com/yourusername/QuranBot.git",
-    "branch": "master",
-    "python_path": "/usr/bin/python3",
-    "venv_path": "/opt/quranbot/venv"
+    "python_path": "/opt/quranbot/venv/bin/python",
+    "main_script": "src/bot.py",
+    "config_file": "config.json",
+    "auto_restart": true,
+    "restart_delay": 5,
+    "max_restarts": 3
   },
   "monitoring": {
-    "health_check_interval": 300,
-    "log_retention_days": 30,
-    "alert_on_failure": true,
-    "discord_webhook": "",
-    "email_alerts": false,
-    "performance_monitoring": true
+    "enabled": true,
+    "check_interval": 60,
+    "metrics": {
+      "cpu_threshold": 80,
+      "memory_threshold": 80,
+      "disk_threshold": 90
+    },
+    "alerts": {
+      "discord_webhook": "",
+      "email": ""
+    }
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s [%(levelname)s] %(message)s",
+    "date_format": "%Y-%m-%d %H:%M:%S",
+    "max_size": "100M",
+    "backup_count": 30,
+    "compress": true
   },
   "backup": {
-    "enabled": true,
-    "frequency": "daily",
-    "retention_days": 7,
+    "schedule": "0 4 * * *",
+    "retention_days": 30,
     "include_logs": false,
-    "include_data": true,
-    "remote_backup": false
+    "compress": true,
+    "remote_backup": {
+      "enabled": false,
+      "type": "s3",
+      "bucket": "",
+      "access_key": "",
+      "secret_key": ""
+    }
   },
   "deployment": {
     "auto_restart_on_update": true,
