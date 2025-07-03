@@ -37,32 +37,34 @@ class QuranBot(discord.Client):
     """Professional Discord bot for 24/7 Quran streaming."""
     
     def __init__(self):
-        """Initialize the Quran Bot."""
-        # Discord intents
-        intents = discord.Intents.default()
-        intents.message_content = True
-        intents.voice_states = True
-        intents.guilds = True
-        intents.members = True  # Add members intent for user tracking
-        
+        """Initialize the QuranBot with enhanced error handling and monitoring."""
+        # Initialize base client with all intents
+        intents = discord.Intents.all()
         super().__init__(intents=intents)
+        
+        # Bot state
+        self.start_time = datetime.now()  # Track when the bot starts
+        self.is_streaming = False
+        self.loop_enabled = False
+        self.shuffle_enabled = False
+        self.current_audio_file = None
+        self.current_reciter = None
+        self._voice_clients = {}
+        self._was_streaming_before_disconnect = False
+        self.connection_failures = 0
+        self.max_connection_failures = 5  # Maximum number of consecutive failures before giving up
         
         # Initialize command tree for slash commands
         self.tree = discord.app_commands.CommandTree(self)
         
         # Initialize bot state
         self.current_song_index = 0
-        self.is_streaming = False
         self._intended_streaming = False  # Track if we want to be streaming
-        self.current_reciter = Config.DEFAULT_RECITER
         self.original_playlist = []  # Store original order for shuffle
-        self.loop_enabled = False
-        self.shuffle_enabled = False
         
         # Connection management
         self.connection_failures = 0
         self.max_connection_failures = 5
-        self._voice_clients = {}
         
         # Initialize components
         self.health_monitor = HealthMonitor()  # Initialize immediately
@@ -72,9 +74,6 @@ class QuranBot(discord.Client):
             Config.TARGET_CHANNEL_ID  # Use target VC ID from config
         )
         self.state_manager = StateManager()  # Initialize immediately
-        
-        # Playback control
-        self.start_time = datetime.now()  # For uptime calculation
         
         # Health checks tracking
         self.health_checks = {

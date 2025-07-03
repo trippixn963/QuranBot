@@ -168,10 +168,16 @@ class DiscordEmbedLogger:
         # Last uptime (from bot start time)
         if hasattr(self.bot, 'start_time'):
             uptime = datetime.now() - self.bot.start_time
+            days = uptime.days
             hours = uptime.seconds // 3600
             minutes = (uptime.seconds % 3600) // 60
-            uptime_str = f"{hours:02d}h {minutes:02d}m"
-            embed.add_field(name="⏱️ Last Uptime", value=uptime_str, inline=True)
+            
+            if days > 0:
+                uptime_str = f"{days}d {hours:02d}h {minutes:02d}m"
+            else:
+                uptime_str = f"{hours:02d}h {minutes:02d}m"
+                
+            embed.add_field(name="⏱️ Uptime", value=uptime_str, inline=True)
         
         # Health checks status
         health_status = "✅ All Systems OK"
@@ -183,6 +189,10 @@ class DiscordEmbedLogger:
         
         # Playback status
         embed.add_field(name="⏯️ Status", value="Ready to stream", inline=True)
+        
+        # Add timestamp
+        embed.timestamp = datetime.now()
+        embed.set_footer(text=f"Server: {guild_name}")
         
         await self._send_embed(embed)
     
