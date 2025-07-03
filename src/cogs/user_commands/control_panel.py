@@ -1437,6 +1437,9 @@ class ControlPanelView(View):
 async def setup(bot):
     """Set up the control panel cog."""
     try:
+        # Force reset the panel manager to clear any old state
+        panel_manager.reset()
+        
         # Create the control panel view
         view = ControlPanelView(bot)
         

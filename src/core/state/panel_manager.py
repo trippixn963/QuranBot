@@ -360,6 +360,26 @@ class PanelManager:
             }, e)
             return False
 
+    def reset(self):
+        """Force reset the panel manager to clear all state."""
+        log_operation("panel_manager", "INFO", {
+            "action": "force_reset_started",
+            "has_panel": self.panel_view is not None,
+            "panel_id": id(self.panel_view) if self.panel_view else None
+        })
+        
+        # Unregister current panel
+        self.unregister_panel()
+        
+        # Reset all state
+        self.panel_view = None
+        self.bot = None
+        self._update_in_progress = False
+        
+        log_operation("panel_manager", "INFO", {
+            "action": "force_reset_completed"
+        })
+
 
 # Global panel manager instance
 panel_manager = PanelManager() 
