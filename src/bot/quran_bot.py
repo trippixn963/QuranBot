@@ -92,6 +92,15 @@ class QuranBot(discord.Client):
         signal.signal(signal.SIGINT, self.signal_handler)
         signal.signal(signal.SIGTERM, self.signal_handler)
         
+        # Set a default reciter to ensure select menus have options
+        try:
+            # Always set Saad Al Ghamdi as default reciter on startup
+            self.set_current_reciter("Saad Al Ghamdi")
+        except Exception as e:
+            logger.warning(f"Failed to set default reciter: {e}")
+        
+        self._voice_clients = {}
+        
     async def setup_hook(self):
         """Setup hook for bot initialization."""
         t0 = time.time()
@@ -903,6 +912,38 @@ class QuranBot(discord.Client):
             return True
         except (subprocess.SubprocessError, FileNotFoundError):
             return False
+
+    async def play_audio(self):
+        """Restart audio playback - wrapper for control panel compatibility."""
+        try:
+            # Find the current voice client
+            voice_client = None
+            channel = None
+            
+            for guild in self.guilds:
+                if guild.voice_client:
+                    voice_client = guild.voice_client
+                    channel = voice_client.channel
+                    break
+            
+            if voice_client and channel and hasattr(voice_client, 'is_connected') and voice_client.is_connected():
+                # Stop current playback
+                self.is_streaming = False
+                await asyncio.sleep(1)  # Give time for current playback to stop
+                
+                # Restart playback
+                self.is_streaming = True
+                # Type cast to ensure compatibility
+                if isinstance(voice_client, discord.VoiceClient) and isinstance(channel, discord.VoiceChannel):
+                    asyncio.create_task(self.play_quran_files(voice_client, channel))
+                    logger.info("Audio playback restarted via control panel")
+                else:
+                    logger.warning("Invalid voice client or channel type")
+            else:
+                logger.warning("No voice client found for audio restart")
+        except Exception as e:
+            logger.error(f"Error restarting audio playback: {e}")
+            log_error(e, "play_audio")
 
 def main():
     """Main entry point for the Quran Bot."""

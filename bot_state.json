@@ -1,14 +1,14 @@
 {
-  "current_song_index": 2,
-  "current_song_name": "003.mp3",
-  "total_songs_played": 4,
-  "last_played_time": "2025-07-02T19:37:42.268370",
-  "bot_start_count": 2,
-  "last_state_save": "2025-07-02T19:37:42.268374",
+  "current_song_index": 4,
+  "current_song_name": "005.mp3",
+  "total_songs_played": 63,
+  "last_played_time": "2025-07-03T00:10:47.524806",
+  "bot_start_count": 28,
+  "last_state_save": "2025-07-03T00:10:47.525506",
   "loop_enabled_by": null,
   "loop_enabled_by_name": null,
   "shuffle_enabled_by": null,
   "shuffle_enabled_by_name": null,
-  "last_change": "Surah skipped by <@259725211664908288> to Al-Baqarah",
-  "last_change_time": 1751499426
+  "last_change": "search_play by <@259725211664908288> to Surah 5",
+  "last_change_time": 1751515847
 }

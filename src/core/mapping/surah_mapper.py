@@ -227,7 +227,7 @@ def get_surah_emoji(surah_number: int) -> str:
         7: "⛰️",   # Al-A'raf (The Heights)
         8: "⚔️",   # Al-Anfal (The Spoils of War)
         9: "🔄",   # At-Tawbah (The Repentance)
-        10: "🐋",  # Yunus (Jonah)
+        10: "🙏",  # Yunus (Jonah)
         11: "👨",  # Hud (Hud)
         12: "👑",  # Yusuf (Joseph)
         13: "⚡",  # Ar-Ra'd (The Thunder)
@@ -395,3 +395,11 @@ def verify_and_fix_mapping(reciter_name: str) -> Dict[str, int]:
         logger.info("")
     
     return custom_mapping 
+
+def get_surah_names() -> list:
+    """Get a list of all surah names."""
+    surah_names = []
+    for i in range(1, 115):  # 114 surahs in total
+        surah_info = get_surah_info(i)
+        surah_names.append(surah_info['english_name'])
+    return surah_names 

@@ -7,6 +7,9 @@ import os
 from typing import Optional, List, Dict, Any
 from dotenv import load_dotenv
 from monitoring.logging.log_helpers import log_function_call, log_operation
+import datetime
+import pytz
+import time
 
 # Load environment variables from .env file
 load_dotenv()
@@ -46,6 +49,12 @@ class Config:
     MAX_RECONNECT_ATTEMPTS: int = 10
     HEARTBEAT_INTERVAL: int = 5  # seconds
     
+    # Add to Config or the appropriate state manager:
+    last_activity = {'action': '', 'user_id': None, 'user_name': ''}
+    loop_user_id = None
+    shuffle_user_id = None
+    user_timezones = {}  # user_id -> timezone string
+    
     @classmethod
     @log_function_call
     def validate(cls) -> bool:
@@ -78,6 +87,21 @@ class Config:
     
     @classmethod
     @log_function_call
+    def get_reciter_arabic_name(cls, folder_name: str) -> str:
+        """Get the Arabic name for a reciter folder name."""
+        arabic_names = {
+            "Saad Al Ghamdi": "سعد الغامدي",
+            "Maher Al Muaiqly": "ماهر المعيقلي",
+            "Muhammad Al Luhaidan": "محمد اللحيدان",
+            "Rashid Al Afasy": "مشاري راشد العفاسي",
+            "Abdul Basit Abdul Samad": "عبد الباسط عبد الصمد",
+            "Yasser Al Dosari": "ياسر الدوسري",
+            # Add more mappings as needed
+        }
+        return arabic_names.get(folder_name, "")
+    
+    @classmethod
+    @log_function_call
     def get_available_reciters(cls) -> List[str]:
         """Get list of available reciters from the audio folder."""
         reciters = []
@@ -89,18 +113,15 @@ class Config:
             item_path = os.path.join(cls.AUDIO_FOLDER, item)
             if os.path.isdir(item_path):
                 # Check if the folder contains MP3 files
-                has_mp3 = any(f.lower().endswith('.mp3') for f in os.listdir(item_path))
-                if has_mp3:
-                    display_name = cls.get_reciter_display_name(item)
-                    if display_name in [
-                        "Saad Al Ghamdi",
-                        "Maher Al Muaiqly",
-                        "Muhammad Al Luhaidan",
-                        "Rashid Al Afasy",
-                        "Abdul Basit Abdul Samad",
-                        "Yasser Al Dosari"
-                    ]:
+                try:
+                    has_mp3 = any(f.lower().endswith('.mp3') for f in os.listdir(item_path))
+                    if has_mp3:
+                        display_name = cls.get_reciter_display_name(item)
                         reciters.append(display_name)
+                except (PermissionError, OSError):
+                    # Skip folders we can't access
+                    continue
+                    
         return sorted(reciters)
     
     @classmethod
@@ -186,4 +207,78 @@ class Config:
             
         # Create necessary directories
         os.makedirs("logs", exist_ok=True)
-        os.makedirs(cls.AUDIO_FOLDER, exist_ok=True) 
+        os.makedirs(cls.AUDIO_FOLDER, exist_ok=True)
+
+    @classmethod
+    def set_last_activity(cls, action, user_id, user_name):
+        # Save last activity with Unix timestamp for Discord formatting
+        cls.last_activity = {
+            'action': action,
+            'user_id': user_id,
+            'user_name': user_name,
+            'timestamp_unix': int(time.time())  # Unix timestamp for Discord formatting
+        }
+
+    @classmethod
+    def set_user_timezone(cls, user_id, timezone_str):
+        cls.user_timezones[user_id] = timezone_str
+
+    @classmethod
+    def get_user_timezone(cls, user_id):
+        return cls.user_timezones.get(user_id, 'US/Eastern')
+
+    @classmethod
+    def get_last_activity(cls):
+        """Get the last activity data."""
+        return getattr(cls, 'last_activity', None)
+
+    @classmethod
+    def get_loop_user(cls):
+        """Get the user ID who enabled loop."""
+        return getattr(cls, 'loop_user_id', None)
+    
+    @classmethod
+    def get_shuffle_user(cls):
+        """Get the user ID who enabled shuffle."""
+        return getattr(cls, 'shuffle_user_id', None)
+    
+    @classmethod
+    def get_last_activity_discord_time(cls):
+        """Get the last activity time in Discord timestamp format for automatic timezone conversion."""
+        last = getattr(cls, 'last_activity', None)
+        if not last or 'timestamp_unix' not in last:
+            return None
+        return f"<t:{last['timestamp_unix']}:t>"  # Short time format with AM/PM in user's timezone
+
+    @classmethod
+    def should_show_last_activity(cls):
+        """Check if the last activity should be displayed (within 15 minutes of the action)."""
+        last = getattr(cls, 'last_activity', None)
+        if not last or 'timestamp_unix' not in last:
+            return False
+        
+        current_time = int(time.time())
+        time_diff = current_time - last['timestamp_unix']
+        return time_diff <= 900  # 15 minutes = 900 seconds
+
+    @classmethod
+    def set_loop_user(cls, user_id):
+        """Set the user ID who enabled loop."""
+        cls.loop_user_id = user_id
+    
+    @classmethod
+    def set_shuffle_user(cls, user_id):
+        """Set the user ID who enabled shuffle."""
+        cls.shuffle_user_id = user_id
+
+def set_loop_user(user_id):
+    Config.loop_user_id = user_id
+
+def get_loop_user():
+    return getattr(Config, 'loop_user_id', None)
+
+def set_shuffle_user(user_id):
+    Config.shuffle_user_id = user_id
+
+def get_shuffle_user():
+    return getattr(Config, 'shuffle_user_id', None) 
