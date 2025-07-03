@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
 from monitoring.logging.logger import logger
 import traceback
+from core.mapping.surah_mapper import get_surah_from_filename, get_surah_display_name
 
 class DiscordEmbedLogger:
     """Handles sending formatted embed logs to Discord channels."""
@@ -254,14 +255,21 @@ class DiscordEmbedLogger:
         if member.avatar:
             embed.set_thumbnail(url=member.avatar.url)
         
-        # Start tracking session
+        # Start tracking session with full information
         self.user_sessions[member.id] = {
             'joined_at': datetime.now(),
             'channel_name': channel_name,
             'username': member.display_name,
-            'total_time': 0.0
+            'guild_id': member.guild.id if member.guild else None,
+            'guild_name': member.guild.name if member.guild else None,
+            'total_time': self.user_sessions.get(member.id, {}).get('total_time', 0.0)  # Preserve total time
         }
         self._save_sessions()
+        
+        # Add session info to embed
+        embed.add_field(name="Channel", value=channel_name, inline=True)
+        embed.add_field(name="User", value=member.display_name, inline=True)
+        embed.add_field(name="Time", value=datetime.now().strftime("%I:%M %p"), inline=True)
         
         await self._send_embed(embed)
     
@@ -279,13 +287,35 @@ class DiscordEmbedLogger:
         
         # Calculate session duration if we were tracking them
         if member.id in self.user_sessions:
-            session_start = self.user_sessions[member.id]['joined_at']
+            session_data = self.user_sessions[member.id]
+            session_start = session_data['joined_at']
             duration = datetime.now() - session_start
-            duration_str = self.format_duration(duration.total_seconds())
-            embed.add_field(name="⏱️ Session Duration", value=duration_str, inline=False)
+            duration_secs = duration.total_seconds()
+            
+            # Update total time before removing session
+            session_data['total_time'] = session_data.get('total_time', 0.0) + duration_secs
+            
+            # Format durations for display
+            session_str = self.format_duration(duration_secs)
+            total_str = self.format_duration(session_data['total_time'])
+            
+            embed.add_field(name="⏱️ Session Duration", value=session_str, inline=True)
+            embed.add_field(name="⌛ Total Time", value=total_str, inline=True)
+            embed.add_field(name="Channel", value=channel_name, inline=True)
+            
+            # Save total time to a temporary dict before deleting session
+            temp_total = session_data['total_time']
             
             # Clean up session
             del self.user_sessions[member.id]
+            
+            # Create new session entry with just the total time
+            self.user_sessions[member.id] = {
+                'total_time': temp_total,
+                'username': member.display_name,
+                'last_seen': datetime.now().isoformat()
+            }
+            
             self._save_sessions()
         
         await self._send_embed(embed)
@@ -302,14 +332,84 @@ class DiscordEmbedLogger:
             embed.set_thumbnail(url=interaction.user.avatar.url)
             
         # Core fields (top row)
-        embed.add_field(name="User", value=f"<@{interaction.user.id}> ({interaction.user.display_name})", inline=True)
+        user_name = interaction.user.display_name
+        if isinstance(interaction.user, discord.Member) and interaction.user.nick:
+            user_name = f"{interaction.user.nick} ({interaction.user.name})"
+        embed.add_field(name="User", value=f"<@{interaction.user.id}> | {user_name}", inline=True)
         embed.add_field(name="Action", value=f"Button: {button_name}", inline=True)
         embed.add_field(name="Response Time", value=f"{round(interaction.client.latency * 1000)}ms", inline=True)
         
         # Second row
         embed.add_field(name="User ID", value=str(interaction.user.id), inline=True)
         
-        # Voice status and duration if available
+        # Voice status and duration
+        member = interaction.guild.get_member(interaction.user.id) if interaction.guild else None
+        if member and member.voice:
+            duration = self.get_user_session_duration(interaction.user.id)
+            if not duration:  # User is in voice but we're not tracking them
+                self.start_user_session(interaction.user.id)
+                duration = "00:00:00"
+            embed.add_field(name="Voice Status", value=f"🔊 In Voice ({duration})", inline=True)
+        else:
+            self.end_user_session(interaction.user.id)  # Ensure we stop tracking if they're not in voice
+            embed.add_field(name="Voice Status", value="❌ Not in Voice", inline=True)
+        
+        # Bot latency
+        embed.add_field(name="Bot Latency", value=f"{round(interaction.client.latency * 1000)}ms", inline=True)
+        
+        # Current surah info if playing
+        if hasattr(interaction.client, 'current_audio_file'):
+            current_surah = getattr(interaction.client, 'current_audio_file', 'Unknown')
+            if current_surah:
+                try:
+                    surah_info = get_surah_from_filename(current_surah)
+                    surah_num = surah_info.get('number', 0)
+                    surah_name = get_surah_display_name(surah_num, include_number=True)
+                    arabic_name = surah_info.get('arabic_name', '')
+                    translation = surah_info.get('translation', '')
+                    
+                    embed.add_field(
+                        name="Current Surah",
+                        value=f"**{surah_name}**\n{arabic_name}\n*{translation}*",
+                        inline=False
+                    )
+                except Exception:
+                    embed.add_field(name="Current Surah", value=current_surah.replace('.mp3', ''), inline=False)
+        
+        # Action result/status if provided
+        if action_result:
+            status_emoji = "✅" if "success" in action_result.lower() else "❌"
+            embed.add_field(name="Status", value=f"{status_emoji} {action_result}", inline=False)
+        
+        # Add timestamp
+        embed.timestamp = datetime.now()
+        embed.set_footer(text=f"Server: {interaction.guild.name if interaction.guild else 'DM'}")
+        
+        await self._send_embed(embed)
+    
+    async def log_user_select_interaction(self, interaction: discord.Interaction, select_name: str, selected_value: str, action_result: Optional[str] = None):
+        """Log when a user interacts with a select menu."""
+        embed = discord.Embed(
+            title="📝 User Interaction Log",
+            color=0x9b59b6  # Discord purple color
+        )
+        
+        # Add user's profile picture
+        if interaction.user.avatar:
+            embed.set_thumbnail(url=interaction.user.avatar.url)
+            
+        # Core fields (top row)
+        user_name = interaction.user.display_name
+        if isinstance(interaction.user, discord.Member) and interaction.user.nick:
+            user_name = f"{interaction.user.nick} ({interaction.user.name})"
+        embed.add_field(name="User", value=f"<@{interaction.user.id}> | {user_name}", inline=True)
+        embed.add_field(name="Action", value=f"{select_name}: {selected_value}", inline=True)
+        embed.add_field(name="Response Time", value=f"{interaction.client.latency * 1000:.0f} ms", inline=True)
+
+        # Second row
+        embed.add_field(name="User ID", value=str(interaction.user.id), inline=True)
+        
+        # Voice status
         member = interaction.guild.get_member(interaction.user.id) if interaction.guild else None
         if member and member.voice:
             # Calculate session duration if user is in VC
@@ -327,58 +427,35 @@ class DiscordEmbedLogger:
             embed.add_field(name="Voice Status", value="❌ Not in Voice", inline=True)
         
         # Bot latency
-        embed.add_field(name="Bot Latency", value=f"{round(interaction.client.latency * 1000)}ms", inline=True)
-        
-        # Current song if playing
-        if hasattr(interaction.client, 'current_audio_file'):
-            current_song = getattr(interaction.client, 'current_audio_file', 'Unknown')
-            if current_song:
-                song_name = current_song.replace('.mp3', '')
-                embed.add_field(name="Current Surah", value=song_name, inline=False)
-        
-        await self._send_embed(embed)
-    
-    async def log_user_select_interaction(self, interaction: discord.Interaction, select_name: str, selected_value: str, action_result: Optional[str] = None):
-        """Log when a user interacts with a select menu."""
-        embed = discord.Embed(
-            title="📝 User Interaction Log",
-            color=0x9b59b6  # Discord purple color
-        )
-        
-        # Add user's profile picture
-        if interaction.user.avatar:
-            embed.set_thumbnail(url=interaction.user.avatar.url)
-            
-        # Core fields (top row)
-        embed.add_field(name="User", value=f"<@{interaction.user.id}> ({interaction.user.display_name})", inline=True)
-        embed.add_field(name="Action", value=f"{select_name}: {selected_value}", inline=True)
-        embed.add_field(name="Response Time", value=f"{interaction.client.latency * 1000:.0f} ms", inline=True)
-
-        # Second row
-        embed.add_field(name="User ID", value=str(interaction.user.id), inline=True)
-        
-        # Voice status
-        member = interaction.guild.get_member(interaction.user.id) if interaction.guild else None
-        voice_status = "In Voice" if member and member.voice else "Not In Voice"
-        embed.add_field(name="Voice Status", value=voice_status, inline=True)
-        
-        # Bot latency
         embed.add_field(name="Bot Latency", value=f"{interaction.client.latency * 1000:.0f} ms", inline=True)
 
-        # Server info
-        if interaction.guild:
-            embed.add_field(name="Server", value=interaction.guild.name, inline=True)
-        
-        # Current song info if available
+        # Current surah info if playing
         if hasattr(interaction.client, 'current_audio_file'):
             current_song = getattr(interaction.client, 'current_audio_file', 'Unknown')
             if current_song:
-                song_name = current_song.replace('.mp3', '')
-                embed.add_field(name="Current Song", value=song_name, inline=True)
+                try:
+                    surah_info = get_surah_from_filename(current_song)
+                    surah_num = surah_info.get('number', 0)
+                    surah_name = get_surah_display_name(surah_num, include_number=True)
+                    arabic_name = surah_info.get('arabic_name', '')
+                    translation = surah_info.get('translation', '')
+                    
+                    embed.add_field(
+                        name="Current Surah",
+                        value=f"**{surah_name}**\n{arabic_name}\n*{translation}*",
+                        inline=False
+                    )
+                except Exception:
+                    embed.add_field(name="Current Surah", value=current_song.replace('.mp3', ''), inline=False)
         
-        # Channel info at bottom
-        channel_name = self._get_channel_name(interaction.channel) or "Unknown"
-        embed.add_field(name="Channel", value=f"📻 | {channel_name} • {datetime.now().strftime('%I:%M %p')}", inline=False)
+        # Action result/status if provided
+        if action_result:
+            status_emoji = "✅" if "success" in action_result.lower() else "❌"
+            embed.add_field(name="Status", value=f"{status_emoji} {action_result}", inline=False)
+        
+        # Add timestamp
+        embed.timestamp = datetime.now()
+        embed.set_footer(text=f"Server: {interaction.guild.name if interaction.guild else 'DM'}")
         
         await self._send_embed(embed)
     
@@ -405,4 +482,27 @@ class DiscordEmbedLogger:
             else:
                 logger.warning(f"Could not send Discord embed - channel {self.logs_channel_id} not found")
         except Exception as e:
-            logger.error(f"Failed to send Discord embed: {str(e)}\nTraceback: {traceback.format_exc()}") 
+            logger.error(f"Failed to send Discord embed: {str(e)}\nTraceback: {traceback.format_exc()}")
+
+    def start_user_session(self, user_id: int):
+        """Start tracking a user's voice session."""
+        self.user_sessions[user_id] = {
+            'joined_at': datetime.now()
+        }
+        self._save_sessions()
+
+    def end_user_session(self, user_id: int):
+        """End tracking a user's voice session."""
+        if user_id in self.user_sessions:
+            del self.user_sessions[user_id]
+            self._save_sessions()
+
+    def get_user_session_duration(self, user_id: int) -> Optional[str]:
+        """Get formatted duration of user's current session."""
+        if user_id in self.user_sessions and 'joined_at' in self.user_sessions[user_id]:
+            duration = datetime.now() - self.user_sessions[user_id]['joined_at']
+            hours = duration.seconds // 3600
+            minutes = (duration.seconds % 3600) // 60
+            seconds = duration.seconds % 60
+            return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        return None 
