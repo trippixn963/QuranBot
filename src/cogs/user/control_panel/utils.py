@@ -183,13 +183,7 @@ def is_in_voice_channel(interaction: discord.Interaction) -> bool:
         return False
         
     except Exception as e:
-        log_operation("check", "ERROR", {
-            "user_id": interaction.user.id,
-            "user_name": interaction.user.name,
-            "check_type": "voice_channel",
-            "error": str(e),
-            "error_type": type(e).__name__
-        }, e)
+        tree_log('error', f'Error in is_in_voice_channel: {e}', {'traceback': traceback.format_exc(), 'user_id': interaction.user.id, 'user_name': interaction.user.name})
         return False
 
 def log_button_interaction(func):

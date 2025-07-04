@@ -29,6 +29,7 @@ from monitoring.logging.discord_logger import DiscordEmbedLogger
 from core.state.state_manager import StateManager
 from core.mapping.surah_mapper import get_surah_from_filename, get_surah_emoji, get_surah_display_name
 from monitoring.logging.log_helpers import log_async_function_call, log_function_call, log_operation, get_system_metrics, get_discord_context, get_bot_state
+from monitoring.logging.logger import log_error, log_performance, log_bot_startup, log_discord_event, log_state_load, log_connection_attempt, log_connection_success
 
 class QuranBot(discord.Client):
     """Professional Discord bot for 24/7 Quran streaming."""
@@ -71,7 +72,7 @@ class QuranBot(discord.Client):
             Config.LOGS_CHANNEL_ID,  # Use channel ID from config
             Config.TARGET_CHANNEL_ID  # Use target VC ID from config
         )
-        self.state_manager = StateManager()  # Initialize immediately
+        self.state_manager = StateManager("bot_state.json")  # Initialize immediately
         
         # Health checks tracking
         self.health_checks = {
@@ -132,7 +133,6 @@ class QuranBot(discord.Client):
         commands_to_load = [
             'src.cogs.admin.bot_control.restart',
             'src.cogs.admin.monitoring.status',
-            'src.cogs.admin.misc.skip',
             'src.cogs.admin.bot_control.reconnect',
             'src.cogs.admin.misc.credits',
             'src.cogs.admin.monitoring.utility_logs',
@@ -838,6 +838,8 @@ class QuranBot(discord.Client):
 
 def main():
     """Main entry point for the Quran Bot."""
+    from monitoring.logging.logger import logger
+    
     # Validate configuration
     if not Config.validate():
         logger.critical("❌ Configuration validation failed!")

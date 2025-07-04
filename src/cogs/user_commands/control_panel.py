@@ -22,7 +22,7 @@ from core.config.config import Config as BotConfig
 
 # Updated imports for new structure
 from src.monitoring.logging.tree_log import tree_log
-from monitoring.logging.log_helpers import log_async_function_call, log_function_call, get_system_metrics, get_discord_context, get_bot_state
+from monitoring.logging.log_helpers import log_async_function_call, log_function_call, log_operation, get_system_metrics, get_discord_context, get_bot_state
 from core.state.panel_manager import panel_manager
 from core.mapping.surah_mapper import get_surah_names, get_surah_emoji, get_surah_info
 from core.config.config import set_loop_user, set_shuffle_user
@@ -1089,10 +1089,19 @@ class ControlPanelView(View):
             tree_log('debug', 'Editing panel message with new embed', {})
             await self.panel_message.edit(embed=embed)
             tree_log('debug', 'Successfully updated panel message', {})
+        except discord.errors.NotFound as e:
+            tree_log('warning', 'Panel message not found - message was deleted', {'error': str(e), 'message_id': getattr(self.panel_message, 'id', None)})
+            # Clear the panel message reference since it no longer exists
+            self.panel_message = None
+            # Don't try to recreate the panel automatically - let the setup handle it
         except discord.errors.HTTPException as e:
             tree_log('error', 'HTTPException in update_panel_status', {'error': str(e), 'status': getattr(e, 'status', None), 'text': getattr(e, 'text', None)})
             if hasattr(e, 'status') and e.status in [500, 502, 503, 504, 429]:
                 tree_log('warning', 'Discord server error in update_panel_status', {'error': f'Discord server error {e.status}: {getattr(e, "text", None)}', 'retry_later': True})
+            elif hasattr(e, 'status') and e.status == 404:
+                tree_log('warning', 'Panel message not found (404) - message was deleted', {'error': str(e), 'message_id': getattr(self.panel_message, 'id', None)})
+                # Clear the panel message reference since it no longer exists
+                self.panel_message = None
             else:
                 tree_log('error', 'HTTP error in update_panel_status', {'error': f'HTTP error {getattr(e, "status", None)}: {getattr(e, "text", None)}'})
         except (aiohttp.ClientError, aiohttp.ServerDisconnectedError, ConnectionError) as e:

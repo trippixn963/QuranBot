@@ -7,6 +7,7 @@ import discord
 import asyncio
 from typing import Optional, TYPE_CHECKING
 from src.monitoring.logging.tree_log import tree_log
+import traceback
 
 if TYPE_CHECKING:
     from cogs.user_commands.control_panel import ControlPanelView
@@ -59,7 +60,7 @@ class PanelManager:
                 self.bot.state_manager.add_event_listener('state_updated', self._on_state_updated)
                 tree_log('info', 'Panel registered and subscribed', {'event': 'PANEL_REGISTERED_SUBSCRIBED', 'panel_id': id(panel_view), 'bot_user_id': self.bot.user.id if self.bot.user else None, 'bot_user_name': self.bot.user.name if self.bot.user else None})
             except Exception as e:
-                tree_log('error', 'Event listener registration failed', {'event': 'EVENT_LISTENER_REGISTRATION_FAILED', 'panel_id': id(panel_view), 'error': str(e), 'error_type': type(e).__name__, 'traceback': getattr(e, 'traceback', None)})
+                tree_log('error', 'Event listener registration failed', {'event': 'EVENT_LISTENER_REGISTRATION_FAILED', 'panel_id': id(panel_view), 'error': str(e), 'error_type': type(e).__name__, 'traceback': traceback.format_exc()})
         else:
             tree_log('warning', 'Panel registered without state manager', {'event': 'PANEL_REGISTERED_NO_STATE_MANAGER', 'panel_id': id(panel_view), 'has_state_manager': hasattr(self.bot, 'state_manager'), 'state_manager_value': getattr(self.bot, 'state_manager', 'missing')})
     
@@ -77,8 +78,7 @@ class PanelManager:
                 self.bot.state_manager.remove_event_listener('state_updated', self._on_state_updated)
                 tree_log('info', 'Event listener removed', {'event': 'EVENT_LISTENER_REMOVED', 'panel_id': panel_id})
             except Exception as e:
-                from src.monitoring.logging.tree_log import tree_log
-                tree_log('warning', 'Event listener removal failed', {'event': 'EVENT_LISTENER_REMOVAL_FAILED', 'panel_id': panel_id, 'error': str(e), 'error_type': type(e).__name__, 'traceback': getattr(e, 'traceback', None)})
+                tree_log('warning', 'Event listener removal failed', {'event': 'EVENT_LISTENER_REMOVAL_FAILED', 'panel_id': panel_id, 'error': str(e), 'error_type': type(e).__name__, 'traceback': traceback.format_exc()})
         
         tree_log('info', 'Panel unregistered', {'event': 'PANEL_UNREGISTERED', 'panel_id': panel_id, 'update_in_progress': self._update_in_progress})
         
@@ -110,17 +110,16 @@ class PanelManager:
             tree_log('error', 'Panel update timeout', {'event': 'PANEL_UPDATE_TIMEOUT', 'timeout_seconds': self._update_timeout, 'event_data': data if data else 'no_data', 'panel_id': id(self.panel_view)})
             
         except discord.NotFound as e:
-            tree_log('error', 'Panel update discord not found', {'event': 'PANEL_UPDATE_DISCORD_NOT_FOUND', 'error': str(e), 'panel_id': id(self.panel_view), 'event_data': data if data else 'no_data', 'traceback': getattr(e, 'traceback', None)})
+            tree_log('error', 'Panel update discord not found', {'event': 'PANEL_UPDATE_DISCORD_NOT_FOUND', 'error': str(e), 'panel_id': id(self.panel_view), 'event_data': data if data else 'no_data', 'traceback': traceback.format_exc()})
             
         except discord.Forbidden as e:
-            tree_log('error', 'Panel update discord forbidden', {'event': 'PANEL_UPDATE_DISCORD_FORBIDDEN', 'error': str(e), 'panel_id': id(self.panel_view), 'event_data': data if data else 'no_data', 'traceback': getattr(e, 'traceback', None)})
+            tree_log('error', 'Panel update discord forbidden', {'event': 'PANEL_UPDATE_DISCORD_FORBIDDEN', 'error': str(e), 'panel_id': id(self.panel_view), 'event_data': data if data else 'no_data', 'traceback': traceback.format_exc()})
             
         except discord.HTTPException as e:
-            tree_log('error', 'Panel update discord HTTP error', {'event': 'PANEL_UPDATE_DISCORD_HTTP_ERROR', 'error': str(e), 'status': getattr(e, 'status', 'unknown'), 'code': getattr(e, 'code', 'unknown'), 'panel_id': id(self.panel_view), 'event_data': data if data else 'no_data', 'traceback': getattr(e, 'traceback', None)})
+            tree_log('error', 'Panel update discord HTTP error', {'event': 'PANEL_UPDATE_DISCORD_HTTP_ERROR', 'error': str(e), 'status': getattr(e, 'status', 'unknown'), 'code': getattr(e, 'code', 'unknown'), 'panel_id': id(self.panel_view), 'event_data': data if data else 'no_data', 'traceback': traceback.format_exc()})
             
         except Exception as e:
-            from src.monitoring.logging.tree_log import tree_log
-            tree_log('error', 'Panel update failed', {'event': 'PANEL_UPDATE_FAILED', 'error': str(e), 'error_type': type(e).__name__, 'panel_id': id(self.panel_view), 'event_data': data if data else 'no_data', 'traceback': getattr(e, 'traceback', None)})
+            tree_log('error', 'Panel update failed', {'event': 'PANEL_UPDATE_FAILED', 'error': str(e), 'error_type': type(e).__name__, 'traceback': traceback.format_exc(), 'panel_id': id(self.panel_view), 'event_data': data if data else 'no_data'})
             
         finally:
             self._update_in_progress = False
@@ -150,17 +149,16 @@ class PanelManager:
             tree_log('error', 'Manual panel update timeout', {'event': 'MANUAL_PANEL_UPDATE_TIMEOUT', 'timeout_seconds': self._update_timeout, 'panel_id': id(self.panel_view)})
             
         except discord.NotFound as e:
-            tree_log('error', 'Manual update discord not found', {'event': 'MANUAL_UPDATE_DISCORD_NOT_FOUND', 'error': str(e), 'panel_id': id(self.panel_view), 'traceback': getattr(e, 'traceback', None)})
+            tree_log('error', 'Manual update discord not found', {'event': 'MANUAL_UPDATE_DISCORD_NOT_FOUND', 'error': str(e), 'panel_id': id(self.panel_view), 'traceback': traceback.format_exc()})
             
         except discord.Forbidden as e:
-            tree_log('error', 'Manual update discord forbidden', {'event': 'MANUAL_UPDATE_DISCORD_FORBIDDEN', 'error': str(e), 'panel_id': id(self.panel_view), 'traceback': getattr(e, 'traceback', None)})
+            tree_log('error', 'Manual update discord forbidden', {'event': 'MANUAL_UPDATE_DISCORD_FORBIDDEN', 'error': str(e), 'panel_id': id(self.panel_view), 'traceback': traceback.format_exc()})
             
         except discord.HTTPException as e:
-            tree_log('error', 'Manual update discord HTTP error', {'event': 'MANUAL_UPDATE_DISCORD_HTTP_ERROR', 'error': str(e), 'status': getattr(e, 'status', 'unknown'), 'code': getattr(e, 'code', 'unknown'), 'panel_id': id(self.panel_view), 'traceback': getattr(e, 'traceback', None)})
+            tree_log('error', 'Manual update discord HTTP error', {'event': 'MANUAL_UPDATE_DISCORD_HTTP_ERROR', 'error': str(e), 'status': getattr(e, 'status', 'unknown'), 'code': getattr(e, 'code', 'unknown'), 'panel_id': id(self.panel_view), 'traceback': traceback.format_exc()})
             
         except Exception as e:
-            from src.monitoring.logging.tree_log import tree_log
-            tree_log('error', 'Manual panel update failed', {'event': 'MANUAL_PANEL_UPDATE_FAILED', 'error': str(e), 'error_type': type(e).__name__, 'panel_id': id(self.panel_view), 'traceback': getattr(e, 'traceback', None)})
+            tree_log('error', 'Manual panel update failed', {'event': 'MANUAL_PANEL_UPDATE_FAILED', 'error': str(e), 'error_type': type(e).__name__, 'traceback': traceback.format_exc(), 'panel_id': id(self.panel_view)})
             
         finally:
             self._update_in_progress = False
@@ -225,7 +223,7 @@ class PanelManager:
             return True
             
         except Exception as e:
-            tree_log('error', 'Health check failed', {'event': 'HEALTH_CHECK_FAILED', 'error': str(e), 'error_type': type(e).__name__, 'traceback': getattr(e, 'traceback', None)})
+            tree_log('error', 'Health check failed', {'event': 'HEALTH_CHECK_FAILED', 'error': str(e), 'error_type': type(e).__name__, 'traceback': traceback.format_exc()})
             return False
 
     def reset(self):

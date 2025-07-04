@@ -91,7 +91,6 @@ class HealthMonitor:
             tree_log('error', 'Failed to initialize health monitor', {'event': 'HEALTH_MONITOR_INIT_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
             raise
 
-    @tree_log('debug', 'Updated current song', {'event': 'UPDATE_CURRENT_SONG', 'song_name': song_name})
     def update_current_song(self, song_name: str) -> None:
         """
         Update the currently playing song.
@@ -100,6 +99,7 @@ class HealthMonitor:
             song_name (str): Name of the currently playing song
         """
         try:
+            tree_log('debug', 'Updated current song', {'event': 'UPDATE_CURRENT_SONG', 'song_name': song_name})
             self.metrics.current_surah = song_name
             self.metrics.last_activity = datetime.now()
             self.metrics.surahs_played += 1
@@ -107,7 +107,6 @@ class HealthMonitor:
         except Exception as e:
             tree_log('error', 'Error updating current song', {'event': 'UPDATE_CURRENT_SONG_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
 
-    @tree_log('debug', 'Error recorded', {'event': 'ERROR_RECORDED', 'error_type': type(error).__name__, 'context': context})
     def record_error(self, error: Exception, context: str) -> None:
         """
         Record an error occurrence.
@@ -117,6 +116,7 @@ class HealthMonitor:
             context (str): Context where the error occurred
         """
         try:
+            tree_log('debug', 'Error recorded', {'event': 'ERROR_RECORDED', 'error_type': type(error).__name__, 'context': context})
             self.metrics.errors_count += 1
             self.metrics.last_activity = datetime.now()
 
@@ -136,7 +136,6 @@ class HealthMonitor:
         except Exception as e:
             tree_log('error', 'Error recording error', {'event': 'RECORD_ERROR_FAIL', 'error': str(e), 'traceback': traceback.format_exc()})
 
-    @tree_log('debug', 'Reconnection recorded', {'event': 'RECONNECTION_RECORDED', 'total': self.metrics.reconnections})
     def record_reconnection(self) -> None:
         """
         Record a reconnection event.
@@ -147,11 +146,11 @@ class HealthMonitor:
         try:
             self.metrics.reconnections += 1
             self.metrics.last_activity = datetime.now()
+            tree_log('debug', 'Reconnection recorded', {'event': 'RECONNECTION_RECORDED', 'total': self.metrics.reconnections})
 
         except Exception as e:
             tree_log('error', 'Error recording reconnection', {'event': 'RECORD_RECONNECTION_FAIL', 'error': str(e), 'traceback': traceback.format_exc()})
 
-    @tree_log('debug', 'Streaming status updated', {'event': 'STREAMING_STATUS_UPDATED', 'status': status})
     def set_streaming_status(self, is_streaming: bool) -> None:
         """
         Update streaming status.
@@ -164,11 +163,11 @@ class HealthMonitor:
             self.metrics.last_activity = datetime.now()
 
             status = "✅ Streaming" if is_streaming else "❌ Not streaming"
+            tree_log('debug', 'Streaming status updated', {'event': 'STREAMING_STATUS_UPDATED', 'status': status})
 
         except Exception as e:
             tree_log('error', 'Error updating streaming status', {'event': 'STREAMING_STATUS_UPDATE_FAIL', 'error': str(e), 'traceback': traceback.format_exc()})
 
-    @tree_log('error', 'Error calculating uptime', {'event': 'GET_UPTIME_FAIL', 'error': str(e), 'traceback': traceback.format_exc()})
     def get_uptime(self) -> timedelta:
         """
         Get bot uptime.
@@ -179,9 +178,9 @@ class HealthMonitor:
         try:
             return datetime.now() - self.metrics.start_time
         except Exception as e:
+            tree_log('error', 'Error calculating uptime', {'event': 'GET_UPTIME_FAIL', 'error': str(e), 'traceback': traceback.format_exc()})
             return timedelta(0)
 
-    @tree_log('error', 'Error formatting uptime', {'event': 'GET_UPTIME_STRING_FAIL', 'error': str(e), 'traceback': traceback.format_exc()})
     def get_uptime_string(self) -> str:
         """
         Get formatted uptime string.
@@ -203,9 +202,9 @@ class HealthMonitor:
                 return f"{minutes}m {seconds}s"
 
         except Exception as e:
+            tree_log('error', 'Error formatting uptime', {'event': 'GET_UPTIME_STRING_FAIL', 'error': str(e), 'traceback': traceback.format_exc()})
             return "Unknown"
 
-    @tree_log('error', 'Error getting health status', {'event': 'GET_HEALTH_STATUS_FAIL', 'error': str(e), 'traceback': traceback.format_exc()})
     def get_health_status(self) -> Dict[str, Any]:
         """
         Get comprehensive health status.
@@ -254,6 +253,7 @@ class HealthMonitor:
             }
 
         except Exception as e:
+            tree_log('error', 'Error getting health status', {'event': 'GET_HEALTH_STATUS_FAIL', 'error': str(e), 'traceback': traceback.format_exc()})
             return {
                 "status": "error",
                 "error": str(e),
@@ -272,7 +272,6 @@ class HealthMonitor:
                 "recent_errors": [],
             }
 
-    @tree_log('error', 'Error generating performance summary', {'event': 'GET_PERFORMANCE_SUMMARY_FAIL', 'error': str(e), 'traceback': traceback.format_exc()})
     def get_performance_summary(self) -> str:
         """
         Get a human-readable performance summary.
@@ -305,9 +304,9 @@ class HealthMonitor:
             return summary.strip()
 
         except Exception as e:
+            tree_log('error', 'Error generating performance summary', {'event': 'GET_PERFORMANCE_SUMMARY_FAIL', 'error': str(e), 'traceback': traceback.format_exc()})
             return "❌ Error generating performance summary"
 
-    @tree_log('error', 'Error getting error history', {'event': 'GET_ERROR_HISTORY_FAIL', 'error': str(e), 'traceback': traceback.format_exc()})
     def get_error_history(self, limit: int = 10) -> List[Dict[str, Any]]:
         """
         Get recent error history.
@@ -321,11 +320,9 @@ class HealthMonitor:
         try:
             return self.error_history[-limit:] if self.error_history else []
         except Exception as e:
-            from src.monitoring.logging.tree_log import tree_log
             tree_log('error', 'Error getting error history', {'event': 'GET_ERROR_HISTORY_FAIL', 'error': str(e), 'traceback': traceback.format_exc()})
             return []
 
-    @tree_log('info', 'Error history cleared', {'event': 'ERROR_HISTORY_CLEARED'})
     def clear_error_history(self) -> None:
         """
         Clear the error history.
@@ -334,7 +331,7 @@ class HealthMonitor:
         after resolving issues.
         """
         try:
+            tree_log('info', 'Error history cleared', {'event': 'ERROR_HISTORY_CLEARED'})
             self.error_history.clear()
         except Exception as e:
-            from src.monitoring.logging.tree_log import tree_log
             tree_log('error', 'Error clearing error history', {'event': 'CLEAR_ERROR_HISTORY_FAIL', 'error': str(e), 'traceback': traceback.format_exc()})

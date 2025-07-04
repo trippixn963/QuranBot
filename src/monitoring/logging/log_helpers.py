@@ -135,20 +135,20 @@ def log_async_function_call(func: Callable):
             response_time = (time.time() - start_time) * 1000
             system_metrics_after = get_system_metrics()
             now = get_eastern_now()
-            tree_log('info', f"ASYNC_FUNC_CALL | {func.__name__}", extra={"extra": {
+            tree_log('info', f"ASYNC_FUNC_CALL | {func.__name__}", {
                 "ResponseTime": f"{response_time:.2f}ms",
                 "MemoryChange": f"{system_metrics_after['memory_rss_mb'] - system_metrics_before['memory_rss_mb']:+.1f}MB",
                 "CPUChange": f"{system_metrics_after['cpu_percent'] - system_metrics_before['cpu_percent']:+.1f}%"
-            }})
+            })
             return result
         except Exception as e:
             response_time = (time.time() - start_time) * 1000
             system_metrics_after = get_system_metrics()
             now = get_eastern_now()
-            tree_log('error', f"ASYNC_FUNC_ERROR | {func.__name__}", extra={"extra": {
+            tree_log('error', f"ASYNC_FUNC_ERROR | {func.__name__}", {
                 "ResponseTime": f"{response_time:.2f}ms",
                 "Error": str(e),
                 "Traceback": traceback.format_exc()
-            }})
+            })
             raise
     return wrapper 
