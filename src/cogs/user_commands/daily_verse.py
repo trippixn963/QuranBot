@@ -133,6 +133,54 @@ class DailyVerseManager:
         logger.info(f"Reshuffled verse queue with {len(self.verse_queue)} verses", 
                    extra={'event': 'VERSE_QUEUE_SHUFFLED', 'queue_count': len(self.verse_queue)})
     
+    def should_send_verse_now(self) -> bool:
+        """Check if a verse should be sent immediately (3 hours have passed since last verse)."""
+        if not self.last_sent_verse:
+            logger.info("No previous verse found, should send immediately", extra={'event': 'VERSE_FIRST_TIME'})
+            return True
+        
+        # Load the last sent time from the state file
+        try:
+            if os.path.exists(self.verse_state_file):
+                with open(self.verse_state_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    last_sent_time_str = data.get('last_sent_time')
+                    if last_sent_time_str:
+                        last_sent_time = datetime.fromisoformat(last_sent_time_str)
+                        time_since_last = datetime.now() - last_sent_time
+                        three_hours = timedelta(hours=3)
+                        
+                        should_send = time_since_last >= three_hours
+                        logger.info(f"Time since last verse: {time_since_last}, should send: {should_send}", 
+                                   extra={'event': 'VERSE_TIMING_CHECK', 'time_since_last': str(time_since_last), 'should_send': should_send})
+                        return should_send
+        except Exception as e:
+            logger.error(f"Error checking verse timing: {e}", extra={'event': 'VERSE_TIMING_ERROR'})
+        
+        # If we can't determine, send immediately
+        logger.warning("Could not determine timing, sending verse immediately", extra={'event': 'VERSE_TIMING_FALLBACK'})
+        return True
+    
+    def get_next_send_time(self) -> datetime:
+        """Get the next time a verse should be sent."""
+        try:
+            if os.path.exists(self.verse_state_file):
+                with open(self.verse_state_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    last_sent_time_str = data.get('last_sent_time')
+                    if last_sent_time_str:
+                        last_sent_time = datetime.fromisoformat(last_sent_time_str)
+                        next_send_time = last_sent_time + timedelta(hours=3)
+                        logger.info(f"Next verse scheduled for: {next_send_time}", extra={'event': 'VERSE_NEXT_TIME'})
+                        return next_send_time
+        except Exception as e:
+            logger.error(f"Error calculating next send time: {e}", extra={'event': 'VERSE_NEXT_TIME_ERROR'})
+        
+        # If we can't determine, send in 3 hours from now
+        next_send_time = datetime.now() + timedelta(hours=3)
+        logger.warning(f"Could not determine next send time, defaulting to: {next_send_time}", extra={'event': 'VERSE_NEXT_TIME_FALLBACK'})
+        return next_send_time
+
     def get_next_verse(self) -> Optional[Dict[str, Any]]:
         """Get the next verse from the queue."""
         if not self.verse_queue:
@@ -198,11 +246,24 @@ class DailyVerseManager:
     
     async def daily_verse_loop(self):
         """Main loop for sending daily verses every 3 hours."""
-        # Wait a bit for the bot to be fully ready before sending first verse
+        # Wait a bit for the bot to be fully ready
         await asyncio.sleep(10)  # Wait 10 seconds for bot to be fully connected
         
-        # Send first verse immediately
-        await self.send_daily_verse()
+        # Check if we should send a verse immediately or wait
+        should_send_now = self.should_send_verse_now()
+        
+        if should_send_now:
+            logger.info("Sending initial verse after restart", extra={'event': 'VERSE_INITIAL_SEND'})
+            await self.send_daily_verse()
+        else:
+            next_send_time = self.get_next_send_time()
+            wait_seconds = (next_send_time - datetime.now()).total_seconds()
+            logger.info(f"Waiting {wait_seconds:.0f} seconds until next verse (at {next_send_time.strftime('%Y-%m-%d %H:%M:%S')})", 
+                       extra={'event': 'VERSE_WAITING', 'wait_seconds': wait_seconds})
+            
+            if wait_seconds > 0:
+                await asyncio.sleep(wait_seconds)
+                await self.send_daily_verse()
         
         # Then continue with 3-hour intervals
         while True:
