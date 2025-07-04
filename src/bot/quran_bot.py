@@ -390,6 +390,7 @@ class QuranBot(commands.Bot):
         commands_to_load = [
             "src.cogs.admin.bot_control.restart",
             "src.cogs.admin.misc.credits",
+            "src.cogs.admin.misc.recreatepanel",  # Added for /recreatepanel
             "src.cogs.admin.monitoring.utility_logs",
             "src.cogs.user_commands.control_panel",
             "src.cogs.user_commands.daily_verse",

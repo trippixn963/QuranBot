@@ -36,7 +36,7 @@ echo           QuranBot Manager
 echo ========================================
 echo.
 echo 1. Local Tools
-echo 2. VPS Manager  
+echo 2. VPS Manager
 echo 3. Quick Actions
 echo 4. System Health Check
 echo 5. Exit
