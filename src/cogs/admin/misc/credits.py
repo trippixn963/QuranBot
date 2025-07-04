@@ -114,6 +114,7 @@ async def create_credits_embed(bot, interaction: discord.Interaction) -> discord
     
     return embed
 
+@app_commands.command(name="credits", description="Show bot credits and information")
 async def credits_command(interaction: discord.Interaction):
     """Show bot credits and information with clean design."""
     bot = interaction.client
@@ -145,16 +146,8 @@ async def setup(bot):
             "bot_name": bot.user.name if bot.user else "Unknown"
         })
         
-        # Create the command
-        credits_command_obj = app_commands.Command(
-            name="credits",
-            description="Show bot credits and information",
-            callback=credits_command,
-            parent=None
-        )
-        
-        # Add to command tree
-        bot.tree.add_command(credits_command_obj)
+        # Add the command to the command tree
+        bot.tree.add_command(credits_command)
         
         log_operation("init", "INFO", {
             "component": "setup",

@@ -145,24 +145,27 @@ LOG_LEVEL=INFO
 ## 🎮 Commands
 
 ### User Commands
-| Command | Description |
-|---------|-------------|
-| `/play` | Start/resume playback |
-| `/pause` | Pause playback |
-| `/next` | Skip to next surah |
-| `/previous` | Go to previous surah |
-| `/surah` | Select specific surah |
-| `/reciter` | Change reciter |
-| `/dailyverse` | Get today's verse |
-| `/quranquestion` | Test Quran knowledge |
+| Command        | Description                |
+|---------------|----------------------------|
+| `/credits`    | Show bot credits           |
+| `/leaderboard`| Show Quran MCQ leaderboard |
 
-### Admin Commands
-| Command | Description |
-|---------|-------------|
-| `/restart` | Restart the bot |
-| `/stop` | Stop the bot |
-| `/logs` | View bot logs |
-| `/status` | Check bot health |
+*All other commands are restricted to the bot owner.*
+
+### Admin/Owner Commands
+| Command         | Description                                      |
+|----------------|--------------------------------------------------|
+| `/sendverse`   | Send a verse now (admin only)                    |
+| `/versestatus` | Check daily verse status                         |
+| `/status`      | Get comprehensive bot and system status          |
+| `/info`        | Get bot logs and configuration                   |
+| `/logs`        | View logs, system info, and bot status           |
+| `/restart`     | Restart the Quran Bot                            |
+| `/stop`        | Stop the Quran Bot                               |
+| `/reconnect`   | Reconnect to voice channel                       |
+| `/recreatepanel`| Recreate the control panel                      |
+
+*Admin/owner commands are only available to the bot owner (you).*
 
 ## 🔒 Security
 

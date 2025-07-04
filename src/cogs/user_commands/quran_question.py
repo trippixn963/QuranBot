@@ -259,10 +259,6 @@ class QuranQuestionCog(commands.Cog):
 
     @commands.hybrid_command(name="leaderboard", description="Show the Quran question leaderboard.", with_app_command_only=True)
     async def leaderboard(self, ctx):
-        # Restrict to owner only
-        if (hasattr(ctx, 'user') and ctx.user.id != 259725211664908288) or (hasattr(ctx, 'author') and ctx.author.id != 259725211664908288):
-            await ctx.send("❌ Only the bot owner can use this command.", ephemeral=True)
-            return
         leaderboard = self.score_manager.get_leaderboard()
         if not leaderboard:
             await ctx.send("No scores yet!")

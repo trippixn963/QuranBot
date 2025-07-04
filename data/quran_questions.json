@@ -232,5 +232,221 @@
     "choices_ar": ["النصاب", "الفطر", "الكفارة", "الصدقة"],
     "answer_en": "Nisab",
     "answer_ar": "النصاب"
+  },
+  {
+    "id": 27,
+    "question_en": "How many prophets are mentioned in the Quran?",
+    "question_ar": "كم نبي ذُكر في القرآن؟",
+    "choices_en": ["25", "20", "30", "15"],
+    "choices_ar": ["٢٥", "٢٠", "٣٠", "١٥"],
+    "answer_en": "25",
+    "answer_ar": "٢٥"
+  },
+  {
+    "id": 28,
+    "question_en": "What is the meaning of 'Insha'Allah'?",
+    "question_ar": "ما معنى 'إن شاء الله'؟",
+    "choices_en": ["If Allah wills", "Allah knows best", "Praise be to Allah", "Allah is great"],
+    "choices_ar": ["إن شاء الله", "الله أعلم", "الحمد لله", "الله أكبر"],
+    "answer_en": "If Allah wills",
+    "answer_ar": "إن شاء الله"
+  },
+  {
+    "id": 29,
+    "question_en": "Which day is considered the best day of the week in Islam?",
+    "question_ar": "أي يوم يعتبر أفضل أيام الأسبوع في الإسلام؟",
+    "choices_en": ["Friday (Jumu'ah)", "Monday", "Thursday", "Sunday"],
+    "choices_ar": ["الجمعة", "الاثنين", "الخميس", "الأحد"],
+    "answer_en": "Friday (Jumu'ah)",
+    "answer_ar": "الجمعة"
+  },
+  {
+    "id": 30,
+    "question_en": "What is the meaning of 'Alhamdulillah'?",
+    "question_ar": "ما معنى 'الحمد لله'؟",
+    "choices_en": ["Praise be to Allah", "Allah is great", "If Allah wills", "Allah knows best"],
+    "choices_ar": ["الحمد لله", "الله أكبر", "إن شاء الله", "الله أعلم"],
+    "answer_en": "Praise be to Allah",
+    "answer_ar": "الحمد لله"
+  },
+  {
+    "id": 31,
+    "question_en": "Which prophet was known as the 'Friend of Allah'?",
+    "question_ar": "أي نبي كان يُعرف بـ 'خليل الله'؟",
+    "choices_en": ["Ibrahim (Abraham)", "Musa (Moses)", "Isa (Jesus)", "Nuh (Noah)"],
+    "choices_ar": ["إبراهيم", "موسى", "عيسى", "نوح"],
+    "answer_en": "Ibrahim (Abraham)",
+    "answer_ar": "إبراهيم"
+  },
+  {
+    "id": 32,
+    "question_en": "What is the meaning of 'Mashallah'?",
+    "question_ar": "ما معنى 'ما شاء الله'؟",
+    "choices_en": ["What Allah has willed", "Allah is great", "Praise be to Allah", "If Allah wills"],
+    "choices_ar": ["ما شاء الله", "الله أكبر", "الحمد لله", "إن شاء الله"],
+    "answer_en": "What Allah has willed",
+    "answer_ar": "ما شاء الله"
+  },
+  {
+    "id": 33,
+    "question_en": "Which surah is recited in every prayer?",
+    "question_ar": "أي سورة تُقرأ في كل صلاة؟",
+    "choices_en": ["Al-Fatiha", "Al-Ikhlas", "Al-Nas", "Al-Falaq"],
+    "choices_ar": ["الفاتحة", "الإخلاص", "الناس", "الفلق"],
+    "answer_en": "Al-Fatiha",
+    "answer_ar": "الفاتحة"
+  },
+  {
+    "id": 34,
+    "question_en": "What is the meaning of 'Subhanallah'?",
+    "question_ar": "ما معنى 'سبحان الله'؟",
+    "choices_en": ["Glory be to Allah", "Allah is great", "Praise be to Allah", "Allah knows best"],
+    "choices_ar": ["سبحان الله", "الله أكبر", "الحمد لله", "الله أعلم"],
+    "answer_en": "Glory be to Allah",
+    "answer_ar": "سبحان الله"
+  },
+  {
+    "id": 35,
+    "question_en": "Which prophet was thrown into the fire by his people?",
+    "question_ar": "أي نبي ألقي في النار من قومه؟",
+    "choices_en": ["Ibrahim (Abraham)", "Musa (Moses)", "Isa (Jesus)", "Nuh (Noah)"],
+    "choices_ar": ["إبراهيم", "موسى", "عيسى", "نوح"],
+    "answer_en": "Ibrahim (Abraham)",
+    "answer_ar": "إبراهيم"
+  },
+  {
+    "id": 36,
+    "question_en": "What is the meaning of 'Astaghfirullah'?",
+    "question_ar": "ما معنى 'أستغفر الله'؟",
+    "choices_en": ["I seek forgiveness from Allah", "Allah is great", "Praise be to Allah", "If Allah wills"],
+    "choices_ar": ["أستغفر الله", "الله أكبر", "الحمد لله", "إن شاء الله"],
+    "answer_en": "I seek forgiveness from Allah",
+    "answer_ar": "أستغفر الله"
+  },
+  {
+    "id": 37,
+    "question_en": "Which prophet was known for his patience?",
+    "question_ar": "أي نبي كان معروفاً بصبره؟",
+    "choices_en": ["Ayyub (Job)", "Yusuf (Joseph)", "Musa (Moses)", "Ibrahim (Abraham)"],
+    "choices_ar": ["أيوب", "يوسف", "موسى", "إبراهيم"],
+    "answer_en": "Ayyub (Job)",
+    "answer_ar": "أيوب"
+  },
+  {
+    "id": 38,
+    "question_en": "What is the meaning of 'Bismillah'?",
+    "question_ar": "ما معنى 'بسم الله'؟",
+    "choices_en": ["In the name of Allah", "Allah is great", "Praise be to Allah", "If Allah wills"],
+    "choices_ar": ["بسم الله", "الله أكبر", "الحمد لله", "إن شاء الله"],
+    "answer_en": "In the name of Allah",
+    "answer_ar": "بسم الله"
+  },
+  {
+    "id": 39,
+    "question_en": "Which prophet was known for his beauty?",
+    "question_ar": "أي نبي كان معروفاً بجماله؟",
+    "choices_en": ["Yusuf (Joseph)", "Musa (Moses)", "Isa (Jesus)", "Dawud (David)"],
+    "choices_ar": ["يوسف", "موسى", "عيسى", "داود"],
+    "answer_en": "Yusuf (Joseph)",
+    "answer_ar": "يوسف"
+  },
+  {
+    "id": 40,
+    "question_en": "What is the meaning of 'La ilaha illallah'?",
+    "question_ar": "ما معنى 'لا إله إلا الله'؟",
+    "choices_en": ["There is no god but Allah", "Allah is great", "Praise be to Allah", "If Allah wills"],
+    "choices_ar": ["لا إله إلا الله", "الله أكبر", "الحمد لله", "إن شاء الله"],
+    "answer_en": "There is no god but Allah",
+    "answer_ar": "لا إله إلا الله"
+  },
+  {
+    "id": 41,
+    "question_en": "Which prophet was given the Zabur (Psalms)?",
+    "question_ar": "أي نبي أُعطي الزبور؟",
+    "choices_en": ["Dawud (David)", "Musa (Moses)", "Isa (Jesus)", "Ibrahim (Abraham)"],
+    "choices_ar": ["داود", "موسى", "عيسى", "إبراهيم"],
+    "answer_en": "Dawud (David)",
+    "answer_ar": "داود"
+  },
+  {
+    "id": 42,
+    "question_en": "What is the meaning of 'Muhammad Rasulullah'?",
+    "question_ar": "ما معنى 'محمد رسول الله'؟",
+    "choices_en": ["Muhammad is the Messenger of Allah", "Allah is great", "Praise be to Allah", "If Allah wills"],
+    "choices_ar": ["محمد رسول الله", "الله أكبر", "الحمد لله", "إن شاء الله"],
+    "answer_en": "Muhammad is the Messenger of Allah",
+    "answer_ar": "محمد رسول الله"
+  },
+  {
+    "id": 43,
+    "question_en": "Which prophet was given the Tawrat (Torah)?",
+    "question_ar": "أي نبي أُعطي التوراة؟",
+    "choices_en": ["Musa (Moses)", "Isa (Jesus)", "Dawud (David)", "Ibrahim (Abraham)"],
+    "choices_ar": ["موسى", "عيسى", "داود", "إبراهيم"],
+    "answer_en": "Musa (Moses)",
+    "answer_ar": "موسى"
+  },
+  {
+    "id": 44,
+    "question_en": "What is the meaning of 'Ameen'?",
+    "question_ar": "ما معنى 'آمين'؟",
+    "choices_en": ["O Allah, accept", "Allah is great", "Praise be to Allah", "If Allah wills"],
+    "choices_ar": ["اللهم استجب", "الله أكبر", "الحمد لله", "إن شاء الله"],
+    "answer_en": "O Allah, accept",
+    "answer_ar": "اللهم استجب"
+  },
+  {
+    "id": 45,
+    "question_en": "Which prophet was given the Injil (Gospel)?",
+    "question_ar": "أي نبي أُعطي الإنجيل؟",
+    "choices_en": ["Isa (Jesus)", "Musa (Moses)", "Dawud (David)", "Ibrahim (Abraham)"],
+    "choices_ar": ["عيسى", "موسى", "داود", "إبراهيم"],
+    "answer_en": "Isa (Jesus)",
+    "answer_ar": "عيسى"
+  },
+  {
+    "id": 46,
+    "question_en": "What is the meaning of 'Sadaqallahul Azim'?",
+    "question_ar": "ما معنى 'صدق الله العظيم'؟",
+    "choices_en": ["Allah the Most Great has spoken the truth", "Allah is great", "Praise be to Allah", "If Allah wills"],
+    "choices_ar": ["صدق الله العظيم", "الله أكبر", "الحمد لله", "إن شاء الله"],
+    "answer_en": "Allah the Most Great has spoken the truth",
+    "answer_ar": "صدق الله العظيم"
+  },
+  {
+    "id": 47,
+    "question_en": "Which prophet was known as the 'Father of Nations'?",
+    "question_ar": "أي نبي كان يُعرف بـ 'أبو الأمم'؟",
+    "choices_en": ["Ibrahim (Abraham)", "Nuh (Noah)", "Adam", "Musa (Moses)"],
+    "choices_ar": ["إبراهيم", "نوح", "آدم", "موسى"],
+    "answer_en": "Ibrahim (Abraham)",
+    "answer_ar": "إبراهيم"
+  },
+  {
+    "id": 48,
+    "question_en": "What is the meaning of 'Allahu A'lam'?",
+    "question_ar": "ما معنى 'الله أعلم'؟",
+    "choices_en": ["Allah knows best", "Allah is great", "Praise be to Allah", "If Allah wills"],
+    "choices_ar": ["الله أعلم", "الله أكبر", "الحمد لله", "إن شاء الله"],
+    "answer_en": "Allah knows best",
+    "answer_ar": "الله أعلم"
+  },
+  {
+    "id": 49,
+    "question_en": "Which prophet was known for his wisdom?",
+    "question_ar": "أي نبي كان معروفاً بحكمته؟",
+    "choices_en": ["Sulaiman (Solomon)", "Dawud (David)", "Musa (Moses)", "Ibrahim (Abraham)"],
+    "choices_ar": ["سليمان", "داود", "موسى", "إبراهيم"],
+    "answer_en": "Sulaiman (Solomon)",
+    "answer_ar": "سليمان"
+  },
+  {
+    "id": 50,
+    "question_en": "Which surah is known as 'The Heart of the Quran'?",
+    "question_ar": "أي سورة تُعرف بـ 'قلب القرآن'؟",
+    "choices_en": ["Yasin", "Al-Baqarah", "Al-Ikhlas", "Al-Fatiha"],
+    "choices_ar": ["يس", "البقرة", "الإخلاص", "الفاتحة"],
+    "answer_en": "Yasin",
+    "answer_ar": "يس"
   }
 ]
