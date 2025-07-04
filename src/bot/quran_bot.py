@@ -607,11 +607,20 @@ class QuranBot(discord.Client):
         tree_log('info', 'Exiting play_surah_with_retries', {'file': mp3_file})
 
     async def play_quran_files(self, voice_client, channel):
-        tree_log('info', 'Entered play_quran_files', {'channel': str(channel)})
+        tree_log('debug', 'play_quran_files called', {'channel': str(channel)})
         try:
-            tree_log('info', 'Getting playlist for reciter', {'reciter': self.current_reciter})
+            # Log current state before getting playlist
+            if hasattr(self, 'state_manager') and hasattr(self.state_manager, 'get_current_song_index'):
+                current_index = self.state_manager.get_current_song_index()
+            else:
+                current_index = None
+            tree_log('debug', 'Current playback state', {
+                'current_reciter': getattr(self, 'current_reciter', None),
+                'current_song_index': current_index,
+                'is_streaming': getattr(self, 'is_streaming', None)
+            })
             mp3_files = self.get_shuffled_playlist()
-            tree_log('info', 'Playlist', {'playlist': mp3_files})
+            tree_log('debug', 'Playlist for playback', {'playlist': mp3_files, 'playlist_length': len(mp3_files)})
             if not mp3_files:
                 tree_log('error', 'No MP3 files found for playback.')
                 return
@@ -619,16 +628,19 @@ class QuranBot(discord.Client):
             start_index = 0
             if hasattr(self, 'state_manager') and hasattr(self.state_manager, 'get_current_song_index'):
                 start_index = self.state_manager.get_current_song_index() or 0
-            for mp3_file in mp3_files[start_index:]:
-                tree_log('info', 'Attempting to play file', {'file': mp3_file})
+            tree_log('debug', 'Starting playback from index', {'start_index': start_index, 'start_file': mp3_files[start_index] if start_index < len(mp3_files) else None})
+            for i, mp3_file in enumerate(mp3_files[start_index:], start=start_index):
+                tree_log('debug', 'Attempting to play file', {'file': mp3_file, 'index': i})
                 valid = await self.validate_audio_file(mp3_file)
-                tree_log('info', 'Validation result', {'file': mp3_file, 'valid': valid})
+                tree_log('debug', 'Validation result', {'file': mp3_file, 'valid': valid})
                 if not valid:
                     continue
                 await self.play_surah_with_retries(voice_client, mp3_file)
+                # Log after playing each file
+                tree_log('debug', 'Finished playing file', {'file': mp3_file, 'index': i})
         except Exception as e:
             tree_log('error', f"Exception in play_quran_files: {e}", {'traceback': traceback.format_exc()})
-        tree_log('info', 'Exiting play_quran_files', {'channel': str(channel)})
+        tree_log('debug', 'Exiting play_quran_files', {'channel': str(channel)})
             
     async def close(self):
         """Cleanup when bot is shutting down."""
