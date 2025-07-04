@@ -1337,7 +1337,7 @@ class QuranBot(commands.Bot):
                 "csv=p=0",
                 file_path,
             ]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+            result = asyncio.run(asyncio.to_thread(subprocess.run, cmd, capture_output=True, text=True, timeout=15))
             if result.returncode == 0 and result.stdout.strip():
                 duration = float(result.stdout.strip())
                 if duration > 0:
@@ -1374,11 +1374,12 @@ class QuranBot(commands.Bot):
                 f"ffprobe exception for {file_path}: {e}",
                 extra={"event": "FFPROBE_EXCEPTION", "file": file_path},
             )
+            logger.error(traceback.format_exc())
 
         # Fallback: try to get duration using ffmpeg with better error handling
         try:
             cmd = ["ffmpeg", "-i", file_path, "-f", "null", "-"]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            result = asyncio.run(asyncio.to_thread(subprocess.run, cmd, capture_output=True, text=True, timeout=30))
             # Parse duration from ffmpeg output
             import re
 
@@ -1424,6 +1425,7 @@ class QuranBot(commands.Bot):
                 f"ffmpeg duration fallback exception for {file_path}: {e}",
                 extra={"event": "FFMPEG_DURATION_EXCEPTION", "file": file_path},
             )
+            logger.error(traceback.format_exc())
 
         # Final fallback: estimate based on file size (rough approximation)
         try:
@@ -1462,6 +1464,7 @@ class QuranBot(commands.Bot):
                 f"Could not estimate duration for {file_path}: {e}",
                 extra={"event": "DURATION_ESTIMATE_FAILED", "file": file_path},
             )
+            logger.error(traceback.format_exc())
             return None
 
     def validate_audio_file(self, file_path):
@@ -1495,7 +1498,7 @@ class QuranBot(commands.Bot):
                 "csv=p=0",
                 file_path,
             ]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            result = asyncio.run(asyncio.to_thread(subprocess.run, cmd, capture_output=True, text=True, timeout=10))
 
             if result.returncode == 0 and result.stdout.strip():
                 codec = result.stdout.strip()
@@ -1525,12 +1528,14 @@ class QuranBot(commands.Bot):
                 f"Audio file validation timeout for {file_path}",
                 extra={"event": "VALIDATION_TIMEOUT", "file": file_path},
             )
+            logger.error(traceback.format_exc())
             return False
         except Exception as e:
             logger.error(
                 f"Audio file validation exception for {file_path}: {e}",
                 extra={"event": "VALIDATION_EXCEPTION", "file": file_path},
             )
+            logger.error(traceback.format_exc())
             return False
 
     async def play_surah_with_retries(self, voice_client, mp3_file, max_retries=2):
