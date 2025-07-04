@@ -597,213 +597,47 @@ class QuranBot(discord.Client):
             return None
 
     async def play_surah_with_retries(self, voice_client, mp3_file, max_retries=2):
-        """Play a surah with retries and robust FFmpeg error handling. Also updates dynamic presence timer."""
-        file_name = os.path.basename(mp3_file)
-        surah_info = get_surah_from_filename(file_name)
-        surah_display = get_surah_display_name(surah_info['number'])
-        total_duration = await self.get_audio_duration(mp3_file)
-        for attempt in range(max_retries + 1):
-            try:
-                # Ensure previous audio is stopped
-                if voice_client.is_playing():
-                    voice_client.stop()
-                    # Wait up to 5 seconds for audio to stop
-                    for _ in range(5):
-                        if not voice_client.is_playing():
-                            break
-                        await asyncio.sleep(1)
-                    if voice_client.is_playing():
-                        logger.warning(f"Previous audio did not stop in time, skipping {file_name}", extra={"event": "AUDIO", "file": file_name})
-                        return False
-                source = discord.FFmpegPCMAudio(mp3_file)
-                voice_client.play(source)
-                wait_count = 0
-                max_wait = int(total_duration) if total_duration else 900
-                start_time = time.time()
-                # Dynamic presence update loop
-                while voice_client.is_playing() and voice_client.is_connected() and wait_count < max_wait:
-                    elapsed = int(time.time() - start_time)
-                    # Format elapsed and total
-                    elapsed_str = f"{elapsed//60}:{elapsed%60:02d}"
-                    total_str = f"{int(total_duration)//60}:{int(total_duration)%60:02d}" if total_duration else "?"
-                    emoji = get_surah_emoji(surah_info['number'])
-                    presence_str = f"{emoji} {surah_info['english_name']} — {elapsed_str} / {total_str}"
-                    activity = discord.Activity(
-                        type=discord.ActivityType.listening, 
-                        name=presence_str,
-                        # You can add small images here if you have them
-                        # large_image="quran_icon",  # Large image key
-                        # small_image="playing",     # Small image key
-                        # large_text=f"Listening to {surah_info['english_name']}",  # Hover text
-                        # small_text="Quran Bot"     # Small image hover text
-                    )
-                    await self.change_presence(activity=activity)
-                    # Wait 5 seconds or until playback ends
-                    for _ in range(5):
-                        if not voice_client.is_playing() or not voice_client.is_connected():
-                            break
-                        await asyncio.sleep(1)
-                        wait_count += 1
-                
-                # Wait for playback to actually finish (FFmpeg might have terminated but audio could still be buffered)
-                if voice_client.is_connected():
-                    # Give a small buffer for any remaining audio
-                    await asyncio.sleep(2)
-                # Final update to show full duration
-                if total_duration:
-                    emoji = get_surah_emoji(surah_info['number'])
-                    presence_str = f"{emoji} {surah_info['english_name']} — {int(total_duration)//60}:{int(total_duration)%60:02d} / {int(total_duration)//60}:{int(total_duration)%60:02d}"
-                    await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=presence_str))
-                # Additional buffer
-                await asyncio.sleep(3)
-                return True  # Success
-            except discord.errors.ConnectionClosed as e:
-                if "4006" in str(e) or "session expired" in str(e).lower():
-                    # Handle session expired error
-                    guild_id = voice_client.guild.id if voice_client.guild else None
-                    await self.handle_voice_session_expired(guild_id)
-                    return False
-                else:
-                    log_error(e, f"voice_connection_{file_name}", additional_data={"attempt": attempt+1})
-                    self.health_monitor.record_error(e, f"voice_connection_{file_name}")
-            except Exception as e:
-                log_error(e, f"ffmpeg_playback_{file_name}", additional_data={"attempt": attempt+1})
-                self.health_monitor.record_error(e, f"ffmpeg_playback_{file_name}")
-                # Try to forcibly stop playback if stuck
-                if voice_client.is_playing():
-                    voice_client.stop()
-                    for _ in range(5):
-                        if not voice_client.is_playing():
-                            break
-                        await asyncio.sleep(1)
-                await asyncio.sleep(2)  # Short delay before retry
-        logger.error(f"FFmpeg failed for {file_name} after {max_retries+1} attempts. Skipping.", extra={"event": "FFMPEG", "file": file_name})
-        return False
-
-    async def play_quran_files(self, voice_client: discord.VoiceClient, channel: discord.VoiceChannel):
-        """Play Quran MP3 files in a continuous loop with robust FFmpeg handling."""
-        t0 = time.time()
+        logger.info(f"[DEBUG] Entered play_surah_with_retries for file: {mp3_file}")
         try:
-            logger.info(f"Starting Quran playback in channel: {channel.name} with reciter: {self.current_reciter}", 
-                       extra={'event': 'playback_start', 'channel': channel.name, 'reciter': self.current_reciter})
-            
-            # Get playlist based on shuffle setting
-            mp3_files = self.get_shuffled_playlist()
-            
-            t1 = time.time()
-            log_performance("audio_file_scan", t1-t0)
-            if not mp3_files:
-                log_error(Exception("No MP3 files found"), "play_quran_files", 
-                         additional_data={"folder": Config.AUDIO_FOLDER, "reciter": self.current_reciter})
-                return
-            logger.info(f"Found {len(mp3_files)} audio files from reciter: {self.current_reciter}", 
-                       extra={'event': 'AUDIO', 'reciter': self.current_reciter})
-            
-            current_index = self.state_manager.get_current_song_index()
-            last_song = self.state_manager.get_current_song_name()
-            if last_song and current_index < len(mp3_files):
-                logger.info(f"Resuming from song {current_index}: {last_song} (Reciter: {self.current_reciter})", 
-                           extra={'event': 'resume_playback', 'song_index': current_index, 'song_name': last_song, 'reciter': self.current_reciter})
-            else:
-                logger.info(f"Starting from beginning (Reciter: {self.current_reciter})", extra={'event': 'start_playback', 'reciter': self.current_reciter})
-                current_index = 0
-            self.is_streaming = True
-            self.health_monitor.set_streaming_status(True)
-            self.playback_start_time = time.time()  # Start timer when playback starts
-            t2 = time.time()
-            log_performance("playback_init", t2-t1)
-            consecutive_failures = 0
-            
-            while self.is_streaming and voice_client.is_connected():
-                # Handle loop mode - if enabled, play current surah repeatedly
-                if self.loop_enabled and self.current_audio_file:
-                    # Dedicated loop for continuous surah repetition
-                    while self.loop_enabled and self.is_streaming and voice_client.is_connected() and self.current_audio_file:
-                        mp3_file = os.path.join(Config.AUDIO_FOLDER, self.current_reciter, self.current_audio_file)
-                        if os.path.exists(mp3_file):
-                            file_name = os.path.basename(mp3_file)
-                            try:
-                                surah_info = get_surah_from_filename(file_name)
-                                surah_display = get_surah_display_name(surah_info['number'])
-                                log_audio_playback(f"{surah_display} ({file_name}) - Reciter: {self.current_reciter} [LOOP]")
-                                self.state_manager.increment_songs_played()
-                                self.health_monitor.update_current_song(file_name)
-                                await self.update_presence_for_surah(surah_info)
-                                success = await self.play_surah_with_retries(voice_client, mp3_file)
-                                if not success:
-                                    consecutive_failures += 1
-                                    if consecutive_failures >= 3:
-                                        logger.error(f"Multiple consecutive FFmpeg failures with reciter {self.current_reciter}. Check your audio files and FFmpeg installation.", 
-                                                   extra={"event": "FFMPEG", "reciter": self.current_reciter})
-                                        consecutive_failures = 0
-                                        # Wait before retrying
-                                        await asyncio.sleep(5)
-                                    continue
-                                else:
-                                    consecutive_failures = 0
-                                # Small gap between loops for smooth transition
-                                if self.is_streaming and voice_client.is_connected() and self.loop_enabled:
-                                    await asyncio.sleep(1)
-                            except Exception as e:
-                                log_error(e, f"playing {mp3_file}")
-                                self.health_monitor.record_error(e, f"audio_playback_{file_name}")
-                                # Wait before retrying on error
-                                await asyncio.sleep(2)
-                                continue
-                        else:
-                            logger.warning(f"Loop file not found: {mp3_file}. Disabling loop mode.", 
-                                         extra={"event": "AUDIO", "file": mp3_file})
-                            self.loop_enabled = False
-                            break
-                    # If we exit the loop mode while, continue to normal playback
-                    continue
-                
-                # Normal playback mode - play through playlist
-                for i in range(current_index, len(mp3_files)):
-                    if not self.is_streaming or not voice_client.is_connected():
-                        break
-                    mp3_file = mp3_files[i]
-                    file_name = os.path.basename(mp3_file)
-                    try:
-                        surah_info = get_surah_from_filename(file_name)
-                        surah_display = get_surah_display_name(surah_info['number'])
-                        log_audio_playback(f"{surah_display} ({file_name}) - Reciter: {self.current_reciter}")
-                        self.state_manager.set_current_song_index(i)
-                        self.state_manager.set_current_song_name(file_name)
-                        self.state_manager.increment_songs_played()
-                        self.health_monitor.update_current_song(file_name)
-                        self.current_audio_file = file_name
-                        await self.update_presence_for_surah(surah_info)
-                        success = await self.play_surah_with_retries(voice_client, mp3_file)
-                        if not success:
-                            consecutive_failures += 1
-                            if consecutive_failures >= 3:
-                                logger.error(f"Multiple consecutive FFmpeg failures with reciter {self.current_reciter}. Check your audio files and FFmpeg installation.", 
-                                           extra={"event": "FFMPEG", "reciter": self.current_reciter})
-                                consecutive_failures = 0
-                            continue
-                        else:
-                            consecutive_failures = 0
-                        # Small gap between surahs for smooth transition
-                        if self.is_streaming and voice_client.is_connected():
-                            await asyncio.sleep(1)
-                    except Exception as e:
-                        log_error(e, f"playing {mp3_file}")
-                        self.health_monitor.record_error(e, f"audio_playback_{file_name}")
-                        continue
-                        
-                # Reset to beginning for next cycle (unless loop mode is enabled)
-                if not self.loop_enabled:
-                    current_index = 0
-                    self.state_manager.set_current_song_index(0)
-                if self.is_streaming:
-                    await asyncio.sleep(2)
+            for attempt in range(max_retries + 1):
+                logger.info(f"[DEBUG] Attempt {attempt+1} to play {mp3_file}")
+                try:
+                    source = discord.FFmpegPCMAudio(mp3_file)
+                    logger.info(f"[DEBUG] Created FFmpeg source for {mp3_file}")
+                    voice_client.play(source)
+                    logger.info(f"[DEBUG] Started playback for {mp3_file}")
+                    while voice_client.is_playing():
+                        await asyncio.sleep(1)
+                    logger.info(f"[DEBUG] Finished playback for {mp3_file}")
+                    break
+                except Exception as e:
+                    logger.error(f"[DEBUG] Exception during playback attempt {attempt+1} for {mp3_file}: {e}")
+                    logger.error(traceback.format_exc())
         except Exception as e:
-            log_error(e, "play_quran_files")
-            self.is_streaming = False
-            self.health_monitor.set_streaming_status(False)
-        t3 = time.time()
-        log_performance("play_quran_files_total", t3-t0)
+            logger.error(f"[DEBUG] Exception in play_surah_with_retries: {e}")
+            logger.error(traceback.format_exc())
+        logger.info(f"[DEBUG] Exiting play_surah_with_retries for file: {mp3_file}")
+
+    async def play_quran_files(self, voice_client, channel):
+        logger.info(f"[DEBUG] Entered play_quran_files for channel: {channel}")
+        try:
+            logger.info(f"[DEBUG] Getting playlist for reciter: {self.current_reciter}")
+            mp3_files = self.get_shuffled_playlist()
+            logger.info(f"[DEBUG] Playlist: {mp3_files}")
+            if not mp3_files:
+                logger.error("[DEBUG] No MP3 files found for playback.")
+                return
+            for mp3_file in mp3_files:
+                logger.info(f"[DEBUG] Attempting to play file: {mp3_file}")
+                valid = await self.validate_audio_file(mp3_file)
+                logger.info(f"[DEBUG] Validation result for {mp3_file}: {valid}")
+                if not valid:
+                    continue
+                await self.play_surah_with_retries(voice_client, mp3_file)
+        except Exception as e:
+            logger.error(f"[DEBUG] Exception in play_quran_files: {e}")
+            logger.error(traceback.format_exc())
+        logger.info(f"[DEBUG] Exiting play_quran_files")
             
     async def close(self):
         """Cleanup when bot is shutting down."""
