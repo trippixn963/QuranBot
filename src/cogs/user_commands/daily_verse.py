@@ -12,8 +12,7 @@ import os
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List, cast
 import asyncio
-from monitoring.logging.logger import logger
-from monitoring.logging.log_helpers import log_operation
+from src.monitoring.logging.tree_log import tree_log
 from core.config.config import Config
 from cogs.user_commands.quran_question import QuranQuestionCog
 
@@ -36,7 +35,7 @@ class DailyVerseManager:
         if not self.verse_queue:
             self.reshuffle_verse_queue()
         
-        logger.info("Daily verse manager initialized", extra={'event': 'DAILY_VERSE_INIT'})
+        tree_log('info', 'Daily verse manager initialized', {'event': 'DAILY_VERSE_INIT'})
     
     def load_verse_pool(self) -> List[Dict[str, Any]]:
         """Load verse pool from JSON file."""
@@ -44,15 +43,14 @@ class DailyVerseManager:
             if os.path.exists(self.verse_pool_file):
                 with open(self.verse_pool_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                    logger.info(f"Loaded {len(data)} verses for daily feature", 
-                               extra={'event': 'VERSE_POOL_LOADED', 'verse_count': len(data)})
+                    tree_log('info', 'Loaded verses for daily feature', {'event': 'VERSE_POOL_LOADED', 'verse_count': len(data)})
                     return data
             else:
-                logger.error(f"Verse pool file not found: {self.verse_pool_file}", extra={'event': 'VERSE_POOL_NOT_FOUND'})
+                tree_log('error', 'Verse pool file not found', {'event': 'VERSE_POOL_NOT_FOUND', 'file': self.verse_pool_file})
                 return []
                 
         except Exception as e:
-            logger.error(f"Failed to load verse pool: {e}", extra={'event': 'VERSE_POOL_ERROR'})
+            tree_log('error', 'Failed to load verse pool', {'event': 'VERSE_POOL_ERROR', 'error': str(e)})
             return []
     
     def load_verse_queue(self) -> List[Dict[str, Any]]:
@@ -61,15 +59,14 @@ class DailyVerseManager:
             if os.path.exists(self.verse_queue_file):
                 with open(self.verse_queue_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                    logger.info(f"Loaded verse queue with {len(data)} verses", 
-                               extra={'event': 'VERSE_QUEUE_LOADED', 'queue_count': len(data)})
+                    tree_log('info', 'Loaded verse queue', {'event': 'VERSE_QUEUE_LOADED', 'queue_count': len(data)})
                     return data
             else:
-                logger.info("No verse queue file found, will create new queue", extra={'event': 'VERSE_QUEUE_NOT_FOUND'})
+                tree_log('info', 'No verse queue file found, will create new queue', {'event': 'VERSE_QUEUE_NOT_FOUND'})
                 return []
                 
         except Exception as e:
-            logger.error(f"Failed to load verse queue: {e}", extra={'event': 'VERSE_QUEUE_ERROR'})
+            tree_log('error', 'Failed to load verse queue', {'event': 'VERSE_QUEUE_ERROR', 'error': str(e)})
             return []
     
     def save_verse_queue(self):
@@ -77,9 +74,9 @@ class DailyVerseManager:
         try:
             with open(self.verse_queue_file, 'w', encoding='utf-8') as f:
                 json.dump(self.verse_queue, f, indent=2, ensure_ascii=False)
-            logger.debug("Verse queue saved successfully", extra={'event': 'VERSE_QUEUE_SAVED'})
+            tree_log('debug', 'Verse queue saved successfully', {'event': 'VERSE_QUEUE_SAVED'})
         except Exception as e:
-            logger.error(f"Failed to save verse queue: {e}", extra={'event': 'VERSE_QUEUE_SAVE_ERROR'})
+            tree_log('error', 'Failed to save verse queue', {'event': 'VERSE_QUEUE_SAVE_ERROR', 'error': str(e)})
     
     def load_last_sent_verse(self) -> Optional[Dict[str, Any]]:
         """Load last sent verse from JSON file."""
@@ -87,14 +84,14 @@ class DailyVerseManager:
             if os.path.exists(self.verse_state_file):
                 with open(self.verse_state_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                    logger.info("Loaded last sent verse state", extra={'event': 'VERSE_STATE_LOADED'})
+                    tree_log('info', 'Loaded last sent verse state', {'event': 'VERSE_STATE_LOADED'})
                     return data.get('last_sent_verse')
             else:
-                logger.info("No verse state file found", extra={'event': 'VERSE_STATE_NOT_FOUND'})
+                tree_log('info', 'No verse state file found', {'event': 'VERSE_STATE_NOT_FOUND'})
                 return None
                 
         except Exception as e:
-            logger.error(f"Failed to load verse state: {e}", extra={'event': 'VERSE_STATE_ERROR'})
+            tree_log('error', 'Failed to load verse state', {'event': 'VERSE_STATE_ERROR', 'error': str(e)})
             return None
     
     def save_last_sent_verse(self, verse: Dict[str, Any]):
@@ -103,14 +100,14 @@ class DailyVerseManager:
             state_data = {'last_sent_verse': verse, 'last_sent_time': datetime.now().isoformat()}
             with open(self.verse_state_file, 'w', encoding='utf-8') as f:
                 json.dump(state_data, f, indent=2, ensure_ascii=False)
-            logger.debug("Verse state saved successfully", extra={'event': 'VERSE_STATE_SAVED'})
+            tree_log('debug', 'Verse state saved successfully', {'event': 'VERSE_STATE_SAVED'})
         except Exception as e:
-            logger.error(f"Failed to save verse state: {e}", extra={'event': 'VERSE_STATE_SAVE_ERROR'})
+            tree_log('error', 'Failed to save verse state', {'event': 'VERSE_STATE_SAVE_ERROR', 'error': str(e)})
     
     def reshuffle_verse_queue(self):
         """Reshuffle the verse pool and create a new queue."""
         if not self.verse_pool:
-            logger.error("No verses in pool to shuffle", extra={'event': 'VERSE_POOL_EMPTY'})
+            tree_log('error', 'No verses in pool to shuffle', {'event': 'VERSE_POOL_EMPTY'})
             return
         
         # Create a copy of the pool
@@ -130,13 +127,12 @@ class DailyVerseManager:
         self.verse_queue = available_verses
         self.save_verse_queue()
         
-        logger.info(f"Reshuffled verse queue with {len(self.verse_queue)} verses", 
-                   extra={'event': 'VERSE_QUEUE_SHUFFLED', 'queue_count': len(self.verse_queue)})
+        tree_log('info', 'Reshuffled verse queue', {'event': 'VERSE_QUEUE_SHUFFLED', 'queue_count': len(self.verse_queue)})
     
     def should_send_verse_now(self) -> bool:
         """Check if a verse should be sent immediately (3 hours have passed since last verse)."""
         if not self.last_sent_verse:
-            logger.info("No previous verse found, should send immediately", extra={'event': 'VERSE_FIRST_TIME'})
+            tree_log('info', 'No previous verse found, should send immediately', {'event': 'VERSE_FIRST_TIME'})
             return True
         
         # Load the last sent time from the state file
@@ -151,14 +147,13 @@ class DailyVerseManager:
                         three_hours = timedelta(hours=3)
                         
                         should_send = time_since_last >= three_hours
-                        logger.info(f"Time since last verse: {time_since_last}, should send: {should_send}", 
-                                   extra={'event': 'VERSE_TIMING_CHECK', 'time_since_last': str(time_since_last), 'should_send': should_send})
+                        tree_log('info', 'Time since last verse checked', {'event': 'VERSE_TIMING_CHECK', 'time_since_last': str(time_since_last), 'should_send': should_send})
                         return should_send
         except Exception as e:
-            logger.error(f"Error checking verse timing: {e}", extra={'event': 'VERSE_TIMING_ERROR'})
+            tree_log('error', 'Error checking verse timing', {'event': 'VERSE_TIMING_ERROR', 'error': str(e)})
         
         # If we can't determine, send immediately
-        logger.warning("Could not determine timing, sending verse immediately", extra={'event': 'VERSE_TIMING_FALLBACK'})
+        tree_log('warning', 'Could not determine timing, sending verse immediately', {'event': 'VERSE_TIMING_FALLBACK'})
         return True
     
     def get_next_send_time(self) -> datetime:
@@ -171,33 +166,32 @@ class DailyVerseManager:
                     if last_sent_time_str:
                         last_sent_time = datetime.fromisoformat(last_sent_time_str)
                         next_send_time = last_sent_time + timedelta(hours=3)
-                        logger.info(f"Next verse scheduled for: {next_send_time}", extra={'event': 'VERSE_NEXT_TIME'})
+                        tree_log('info', 'Next verse scheduled', {'event': 'VERSE_NEXT_TIME', 'next_send_time': str(next_send_time)})
                         return next_send_time
         except Exception as e:
-            logger.error(f"Error calculating next send time: {e}", extra={'event': 'VERSE_NEXT_TIME_ERROR'})
+            tree_log('error', 'Error calculating next send time', {'event': 'VERSE_NEXT_TIME_ERROR', 'error': str(e)})
         
         # If we can't determine, send in 3 hours from now
         next_send_time = datetime.now() + timedelta(hours=3)
-        logger.warning(f"Could not determine next send time, defaulting to: {next_send_time}", extra={'event': 'VERSE_NEXT_TIME_FALLBACK'})
+        tree_log('warning', 'Could not determine next send time, defaulting', {'event': 'VERSE_NEXT_TIME_FALLBACK', 'next_send_time': str(next_send_time)})
         return next_send_time
 
     def get_next_verse(self) -> Optional[Dict[str, Any]]:
         """Get the next verse from the queue."""
         if not self.verse_queue:
-            logger.info("Verse queue is empty, reshuffling...", extra={'event': 'VERSE_QUEUE_EMPTY'})
+            tree_log('info', 'Verse queue is empty, reshuffling', {'event': 'VERSE_QUEUE_EMPTY'})
             self.reshuffle_verse_queue()
             
             # If still empty after reshuffling, something is wrong
             if not self.verse_queue:
-                logger.error("Verse queue still empty after reshuffling", extra={'event': 'VERSE_QUEUE_STILL_EMPTY'})
+                tree_log('error', 'Verse queue still empty after reshuffling', {'event': 'VERSE_QUEUE_STILL_EMPTY'})
                 return None
         
         # Get the next verse from the queue
         verse = self.verse_queue.pop(0)
         self.save_verse_queue()
         
-        logger.debug(f"Selected next verse: {verse['surah_name']} {verse['ayah']}", 
-                    extra={'event': 'VERSE_SELECTED', 'surah': verse['surah'], 'ayah': verse['ayah']})
+        tree_log('debug', 'Selected next verse', {'event': 'VERSE_SELECTED', 'surah': verse['surah'], 'ayah': verse['ayah']})
         return verse
     
     def create_verse_embed(self, verse: Dict[str, Any]) -> discord.Embed:
@@ -231,7 +225,7 @@ class DailyVerseManager:
     def get_daily_verse_channel(self) -> Optional[discord.TextChannel]:
         channel_id = getattr(Config, 'DAILY_VERSE_CHANNEL_ID', None)
         if not channel_id:
-            logger.error('DAILY_VERSE_CHANNEL_ID is not set in the environment/config!', extra={'event': 'VERSE_CHANNEL_ID_MISSING'})
+            tree_log('error', 'DAILY_VERSE_CHANNEL_ID is not set in the environment/config!', {'event': 'VERSE_CHANNEL_ID_MISSING'})
             return None
         channel = self.bot.get_channel(channel_id)
         if isinstance(channel, discord.TextChannel):
@@ -242,7 +236,7 @@ class DailyVerseManager:
         """Start the daily verse task."""
         if self.daily_verse_task is None or self.daily_verse_task.done():
             self.daily_verse_task = asyncio.create_task(self.daily_verse_loop())
-            logger.info("Daily verse task started", extra={'event': 'VERSE_TASK_STARTED'})
+            tree_log('info', 'Daily verse task started', {'event': 'VERSE_TASK_STARTED'})
     
     async def daily_verse_loop(self):
         """Main loop for sending daily verses every 3 hours."""
@@ -253,13 +247,12 @@ class DailyVerseManager:
         should_send_now = self.should_send_verse_now()
         
         if should_send_now:
-            logger.info("Sending initial verse after restart", extra={'event': 'VERSE_INITIAL_SEND'})
+            tree_log('info', 'Sending initial verse after restart', {'event': 'VERSE_INITIAL_SEND'})
             await self.send_daily_verse()
         else:
             next_send_time = self.get_next_send_time()
             wait_seconds = (next_send_time - datetime.now()).total_seconds()
-            logger.info(f"Waiting {wait_seconds:.0f} seconds until next verse (at {next_send_time.strftime('%Y-%m-%d %H:%M:%S')})", 
-                       extra={'event': 'VERSE_WAITING', 'wait_seconds': wait_seconds})
+            tree_log('info', 'Waiting until next verse', {'event': 'VERSE_WAITING', 'wait_seconds': wait_seconds, 'next_send_time': next_send_time.strftime('%Y-%m-%d %H:%M:%S')})
             
             if wait_seconds > 0:
                 await asyncio.sleep(wait_seconds)
@@ -271,7 +264,7 @@ class DailyVerseManager:
                 await asyncio.sleep(3 * 60 * 60)  # Wait 3 hours
                 await self.send_daily_verse()
             except Exception as e:
-                logger.error(f"Failed to send daily verse: {e}", extra={'event': 'VERSE_SEND_ERROR'})
+                tree_log('error', 'Failed to send daily verse', {'event': 'VERSE_SEND_ERROR', 'error': str(e)})
                 await asyncio.sleep(60)  # Wait 1 minute before retrying
     
     async def send_daily_verse(self):
@@ -280,13 +273,13 @@ class DailyVerseManager:
             # Always use the specified channel
             text_channel = self.get_daily_verse_channel()
             if text_channel is None:
-                logger.error(f"Could not find verse channel {text_channel} or it is not a TextChannel", extra={'event': 'VERSE_CHANNEL_NOT_FOUND'})
+                tree_log('error', 'Could not find verse channel or it is not a TextChannel', {'event': 'VERSE_CHANNEL_NOT_FOUND', 'channel': str(text_channel)})
                 return
             
             # Get next verse from queue
             verse = self.get_next_verse()
             if not verse:
-                logger.error("No verses available", extra={'event': 'NO_VERSES_AVAILABLE'})
+                tree_log('error', 'No verses available', {'event': 'NO_VERSES_AVAILABLE'})
                 return
             
             # Create and send embed
@@ -301,38 +294,37 @@ class DailyVerseManager:
             self.last_sent_verse = verse
             self.save_last_sent_verse(verse)
             
-            logger.info(f"Daily verse sent: {verse['surah_name']} {verse['ayah']}", 
-                       extra={'event': 'VERSE_SENT', 'surah': verse['surah'], 'ayah': verse['ayah'], 'channel_id': text_channel.id})
+            tree_log('info', 'Daily verse sent', {'event': 'VERSE_SENT', 'surah': verse['surah'], 'ayah': verse['ayah'], 'channel_id': text_channel.id})
             
             # Schedule sending a Quran question after 1 minute
             asyncio.create_task(self.send_quran_question_after_delay(text_channel, delay=60))
             
         except Exception as e:
-            logger.error(f"Failed to send daily verse: {e}", extra={'event': 'VERSE_SEND_ERROR'})
+            tree_log('error', 'Failed to send daily verse', {'event': 'VERSE_SEND_ERROR', 'error': str(e)})
 
     async def send_quran_question_after_delay(self, channel, delay=60):
-        logger.info("[QURAN_QUESTION_DEBUG] Called send_quran_question_after_delay", extra={'event': 'QURAN_QUESTION_DEBUG'})
+        tree_log('info', 'Called send_quran_question_after_delay', {'event': 'QURAN_QUESTION_DEBUG'})
         try:
             await asyncio.sleep(delay)
-            logger.info("[QURAN_QUESTION_DEBUG] Slept for delay, now attempting to get cog", extra={'event': 'QURAN_QUESTION_DEBUG'})
+            tree_log('info', 'Slept for delay, now attempting to get cog', {'event': 'QURAN_QUESTION_DEBUG'})
             question_cog = None
             for attempt in range(10):
                 question_cog = self.bot.get_cog('QuranQuestionCog')
                 if question_cog:
                     break
-                logger.warning(f"[QURAN_QUESTION_DEBUG] QuranQuestionCog not loaded, retrying... ({attempt+1}/10)", extra={'event': 'QURAN_QUESTION_COG_RETRY'})
+                tree_log('warning', 'QuranQuestionCog not loaded, retrying', {'event': 'QURAN_QUESTION_COG_RETRY', 'attempt': attempt+1})
                 await asyncio.sleep(1)
             if not question_cog:
-                logger.error("QuranQuestionCog not loaded after retries!", extra={'event': 'QURAN_QUESTION_COG_MISSING'})
+                tree_log('error', 'QuranQuestionCog not loaded after retries', {'event': 'QURAN_QUESTION_COG_MISSING'})
                 await channel.send("❌ Quran question system is not available. Please contact an admin.")
                 return
-            logger.info("[QURAN_QUESTION_DEBUG] Found QuranQuestionCog, getting question", extra={'event': 'QURAN_QUESTION_DEBUG'})
+            tree_log('info', 'Found QuranQuestionCog, getting question', {'event': 'QURAN_QUESTION_DEBUG'})
             question = question_cog.get_random_question()
             if not question:
                 await channel.send("❌ No Quran questions available.")
-                logger.error("No Quran questions available!", extra={'event': 'QURAN_QUESTION_NO_QUESTIONS'})
+                tree_log('error', 'No Quran questions available', {'event': 'QURAN_QUESTION_NO_QUESTIONS'})
                 return
-            logger.info("[QURAN_QUESTION_DEBUG] Got question, building embed", extra={'event': 'QURAN_QUESTION_DEBUG'})
+            tree_log('info', 'Got question, building embed', {'event': 'QURAN_QUESTION_DEBUG'})
             choices_text = ""
             for idx, (en, ar) in enumerate(zip(question["choices_en"], question["choices_ar"])):
                 label = chr(65 + idx)
@@ -344,15 +336,15 @@ class DailyVerseManager:
             )
             embed.set_footer(text="Choose the correct answer below.")
             from cogs.user_commands.quran_question import QuranMCQView
-            logger.info("[QURAN_QUESTION_DEBUG] Creating MCQ view and sending embed", extra={'event': 'QURAN_QUESTION_DEBUG'})
+            tree_log('info', 'Creating MCQ view and sending embed', {'event': 'QURAN_QUESTION_DEBUG'})
             view = QuranMCQView(question, self.bot.user, question_cog.score_manager)
             sent_msg = await channel.send(embed=embed, view=view)
             view.original_message = sent_msg
             await view.update_answered_list()
             view.timer_task = asyncio.create_task(view.start_timer_update())
-            logger.info("[QURAN_QUESTION_DEBUG] Question embed sent successfully", extra={'event': 'QURAN_QUESTION_DEBUG'})
+            tree_log('info', 'Question embed sent successfully', {'event': 'QURAN_QUESTION_DEBUG'})
         except Exception as e:
-            logger.error(f"[QURAN_QUESTION_DEBUG] Exception in send_quran_question_after_delay: {e}", extra={'event': 'QURAN_QUESTION_SEND_ERROR'})
+            tree_log('error', 'Exception in send_quran_question_after_delay', {'event': 'QURAN_QUESTION_SEND_ERROR', 'error': str(e)})
             try:
                 await channel.send(f"❌ Failed to send Quran question: {e}")
             except Exception:
@@ -411,13 +403,12 @@ async def setup(bot):
                     
                     await interaction.response.send_message("✅ Verse sent!", ephemeral=True)
                     
-                    logger.info(f"Manual verse sent: {verse['surah_name']} {verse['ayah']}", 
-                               extra={'event': 'MANUAL_VERSE_SENT', 'surah': verse['surah'], 'ayah': verse['ayah'], 'user_id': interaction.user.id})
+                    tree_log('info', 'Manual verse sent', {'event': 'MANUAL_VERSE_SENT', 'surah': verse['surah'], 'ayah': verse['ayah'], 'user_id': interaction.user.id})
                 else:
                     await interaction.response.send_message("❌ Can only send verses in text channels!", ephemeral=True)
                 
             except Exception as e:
-                logger.error(f"Failed to send manual verse: {e}", extra={'event': 'MANUAL_VERSE_ERROR'})
+                tree_log('error', 'Failed to send manual verse', {'event': 'MANUAL_VERSE_ERROR', 'error': str(e)})
                 await interaction.response.send_message("❌ Failed to send verse!", ephemeral=True)
         
         @bot.tree.command(name="versestatus", description="Check daily verse status")
@@ -483,11 +474,10 @@ async def setup(bot):
                 
                 await interaction.response.send_message(embed=embed)
                 
-                logger.info(f"Verse status checked by {interaction.user.name}", 
-                           extra={'event': 'VERSE_STATUS_CHECK', 'user_id': interaction.user.id})
+                tree_log('info', 'Verse status checked', {'event': 'VERSE_STATUS_CHECK', 'user_id': interaction.user.id, 'user_name': interaction.user.name})
                 
             except Exception as e:
-                logger.error(f"Failed to get verse status: {e}", extra={'event': 'VERSE_STATUS_ERROR'})
+                tree_log('error', 'Failed to get verse status', {'event': 'VERSE_STATUS_ERROR', 'error': str(e)})
                 await interaction.response.send_message("❌ Failed to get verse status!", ephemeral=True)
         
 
@@ -495,8 +485,8 @@ async def setup(bot):
         # Start the daily verse task
         await daily_verse_manager.start_daily_verse_task()
         
-        logger.info("Daily verse feature loaded successfully", extra={'event': 'VERSE_COG_LOADED'})
+        tree_log('info', 'Daily verse feature loaded successfully', {'event': 'VERSE_COG_LOADED'})
         
     except Exception as e:
-        logger.error(f"Failed to load daily verse feature: {e}", extra={'event': 'VERSE_COG_LOAD_ERROR'})
+        tree_log('error', 'Failed to load daily verse feature', {'event': 'VERSE_COG_LOAD_ERROR', 'error': str(e)})
         raise 

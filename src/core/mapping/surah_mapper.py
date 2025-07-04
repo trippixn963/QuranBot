@@ -6,7 +6,7 @@ Maps surah numbers to their names and provides utility functions.
 import json
 import os
 from typing import Optional, Dict, Any
-from monitoring.logging.log_helpers import log_function_call, log_operation
+from src.monitoring.logging.tree_log import tree_log
 
 # Complete mapping of surah numbers to their names
 SURAH_NAMES = {
@@ -134,10 +134,11 @@ def load_custom_mapping() -> Dict[str, int]:
     if os.path.exists(CUSTOM_MAPPING_FILE):
         try:
             with open(CUSTOM_MAPPING_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                mapping = json.load(f)
+                tree_log('info', 'Loaded custom surah mapping', {'event': 'CUSTOM_MAPPING_LOADED', 'count': len(mapping)})
+                return mapping
         except Exception as e:
-            from monitoring.logging.logger import logger
-            logger.error(f"Error loading custom mapping: {e}")
+            tree_log('error', 'Error loading custom mapping', {'event': 'CUSTOM_MAPPING_LOAD_ERROR', 'error': str(e)})
     return {}
 
 def save_custom_mapping(mapping: Dict[str, int]) -> bool:
@@ -145,10 +146,10 @@ def save_custom_mapping(mapping: Dict[str, int]) -> bool:
     try:
         with open(CUSTOM_MAPPING_FILE, 'w', encoding='utf-8') as f:
             json.dump(mapping, f, indent=2, ensure_ascii=False)
+        tree_log('info', 'Saved custom surah mapping', {'event': 'CUSTOM_MAPPING_SAVED', 'count': len(mapping)})
         return True
     except Exception as e:
-        from monitoring.logging.logger import logger
-        logger.error(f"Error saving custom mapping: {e}")
+        tree_log('error', 'Error saving custom mapping', {'event': 'CUSTOM_MAPPING_SAVE_ERROR', 'error': str(e)})
         return False
 
 def get_surah_info(surah_number: int) -> dict:
@@ -345,20 +346,18 @@ def create_custom_mapping_template() -> Dict[str, int]:
 
 def verify_and_fix_mapping(reciter_name: str) -> Dict[str, int]:
     """Create a verification script to help fix surah mapping."""
-    from monitoring.logging.logger import logger
-    logger.info(f"🔍 Surah Mapping Verification for {reciter_name}")
-    logger.info("=" * 60)
-    logger.info("This will help you create a custom mapping to fix misnamed audio files.")
-    logger.info("For each file, enter the actual surah number (1-114) that the file contains.")
-    logger.info("Press Enter to skip a file or use the default mapping.")
-    logger.info("")
+    tree_log('info', 'Surah Mapping Verification', {'event': 'SURAH_MAPPING_VERIFY_START', 'reciter': reciter_name})
+    tree_log('info', '=' * 60, {'event': 'SURAH_MAPPING_VERIFY_DIVIDER'})
+    tree_log('info', 'This will help you create a custom mapping to fix misnamed audio files.', {'event': 'SURAH_MAPPING_VERIFY_HELP'})
+    tree_log('info', 'For each file, enter the actual surah number (1-114) that the file contains.', {'event': 'SURAH_MAPPING_VERIFY_INSTRUCTIONS'})
+    tree_log('info', 'Press Enter to skip a file or use the default mapping.', {'event': 'SURAH_MAPPING_VERIFY_SKIP'})
+    tree_log('info', '', {'event': 'SURAH_MAPPING_VERIFY_BLANK'})
     
     custom_mapping = {}
     audio_folder = f"audio/{reciter_name}"
     
     if not os.path.exists(audio_folder):
-        from monitoring.logging.logger import logger
-        logger.error(f"❌ Reciter folder not found: {audio_folder}")
+        tree_log('error', 'Reciter folder not found', {'event': 'SURAH_MAPPING_VERIFY_FOLDER_MISSING', 'folder': audio_folder})
         return custom_mapping
     
     # Get all MP3 files
@@ -367,9 +366,8 @@ def verify_and_fix_mapping(reciter_name: str) -> Dict[str, int]:
     
     for filename in mp3_files:
         current_surah = get_surah_from_filename(filename)
-        from monitoring.logging.logger import logger
-        logger.info(f"File: {filename}")
-        logger.info(f"Current mapping: {current_surah['english_name']} (Surah {current_surah['number']})")
+        tree_log('info', f'File: {filename}', {'event': 'SURAH_MAPPING_VERIFY_FILE'})
+        tree_log('info', f"Current mapping: {current_surah['english_name']} (Surah {current_surah['number']})", {'event': 'SURAH_MAPPING_VERIFY_CURRENT'})
         
         user_input = input(f"Enter actual surah number (1-114) or press Enter to keep current: ").strip()
         
@@ -379,20 +377,14 @@ def verify_and_fix_mapping(reciter_name: str) -> Dict[str, int]:
                 if 1 <= surah_number <= 114:
                     custom_mapping[filename] = surah_number
                     actual_surah = get_surah_info(surah_number)
-                    from monitoring.logging.logger import logger
-                    logger.info(f"✅ Mapped {filename} to {actual_surah['english_name']}")
+                    tree_log('info', f"Mapped {filename} to {actual_surah['english_name']}", {'event': 'SURAH_MAPPING_VERIFY_MAPPED', 'filename': filename, 'surah': actual_surah['english_name']})
                 else:
-                    from monitoring.logging.logger import logger
-                    logger.warning(f"❌ Invalid surah number: {surah_number}")
+                    tree_log('warning', f'Invalid surah number: {surah_number}', {'event': 'SURAH_MAPPING_VERIFY_INVALID_NUMBER', 'input': surah_number})
             except ValueError:
-                from monitoring.logging.logger import logger
-                logger.warning(f"❌ Invalid input: {user_input}")
+                tree_log('warning', f'Invalid input: {user_input}', {'event': 'SURAH_MAPPING_VERIFY_INVALID_INPUT', 'input': user_input})
         else:
-            from monitoring.logging.logger import logger
-            logger.info(f"⏭️  Skipped {filename}")
-        
-        from monitoring.logging.logger import logger
-        logger.info("")
+            tree_log('info', f'Skipped {filename}', {'event': 'SURAH_MAPPING_VERIFY_SKIPPED', 'filename': filename})
+        tree_log('info', '', {'event': 'SURAH_MAPPING_VERIFY_BLANK'})
     
     return custom_mapping 
 

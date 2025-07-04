@@ -10,6 +10,8 @@ import zipfile
 import shutil
 from datetime import datetime
 from pathlib import Path
+from src.monitoring.logging.tree_log import tree_log
+import traceback
 
 def get_project_root():
     """Get the project root directory."""
@@ -59,7 +61,7 @@ def create_backup():
         return True
         
     except Exception as e:
-        print(f"❌ Backup failed: {e}")
+        tree_log('error', 'Backup failed', {'error': str(e), 'traceback': traceback.format_exc()})
         return False
 
 def main():

@@ -11,13 +11,15 @@ import psutil
 import platform
 from datetime import datetime, timedelta
 import re
-from monitoring.logging.log_helpers import log_async_function_call, log_function_call, log_operation
+from monitoring.logging.log_helpers import log_async_function_call, log_function_call
+from src.monitoring.logging.tree_log import tree_log
 
 class LogCommands(commands.Cog):
     """Log management command."""
     
     def __init__(self, bot):
         self.bot = bot
+        tree_log('info', 'LogCommands cog initialized', {"component": "LogCommands"})
         
     @app_commands.command(name="logs", description="View logs, system info, and bot status")
     @app_commands.describe(
@@ -38,6 +40,13 @@ class LogCommands(commands.Cog):
         await interaction.response.defer()
         
         try:
+            tree_log('info', 'Logs command invoked', {
+                "user_id": interaction.user.id,
+                "user_name": interaction.user.name,
+                "action": action,
+                "lines": lines,
+                "search": search
+            })
             if action == "all":
                 # Show comprehensive overview
                 embed = await self._get_system_overview()
@@ -64,6 +73,15 @@ class LogCommands(commands.Cog):
                 await interaction.followup.send(embed=embed)
                 
         except Exception as e:
+            import traceback
+            tree_log('error', 'Error in logs command', {
+                "user_id": interaction.user.id if interaction.user else None,
+                "action": action,
+                "lines": lines,
+                "search": search,
+                "error": str(e),
+                "traceback": traceback.format_exc()
+            })
             embed = discord.Embed(
                 title="❌ Error",
                 description=f"Failed to get {action}: {str(e)}",
@@ -75,6 +93,7 @@ class LogCommands(commands.Cog):
     async def _get_system_overview(self):
         """Get comprehensive system overview."""
         try:
+            tree_log('debug', 'Getting system overview', {"component": "system_overview"})
             # System metrics
             cpu_percent = psutil.cpu_percent(interval=1)
             memory = psutil.virtual_memory()
@@ -142,6 +161,11 @@ class LogCommands(commands.Cog):
             return embed
             
         except Exception as e:
+            import traceback
+            tree_log('error', 'Error getting system overview', {
+                "error": str(e),
+                "traceback": traceback.format_exc()
+            })
             return discord.Embed(
                 title="❌ System Info Error",
                 description=f"Failed to get system info: {str(e)}",
@@ -152,6 +176,7 @@ class LogCommands(commands.Cog):
     async def _get_recent_logs(self, lines: int, search: str = None):
         """Get recent logs."""
         try:
+            tree_log('debug', 'Getting recent logs', {"lines": lines, "search": search})
             logs_dir = "logs"
             if not os.path.exists(logs_dir):
                 return discord.Embed(
@@ -214,6 +239,13 @@ class LogCommands(commands.Cog):
             return embed
             
         except Exception as e:
+            import traceback
+            tree_log('error', 'Error getting recent logs', {
+                "lines": lines,
+                "search": search,
+                "error": str(e),
+                "traceback": traceback.format_exc()
+            })
             return discord.Embed(
                 title="❌ Log Error",
                 description=f"Failed to read logs: {str(e)}",
@@ -224,6 +256,7 @@ class LogCommands(commands.Cog):
     async def _get_system_info(self):
         """Get detailed system information."""
         try:
+            tree_log('debug', 'Getting detailed system info', {"component": "system_info"})
             cpu_percent = psutil.cpu_percent(interval=1)
             memory = psutil.virtual_memory()
             disk = psutil.disk_usage('/')
@@ -271,6 +304,11 @@ class LogCommands(commands.Cog):
             return embed
             
         except Exception as e:
+            import traceback
+            tree_log('error', 'Error getting detailed system info', {
+                "error": str(e),
+                "traceback": traceback.format_exc()
+            })
             return discord.Embed(
                 title="❌ System Info Error",
                 description=f"Failed to get system info: {str(e)}",
@@ -281,6 +319,7 @@ class LogCommands(commands.Cog):
     async def _get_bot_status(self):
         """Get detailed bot status."""
         try:
+            tree_log('debug', 'Getting bot status', {"component": "bot_status"})
             latency = round(self.bot.latency * 1000)
             uptime = "Unknown"
             health_status = {}
@@ -340,6 +379,11 @@ class LogCommands(commands.Cog):
             return embed
             
         except Exception as e:
+            import traceback
+            tree_log('error', 'Error getting bot status', {
+                "error": str(e),
+                "traceback": traceback.format_exc()
+            })
             return discord.Embed(
                 title="❌ Bot Status Error",
                 description=f"Failed to get bot status: {str(e)}",
@@ -350,6 +394,7 @@ class LogCommands(commands.Cog):
     async def _get_error_logs(self, lines: int, search: str = None):
         """Get error logs specifically."""
         try:
+            tree_log('debug', 'Getting error logs', {"lines": lines, "search": search})
             logs_dir = "logs"
             if not os.path.exists(logs_dir):
                 return discord.Embed(
@@ -415,6 +460,13 @@ class LogCommands(commands.Cog):
             return embed
             
         except Exception as e:
+            import traceback
+            tree_log('error', 'Error getting error logs', {
+                "lines": lines,
+                "search": search,
+                "error": str(e),
+                "traceback": traceback.format_exc()
+            })
             return discord.Embed(
                 title="❌ Error Log Error",
                 description=f"Failed to read error logs: {str(e)}",

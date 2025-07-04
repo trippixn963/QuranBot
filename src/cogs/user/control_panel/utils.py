@@ -14,6 +14,7 @@ import functools
 from monitoring.logging.logger import logger
 from monitoring.logging.log_helpers import log_async_function_call, log_function_call, log_operation, get_system_metrics, get_discord_context, get_bot_state
 from core.state.panel_manager import panel_manager
+from src.monitoring.logging.tree_log import tree_log
 
 def get_system_metrics():
     """Get comprehensive system metrics"""
@@ -108,43 +109,22 @@ def get_bot_state(bot) -> Dict[str, Any]:
 
 def log_operation(operation: str, level: str = "INFO", extra: Optional[Dict[str, Any]] = None, error: Optional[Exception] = None):
     """Enhanced logging with operation tracking and structured data."""
-    level_emoji = {"DEBUG": "", "INFO": "", "WARNING": "", "ERROR": "", "CRITICAL": ""}
-    
     # Format timestamp with new format: MM-DD | HH:MM:SS AM/PM
     timestamp = datetime.now().strftime('%m-%d | %I:%M:%S %p')
-    
     log_data = {
         "operation": operation,
         "timestamp": timestamp,
         "component": "control_panel"
     }
-    
     if extra:
         log_data.update(extra)
-    
     if error:
         log_data["error"] = str(error)
         log_data["error_type"] = type(error).__name__
         log_data["traceback"] = traceback.format_exc()
         level = "ERROR"
-    
-    # Include user information in the main log message if available
-    user_info = ""
-    if extra and "user_name" in extra and "user_id" in extra:
-        user_info = f" | 👤 {extra['user_name']} ({extra['user_id']})"
-    
-    log_message = f"Control Panel - {operation.upper()}{user_info}"
-    
-    if level == "DEBUG":
-        logger.debug(log_message, extra={"extra": log_data})
-    elif level == "INFO":
-        logger.info(log_message, extra={"extra": log_data})
-    elif level == "WARNING":
-        logger.warning(log_message, extra={"extra": log_data})
-    elif level == "ERROR":
-        logger.error(log_message, extra={"extra": log_data})
-    elif level == "CRITICAL":
-        logger.critical(log_message, extra={"extra": log_data})
+    # Use tree_log for all control panel logging
+    tree_log(level.lower(), f"ControlPanel - {operation}", log_data)
 
 def is_in_voice_channel(interaction: discord.Interaction) -> bool:
     """Check if the user is in the voice channel with enhanced logging."""
@@ -252,7 +232,10 @@ def log_button_interaction(func):
                         f"Executed in {execution_time}ms"
                     )
             except Exception as discord_log_error:
-                logger.warning(f"Failed to log button interaction to Discord: {discord_log_error}")
+                tree_log('warning', 'Failed to log button interaction to Discord', {
+                    'error': str(discord_log_error),
+                    'traceback': traceback.format_exc()
+                })
             
             # Post-interaction logging
             log_operation("interaction", "INFO", {
@@ -329,7 +312,10 @@ def log_select_interaction(func):
                         f"Executed in {execution_time}ms"
                     )
             except Exception as discord_log_error:
-                logger.warning(f"Failed to log select interaction to Discord: {discord_log_error}")
+                tree_log('warning', 'Failed to log select interaction to Discord', {
+                    'error': str(discord_log_error),
+                    'traceback': traceback.format_exc()
+                })
             
             # Post-interaction logging
             log_operation("select", "INFO", {

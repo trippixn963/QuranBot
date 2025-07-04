@@ -14,6 +14,8 @@ import tempfile
 import shutil
 import argparse
 from pathlib import Path
+from src.monitoring.logging.tree_log import tree_log
+import traceback
 
 def check_ffmpeg():
     """Check if FFmpeg is installed and get its version."""
@@ -26,6 +28,9 @@ def check_ffmpeg():
         else:
             return False, None
     except (subprocess.TimeoutExpired, FileNotFoundError):
+        return False, None
+    except Exception as e:
+        tree_log('error', 'Error checking ffmpeg', {'error': str(e), 'traceback': traceback.format_exc()})
         return False, None
 
 def get_ffmpeg_path():
@@ -99,7 +104,7 @@ def download_ffmpeg():
         return True
         
     except Exception as e:
-        print(f"❌ Failed to download/install FFmpeg: {e}")
+        tree_log('error', 'Error downloading/installing FFmpeg', {'error': str(e), 'traceback': traceback.format_exc()})
         return False
 
 def check_system_path():

@@ -10,10 +10,8 @@ import asyncio
 import logging
 from datetime import datetime
 import traceback
-from monitoring.logging.log_helpers import log_async_function_call, log_function_call, log_operation
-
-# Enhanced logger for admin commands
-logger = logging.getLogger(__name__)
+from monitoring.logging.log_helpers import log_async_function_call, log_function_call
+from src.monitoring.logging.tree_log import tree_log
 
 def log_operation(operation: str, level: str = "INFO", extra: dict = None, error: Exception = None):
     """Enhanced logging with operation tracking and structured data. No emojis for clean logs."""
@@ -47,16 +45,17 @@ def log_operation(operation: str, level: str = "INFO", extra: dict = None, error
     
     log_message = f"Admin Stop - {operation.upper()}{user_info}{latency_info}"
     
-    if level == "DEBUG":
-        logger.debug(log_message, extra={"extra": log_data})
-    elif level == "INFO":
-        logger.info(log_message, extra={"extra": log_data})
-    elif level == "WARNING":
-        logger.warning(log_message, extra={"extra": log_data})
-    elif level == "ERROR":
-        logger.error(log_message, extra={"extra": log_data})
-    elif level == "CRITICAL":
-        logger.critical(log_message, extra={"extra": log_data})
+    # Use tree_log for all admin stop command logging
+    if error:
+        if extra is None:
+            extra = {}
+        extra['error'] = str(error)
+        extra['error_type'] = type(error).__name__
+        extra['traceback'] = traceback.format_exc()
+        level = "error"
+    else:
+        level = level.lower()
+    tree_log(level, f"AdminStop - {operation}", extra)
 
 def is_admin(interaction: discord.Interaction) -> bool:
     """Check if the user is an admin with enhanced logging."""
@@ -69,7 +68,7 @@ def is_admin(interaction: discord.Interaction) -> bool:
         
         user_id = interaction.user.id
         
-        log_operation("check", "DEBUG", {
+        tree_log('debug', 'Checking admin permission', {
             "user_id": user_id,
             "user_name": interaction.user.name,
             "admin_ids": admin_ids,
@@ -77,7 +76,7 @@ def is_admin(interaction: discord.Interaction) -> bool:
         })
         
         if user_id in admin_ids:
-            log_operation("auth", "INFO", {
+            tree_log('info', 'Admin permission granted', {
                 "user_id": user_id,
                 "user_name": interaction.user.name,
                 "check_type": "admin_permission",
@@ -85,7 +84,7 @@ def is_admin(interaction: discord.Interaction) -> bool:
             })
             return True
         
-        log_operation("auth", "WARNING", {
+        tree_log('warning', 'Admin permission denied', {
             "user_id": user_id,
             "user_name": interaction.user.name,
             "check_type": "admin_permission",
@@ -94,11 +93,12 @@ def is_admin(interaction: discord.Interaction) -> bool:
         return False
         
     except Exception as e:
-        log_operation("check", "ERROR", {
+        tree_log('error', 'Error during admin permission check', {
             "user_id": interaction.user.id if interaction.user else None,
             "check_type": "admin_permission",
-            "error_details": "admin_check_failed"
-        }, e)
+            "error_details": "admin_check_failed",
+            "traceback": traceback.format_exc()
+        })
         return False
 
 class StopCommand(app_commands.Group):
@@ -106,14 +106,14 @@ class StopCommand(app_commands.Group):
     
     def __init__(self):
         super().__init__(name="stop", description="Stop the Quran Bot")
-        log_operation("init", "INFO", {"component": "StopCommand"})
+        tree_log('info', 'StopCommand initialized', {"component": "StopCommand"})
     
     @app_commands.command(name="stop", description="Stop the Quran Bot")
     @log_async_function_call
     async def stop(self, interaction: discord.Interaction):
         """Stop the bot with enhanced logging and error handling."""
         try:
-            log_operation("command", "INFO", {
+            tree_log('info', 'Stop command invoked', {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
                 "command": "stop",
@@ -123,7 +123,7 @@ class StopCommand(app_commands.Group):
             
             # Check admin permissions
             if not is_admin(interaction):
-                log_operation("auth", "WARNING", {
+                tree_log('warning', 'Stop denied: not admin', {
                     "user_id": interaction.user.id,
                     "user_name": interaction.user.name,
                     "command": "stop",
@@ -160,7 +160,7 @@ class StopCommand(app_commands.Group):
             
             await interaction.response.send_message(embed=embed, ephemeral=True)
             
-            log_operation("stop", "INFO", {
+            tree_log('info', 'Stop initiated', {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
                 "command": "stop",
@@ -174,11 +174,12 @@ class StopCommand(app_commands.Group):
             await interaction.client.close()
             
         except Exception as e:
-            log_operation("command", "ERROR", {
+            tree_log('error', 'Error during stop command', {
                 "user_id": interaction.user.id if interaction.user else None,
                 "command": "stop",
-                "error_details": "stop_command_failed"
-            }, e)
+                "error_details": "stop_command_failed",
+                "traceback": traceback.format_exc()
+            })
             
             try:
                 embed = discord.Embed(
@@ -196,7 +197,7 @@ class StopCommand(app_commands.Group):
 async def setup(bot):
     """Setup the stop command with enhanced logging."""
     try:
-        log_operation("init", "INFO", {
+        tree_log('info', 'Setting up stop command', {
             "component": "setup",
             "bot_name": bot.user.name if bot.user else "Unknown"
         })
@@ -204,15 +205,16 @@ async def setup(bot):
         stop_command = StopCommand()
         bot.tree.add_command(stop_command)
         
-        log_operation("success", "INFO", {
+        tree_log('info', 'Stop command loaded', {
             "component": "setup",
             "action": "stop_command_loaded",
             "commands": ["stop"]
         })
         
     except Exception as e:
-        log_operation("init", "ERROR", {
+        tree_log('error', 'Error during stop command setup', {
             "component": "setup",
-            "action": "stop_command_failed"
-        }, e)
+            "action": "stop_command_failed",
+            "traceback": traceback.format_exc()
+        })
         raise 

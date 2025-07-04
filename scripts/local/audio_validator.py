@@ -10,6 +10,8 @@ import subprocess
 import argparse
 from pathlib import Path
 from datetime import datetime
+from src.monitoring.logging.tree_log import tree_log
+import traceback
 
 def check_ffmpeg():
     """Check if FFmpeg is available."""
@@ -32,6 +34,7 @@ def validate_mp3_file(file_path):
     except subprocess.TimeoutExpired:
         return False, "Validation timed out"
     except Exception as e:
+        tree_log('error', 'Error validating audio file', {'error': str(e), 'traceback': traceback.format_exc()})
         return False, str(e)
 
 def find_mp3_files(audio_dir):

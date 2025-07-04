@@ -6,6 +6,7 @@ import asyncio
 import logging
 from datetime import datetime
 from typing import Optional, Dict, Any
+from src.monitoring.logging.tree_log import tree_log
 
 # Enhanced logger for admin commands
 logger = logging.getLogger(__name__)
@@ -27,20 +28,12 @@ def log_operation(operation: str, level: str = "INFO", extra: Optional[Dict[str,
     if error:
         log_data["error"] = str(error)
         log_data["error_type"] = type(error).__name__
+        import traceback
+        log_data["traceback"] = traceback.format_exc()
         level = "ERROR"
     
-    log_message = f"Admin RecreatePanel - {operation.upper()}"
-    
-    if level == "DEBUG":
-        logger.debug(log_message, extra={"extra": log_data})
-    elif level == "INFO":
-        logger.info(log_message, extra={"extra": log_data})
-    elif level == "WARNING":
-        logger.warning(log_message, extra={"extra": log_data})
-    elif level == "ERROR":
-        logger.error(log_message, extra={"extra": log_data})
-    elif level == "CRITICAL":
-        logger.critical(log_message, extra={"extra": log_data})
+    # Use tree_log for all admin recreatepanel command logging
+    tree_log(level.lower(), f"AdminRecreatePanel - {operation}", log_data)
 
 def is_admin(interaction: discord.Interaction) -> bool:
     """Check if the user is an admin with enhanced logging."""
@@ -53,7 +46,7 @@ def is_admin(interaction: discord.Interaction) -> bool:
         
         user_id = interaction.user.id
         
-        log_operation("check", "DEBUG", {
+        tree_log('debug', 'Checking admin permission', {
             "user_id": user_id,
             "user_name": interaction.user.name,
             "admin_ids": admin_ids,
@@ -61,7 +54,7 @@ def is_admin(interaction: discord.Interaction) -> bool:
         })
         
         if user_id in admin_ids:
-            log_operation("auth", "INFO", {
+            tree_log('info', 'Admin permission granted', {
                 "user_id": user_id,
                 "user_name": interaction.user.name,
                 "check_type": "admin_permission",
@@ -69,7 +62,7 @@ def is_admin(interaction: discord.Interaction) -> bool:
             })
             return True
         
-        log_operation("auth", "WARNING", {
+        tree_log('warning', 'Admin permission denied', {
             "user_id": user_id,
             "user_name": interaction.user.name,
             "check_type": "admin_permission",
@@ -78,18 +71,20 @@ def is_admin(interaction: discord.Interaction) -> bool:
         return False
         
     except Exception as e:
-        log_operation("check", "ERROR", {
+        import traceback
+        tree_log('error', 'Error during admin permission check', {
             "user_id": interaction.user.id if interaction.user else None,
             "check_type": "admin_permission",
-            "error_details": "admin_check_failed"
-        }, e)
+            "error_details": "admin_check_failed",
+            "traceback": traceback.format_exc()
+        })
         return False
 
 @app_commands.command(name="recreatepanel", description="Recreate the control panel (Admin only)")
 async def recreatepanel(interaction: discord.Interaction):
     """Recreate the control panel with enhanced logging and error handling."""
     try:
-        log_operation("command", "INFO", {
+        tree_log('info', 'Recreatepanel command invoked', {
             "user_id": interaction.user.id,
             "user_name": interaction.user.name,
             "command": "recreatepanel",
@@ -99,7 +94,7 @@ async def recreatepanel(interaction: discord.Interaction):
         
         # Check admin permissions
         if not is_admin(interaction):
-            log_operation("auth", "WARNING", {
+            tree_log('warning', 'Recreatepanel denied: not admin', {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
                 "command": "recreatepanel",
@@ -129,7 +124,7 @@ async def recreatepanel(interaction: discord.Interaction):
         )
         await interaction.response.send_message(embed=embed, ephemeral=True)
         
-        log_operation("recreate", "INFO", {
+        tree_log('info', 'Recreate initiated', {
             "user_id": interaction.user.id,
             "user_name": interaction.user.name,
             "command": "recreatepanel",
@@ -139,9 +134,10 @@ async def recreatepanel(interaction: discord.Interaction):
         # Import required modules
         try:
             from core.config.config import Config
-            log_operation("import", "DEBUG", {"component": "config_import", "status": "success"})
+            tree_log('debug', 'Config import success', {"component": "config_import", "status": "success"})
         except Exception as e:
-            log_operation("import", "ERROR", {"component": "config_import", "error_details": "import_failed"}, e)
+            import traceback
+            tree_log('error', 'Config import failed', {"component": "config_import", "error_details": "import_failed", "traceback": traceback.format_exc()})
             raise
         
         # Get the target channel
@@ -155,7 +151,7 @@ async def recreatepanel(interaction: discord.Interaction):
                 break
         
         if not channel:
-            log_operation("channel", "ERROR", {
+            tree_log('error', 'Panel channel not found', {
                 "error": "Panel channel not found",
                 "panel_channel_id": panel_channel_id
             })
@@ -163,7 +159,7 @@ async def recreatepanel(interaction: discord.Interaction):
         
         # Delete all messages in the channel (clear the whole chat)
         try:
-            log_operation("delete", "INFO", {
+            tree_log('info', 'Clearing channel', {
                 "action": "clearing_channel",
                 "channel_id": channel.id,
                 "channel_name": channel.name
@@ -179,14 +175,14 @@ async def recreatepanel(interaction: discord.Interaction):
                     # Skip messages we can't delete (e.g., too old)
                     continue
             
-            log_operation("delete", "INFO", {
+            tree_log('info', 'Channel cleared', {
                 "action": "channel_cleared",
                 "deleted_count": deleted_count,
                 "channel_id": channel.id
             })
             
         except Exception as e:
-            log_operation("delete", "WARNING", {
+            tree_log('warning', 'Failed to clear channel', {
                 "error": f"Failed to clear channel: {str(e)}",
                 "channel_id": channel.id
             })
@@ -196,15 +192,16 @@ async def recreatepanel(interaction: discord.Interaction):
         
         # Trigger panel recreation by calling the setup function
         try:
-            log_operation("create", "INFO", {"phase": "trigger_panel_recreation"})
+            tree_log('info', 'Triggering panel recreation', {"phase": "trigger_panel_recreation"})
             
             # Import and call the control panel setup
             from cogs.user_commands.control_panel import setup as control_panel_setup
             await control_panel_setup(interaction.client)
             
-            log_operation("create", "INFO", {"phase": "panel_recreation_triggered", "status": "success"})
+            tree_log('info', 'Panel recreation triggered', {"phase": "panel_recreation_triggered", "status": "success"})
         except Exception as e:
-            log_operation("create", "ERROR", {"phase": "panel_recreation", "error_details": "recreation_failed"}, e)
+            import traceback
+            tree_log('error', 'Panel recreation failed', {"phase": "panel_recreation", "error_details": "recreation_failed", "traceback": traceback.format_exc()})
             raise
         
         # Success embed
@@ -229,7 +226,7 @@ async def recreatepanel(interaction: discord.Interaction):
             inline=True
         )
         
-        log_operation("success", "INFO", {
+        tree_log('info', 'Recreate completed', {
             "user_id": interaction.user.id,
             "user_name": interaction.user.name,
             "command": "recreatepanel",
@@ -239,11 +236,13 @@ async def recreatepanel(interaction: discord.Interaction):
         await interaction.edit_original_response(embed=success_embed)
         
     except Exception as e:
-        log_operation("command", "ERROR", {
+        import traceback
+        tree_log('error', 'Error during recreatepanel command', {
             "user_id": interaction.user.id if interaction.user else None,
             "command": "recreatepanel",
-            "error_details": "recreatepanel_command_failed"
-        }, e)
+            "error_details": "recreatepanel_command_failed",
+            "traceback": traceback.format_exc()
+        })
         
         try:
             error_embed = discord.Embed(
@@ -281,21 +280,23 @@ async def recreatepanel_error(interaction: discord.Interaction, error: app_comma
 async def setup(bot):
     """Setup the recreatepanel command with enhanced logging."""
     try:
-        log_operation("init", "INFO", {
+        tree_log('info', 'Setting up recreatepanel command', {
             "component": "setup",
             "bot_name": bot.user.name if bot.user else "Unknown"
         })
         
         bot.tree.add_command(recreatepanel)
         
-        log_operation("init", "INFO", {
+        tree_log('info', 'Recreatepanel command added', {
             "component": "setup",
             "status": "recreatepanel_command_added"
         })
         
     except Exception as e:
-        log_operation("init", "ERROR", {
+        import traceback
+        tree_log('error', 'Error during recreatepanel command setup', {
             "component": "setup",
-            "error_details": "setup_failed"
-        }, e)
+            "error_details": "setup_failed",
+            "traceback": traceback.format_exc()
+        })
         raise 

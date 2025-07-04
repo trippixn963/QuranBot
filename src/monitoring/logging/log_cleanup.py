@@ -11,7 +11,7 @@ from pathlib import Path
 import logging
 from typing import List, Dict, Any
 import json
-from monitoring.logging.logger import log_tree_start, log_tree_item, log_tree_end
+from src.monitoring.logging.tree_log import tree_log
 
 class LogCleanupManager:
     """Manages log file cleanup, compression, and archiving."""
@@ -238,6 +238,15 @@ class LogCleanupManager:
             'stats': self.get_cleanup_stats()
         }
         
+        tree_log('tree', 'Log Cleanup Summary', {
+            'event': 'LOG_CLEANUP_SUMMARY',
+            'active_folders': results['stats']['active_folders'],
+            'archived_folders': results['stats']['archived_folders'],
+            'total_size_mb': results['stats']['total_size_mb'],
+            'compressed': results['compression']['compressed'],
+            'deleted': results['deletion']['deleted']
+        })
+        
         return results
 
 def setup_log_cleanup_scheduler():
@@ -265,17 +274,14 @@ def setup_log_cleanup_scheduler():
                 results = cleanup_manager.run_full_cleanup()
                 
                 # Log cleanup results
-                log_tree_start("Log Cleanup Summary")
-                log_tree_item(f"📦 Active Folders: {results['stats']['active_folders']}")
-                log_tree_item(f"🗄️ Archived: {results['stats']['archived_folders']}")
-                log_tree_item(f"💾 Total Size: {results['stats']['total_size_mb']}MB")
-                if results['compression']['compressed']:
-                    log_tree_item(f"🗜️ Compressed: {', '.join(results['compression']['compressed'])}")
-                if results['deletion']['deleted']:
-                    log_tree_item(f"🗑️ Deleted: {', '.join(results['deletion']['deleted'])}", is_last=True)
-                else:
-                    log_tree_item("No deletions", is_last=True)
-                log_tree_end()
+                tree_log('tree', 'Log Cleanup Summary', {
+                    'event': 'LOG_CLEANUP_SUMMARY',
+                    'active_folders': results['stats']['active_folders'],
+                    'archived_folders': results['stats']['archived_folders'],
+                    'total_size_mb': results['stats']['total_size_mb'],
+                    'compressed': results['compression']['compressed'],
+                    'deleted': results['deletion']['deleted']
+                })
                 
             except Exception as e:
                 logger = logging.getLogger('QuranBot')

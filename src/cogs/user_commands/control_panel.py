@@ -21,8 +21,8 @@ from discord import app_commands
 from core.config.config import Config as BotConfig
 
 # Updated imports for new structure
-from monitoring.logging.logger import logger, log_tree_start, log_tree_item, log_tree_end
-from monitoring.logging.log_helpers import log_async_function_call, log_function_call, log_operation, get_system_metrics, get_discord_context, get_bot_state
+from src.monitoring.logging.tree_log import tree_log
+from monitoring.logging.log_helpers import log_async_function_call, log_function_call, get_system_metrics, get_discord_context, get_bot_state
 from core.state.panel_manager import panel_manager
 from core.mapping.surah_mapper import get_surah_names, get_surah_emoji, get_surah_info
 from core.config.config import set_loop_user, set_shuffle_user
@@ -123,43 +123,21 @@ def get_bot_state(bot) -> Dict[str, Any]:
 
 def log_operation(operation: str, level: str = "INFO", extra: Optional[Dict[str, Any]] = None, error: Optional[Exception] = None):
     """Enhanced logging with operation tracking and structured data."""
-    level_emoji = {"DEBUG": "", "INFO": "", "WARNING": "", "ERROR": "", "CRITICAL": ""}
-    
     # Format timestamp with new format: MM-DD | HH:MM:SS AM/PM
     timestamp = datetime.now().strftime('%m-%d | %I:%M:%S %p')
-    
     log_data = {
         "operation": operation,
         "timestamp": timestamp,
         "component": "control_panel"
     }
-    
     if extra:
         log_data.update(extra)
-    
     if error:
         log_data["error"] = str(error)
         log_data["error_type"] = type(error).__name__
         log_data["traceback"] = traceback.format_exc()
         level = "ERROR"
-    
-    # Include user information in the main log message if available
-    user_info = ""
-    if extra and "user_name" in extra and "user_id" in extra:
-        user_info = f" | 👤 {extra['user_name']} ({extra['user_id']})"
-    
-    log_message = f"Control Panel - {operation.upper()}{user_info}"
-    
-    if level == "DEBUG":
-        logger.debug(log_message, extra={"extra": log_data})
-    elif level == "INFO":
-        logger.info(log_message, extra={"extra": log_data})
-    elif level == "WARNING":
-        logger.warning(log_message, extra={"extra": log_data})
-    elif level == "ERROR":
-        logger.error(log_message, extra={"extra": log_data})
-    elif level == "CRITICAL":
-        logger.critical(log_message, extra={"extra": log_data})
+    tree_log(level.lower(), f"ControlPanel - {operation}", log_data)
 
 def is_in_voice_channel(interaction: discord.Interaction) -> bool:
     """Check if the user is in the correct voice channel."""
@@ -199,27 +177,33 @@ def log_button_interaction(func):
         
         # Log button press start with all details
         current_time = datetime.now()
-        logger.info(f"BUTTON_INTERACTION_START | Button: {button_name} | Style: {button_style} | Disabled: {button_disabled} | URL: {button_url} | User: {user_context['user_name']} ({user_context['user_id']}) | Guild: {user_context['guild_name']} | Channel: {user_context['channel_name']} | ClientLatency: {user_context['client_latency']}ms | BotLatency: {bot_state_before['bot_latency']}ms | Memory: {system_metrics_before['memory_rss_mb']:.1f}MB | CPU: {system_metrics_before['cpu_percent']:.1f}% | Date: {current_time.strftime('%m/%d/%Y')} | Time: {current_time.strftime('%I:%M:%S %p')}")
-        
-        # Log detailed context
-        logger.debug(f"BUTTON_CONTEXT_DETAILED | UserContext: {user_context} | BotStateBefore: {bot_state_before} | SystemMetricsBefore: {system_metrics_before}")
+        tree_log('info', 'Button interaction start', {
+            'button_name': button_name,
+            'button_style': button_style,
+            'button_disabled': button_disabled,
+            'button_url': button_url,
+            **user_context,
+            'bot_state_before': bot_state_before,
+            'system_metrics_before': system_metrics_before,
+            'datetime': current_time.isoformat()
+        })
         
         try:
             # Log detailed user information
             user = interaction.user
             member = interaction.guild.get_member(user.id) if interaction.guild else None
             
-            log_tree_start("User Interaction Details")
-            log_tree_item(f"👤 User: {user.name}#{user.discriminator} (ID: {user.id})")
-            log_tree_item(f"🏠 Guild: {interaction.guild.name if interaction.guild else 'DM'} (ID: {interaction.guild.id if interaction.guild else 'DM'})")
-            log_tree_item(f"📅 Account Created: {user.created_at.strftime('%Y-%m-%d %H:%M:%S')}")
-            if member:
-                log_tree_item(f"🎭 Roles: {len(member.roles)} roles")
-                log_tree_item(f"📍 Joined Server: {member.joined_at.strftime('%Y-%m-%d %H:%M:%S') if member.joined_at else 'Unknown'}")
-            channel_name = interaction.channel.name if interaction.channel and hasattr(interaction.channel, 'name') else 'DM'
-            channel_id = interaction.channel.id if interaction.channel and hasattr(interaction.channel, 'id') else 'DM'
-            log_tree_item(f"💬 Channel: {channel_name} (ID: {channel_id})", is_last=True)
-            log_tree_end()
+            tree_log('debug', 'User interaction details', {
+                'user': f"{user.name}#{user.discriminator}",
+                'user_id': user.id,
+                'guild': interaction.guild.name if interaction.guild else 'DM',
+                'guild_id': interaction.guild.id if interaction.guild else 'DM',
+                'account_created': user.created_at.isoformat(),
+                'roles': [role.name for role in member.roles] if member else [],
+                'joined_at': member.joined_at.isoformat() if member and member.joined_at else None,
+                'channel': interaction.channel.name if interaction.channel and hasattr(interaction.channel, 'name') else 'DM',
+                'channel_id': interaction.channel.id if interaction.channel and hasattr(interaction.channel, 'id') else 'DM',
+            })
             
             # Log to Discord
             await self.bot.discord_logger.log_user_button_click(interaction, button_name)
@@ -245,14 +229,26 @@ def log_button_interaction(func):
             
             # Log successful button press completion with all metrics
             current_time = datetime.now()
-            logger.info(f"BUTTON_INTERACTION_SUCCESS | Button: {button_name} | ResponseTime: {response_time:.2f}ms | User: {user_context['user_name']} ({user_context['user_id']}) | Guild: {user_context['guild_name']} | Channel: {user_context['channel_name']} | StateChanges: {len(state_changes)} | MemoryChange: {system_metrics_after['memory_rss_mb'] - system_metrics_before['memory_rss_mb']:+.1f}MB | CPUChange: {system_metrics_after['cpu_percent'] - system_metrics_before['cpu_percent']:+.1f}% | Date: {current_time.strftime('%m/%d/%Y')} | Time: {current_time.strftime('%I:%M:%S %p')}")
-            
-            # Log detailed state changes if any
+            tree_log('info', 'Button interaction success', {
+                'button_name': button_name,
+                'response_time_ms': response_time,
+                **user_context,
+                'state_changes': state_changes,
+                'memory_change_mb': system_metrics_after['memory_rss_mb'] - system_metrics_before['memory_rss_mb'],
+                'cpu_change': system_metrics_after['cpu_percent'] - system_metrics_before['cpu_percent'],
+                'datetime': current_time.isoformat()
+            })
             if state_changes:
-                logger.debug(f"BUTTON_STATE_CHANGES | Button: {button_name} | Changes: {state_changes}")
-            
-            # Log performance metrics
-            logger.debug(f"BUTTON_PERFORMANCE_METRICS | Button: {button_name} | ResponseTime: {response_time:.2f}ms | MemoryBefore: {system_metrics_before['memory_rss_mb']:.1f}MB | MemoryAfter: {system_metrics_after['memory_rss_mb']:.1f}MB | CPUBefore: {system_metrics_before['cpu_percent']:.1f}% | CPUAfter: {system_metrics_after['cpu_percent']:.1f}% | GarbageCollections: {system_metrics_after['gc_collections'] - system_metrics_before['gc_collections']}")
+                tree_log('debug', 'Button state changes', {'button_name': button_name, 'changes': state_changes})
+            tree_log('debug', 'Button performance metrics', {
+                'button_name': button_name,
+                'response_time_ms': response_time,
+                'memory_before_mb': system_metrics_before['memory_rss_mb'],
+                'memory_after_mb': system_metrics_after['memory_rss_mb'],
+                'cpu_before': system_metrics_before['cpu_percent'],
+                'cpu_after': system_metrics_after['cpu_percent'],
+                'gc_collections_change': system_metrics_after['gc_collections'] - system_metrics_before['gc_collections']
+            })
             
             return result
             
@@ -266,10 +262,26 @@ def log_button_interaction(func):
             
             # Log button press error with all details
             current_time = datetime.now()
-            logger.error(f"BUTTON_INTERACTION_ERROR | Button: {button_name} | ResponseTime: {response_time:.2f}ms | User: {user_context['user_name']} ({user_context['user_id']}) | Guild: {user_context['guild_name']} | Channel: {user_context['channel_name']} | Error: {str(e)} | ErrorType: {type(e).__name__} | MemoryBefore: {system_metrics_before['memory_rss_mb']:.1f}MB | MemoryAfter: {system_metrics_after['memory_rss_mb']:.1f}MB | Date: {current_time.strftime('%m/%d/%Y')} | Time: {current_time.strftime('%I:%M:%S %p')}")
+            tree_log('error', 'Button interaction error', {
+                'button_name': button_name,
+                'response_time_ms': response_time,
+                **user_context,
+                'error': str(e),
+                'error_type': type(e).__name__,
+                'traceback': traceback.format_exc(),
+                'memory_before_mb': system_metrics_before['memory_rss_mb'],
+                'memory_after_mb': system_metrics_after['memory_rss_mb'],
+                'datetime': current_time.isoformat()
+            })
             
             # Log full error details
-            logger.error(f"BUTTON_ERROR_DETAILED | Button: {button_name} | FullTraceback: {traceback.format_exc()} | UserContext: {user_context} | BotStateBefore: {bot_state_before} | BotStateAfter: {bot_state_after}")
+            tree_log('error', 'Button error detailed', {
+                'button_name': button_name,
+                'full_traceback': traceback.format_exc(),
+                **user_context,
+                'bot_state_before': bot_state_before,
+                'bot_state_after': bot_state_after
+            })
             
             raise
     
@@ -293,27 +305,34 @@ def log_select_interaction(func):
         
         # Log select interaction start with all details
         current_time = datetime.now()
-        logger.info(f"SELECT_INTERACTION_START | Select: {select_name} | SelectedValue: {selected_value} | SelectedValues: {selected_values} | MinValues: {min_values} | MaxValues: {max_values} | User: {user_context['user_name']} ({user_context['user_id']}) | Guild: {user_context['guild_name']} | Channel: {user_context['channel_name']} | ClientLatency: {user_context['client_latency']}ms | BotLatency: {bot_state_before['bot_latency']}ms | Memory: {system_metrics_before['memory_rss_mb']:.1f}MB | CPU: {system_metrics_before['cpu_percent']:.1f}% | Date: {current_time.strftime('%m/%d/%Y')} | Time: {current_time.strftime('%I:%M:%S %p')}")
-        
-        # Log detailed context
-        logger.debug(f"SELECT_CONTEXT_DETAILED | UserContext: {user_context} | BotStateBefore: {bot_state_before} | SystemMetricsBefore: {system_metrics_before}")
+        tree_log('info', 'Select interaction start', {
+            'select_name': select_name,
+            'selected_value': selected_value,
+            'selected_values': selected_values,
+            'min_values': min_values,
+            'max_values': max_values,
+            **user_context,
+            'bot_state_before': bot_state_before,
+            'system_metrics_before': system_metrics_before,
+            'datetime': current_time.isoformat()
+        })
         
         try:
             # Log detailed user information
             user = interaction.user
             member = interaction.guild.get_member(user.id) if interaction.guild else None
             
-            log_tree_start("User Interaction Details")
-            log_tree_item(f"👤 User: {user.name}#{user.discriminator} (ID: {user.id})")
-            log_tree_item(f"🏠 Guild: {interaction.guild.name if interaction.guild else 'DM'} (ID: {interaction.guild.id if interaction.guild else 'DM'})")
-            log_tree_item(f"📅 Account Created: {user.created_at.strftime('%Y-%m-%d %H:%M:%S')}")
-            if member:
-                log_tree_item(f"🎭 Roles: {len(member.roles)} roles")
-                log_tree_item(f"📍 Joined Server: {member.joined_at.strftime('%Y-%m-%d %H:%M:%S') if member.joined_at else 'Unknown'}")
-            channel_name = interaction.channel.name if interaction.channel and hasattr(interaction.channel, 'name') else 'DM'
-            channel_id = interaction.channel.id if interaction.channel and hasattr(interaction.channel, 'id') else 'DM'
-            log_tree_item(f"💬 Channel: {channel_name} (ID: {channel_id})", is_last=True)
-            log_tree_end()
+            tree_log('debug', 'User interaction details', {
+                'user': f"{user.name}#{user.discriminator}",
+                'user_id': user.id,
+                'guild': interaction.guild.name if interaction.guild else 'DM',
+                'guild_id': interaction.guild.id if interaction.guild else 'DM',
+                'account_created': user.created_at.isoformat(),
+                'roles': [role.name for role in member.roles] if member else [],
+                'joined_at': member.joined_at.isoformat() if member and member.joined_at else None,
+                'channel': interaction.channel.name if interaction.channel and hasattr(interaction.channel, 'name') else 'DM',
+                'channel_id': interaction.channel.id if interaction.channel and hasattr(interaction.channel, 'id') else 'DM',
+            })
             
             # Log to Discord
             await self.bot.discord_logger.log_user_select_interaction(interaction, select_name, selected_value)
@@ -339,14 +358,27 @@ def log_select_interaction(func):
             
             # Log successful select interaction completion with all metrics
             current_time = datetime.now()
-            logger.info(f"SELECT_INTERACTION_SUCCESS | Select: {select_name} | SelectedValue: {selected_value} | ResponseTime: {response_time:.2f}ms | User: {user_context['user_name']} ({user_context['user_id']}) | Guild: {user_context['guild_name']} | Channel: {user_context['channel_name']} | StateChanges: {len(state_changes)} | MemoryChange: {system_metrics_after['memory_rss_mb'] - system_metrics_before['memory_rss_mb']:+.1f}MB | CPUChange: {system_metrics_after['cpu_percent'] - system_metrics_before['cpu_percent']:+.1f}% | Date: {current_time.strftime('%m/%d/%Y')} | Time: {current_time.strftime('%I:%M:%S %p')}")
-            
-            # Log detailed state changes if any
+            tree_log('info', 'Select interaction success', {
+                'select_name': select_name,
+                'selected_value': selected_value,
+                'response_time_ms': response_time,
+                **user_context,
+                'state_changes': state_changes,
+                'memory_change_mb': system_metrics_after['memory_rss_mb'] - system_metrics_before['memory_rss_mb'],
+                'cpu_change': system_metrics_after['cpu_percent'] - system_metrics_before['cpu_percent'],
+                'datetime': current_time.isoformat()
+            })
             if state_changes:
-                logger.debug(f"SELECT_STATE_CHANGES | Select: {select_name} | Changes: {state_changes}")
-            
-            # Log performance metrics
-            logger.debug(f"SELECT_PERFORMANCE_METRICS | Select: {select_name} | ResponseTime: {response_time:.2f}ms | MemoryBefore: {system_metrics_before['memory_rss_mb']:.1f}MB | MemoryAfter: {system_metrics_after['memory_rss_mb']:.1f}MB | CPUBefore: {system_metrics_before['cpu_percent']:.1f}% | CPUAfter: {system_metrics_after['cpu_percent']:.1f}% | GarbageCollections: {system_metrics_after['gc_collections'] - system_metrics_before['gc_collections']}")
+                tree_log('debug', 'Select state changes', {'select_name': select_name, 'changes': state_changes})
+            tree_log('debug', 'Select performance metrics', {
+                'select_name': select_name,
+                'response_time_ms': response_time,
+                'memory_before_mb': system_metrics_before['memory_rss_mb'],
+                'memory_after_mb': system_metrics_after['memory_rss_mb'],
+                'cpu_before': system_metrics_before['cpu_percent'],
+                'cpu_after': system_metrics_after['cpu_percent'],
+                'gc_collections_change': system_metrics_after['gc_collections'] - system_metrics_before['gc_collections']
+            })
             
             return result
             
@@ -360,10 +392,27 @@ def log_select_interaction(func):
             
             # Log select interaction error with all details
             current_time = datetime.now()
-            logger.error(f"SELECT_INTERACTION_ERROR | Select: {select_name} | SelectedValue: {selected_value} | ResponseTime: {response_time:.2f}ms | User: {user_context['user_name']} ({user_context['user_id']}) | Guild: {user_context['guild_name']} | Channel: {user_context['channel_name']} | Error: {str(e)} | ErrorType: {type(e).__name__} | MemoryBefore: {system_metrics_before['memory_rss_mb']:.1f}MB | MemoryAfter: {system_metrics_after['memory_rss_mb']:.1f}MB | Date: {current_time.strftime('%m/%d/%Y')} | Time: {current_time.strftime('%I:%M:%S %p')}")
+            tree_log('error', 'Select interaction error', {
+                'select_name': select_name,
+                'selected_value': selected_value,
+                'response_time_ms': response_time,
+                **user_context,
+                'error': str(e),
+                'error_type': type(e).__name__,
+                'traceback': traceback.format_exc(),
+                'memory_before_mb': system_metrics_before['memory_rss_mb'],
+                'memory_after_mb': system_metrics_after['memory_rss_mb'],
+                'datetime': current_time.isoformat()
+            })
             
             # Log full error details
-            logger.error(f"SELECT_ERROR_DETAILED | Select: {select_name} | FullTraceback: {traceback.format_exc()} | UserContext: {user_context} | BotStateBefore: {bot_state_before} | BotStateAfter: {bot_state_after}")
+            tree_log('error', 'Select error detailed', {
+                'select_name': select_name,
+                'full_traceback': traceback.format_exc(),
+                **user_context,
+                'bot_state_before': bot_state_before,
+                'bot_state_after': bot_state_after
+            })
             
             raise
     
@@ -963,12 +1012,12 @@ class ControlPanelView(View):
         return arabic_names.get(surah_number, "")
 
     async def update_panel_status(self):
-        logger.debug("[DEBUG] Entered update_panel_status")
+        tree_log('debug', 'Entered update_panel_status', {})
         if not self.panel_message:
-            logger.debug("[DEBUG] panel_message is not set, exiting update_panel_status")
+            tree_log('debug', 'panel_message is not set, exiting update_panel_status', {})
             return
         try:
-            logger.debug("[DEBUG] Gathering current state for panel status")
+            tree_log('debug', 'Gathering current state for panel status', {})
             current_reciter = self.bot.current_reciter or "*Not selected*"
             current_surah_index = self.bot.state_manager.get_current_song_index()
             current_surah_name = self.bot.state_manager.get_current_song_name()
@@ -976,7 +1025,14 @@ class ControlPanelView(View):
             loop_enabled = getattr(self.bot, 'loop_enabled', False)
             shuffle_enabled = getattr(self.bot, 'shuffle_enabled', False)
 
-            logger.debug(f"[DEBUG] State: reciter={current_reciter}, surah_index={current_surah_index}, surah_name={current_surah_name}, is_playing={is_playing}, loop={loop_enabled}, shuffle={shuffle_enabled}")
+            tree_log('debug', 'Panel state', {
+                'reciter': current_reciter,
+                'surah_index': current_surah_index,
+                'surah_name': current_surah_name,
+                'is_playing': is_playing,
+                'loop': loop_enabled,
+                'shuffle': shuffle_enabled
+            })
 
             surah_display = "*Not playing*"
             surah_emoji = ""
@@ -992,7 +1048,7 @@ class ControlPanelView(View):
             if current_surah_name and hasattr(self.bot, 'get_audio_duration'):
                 import os
                 audio_path = os.path.join(BotConfig.AUDIO_FOLDER, self.bot.current_reciter, current_surah_name)
-                logger.debug(f"[DEBUG] Checking audio path: {audio_path}")
+                tree_log('debug', 'Checking audio path', {'audio_path': audio_path})
                 if os.path.exists(audio_path):
                     total_duration = await self.bot.get_audio_duration(audio_path)
                     current_time = 0
@@ -1053,7 +1109,7 @@ class ControlPanelView(View):
                         last_activity_line = f"\n**Last Activity:** {last_action} by {last_user_mention}"
                     status_block += last_activity_line
 
-            logger.debug("[DEBUG] Creating embed for panel message")
+            tree_log('debug', 'Creating embed for panel message', {})
             embed = discord.Embed(
                 title="🕌 QuranBot Control Panel",
                 color=discord.Color.green()
@@ -1062,29 +1118,22 @@ class ControlPanelView(View):
                 embed.set_thumbnail(url=self.bot.user.avatar.url)
             embed.add_field(name="\u200b", value=status_block, inline=False)
 
-            logger.debug("[DEBUG] Editing panel message with new embed")
+            tree_log('debug', 'Editing panel message with new embed', {})
             await self.panel_message.edit(embed=embed)
-            logger.debug("[DEBUG] Successfully updated panel message")
+            tree_log('debug', 'Successfully updated panel message', {})
         except discord.errors.HTTPException as e:
-            logger.error(f"[DEBUG] HTTPException in update_panel_status: {e}")
-            if e.status in [500, 502, 503, 504, 429]:
-                log_operation("update_panel", "WARNING", {
-                    "error": f"Discord server error {e.status}: {e.text}",
-                    "retry_later": True
-                })
+            tree_log('error', 'HTTPException in update_panel_status', {'error': str(e), 'status': getattr(e, 'status', None), 'text': getattr(e, 'text', None)})
+            if hasattr(e, 'status') and e.status in [500, 502, 503, 504, 429]:
+                tree_log('warning', 'Discord server error in update_panel_status', {'error': f'Discord server error {e.status}: {getattr(e, "text", None)}', 'retry_later': True})
             else:
-                log_operation("update_panel", "ERROR", {"error": f"HTTP error {e.status}: {e.text}"})
+                tree_log('error', 'HTTP error in update_panel_status', {'error': f'HTTP error {getattr(e, "status", None)}: {getattr(e, "text", None)}'})
         except (aiohttp.ClientError, aiohttp.ServerDisconnectedError, ConnectionError) as e:
-            logger.error(f"[DEBUG] Connection error in update_panel_status: {e}")
-            log_operation("update_panel", "WARNING", {
-                "error": f"Connection error: {str(e)}",
-                "retry_later": True
-            })
+            tree_log('error', 'Connection error in update_panel_status', {'error': str(e), 'retry_later': True})
         except Exception as e:
             import traceback
-            logger.error(f"[DEBUG] Exception in update_panel_status: {e}\n{traceback.format_exc()}")
-            log_operation("update_panel", "ERROR", {"error": str(e), "traceback": traceback.format_exc()})
-        logger.debug("[DEBUG] Exiting update_panel_status")
+            tree_log('error', 'Exception in update_panel_status', {'error': str(e), 'traceback': traceback.format_exc()})
+            tree_log('debug', 'Exiting update_panel_status', {})
+        tree_log('debug', 'Exiting update_panel_status', {})
 
     @log_button_interaction
     @discord.ui.button(label="◀️ Previous Page", style=discord.ButtonStyle.secondary, custom_id="surah_prev_page", row=2)

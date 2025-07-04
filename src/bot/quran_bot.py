@@ -16,26 +16,19 @@ import itertools
 import signal
 import logging
 import traceback
+import json
 
 # Add src to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.config.config import Config
-from monitoring.logging.logger import (
-    logger, log_bot_startup, log_audio_playback,
-    log_connection_attempt, log_connection_success, log_connection_failure,
-    log_health_report, log_state_save, log_state_load, log_performance,
-    log_error, log_discord_event, log_ffmpeg_operation, log_security_event,
-    log_retry_operation, log_shutdown, log_disconnection, track_performance
-)
+from monitoring.logging.tree_log import tree_log
 from monitoring.health.health import HealthMonitor
 from monitoring.health.health_reporter import HealthReporter
 from monitoring.logging.discord_logger import DiscordEmbedLogger
 from core.state.state_manager import StateManager
 from core.mapping.surah_mapper import get_surah_from_filename, get_surah_emoji, get_surah_display_name
 from monitoring.logging.log_helpers import log_async_function_call, log_function_call, log_operation, get_system_metrics, get_discord_context, get_bot_state
-
-logger = logging.getLogger(__name__)
 
 class QuranBot(discord.Client):
     """Professional Discord bot for 24/7 Quran streaming."""
@@ -102,14 +95,16 @@ class QuranBot(discord.Client):
             # Always set Saad Al Ghamdi as default reciter on startup
             self.set_current_reciter("Saad Al Ghamdi")
         except Exception as e:
-            logger.warning(f"Failed to set default reciter: {e}")
+            tree_log('warning', f"Failed to set default reciter: {e}", {'traceback': traceback.format_exc()})
         
         self._voice_clients = {}
+        
+        tree_log('info', 'QuranBot initialized', {'event': 'INIT', 'time': str(self.start_time)})
         
     async def setup_hook(self):
         """Setup hook for bot initialization."""
         t0 = time.time()
-        logger.info("Setting up Quran Bot...", extra={'event': 'STARTUP'})
+        tree_log('info', 'Setting up Quran Bot...', {'event': 'STARTUP'})
         
         # Run initial health checks
         try:
@@ -127,9 +122,9 @@ class QuranBot(discord.Client):
             self.health_checks['failed'] = [name for name, passed in checks if not passed]
             self.health_checks['status'] = 'OK' if not self.health_checks['failed'] else 'Issues Found'
             
-            logger.info(f"Health checks completed: {self.health_checks['status']}")
+            tree_log('info', 'Health checks completed', {'status': self.health_checks['status'], 'failed': self.health_checks['failed']})
         except Exception as e:
-            logger.error(f"Failed to run health checks: {e}")
+            tree_log('error', f'Failed to run health checks: {e}', {'traceback': traceback.format_exc()})
             self.health_checks['status'] = 'Error'
             self.health_checks['failed'].append('Health Check System')
         
@@ -147,16 +142,16 @@ class QuranBot(discord.Client):
         for command in commands_to_load:
             try:
                 await self.load_extension(command)
-                logger.info(f"Command loaded successfully: {command}", extra={'event': 'COMMAND_LOAD'})
+                tree_log('info', 'Command loaded successfully', {'event': 'COMMAND_LOAD', 'command': command})
             except Exception as e:
-                logger.error(f"Failed to load command {command}: {e}", extra={'event': 'COMMAND_LOAD_ERROR'})
+                tree_log('error', f'Failed to load command {command}: {e}', {'event': 'COMMAND_LOAD_ERROR', 'traceback': traceback.format_exc()})
         
         # Sync command tree
         try:
             await self.tree.sync()
-            logger.info("Command tree synced successfully", extra={'event': 'COMMAND_SYNC'})
+            tree_log('info', 'Command tree synced successfully', {'event': 'COMMAND_SYNC'})
         except Exception as e:
-            logger.error(f"Failed to sync command tree: {e}", extra={'event': 'COMMAND_SYNC_ERROR'})
+            tree_log('error', f'Failed to sync command tree: {e}', {'event': 'COMMAND_SYNC_ERROR', 'traceback': traceback.format_exc()})
         
         t1 = time.time()
         log_performance("setup_hook", t1-t0)
@@ -168,17 +163,18 @@ class QuranBot(discord.Client):
             module = importlib.import_module(extension_name)
             if hasattr(module, 'setup'):
                 await module.setup(self)
-                logger.info(f"Loaded extension: {extension_name}", extra={'event': 'EXTENSION_LOAD'})
+                tree_log('info', 'Loaded extension', {'event': 'EXTENSION_LOAD', 'extension': extension_name})
             else:
-                logger.error(f"Extension {extension_name} has no setup function", extra={'event': 'EXTENSION_ERROR'})
+                tree_log('error', f'Extension {extension_name} has no setup function', {'event': 'EXTENSION_ERROR'})
         except Exception as e:
-            logger.error(f"Failed to load extension {extension_name}: {e}", extra={'event': 'EXTENSION_ERROR'})
+            tree_log('error', f'Failed to load extension {extension_name}: {e}', {'event': 'EXTENSION_ERROR', 'traceback': traceback.format_exc()})
             raise
         
     @log_async_function_call
     async def on_ready(self):
         """Called when bot is ready."""
         t0 = time.time()
+        tree_log('info', 'on_ready called', {'event': 'ON_READY', 'guilds': len(self.guilds)})
         if self.user:
             log_bot_startup(self.user.name, self.user.id)
             log_discord_event("ready", {"guilds": len(self.guilds)})
@@ -198,47 +194,62 @@ class QuranBot(discord.Client):
             await self.set_presence()
             
             # Start presence cycling
-            self.presence_task = asyncio.create_task(self.cycle_presence())
+            try:
+                self.presence_task = asyncio.create_task(self.cycle_presence())
+            except Exception as e:
+                tree_log('error', f'Failed to start presence cycling: {e}', {'traceback': traceback.format_exc()})
             
             # Initialize health monitoring
-            self.health_reporter = HealthReporter(self, self.health_monitor, Config.LOGS_CHANNEL_ID)
-            await self.health_reporter.start()
+            try:
+                self.health_reporter = HealthReporter(self, self.health_monitor, Config.LOGS_CHANNEL_ID)
+                await self.health_reporter.start()
+            except Exception as e:
+                tree_log('error', f'Failed to start health reporter: {e}', {'traceback': traceback.format_exc()})
             
             # Initialize Discord logger sessions for users already in VC
-            await self.discord_logger.initialize_existing_users()
+            try:
+                await self.discord_logger.initialize_existing_users()
+            except Exception as e:
+                tree_log('error', f'Failed to initialize discord logger sessions: {e}', {'traceback': traceback.format_exc()})
             
             # Initialize state management
-            self.state_manager.increment_bot_start_count()
-            start_count = self.state_manager.get_bot_start_count()
-            log_state_load("bot_start_count", {"start_count": start_count})
+            try:
+                self.state_manager.increment_bot_start_count()
+                start_count = self.state_manager.get_bot_start_count()
+                log_state_load("bot_start_count", {"start_count": start_count})
+            except Exception as e:
+                tree_log('error', f'Failed to increment bot start count: {e}', {'traceback': traceback.format_exc()})
             
             # Clear last change on restart (always starts fresh)
-            self.state_manager.clear_last_change()
+            try:
+                self.state_manager.clear_last_change()
+            except Exception as e:
+                tree_log('error', f'Failed to clear last change: {e}', {'traceback': traceback.format_exc()})
             
             # Find and join target voice channel
             t2 = time.time()
-            logger.info(f"Auto voice connect setting: {Config.AUTO_VOICE_CONNECT}", 
-                       extra={'event': 'CONFIG_CHECK', 'auto_voice_connect': Config.AUTO_VOICE_CONNECT})
+            tree_log('info', 'Finding and joining target voice channel', {'event': 'FIND_AND_JOIN', 'time': t2})
             await self.find_and_join_channel()
             if Config.AUTO_VOICE_CONNECT:
-                logger.info("Bot ready - voice connection enabled", extra={'event': 'READY'})
+                tree_log('info', 'Bot ready - voice connection enabled', {'event': 'READY'})
             else:
-                logger.info("Bot ready - voice connection disabled", extra={'event': 'READY'})
+                tree_log('info', 'Bot ready - voice connection disabled', {'event': 'READY'})
             t3 = time.time()
             log_performance("find_and_join_channel", t3-t2)
             
             # Log health status
-            logger.info("Bot health monitoring initialized", extra={'event': 'HEALTH'})
+            tree_log('info', 'Bot health monitoring initialized', {'event': 'HEALTH'})
             t4 = time.time()
             log_performance("state_manager_init", t4-t3)
             
-            logger.info("Health reporting started", extra={'event': 'HEALTH'})
+            tree_log('info', 'Health reporting started', {'event': 'HEALTH'})
             t5 = time.time()
             log_performance("health_reporter_start", t5-t4)
         
     async def find_and_join_channel(self):
         """Find the target channel and join it."""
         t0 = time.time()
+        tree_log('info', 'Searching for target channel', {'event': 'SEARCH_CHANNEL'})
         target_channel = None
         
         # Search through all guilds for the target channel
@@ -247,8 +258,7 @@ class QuranBot(discord.Client):
             if channel and isinstance(channel, discord.VoiceChannel):
                 target_channel = channel
                 Config.TARGET_GUILD_ID = guild.id
-                logger.info(f"Found target channel: {channel.name} in guild: {guild.name}", 
-                           extra={'event': 'channel_found', 'channel': channel.name, 'guild': guild.name})
+                tree_log('info', 'Found target channel', {'channel': channel.name, 'guild': guild.name})
                 break
         
         t1 = time.time()
@@ -256,108 +266,102 @@ class QuranBot(discord.Client):
         
         if target_channel:
             if Config.AUTO_VOICE_CONNECT:
+                tree_log('info', 'Auto voice connect enabled, starting stream', {'event': 'AUTO_VOICE_CONNECT'})
                 await self.start_stream(target_channel)
             else:
-                logger.info("Automatic voice connection disabled - bot will start without voice connection", 
-                           extra={'event': 'VOICE_DISABLED'})
+                tree_log('info', 'Auto voice connect disabled', {'event': 'VOICE_DISABLED'})
         else:
-            log_error(Exception("Channel not found"), "find_and_join_channel", 
-                     additional_data={"channel_id": Config.TARGET_CHANNEL_ID})
+            tree_log('error', 'Target channel not found', {'event': 'CHANNEL_NOT_FOUND', 'channel_id': Config.TARGET_CHANNEL_ID})
             logger.info("Make sure the bot has access to the target channel")
         t2 = time.time()
         log_performance("find_and_join_channel_total", t2-t0)
         
     async def on_voice_state_update(self, member, before, after):
         """Handle voice state updates for reconnection logic."""
-        if self.user and member.id == self.user.id:
-            if before.channel and not after.channel:
-                # Bot was disconnected
-                log_disconnection(before.channel.name, "Disconnected from voice channel")
-                await self.discord_logger.log_bot_disconnected(before.channel.name, "Disconnected from voice channel")
-                # Properly reset streaming state on disconnection
-                self._was_streaming_before_disconnect = self.is_streaming
-                self.is_streaming = False
-                self.health_monitor.set_streaming_status(False)
-                
-                # Check if we've had too many failures
-                self.connection_failures += 1
-                if self.connection_failures >= self.max_connection_failures:
-                    logger.error(f"Too many connection failures ({self.connection_failures}). Stopping reconnection attempts.", 
-                               extra={'event': 'CONNECTION_FAILURE_LIMIT'})
+        try:
+            tree_log('debug', 'on_voice_state_update triggered', {'member': getattr(member, 'id', None), 'before': str(before.channel), 'after': str(after.channel)})
+            if self.user and member.id == self.user.id:
+                if before.channel and not after.channel:
+                    # Bot was disconnected
+                    log_disconnection(before.channel.name, "Disconnected from voice channel")
+                    await self.discord_logger.log_bot_disconnected(before.channel.name, "Disconnected from voice channel")
+                    # Properly reset streaming state on disconnection
+                    self._was_streaming_before_disconnect = self.is_streaming
                     self.is_streaming = False
-                    return
-                
-                # Wait much longer before reconnecting to break the reconnection loop
-                wait_time = min(60 * self.connection_failures, 300)  # Progressive delay up to 5 minutes
-                logger.info(f"Waiting {wait_time} seconds before reconnection attempt {self.connection_failures}/{self.max_connection_failures}...", 
-                           extra={'event': 'RECONNECT_WAIT', 'wait_time': wait_time, 'failures': self.connection_failures})
-                await asyncio.sleep(wait_time)
-                
-                if self.is_streaming:
-                    logger.info("Attempting to reconnect after disconnection...", 
-                               extra={'event': 'RECONNECT_ATTEMPT'})
-                    await self.find_and_join_channel()
-            elif not before.channel and after.channel:
-                # Bot connected to voice
-                log_connection_success(after.channel.name, after.channel.guild.name)
-                await self.discord_logger.log_bot_connected(after.channel.name, after.channel.guild.name)
-                # Reset connection failure counter on successful connection
-                if self.connection_failures > 0:
-                    logger.info(f"Connection successful! Reset failure counter from {self.connection_failures} to 0.", 
-                               extra={'event': 'CONNECTION_SUCCESS'})
-                    self.connection_failures = 0
-                # Resume streaming if it was previously active (with proper delay and checks)
-                # Check if we were streaming before the last disconnection
-                if hasattr(self, '_was_streaming_before_disconnect') and self._was_streaming_before_disconnect:
-                    logger.info("Bot was streaming before disconnect, scheduling resume...", 
-                               extra={'event': 'STREAM_RESUME_SCHEDULED'})
+                    self.health_monitor.set_streaming_status(False)
                     
-                    # Schedule delayed resume to ensure voice connection is stable
-                    async def delayed_resume():
-                        await asyncio.sleep(3)  # Wait 3 seconds for connection to stabilize
-                        guild_id = after.channel.guild.id
-                        if (guild_id in self._voice_clients and 
-                            self._voice_clients[guild_id].is_connected() and
-                            not self.is_streaming):  # Only resume if not already streaming
-                            logger.info("Resuming streaming after stable reconnection...", 
-                                       extra={'event': 'STREAM_RESUME_EXECUTE'})
-                            self._was_streaming_before_disconnect = False  # Clear flag
-                            await self.start_stream(after.channel)
-                        else:
-                            logger.warning("Cannot resume streaming - connection not stable or already streaming", 
-                                         extra={'event': 'STREAM_RESUME_FAILED'})
-                            self._was_streaming_before_disconnect = False  # Clear flag anyway
+                    # Check if we've had too many failures
+                    self.connection_failures += 1
+                    if self.connection_failures >= self.max_connection_failures:
+                        tree_log('error', f"Too many connection failures ({self.connection_failures}). Stopping reconnection attempts.", {'event': 'CONNECTION_FAILURE_LIMIT'})
+                        self.is_streaming = False
+                        return
                     
-                    asyncio.create_task(delayed_resume())
-                else:
-                    logger.info("Voice connected (no auto-resume needed)", 
-                               extra={'event': 'VOICE_CONNECTED'})
-            elif before.channel and after.channel and before.channel != after.channel:
-                # Bot moved to different channel
-                log_connection_success(after.channel.name, after.channel.guild.name)
+                    # Wait much longer before reconnecting to break the reconnection loop
+                    wait_time = min(60 * self.connection_failures, 300)  # Progressive delay up to 5 minutes
+                    tree_log('info', f"Waiting {wait_time} seconds before reconnection attempt {self.connection_failures}/{self.max_connection_failures}...", {'event': 'RECONNECT_WAIT', 'wait_time': wait_time, 'failures': self.connection_failures})
+                    await asyncio.sleep(wait_time)
+                    
+                    if self.is_streaming:
+                        tree_log('info', "Attempting to reconnect after disconnection...", {'event': 'RECONNECT_ATTEMPT'})
+                        await self.find_and_join_channel()
+                elif not before.channel and after.channel:
+                    # Bot connected to voice
+                    log_connection_success(after.channel.name, after.channel.guild.name)
+                    await self.discord_logger.log_bot_connected(after.channel.name, after.channel.guild.name)
+                    # Reset connection failure counter on successful connection
+                    if self.connection_failures > 0:
+                        tree_log('info', f"Connection successful! Reset failure counter from {self.connection_failures} to 0.", {'event': 'CONNECTION_SUCCESS'})
+                        self.connection_failures = 0
+                    # Resume streaming if it was previously active (with proper delay and checks)
+                    # Check if we were streaming before the last disconnection
+                    if hasattr(self, '_was_streaming_before_disconnect') and self._was_streaming_before_disconnect:
+                        tree_log('info', "Bot was streaming before disconnect, scheduling resume...", {'event': 'STREAM_RESUME_SCHEDULED'})
+                        
+                        # Schedule delayed resume to ensure voice connection is stable
+                        async def delayed_resume():
+                            await asyncio.sleep(3)  # Wait 3 seconds for connection to stabilize
+                            guild_id = after.channel.guild.id
+                            if (guild_id in self._voice_clients and 
+                                self._voice_clients[guild_id].is_connected() and
+                                not self.is_streaming):  # Only resume if not already streaming
+                                tree_log('info', "Resuming streaming after stable reconnection...", {'event': 'STREAM_RESUME_EXECUTE'})
+                                self._was_streaming_before_disconnect = False  # Clear flag
+                                await self.start_stream(after.channel)
+                            else:
+                                tree_log('warning', "Cannot resume streaming - connection not stable or already streaming", {'event': 'STREAM_RESUME_FAILED'})
+                                self._was_streaming_before_disconnect = False  # Clear flag anyway
+                        
+                        asyncio.create_task(delayed_resume())
+                    else:
+                        tree_log('info', "Voice connected (no auto-resume needed)", {'event': 'VOICE_CONNECTED'})
+                elif before.channel and after.channel and before.channel != after.channel:
+                    # Bot moved to different channel
+                    log_connection_success(after.channel.name, after.channel.guild.name)
                 
-        # Handle user voice state changes (not the bot) - only track target Quran VC
-        elif member != self.user:
-            target_vc_id = self.discord_logger.target_vc_id
-            
-            # User joined the target Quran VC from nowhere or different channel
-            if after.channel and after.channel.id == target_vc_id and (not before.channel or before.channel.id != target_vc_id):
-                await self.discord_logger.log_user_joined_vc(member, after.channel.name)
-            
-            # User left the target Quran VC to nowhere or different channel  
-            elif before.channel and before.channel.id == target_vc_id and (not after.channel or after.channel.id != target_vc_id):
-                await self.discord_logger.log_user_left_vc(member, before.channel.name)
+            # Handle user voice state changes (not the bot) - only track target Quran VC
+            elif member != self.user:
+                target_vc_id = self.discord_logger.target_vc_id
+                
+                # User joined the target Quran VC from nowhere or different channel
+                if after.channel and after.channel.id == target_vc_id and (not before.channel or before.channel.id != target_vc_id):
+                    await self.discord_logger.log_user_joined_vc(member, after.channel.name)
+                
+                # User left the target Quran VC to nowhere or different channel  
+                elif before.channel and before.channel.id == target_vc_id and (not after.channel or after.channel.id != target_vc_id):
+                    await self.discord_logger.log_user_left_vc(member, before.channel.name)
+        except Exception as e:
+            tree_log('error', f'Error in on_voice_state_update: {e}', {'traceback': traceback.format_exc()})
 
     async def on_disconnect(self):
         """Handle bot disconnection."""
-        log_disconnection("Discord", "Bot disconnected from Discord")
+        tree_log('warning', 'Bot disconnected from Discord', {'event': 'DISCONNECT'})
         self.is_streaming = False
         self.health_monitor.set_streaming_status(False)
 
     async def handle_voice_session_expired(self, guild_id):
         """Handle voice session expired (4006) errors."""
-        logger.warning(f"Voice session expired (4006) for guild {guild_id}. Waiting before reconnection...", 
-                      extra={'event': 'VOICE_ERROR', 'error_code': '4006'})
+        tree_log('warning', 'Voice session expired, waiting before reconnect', {'event': 'VOICE_SESSION_EXPIRED', 'guild_id': guild_id})
         
         # Remove from voice clients
         if guild_id in self._voice_clients:
@@ -368,8 +372,7 @@ class QuranBot(discord.Client):
         
         # Try to reconnect if still streaming
         if self.is_streaming:
-            logger.info("Attempting reconnection after session expired...", 
-                       extra={'event': 'SESSION_RECONNECT'})
+            tree_log('info', "Attempting reconnection after session expired...", {'event': 'SESSION_RECONNECT'})
             await self.find_and_join_channel()
 
     async def handle_voice_error(self, voice_client, error):
@@ -378,8 +381,7 @@ class QuranBot(discord.Client):
         error_msg = str(error)
         
         if "4006" in error_msg or "session expired" in error_msg.lower():
-            logger.warning(f"Voice session expired (4006) for guild {guild_id}. Waiting before reconnection...", 
-                          extra={'event': 'VOICE_ERROR', 'error_code': '4006'})
+            tree_log('warning', f"Voice session expired (4006) for guild {guild_id}. Waiting before reconnection...", {'event': 'VOICE_ERROR', 'error_code': '4006'})
             # Remove from voice clients
             if guild_id in self._voice_clients:
                 del self._voice_clients[guild_id]
@@ -389,17 +391,16 @@ class QuranBot(discord.Client):
             
             # Try to reconnect
             if self.is_streaming:
-                logger.info("Attempting reconnection after session expired...", 
-                           extra={'event': 'SESSION_RECONNECT'})
+                tree_log('info', "Attempting reconnection after session expired...", {'event': 'SESSION_RECONNECT'})
                 await self.find_and_join_channel()
         else:
-            logger.error(f"Voice error for guild {guild_id}: {error_msg}", 
-                        extra={'event': 'VOICE_ERROR', 'error': error_msg})
+            tree_log('error', f"Voice error for guild {guild_id}: {error_msg}", {'event': 'VOICE_ERROR', 'error': error_msg})
             self.health_monitor.record_error(error, f"voice_error_guild_{guild_id}")
 
     async def start_stream(self, channel: discord.VoiceChannel):
         """Start streaming Quran to the voice channel with improved error handling."""
         t0 = time.time()
+        tree_log('info', 'Starting stream', {'event': 'START_STREAM', 'channel': getattr(channel, 'name', None)})
         max_retries = 3  # Reduced retries to prevent spam
         retry_delay = 30   # Start with longer delay
         
@@ -448,8 +449,7 @@ class QuranBot(discord.Client):
             # Exponential backoff with longer delays for 4006 errors
             if attempt < max_retries - 1:
                 delay = min(retry_delay * (3 ** attempt), 300)  # Cap at 5 minutes, use 3x multiplier
-                logger.info(f"Retrying connection in {delay} seconds...", 
-                           extra={'event': 'RETRY', 'attempt': attempt + 1, 'delay': delay})
+                tree_log('info', f"Retrying connection in {delay} seconds...", {'event': 'RETRY', 'attempt': attempt + 1, 'delay': delay})
                 await asyncio.sleep(delay)
                 
         t3 = time.time()
@@ -457,8 +457,7 @@ class QuranBot(discord.Client):
         
         # Log warning if still slow
         if (t3-t0) > 3.0:
-            logger.warning(f"Connection took {t3-t0:.2f}s - consider Discord server issues", 
-                          extra={'event': 'SLOW_CONNECTION', 'duration': t3-t0})
+            tree_log('warning', f"Connection took {t3-t0:.2f}s - consider Discord server issues", {'event': 'SLOW_CONNECTION', 'duration': t3-t0})
         
     def get_audio_files(self) -> list:
         """Get list of audio files from the current reciter."""
@@ -485,12 +484,10 @@ class QuranBot(discord.Client):
             if has_mp3:
                 self.current_reciter = folder_name  # Store the folder name
                 self.original_playlist = []  # Reset playlist cache on reciter switch
-                logger.info(f"Switched to reciter: {reciter_name} (folder: {folder_name})", 
-                           extra={'event': 'RECITER_CHANGE', 'reciter': reciter_name, 'folder': folder_name})
+                tree_log('info', f"Switched to reciter: {reciter_name} (folder: {folder_name})", {'event': 'RECITER_CHANGE', 'reciter': reciter_name, 'folder': folder_name})
                 return True
         
-        logger.warning(f"Reciter not found: {reciter_name} (folder: {folder_name})", 
-                      extra={'event': 'RECITER_NOT_FOUND', 'reciter': reciter_name, 'folder': folder_name})
+        tree_log('warning', f"Reciter not found: {reciter_name} (folder: {folder_name})", {'event': 'RECITER_NOT_FOUND', 'reciter': reciter_name, 'folder': folder_name})
         return False
     
     def toggle_loop(self, user_id: Optional[int] = None, username: Optional[str] = None) -> bool:
@@ -500,16 +497,13 @@ class QuranBot(discord.Client):
         if self.loop_enabled and user_id is not None and username is not None:
             # Track who enabled the loop
             self.state_manager.set_loop_enabled_by(user_id, username)
-            logger.info(f"Loop mode enabled by {username} (ID: {user_id})", 
-                       extra={'event': 'LOOP_TOGGLE', 'loop_enabled': True, 'user_id': user_id, 'username': username})
+            tree_log('info', f"Loop mode enabled by {username} (ID: {user_id})", {'event': 'LOOP_TOGGLE', 'loop_enabled': True, 'user_id': user_id, 'username': username})
         elif not self.loop_enabled:
             # Clear loop tracking when disabled
             self.state_manager.clear_loop_enabled_by()
-            logger.info("Loop mode disabled", 
-                       extra={'event': 'LOOP_TOGGLE', 'loop_enabled': False})
+            tree_log('info', "Loop mode disabled", {'event': 'LOOP_TOGGLE', 'loop_enabled': False})
         else:
-            logger.info(f"Loop mode {'enabled' if self.loop_enabled else 'disabled'}", 
-                       extra={'event': 'LOOP_TOGGLE', 'loop_enabled': self.loop_enabled})
+            tree_log('info', f"Loop mode {'enabled' if self.loop_enabled else 'disabled'}", {'event': 'LOOP_TOGGLE', 'loop_enabled': self.loop_enabled})
         
         return self.loop_enabled
     
@@ -520,16 +514,13 @@ class QuranBot(discord.Client):
         if self.shuffle_enabled and user_id is not None and username is not None:
             # Track who enabled the shuffle
             self.state_manager.set_shuffle_enabled_by(user_id, username)
-            logger.info(f"Shuffle mode enabled by {username} (ID: {user_id})", 
-                       extra={'event': 'SHUFFLE_TOGGLE', 'shuffle_enabled': True, 'user_id': user_id, 'username': username})
+            tree_log('info', f"Shuffle mode enabled by {username} (ID: {user_id})", {'event': 'SHUFFLE_TOGGLE', 'shuffle_enabled': True, 'user_id': user_id, 'username': username})
         elif not self.shuffle_enabled:
             # Clear shuffle tracking when disabled
             self.state_manager.clear_shuffle_enabled_by()
-            logger.info("Shuffle mode disabled", 
-                       extra={'event': 'SHUFFLE_TOGGLE', 'shuffle_enabled': False})
+            tree_log('info', "Shuffle mode disabled", {'event': 'SHUFFLE_TOGGLE', 'shuffle_enabled': False})
         else:
-            logger.info(f"Shuffle mode {'enabled' if self.shuffle_enabled else 'disabled'}", 
-                       extra={'event': 'SHUFFLE_TOGGLE', 'shuffle_enabled': self.shuffle_enabled})
+            tree_log('info', f"Shuffle mode {'enabled' if self.shuffle_enabled else 'disabled'}", {'event': 'SHUFFLE_TOGGLE', 'shuffle_enabled': self.shuffle_enabled})
         
         return self.shuffle_enabled
     
@@ -560,7 +551,7 @@ class QuranBot(discord.Client):
                 duration = float(result.stdout.strip())
                 return duration
         except Exception as e:
-            logger.debug(f"ffprobe failed for {file_path}: {e}", extra={"event": "FFPROBE", "file": file_path})
+            tree_log('debug', f"ffprobe failed for {file_path}: {e}", {'event': 'FFPROBE', 'file': file_path})
         
         # Fallback: try to get duration using ffmpeg
         try:
@@ -582,65 +573,62 @@ class QuranBot(discord.Client):
                         total_seconds = hours * 3600 + minutes * 60 + seconds + centiseconds / 100
                         return total_seconds
         except Exception as e:
-            logger.debug(f"ffmpeg duration fallback failed for {file_path}: {e}", extra={"event": "FFMPEG_DURATION", "file": file_path})
+            tree_log('debug', f"ffmpeg duration fallback failed for {file_path}: {e}", {'event': 'FFMPEG_DURATION', 'file': file_path})
         
         # Final fallback: estimate based on file size (rough approximation)
         try:
             file_size = os.path.getsize(file_path)
             # Rough estimate: 1 MB ≈ 1 minute for typical MP3 quality
             estimated_duration = file_size / (1024 * 1024) * 60
-            logger.info(f"Using estimated duration for {file_path}: {estimated_duration:.1f} seconds", 
-                       extra={"event": "ESTIMATED_DURATION", "file": file_path})
+            tree_log('info', f"Using estimated duration for {file_path}: {estimated_duration:.1f} seconds", {'event': 'ESTIMATED_DURATION', 'file': file_path})
             return estimated_duration
         except Exception as e:
-            logger.warning(f"Could not estimate duration for {file_path}: {e}", extra={"event": "DURATION_FAILED", "file": file_path})
+            tree_log('warning', f"Could not estimate duration for {file_path}: {e}", {'event': 'DURATION_FAILED', 'file': file_path})
             return None
 
     async def play_surah_with_retries(self, voice_client, mp3_file, max_retries=2):
-        logger.info(f"[DEBUG] Entered play_surah_with_retries for file: {mp3_file}")
+        tree_log('info', 'Entered play_surah_with_retries', {'file': mp3_file})
         try:
             for attempt in range(max_retries + 1):
-                logger.info(f"[DEBUG] Attempt {attempt+1} to play {mp3_file}")
+                tree_log('debug', 'Playback attempt', {'attempt': attempt+1, 'file': mp3_file})
                 try:
                     source = discord.FFmpegPCMAudio(mp3_file)
-                    logger.info(f"[DEBUG] Created FFmpeg source for {mp3_file}")
+                    tree_log('info', f"Created FFmpeg source for {mp3_file}")
                     voice_client.play(source)
-                    logger.info(f"[DEBUG] Started playback for {mp3_file}")
+                    tree_log('info', f"Started playback for {mp3_file}")
                     while voice_client.is_playing():
                         await asyncio.sleep(1)
-                    logger.info(f"[DEBUG] Finished playback for {mp3_file}")
+                    tree_log('info', f"Finished playback for {mp3_file}")
                     break
                 except Exception as e:
-                    logger.error(f"[DEBUG] Exception during playback attempt {attempt+1} for {mp3_file}: {e}")
-                    logger.error(traceback.format_exc())
+                    tree_log('error', f"Exception during playback attempt {attempt+1} for {mp3_file}: {e}", {'attempt': attempt+1, 'file': mp3_file, 'traceback': traceback.format_exc()})
         except Exception as e:
-            logger.error(f"[DEBUG] Exception in play_surah_with_retries: {e}")
-            logger.error(traceback.format_exc())
-        logger.info(f"[DEBUG] Exiting play_surah_with_retries for file: {mp3_file}")
+            tree_log('error', f"Exception in play_surah_with_retries: {e}", {'file': mp3_file, 'traceback': traceback.format_exc()})
+        tree_log('info', 'Exiting play_surah_with_retries', {'file': mp3_file})
 
     async def play_quran_files(self, voice_client, channel):
-        logger.info(f"[DEBUG] Entered play_quran_files for channel: {channel}")
+        tree_log('info', 'Entered play_quran_files', {'channel': str(channel)})
         try:
-            logger.info(f"[DEBUG] Getting playlist for reciter: {self.current_reciter}")
+            tree_log('info', 'Getting playlist for reciter', {'reciter': self.current_reciter})
             mp3_files = self.get_shuffled_playlist()
-            logger.info(f"[DEBUG] Playlist: {mp3_files}")
+            tree_log('info', 'Playlist', {'playlist': mp3_files})
             if not mp3_files:
-                logger.error("[DEBUG] No MP3 files found for playback.")
+                tree_log('error', 'No MP3 files found for playback.')
                 return
             for mp3_file in mp3_files:
-                logger.info(f"[DEBUG] Attempting to play file: {mp3_file}")
+                tree_log('info', 'Attempting to play file', {'file': mp3_file})
                 valid = await self.validate_audio_file(mp3_file)
-                logger.info(f"[DEBUG] Validation result for {mp3_file}: {valid}")
+                tree_log('info', 'Validation result', {'file': mp3_file, 'valid': valid})
                 if not valid:
                     continue
                 await self.play_surah_with_retries(voice_client, mp3_file)
         except Exception as e:
-            logger.error(f"[DEBUG] Exception in play_quran_files: {e}")
-            logger.error(traceback.format_exc())
-        logger.info(f"[DEBUG] Exiting play_quran_files")
+            tree_log('error', f"Exception in play_quran_files: {e}", {'traceback': traceback.format_exc()})
+        tree_log('info', 'Exiting play_quran_files', {'channel': str(channel)})
             
     async def close(self):
         """Cleanup when bot is shutting down."""
+        tree_log('info', 'Closing bot', {'event': 'CLOSE'})
         if self.health_reporter:
             await self.health_reporter.stop()
         await super().close()
@@ -648,38 +636,43 @@ class QuranBot(discord.Client):
     async def update_presence_for_surah(self, surah_info):
         """Update the bot's presence to show the currently playing surah."""
         try:
+            tree_log('debug', 'Updating presence for surah', {'surah_info': surah_info})
             emoji = get_surah_emoji(surah_info['number'])
             activity_type = discord.ActivityType.listening
             message = f"{emoji} {surah_info['english_name']}"
             
             await self.change_presence(activity=discord.Activity(type=activity_type, name=message))
-            logger.debug(f"Updated presence to: {message}")
+            tree_log('debug', f"Updated presence to: {message}")
         except Exception as e:
-            log_error(e, "update_presence_for_surah")
+            tree_log('error', f'Error in update_presence_for_surah: {e}', {'traceback': traceback.format_exc()})
 
     async def cycle_presence(self):
         """Cycle through different rich presences every 2 minutes."""
-        while True:
-            # Check if we're currently playing a surah
-            if hasattr(self, 'current_audio_file') and self.current_audio_file:
-                surah_info = get_surah_from_filename(self.current_audio_file)
-                await self.update_presence_for_surah(surah_info)
-            else:
-                # Fallback to cycling through general messages
-                activity_type, message = next(self.presence_cycle)
-                await self.change_presence(activity=discord.Activity(type=activity_type, name=message))
-            
-            await asyncio.sleep(120)  # 2 minutes instead of 5
+        try:
+            tree_log('info', 'Starting cycle_presence loop', {})
+            while True:
+                # Check if we're currently playing a surah
+                if hasattr(self, 'current_audio_file') and self.current_audio_file:
+                    surah_info = get_surah_from_filename(self.current_audio_file)
+                    await self.update_presence_for_surah(surah_info)
+                else:
+                    # Fallback to cycling through general messages
+                    activity_type, message = next(self.presence_cycle)
+                    await self.change_presence(activity=discord.Activity(type=activity_type, name=message))
+                
+                await asyncio.sleep(120)  # 2 minutes instead of 5
+        except Exception as e:
+            tree_log('error', f'Error in cycle_presence: {e}', {'traceback': traceback.format_exc()})
 
     def signal_handler(self, signum, frame):
         """Handle shutdown signals gracefully."""
-        logger.warning(f"\n🛑 Received signal {signum}. Starting graceful shutdown...")
+        tree_log('warning', f"\n🛑 Received signal {signum}. Starting graceful shutdown...", {})
         asyncio.create_task(self.graceful_shutdown())
         
     async def graceful_shutdown(self):
         """Perform graceful shutdown with state saving and cleanup."""
         try:
-            log_shutdown("Graceful shutdown initiated")
+            tree_log('info', 'Graceful shutdown initiated', {'event': 'GRACEFUL_SHUTDOWN'})
             
             # Stop streaming
             self.is_streaming = False
@@ -688,7 +681,7 @@ class QuranBot(discord.Client):
             # Stop health reporting
             if self.health_reporter:
                 await self.health_reporter.stop()
-                logger.info("Health reporting stopped")
+                tree_log('info', 'Health reporting stopped', {})
             
             # Cleanup Discord logger sessions
             if hasattr(self, 'discord_logger'):
@@ -701,31 +694,29 @@ class QuranBot(discord.Client):
                     await self.presence_task
                 except asyncio.CancelledError:
                     pass
-                logger.info("Presence cycling stopped")
+                tree_log('info', 'Presence cycling stopped', {})
             
             # Disconnect from all voice channels
             for guild_id, voice_client in self._voice_clients.items():
                 try:
                     if voice_client.is_connected():
                         await voice_client.disconnect()
-                        logger.info(f"Disconnected from voice channel in guild {guild_id}")
+                        tree_log('info', f"Disconnected from voice channel in guild {guild_id}", {'guild_id': guild_id})
                 except Exception as e:
                     log_error(e, f"disconnect_voice_guild_{guild_id}")
             
             # Save final state
             if hasattr(self, 'current_audio_file') and self.current_audio_file:
                 self.state_manager.set_current_song_name(self.current_audio_file)
-                logger.info(f"Saved final state: {self.current_audio_file}")
+                tree_log('info', f"Saved final state: {self.current_audio_file}", {})
             
             # Close Discord client
             await self.close()
             
-            log_shutdown("Graceful shutdown completed")
-            logger.info("✅ Graceful shutdown completed successfully!")
+            tree_log('info', '✅ Graceful shutdown completed successfully!', {})
             
         except Exception as e:
-            log_error(e, "graceful_shutdown")
-            logger.error(f"❌ Error during shutdown: {e}")
+            tree_log('error', f'❌ Error during shutdown: {e}', {'traceback': traceback.format_exc()})
         finally:
             # Force exit after cleanup
             sys.exit(0)
@@ -739,11 +730,11 @@ class QuranBot(discord.Client):
     async def set_presence(self):
         """Set initial presence for the bot."""
         try:
+            tree_log('debug', 'Setting initial presence', {})
             activity_type, message = next(self.presence_cycle)
             await self.change_presence(activity=discord.Activity(type=activity_type, name=message))
-            logger.debug(f"Set initial presence to: {message}")
         except Exception as e:
-            log_error(e, "set_presence")
+            tree_log('error', f'Error in set_presence: {e}', {'traceback': traceback.format_exc()})
 
     def _check_ffmpeg(self) -> bool:
         """Check if FFmpeg is available and working."""
@@ -756,6 +747,7 @@ class QuranBot(discord.Client):
     async def play_audio(self):
         """Restart audio playback - wrapper for control panel compatibility."""
         try:
+            tree_log('info', 'Restarting audio playback', {})
             # Find the current voice client
             voice_client = None
             channel = None
@@ -776,13 +768,13 @@ class QuranBot(discord.Client):
                 # Type cast to ensure compatibility
                 if isinstance(voice_client, discord.VoiceClient) and isinstance(channel, discord.VoiceChannel):
                     asyncio.create_task(self.play_quran_files(voice_client, channel))
-                    logger.info("Audio playback restarted via control panel")
+                    tree_log('info', 'Audio playback restarted via control panel', {})
                 else:
-                    logger.warning("Invalid voice client or channel type")
+                    tree_log('warning', 'Invalid voice client or channel type', {})
             else:
-                logger.warning("No voice client found for audio restart")
+                tree_log('warning', 'No voice client found for audio restart', {})
         except Exception as e:
-            logger.error(f"Error restarting audio playback: {e}")
+            tree_log('error', f'Error restarting audio playback: {e}', {'traceback': traceback.format_exc()})
             log_error(e, "play_audio")
 
     def get_current_playback_time(self):
@@ -792,12 +784,13 @@ class QuranBot(discord.Client):
 
     async def validate_audio_file(self, file_path):
         try:
+            tree_log('debug', 'Validating audio file', {'file_path': file_path})
             if not os.path.exists(file_path):
-                logger.error(f"Audio file not found during validation: {file_path}")
+                tree_log('error', f"Audio file not found during validation: {file_path}", {'traceback': traceback.format_exc()})
                 return False
             file_size = os.path.getsize(file_path)
             if file_size == 0:
-                logger.error(f"Audio file is empty during validation: {file_path}")
+                tree_log('error', f"Audio file is empty during validation: {file_path}", {'traceback': traceback.format_exc()})
                 return False
             # Check if file is a valid audio file using ffprobe
             cmd = [
@@ -815,18 +808,16 @@ class QuranBot(discord.Client):
             result = await asyncio.to_thread(subprocess.run, cmd, capture_output=True, text=True, timeout=10)
             if result.returncode == 0 and result.stdout.strip():
                 codec = result.stdout.strip()
-                logger.debug(f"Audio file validation successful for {file_path}: codec={codec}, size={file_size/1024/1024:.1f}MB")
+                tree_log('debug', f"Audio file validation successful for {file_path}: codec={codec}, size={file_size/1024/1024:.1f}MB", {'file_path': file_path})
                 return True
             else:
-                logger.error(f"Audio file validation failed for {file_path}: {result.stderr}")
+                tree_log('error', f"Audio file validation failed for {file_path}: {result.stderr}", {'traceback': traceback.format_exc()})
                 return False
         except subprocess.TimeoutExpired:
-            logger.error(f"Audio file validation timeout for {file_path}")
-            logger.error(traceback.format_exc())
+            tree_log('error', f"Audio file validation timeout for {file_path}", {'traceback': traceback.format_exc()})
             return False
         except Exception as e:
-            logger.error(f"Error in validate_audio_file for {file_path}: {e}")
-            logger.error(traceback.format_exc())
+            tree_log('error', f"Error in validate_audio_file for {file_path}: {e}", {'traceback': traceback.format_exc()})
             return False
 
 def main():
@@ -840,7 +831,7 @@ def main():
         return
     # Create bot instance
     bot = QuranBot()
-    logger.info("Starting Quran Bot...", extra={'event': 'startup'})
+    tree_log('info', 'Starting Quran Bot...', {})
     try:
         bot.run(Config.DISCORD_TOKEN)
     except Exception as e:

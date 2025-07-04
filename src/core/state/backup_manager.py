@@ -29,7 +29,7 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any
-from monitoring.logging.logger import log_tree_start, log_tree_item, log_tree_end
+from src.monitoring.logging.tree_log import tree_log
 
 
 class BackupManager:
@@ -71,20 +71,13 @@ class BackupManager:
                 self.bot_root, "scripts", "windows", "backup_data.ps1"
             )
 
-            # Initialize logger
-            self.logger = logging.getLogger(__name__)
-
             # Validate backup script existence
             self._validate_backup_scripts()
 
-            self.logger.info(f"✅ Backup manager initialized for: {self.bot_root}")
+            tree_log('info', 'Backup manager initialized', {'event': 'BACKUP_MANAGER_INIT', 'bot_root': self.bot_root})
 
         except Exception as e:
-            self.logger = logging.getLogger(__name__)
-            self.logger.error(f"❌ Failed to initialize backup manager: {e}")
-            self.logger.error(
-                f"🔍 Backup manager init error traceback: {traceback.format_exc()}"
-            )
+            tree_log('error', 'Failed to initialize backup manager', {'event': 'BACKUP_MANAGER_INIT_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
             raise
 
     def _validate_backup_scripts(self) -> None:
@@ -97,24 +90,21 @@ class BackupManager:
         try:
             # Check if Linux script exists
             if not os.path.exists(self.backup_script_linux):
-                self.logger.warning(
-                    f"⚠️ Linux backup script not found: {self.backup_script_linux}"
-                )
+                tree_log('warning', 'Linux backup script not found', {'event': 'BACKUP_SCRIPT_LINUX_MISSING', 'path': self.backup_script_linux})
 
             # Check if Windows script exists
             if not os.path.exists(self.backup_script_windows):
-                self.logger.warning(
-                    f"⚠️ Windows backup script not found: {self.backup_script_windows}"
-                )
+                tree_log('warning', 'Windows backup script not found', {'event': 'BACKUP_SCRIPT_WINDOWS_MISSING', 'path': self.backup_script_windows})
 
             # At least one script should exist
             if not os.path.exists(self.backup_script_linux) and not os.path.exists(
                 self.backup_script_windows
             ):
-                self.logger.error("❌ No backup scripts found!")
+                tree_log('error', 'No backup scripts found', {'event': 'BACKUP_SCRIPTS_MISSING'})
 
         except Exception as e:
-            self.logger.error(f"❌ Error validating backup scripts: {e}")
+            from src.monitoring.logging.tree_log import tree_log
+            tree_log('error', 'Error validating backup scripts', {'event': 'BACKUP_SCRIPT_VALIDATE_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
             raise
 
     def _get_backup_script(self) -> str:
@@ -156,7 +146,8 @@ class BackupManager:
                     )
 
         except Exception as e:
-            self.logger.error(f"❌ Error getting backup script: {e}")
+            from src.monitoring.logging.tree_log import tree_log
+            tree_log('error', 'Error getting backup script', {'event': 'BACKUP_SCRIPT_GET_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
             raise
 
     async def create_backup(self) -> bool:
@@ -170,21 +161,19 @@ class BackupManager:
             bool: True if backup was successful, False otherwise
         """
         try:
-            self.logger.info("🔄 Starting automated backup...")
+            tree_log('info', 'Starting automated backup', {'event': 'BACKUP_START'})
 
             # Get appropriate backup script
             backup_script = self._get_backup_script()
-            self.logger.info(f"📜 Using backup script: {backup_script}")
+            tree_log('info', 'Using backup script', {'event': 'BACKUP_SCRIPT_USED', 'script': backup_script})
 
             # Make sure backup script is executable (for Linux/macOS)
             if backup_script.endswith(".sh"):
                 try:
                     os.chmod(backup_script, 0o755)
-                    self.logger.debug("✅ Backup script made executable")
+                    tree_log('debug', 'Backup script made executable', {'event': 'BACKUP_SCRIPT_EXECUTABLE'})
                 except Exception as e:
-                    self.logger.warning(
-                        f"⚠️ Could not make backup script executable: {e}"
-                    )
+                    tree_log('warning', 'Could not make backup script executable', {'event': 'BACKUP_SCRIPT_CHMOD_ERROR', 'error': str(e)})
 
             # Prepare command based on script type
             if backup_script.endswith(".sh"):
@@ -201,7 +190,7 @@ class BackupManager:
                 raise ValueError(f"Unsupported backup script type: {backup_script}")
 
             # Run backup script with timeout
-            self.logger.info("🚀 Executing backup script...")
+            tree_log('info', 'Executing backup script', {'event': 'BACKUP_EXECUTE'})
             process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
@@ -215,40 +204,33 @@ class BackupManager:
                 stdout, stderr = process.communicate(timeout=300)  # 5 minute timeout
 
                 if process.returncode == 0:
-                    self.logger.info("✅ Data backup completed successfully")
+                    tree_log('info', 'Data backup completed successfully', {'event': 'BACKUP_SUCCESS'})
                     if stdout:
-                        self.logger.debug(f"📄 Backup output: {stdout.strip()}")
-                    log_tree_start("Backup Operation Summary")
-                    log_tree_item(f"📦 Backup script: {backup_script}")
-                    log_tree_item(f"📁 Backup directory: {self.bot_root}")
-                    log_tree_item("✅ Data backup completed successfully", is_last=True)
-                    log_tree_end()
+                        tree_log('debug', 'Backup output', {'event': 'BACKUP_OUTPUT', 'output': stdout.strip()})
+                    tree_log('tree', 'Backup Operation Summary', {'event': 'BACKUP_TREE_SUMMARY', 'script': backup_script, 'directory': self.bot_root, 'result': 'success'})
                     return True
                 else:
                     error_msg = stderr.strip() if stderr else "Unknown error"
-                    self.logger.error(
-                        f"❌ Backup failed with return code {process.returncode}"
-                    )
-                    self.logger.error(f"🔍 Backup error: {error_msg}")
+                    tree_log('error', 'Backup failed', {'event': 'BACKUP_FAIL', 'returncode': process.returncode, 'error': error_msg})
                     if stdout:
-                        self.logger.debug(f"📄 Backup stdout: {stdout.strip()}")
+                        tree_log('debug', 'Backup stdout', {'event': 'BACKUP_STDOUT', 'output': stdout.strip()})
                     return False
 
             except subprocess.TimeoutExpired:
-                self.logger.error("⏰ Backup timed out after 5 minutes")
+                tree_log('error', 'Backup timed out after 5 minutes', {'event': 'BACKUP_TIMEOUT'})
                 process.kill()
                 process.communicate()  # Clean up
                 return False
 
         except FileNotFoundError as e:
-            self.logger.error(f"❌ Backup script not found: {e}")
+            tree_log('error', 'Backup script not found', {'event': 'BACKUP_SCRIPT_NOT_FOUND', 'error': str(e)})
             return False
         except PermissionError as e:
-            self.logger.error(f"❌ Permission denied for backup script: {e}")
+            tree_log('error', 'Permission denied for backup script', {'event': 'BACKUP_PERMISSION_DENIED', 'error': str(e)})
             return False
         except Exception as e:
-            self.logger.error(f"❌ Unexpected error during backup: {e}")
-            self.logger.error(f"🔍 Backup error traceback: {traceback.format_exc()}")
+            from src.monitoring.logging.tree_log import tree_log
+            tree_log('error', 'Unexpected error during backup', {'event': 'BACKUP_UNEXPECTED_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
             return False
 
     async def verify_backup(self, backup_path: str) -> bool:
@@ -263,22 +245,21 @@ class BackupManager:
         """
         try:
             if not os.path.exists(backup_path):
-                self.logger.warning(f"⚠️ Backup file not found: {backup_path}")
+                tree_log('warning', 'Backup file not found', {'event': 'BACKUP_FILE_NOT_FOUND', 'path': backup_path})
                 return False
 
             # Check file size
             file_size = os.path.getsize(backup_path)
             if file_size == 0:
-                self.logger.error(f"❌ Backup file is empty: {backup_path}")
+                tree_log('error', 'Backup file is empty', {'event': 'BACKUP_FILE_EMPTY', 'path': backup_path})
                 return False
 
-            self.logger.info(
-                f"✅ Backup verification passed: {backup_path} ({file_size} bytes)"
-            )
+            tree_log('info', 'Backup verification passed', {'event': 'BACKUP_VERIFY_SUCCESS', 'path': backup_path, 'size': file_size})
             return True
 
         except Exception as e:
-            self.logger.error(f"❌ Error verifying backup: {e}")
+            from src.monitoring.logging.tree_log import tree_log
+            tree_log('error', 'Error verifying backup', {'event': 'BACKUP_VERIFY_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
             return False
 
     def get_backup_info(self) -> Dict[str, Any]:
@@ -291,7 +272,7 @@ class BackupManager:
         try:
             import platform
 
-            return {
+            info = {
                 "bot_root": self.bot_root,
                 "platform": platform.system(),
                 "linux_script_exists": os.path.exists(self.backup_script_linux),
@@ -300,7 +281,9 @@ class BackupManager:
                 "backup_script_windows": self.backup_script_windows,
                 "current_script": self._get_backup_script(),
             }
+            tree_log('info', 'Backup info retrieved', {'event': 'BACKUP_INFO', **info})
+            return info
 
         except Exception as e:
-            self.logger.error(f"❌ Error getting backup info: {e}")
+            tree_log('error', 'Error getting backup info', {'event': 'BACKUP_INFO_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
             return {"error": str(e)}

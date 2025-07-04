@@ -41,6 +41,7 @@ import psutil
 import asyncio
 import json
 import inspect
+from src.monitoring.logging.tree_log import tree_log
 
 # Initialize colorama for Windows
 colorama.init()
@@ -613,13 +614,10 @@ if os.getenv("ENVIRONMENT", "production") == "development":
         console_handler.setLevel(logging.DEBUG)
         logger.addHandler(console_handler)
 
-# Only write startup message once using a module-level flag
+# Log startup message (only if not already written)
 if not hasattr(logger, "_startup_message_written"):
-    try:
-        logger.info("QuranBot logging system initialized - Triple log rotation enabled")
-        setattr(logger, "_startup_message_written", True)
-    except Exception as e:
-        pass  # Silently handle startup message errors
+    tree_log('info', 'QuranBot logging system initialized - Dual log rotation enabled', {'event': 'LOGGER_STARTUP'})
+    setattr(logger, "_startup_message_written", True)
 
 
 def log_bot_startup(bot_name: str, bot_id: int):
@@ -662,7 +660,8 @@ def log_connection_failure(channel_name: str, error: Exception, attempt: int):
             f"Failed to connect to {channel_name} (Attempt {attempt}): {str(error)}"
         )
     except Exception as e:
-        logger.error(f"Error logging connection failure: {e}")
+        from src.monitoring.logging.tree_log import tree_log
+        tree_log('error', 'Error logging connection failure', {'error': str(e), 'channel_name': channel_name, 'attempt': attempt})
 
 
 def log_health_report(sent: bool, channel_id: int):
@@ -706,7 +705,8 @@ def log_performance(operation: str, duration: float, success: bool = True):
 
         logger.info(f"Performance: {operation} completed in {duration:.3f}s [{status}]")
     except Exception as e:
-        logger.error(f"Error logging performance: {e}")
+        from src.monitoring.logging.tree_log import tree_log
+        tree_log('error', 'Error logging performance', {'error': str(e), 'operation': operation, 'duration': duration})
 
 
 def log_error(
@@ -751,8 +751,8 @@ def log_error(
         log_tree_end()
 
     except Exception as e:
-        logger.error(f"Error logging error: {e}")
-        logger.error(f"Original error: {error} in {context}")
+        from src.monitoring.logging.tree_log import tree_log
+        tree_log('error', 'Error logging error', {'error': str(e), 'traceback': traceback.format_exc(), 'original_error': error, 'context': context})
 
 
 def log_discord_event(event_type: str, details: Dict[str, Any]):
@@ -798,7 +798,8 @@ def log_disconnection(channel_name: str, reason: str):
         system_monitor.record_disconnection(reason)
         logger.warning(f"Disconnected from {channel_name}: {reason}")
     except Exception as e:
-        logger.error(f"Error logging disconnection: {e}")
+        from src.monitoring.logging.tree_log import tree_log
+        tree_log('error', 'Error logging disconnection', {'error': str(e), 'channel_name': channel_name, 'reason': reason})
 
 
 def log_latency_monitoring(operation: str, duration: float, threshold: float):
@@ -821,22 +822,23 @@ def log_latency_monitoring(operation: str, duration: float, threshold: float):
                 f"Latency OK: {operation} took {duration:.2f}ms (threshold: {threshold}ms)"
             )
     except Exception as e:
-        logger.error(f"Error logging latency monitoring: {e}")
+        from src.monitoring.logging.tree_log import tree_log
+        tree_log('error', 'Error logging latency monitoring', {'error': str(e), 'operation': operation, 'duration': duration, 'threshold': threshold})
 
 
 def log_system_health():
     """Log comprehensive system health information."""
     stats = system_monitor.get_system_stats()
-    
-    log_tree_start("System Health Check")
-    log_tree_item(f"💾 Memory Usage: {stats.get('memory_percent', 'N/A')}%")
-    log_tree_item(f"🖥️ CPU Usage: {stats.get('cpu_percent', 'N/A')}%")
-    log_tree_item(f"💽 Disk Usage: {stats.get('disk_percent', 'N/A')}%")
-    log_tree_item(f"⏱️ Uptime: {stats.get('uptime', 0):.0f}s")
-    log_tree_item(f"🔌 Disconnections: {stats.get('disconnection_count', 0)}")
-    log_tree_item(f"❌ Errors: {stats.get('error_count', 0)}")
-    log_tree_item(f"⏳ Latency Issues: {stats.get('latency_issue_count', 0)}", is_last=True)
-    log_tree_end()
+    tree_log('tree', 'System Health Check', {
+        'event': 'SYSTEM_HEALTH_CHECK',
+        'memory_percent': stats.get('memory_percent', 'N/A'),
+        'cpu_percent': stats.get('cpu_percent', 'N/A'),
+        'disk_percent': stats.get('disk_percent', 'N/A'),
+        'uptime': stats.get('uptime', 0),
+        'disconnection_count': stats.get('disconnection_count', 0),
+        'error_count': stats.get('error_count', 0),
+        'latency_issue_count': stats.get('latency_issue_count', 0)
+    })
 
 
 def track_performance(operation_name: str):
@@ -871,11 +873,6 @@ def track_performance(operation_name: str):
 # Silence noisy third-party loggers
 for noisy_logger in ["discord", "asyncio", "websockets", "urllib3"]:
     logging.getLogger(noisy_logger).setLevel(logging.WARNING)
-
-# Log startup message (only if not already written)
-if not hasattr(logger, "_startup_message_written"):
-    logger.info("QuranBot logging system initialized - Dual log rotation enabled")
-    setattr(logger, "_startup_message_written", True)
 
 # Periodic health/status logging (every 10 minutes)
 import threading
@@ -960,14 +957,14 @@ def log_tree_end(logger=None):
 
 def log_system_health_periodically():
     stats = system_monitor.get_system_stats()
-    
-    log_tree_start("Periodic System Health Check")
-    log_tree_item(f"💾 Memory: {stats.get('memory_percent', 'N/A')}%")
-    log_tree_item(f"🖥️ CPU: {stats.get('cpu_percent', 'N/A')}%")
-    log_tree_item(f"💽 Disk: {stats.get('disk_percent', 'N/A')}%")
-    log_tree_item(f"🌐 Network: {stats.get('network_sent', 0):.1f}MB sent, {stats.get('network_recv', 0):.1f}MB received", is_last=True)
-    log_tree_end()
-    
+    tree_log('tree', 'Periodic System Health Check', {
+        'event': 'PERIODIC_SYSTEM_HEALTH_CHECK',
+        'memory_percent': stats.get('memory_percent', 'N/A'),
+        'cpu_percent': stats.get('cpu_percent', 'N/A'),
+        'disk_percent': stats.get('disk_percent', 'N/A'),
+        'network_sent': stats.get('network_sent', 0),
+        'network_recv': stats.get('network_recv', 0)
+    })
     threading.Timer(600, log_system_health_periodically).start()  # 10 minutes
 
 

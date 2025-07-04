@@ -33,7 +33,7 @@ import aiohttp
 import traceback
 from datetime import datetime, timedelta, date
 from typing import Optional, Dict, Any, List
-from monitoring.logging.logger import logger, log_tree_start, log_tree_item, log_tree_end
+from src.monitoring.logging.tree_log import tree_log
 from core.mapping.surah_mapper import get_surah_from_filename, get_surah_display_name
 
 
@@ -78,13 +78,10 @@ class DiscordEmbedLogger:
             # Load existing sessions on startup
             self._load_sessions()
 
-            logger.info(f"📝 Discord logger initialized for channel {logs_channel_id}")
+            tree_log('info', 'Discord logger initialized', {'event': 'DISCORD_LOGGER_INIT', 'logs_channel_id': logs_channel_id})
 
         except Exception as e:
-            logger.error(f"❌ Failed to initialize Discord logger: {e}")
-            logger.error(
-                f"🔍 Discord logger init error traceback: {traceback.format_exc()}"
-            )
+            tree_log('error', 'Failed to initialize Discord logger', {'event': 'DISCORD_LOGGER_INIT_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
             raise
 
     def _get_daily_join_count(self, user_id: int) -> int:
@@ -101,7 +98,7 @@ class DiscordEmbedLogger:
             today = date.today().isoformat()
             return self.daily_joins.get(user_id, {}).get(today, 0)
         except Exception as e:
-            logger.error(f"❌ Error getting daily join count: {e}")
+            tree_log('error', 'Error getting daily join count', {'event': 'DAILY_JOIN_COUNT_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
             return 0
 
     def _increment_daily_join_count(self, user_id: int) -> None:
@@ -135,7 +132,7 @@ class DiscordEmbedLogger:
                     del self.daily_joins[user_id_key]
 
         except Exception as e:
-            logger.error(f"❌ Error incrementing daily join count: {e}")
+            tree_log('error', 'Error incrementing daily join count', {'event': 'INCREMENT_DAILY_JOIN_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
 
     async def initialize_existing_users(self) -> None:
         """
@@ -160,42 +157,21 @@ class DiscordEmbedLogger:
                                 "interactions": 0,
                                 "interaction_count": 0,
                             }
-                            logger.info(
-                                f"📝 Initialized session for {member.display_name} already in VC"
-                            )
-                            log_tree_start("User VC Session")
-                            log_tree_item(f"👤 User: {member.display_name} (ID: {member.id})")
-                            log_tree_item(f"📺 Channel: {channel.name}")
-                            log_tree_item(f"🕒 Joined at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", is_last=True)
-                            log_tree_end()
+                            tree_log('info', 'Initialized session for user already in VC', {'event': 'SESSION_INIT_EXISTING_USER', 'user': member.display_name, 'user_id': member.id, 'channel': channel.name, 'joined_at': datetime.now().isoformat()})
                         else:
                             # Only update their join time and channel, preserve total_time and interactions
                             self.user_sessions[member.id]["joined_at"] = datetime.now()
                             self.user_sessions[member.id]["channel_name"] = channel.name
                             self.user_sessions[member.id]["username"] = member.display_name
-                            logger.info(
-                                f"📝 Resumed session for {member.display_name} already in VC (preserved total_time)"
-                            )
-                            log_tree_start("User VC Session")
-                            log_tree_item(f"👤 User: {member.display_name} (ID: {member.id})")
-                            log_tree_item(f"📺 Channel: {channel.name}")
-                            log_tree_item(f"🕒 Joined at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", is_last=True)
-                            log_tree_end()
+                            tree_log('info', 'Resumed session for user already in VC (preserved total_time)', {'event': 'SESSION_RESUME_EXISTING_USER', 'user': member.display_name, 'user_id': member.id, 'channel': channel.name, 'joined_at': datetime.now().isoformat()})
 
                 self._save_sessions()
-                logger.info(
-                    f"📝 Initialized {len(channel.members)} users already in target VC"
-                )
+                tree_log('info', 'Initialized users already in target VC', {'event': 'SESSION_INIT_ALL_EXISTING', 'count': len(channel.members), 'channel_id': self.target_vc_id})
             else:
-                logger.warning(
-                    f"⚠️ Could not find target VC {self.target_vc_id} for session initialization"
-                )
+                tree_log('warning', 'Could not find target VC for session initialization', {'event': 'SESSION_INIT_TARGET_VC_NOT_FOUND', 'target_vc_id': self.target_vc_id})
 
         except Exception as e:
-            logger.error(f"❌ Failed to initialize existing users: {e}")
-            logger.error(
-                f"🔍 Initialize users error traceback: {traceback.format_exc()}"
-            )
+            tree_log('error', 'Failed to initialize existing users', {'event': 'SESSION_INIT_EXISTING_USERS_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
 
     async def cleanup_sessions(self) -> None:
         """
@@ -206,12 +182,9 @@ class DiscordEmbedLogger:
         """
         try:
             self._save_sessions()
-            logger.info("💾 Saved all VC sessions before shutdown")
+            tree_log('info', 'Saved all VC sessions before shutdown', {})
         except Exception as e:
-            logger.error(f"❌ Failed to save sessions during cleanup: {e}")
-            logger.error(
-                f"🔍 Cleanup sessions error traceback: {traceback.format_exc()}"
-            )
+            tree_log('error', 'Failed to save sessions during cleanup', {'event': 'SESSION_CLEANUP_SAVE_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
 
     async def get_logs_channel(self) -> Optional[discord.TextChannel]:
         """
@@ -221,28 +194,21 @@ class DiscordEmbedLogger:
             Optional[discord.TextChannel]: The logs channel or None if not found
         """
         try:
-            logger.debug(f"🔍 Looking for logs channel with ID {self.logs_channel_id}")
+            tree_log('debug', 'Looking for logs channel', {'event': 'GET_LOGS_CHANNEL', 'logs_channel_id': self.logs_channel_id})
             channel = self.bot.get_channel(self.logs_channel_id)
             if not channel:
-                logger.warning(
-                    f"⚠️ Discord logger: Could not find logs channel {self.logs_channel_id}"
-                )
+                tree_log('warning', 'Could not find logs channel', {'event': 'LOGS_CHANNEL_NOT_FOUND', 'logs_channel_id': self.logs_channel_id})
                 # Try fetching the channel
                 try:
                     channel = await self.bot.fetch_channel(self.logs_channel_id)
-                    logger.debug(
-                        f"✅ Successfully fetched channel {channel.name} ({channel.id})"
-                    )
+                    tree_log('debug', 'Successfully fetched channel', {'event': 'FETCHED_LOGS_CHANNEL', 'channel_name': getattr(channel, 'name', None), 'channel_id': getattr(channel, 'id', None)})
                 except Exception as e:
-                    logger.error(f"❌ Failed to fetch channel: {str(e)}")
+                    tree_log('error', 'Failed to fetch channel', {'event': 'FETCH_LOGS_CHANNEL_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
             else:
-                logger.debug(f"✅ Found channel {channel.name} ({channel.id})")
+                tree_log('debug', 'Found logs channel', {'event': 'FOUND_LOGS_CHANNEL', 'channel_name': getattr(channel, 'name', None), 'channel_id': getattr(channel, 'id', None)})
             return channel
         except Exception as e:
-            logger.error(f"❌ Discord logger error getting channel: {str(e)}")
-            logger.error(
-                f"🔍 Get logs channel error traceback: {traceback.format_exc()}"
-            )
+            tree_log('error', 'Discord logger error getting channel', {'event': 'GET_LOGS_CHANNEL_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
             return None
 
     def _load_sessions(self) -> None:
@@ -265,12 +231,11 @@ class DiscordEmbedLogger:
                             "interactions": session_data.get("interactions", {}),
                             "interaction_count": session_data.get("interaction_count", 0),
                         }
-                logger.info(f"📝 Loaded {len(self.user_sessions)} existing VC sessions")
+                tree_log('info', 'Loaded existing VC sessions', {'event': 'LOAD_VC_SESSIONS', 'count': len(self.user_sessions)})
             else:
-                logger.info("📝 No existing VC sessions file found, starting fresh")
+                tree_log('info', 'No existing VC sessions file found, starting fresh', {})
         except Exception as e:
-            logger.error(f"❌ Failed to load VC sessions: {e}")
-            logger.error(f"🔍 Load sessions error traceback: {traceback.format_exc()}")
+            tree_log('error', 'Failed to load VC sessions', {'event': 'LOAD_VC_SESSIONS_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
             self.user_sessions = {}
 
     def _save_sessions(self) -> None:
@@ -302,10 +267,9 @@ class DiscordEmbedLogger:
                 }
             with open(self.sessions_file, "w") as f:
                 json.dump(serializable_data, f, indent=2)
-            logger.debug(f"💾 Saved {len(self.user_sessions)} VC sessions to file")
+            tree_log('debug', 'Saved VC sessions to file', {'event': 'SAVE_VC_SESSIONS', 'count': len(self.user_sessions)})
         except Exception as e:
-            logger.error(f"❌ Failed to save VC sessions: {e}")
-            logger.error(f"🔍 Save sessions error traceback: {traceback.format_exc()}")
+            tree_log('error', 'Failed to save VC sessions', {'event': 'SAVE_VC_SESSIONS_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
 
     def format_duration(self, seconds: float) -> str:
         """
@@ -329,7 +293,7 @@ class DiscordEmbedLogger:
                 minutes = int((seconds % 3600) // 60)
                 return f"{hours}h {minutes}m"
         except Exception as e:
-            logger.error(f"❌ Error formatting duration: {e}")
+            tree_log('error', 'Error formatting duration', {'event': 'FORMAT_DURATION_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
             return "Unknown"
 
     def _get_channel_name(self, channel) -> str:
@@ -352,7 +316,7 @@ class DiscordEmbedLogger:
             else:
                 return "Unknown"
         except Exception as e:
-            logger.error(f"❌ Error getting channel name: {e}")
+            tree_log('error', 'Error getting channel name', {'event': 'GET_CHANNEL_NAME_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
             return "Unknown"
 
     # BOT ACTIVITY EMBEDS
@@ -817,78 +781,55 @@ class DiscordEmbedLogger:
 
         for attempt in range(max_retries):
             try:
-                logger.debug(
-                    f"Attempting to send embed to logs channel {self.logs_channel_id} (attempt {attempt + 1}/{max_retries})"
-                )
+                tree_log('debug', 'Attempting to send embed to logs channel', {'event': 'SEND_EMBED_ATTEMPT', 'logs_channel_id': self.logs_channel_id, 'attempt': attempt + 1, 'max_retries': max_retries})
                 channel = await self.get_logs_channel()
 
                 if not channel:
-                    logger.warning(
-                        f"Could not send Discord embed - channel {self.logs_channel_id} not found"
-                    )
+                    tree_log('warning', 'Could not send Discord embed - channel not found', {'event': 'SEND_EMBED_CHANNEL_NOT_FOUND', 'logs_channel_id': self.logs_channel_id})
                     return
 
-                logger.debug(f"Found logs channel {channel.name} ({channel.id})")
+                tree_log('debug', 'Found logs channel', {'event': 'SEND_EMBED_FOUND_CHANNEL', 'channel_name': getattr(channel, 'name', None), 'channel_id': getattr(channel, 'id', None)})
                 await channel.send(embed=embed)
-                logger.debug(
-                    f"Successfully sent Discord embed to channel {self.logs_channel_id}"
-                )
+                tree_log('info', 'Successfully sent Discord embed', {'event': 'SEND_EMBED_SUCCESS', 'logs_channel_id': self.logs_channel_id})
                 return  # Success, exit the retry loop
 
             except discord.errors.HTTPException as e:
                 if e.status == 429:  # Rate limited
-                    retry_after = getattr(
-                        e, "retry_after", 5
-                    )  # Safe access to retry_after
-                    logger.warning(
-                        f"Rate limited when sending embed, waiting {retry_after}s before retry {attempt + 1}/{max_retries}"
-                    )
+                    retry_after = getattr(e, 'retry_after', 5)
+                    tree_log('warning', 'Rate limited when sending embed', {'event': 'SEND_EMBED_RATE_LIMIT', 'retry_after': retry_after, 'attempt': attempt + 1, 'max_retries': max_retries})
                     await asyncio.sleep(retry_after)
                 elif e.status in [500, 502, 503, 504]:  # Server errors
-                    logger.warning(
-                        f"Discord server error {e.status} when sending embed, retrying in {retry_delay}s (attempt {attempt + 1}/{max_retries})"
-                    )
+                    tree_log('warning', 'Discord server error when sending embed', {'event': 'SEND_EMBED_SERVER_ERROR', 'status': e.status, 'retry_delay': retry_delay, 'attempt': attempt + 1, 'max_retries': max_retries})
                     await asyncio.sleep(retry_delay)
                     retry_delay *= 2  # Exponential backoff
                 elif e.status == 403:  # Forbidden
-                    logger.error(
-                        f"Bot lacks permissions to send messages in channel {self.logs_channel_id}"
-                    )
+                    tree_log('error', 'Bot lacks permissions to send messages in channel', {'event': 'SEND_EMBED_FORBIDDEN', 'logs_channel_id': self.logs_channel_id})
                     break  # Don't retry permission errors
                 else:
-                    logger.error(f"HTTP error {e.status} when sending embed: {e.text}")
+                    tree_log('error', 'HTTP error when sending embed', {'event': 'SEND_EMBED_HTTP_ERROR', 'status': e.status, 'text': getattr(e, 'text', None)})
                     break  # Don't retry on other HTTP errors
 
-            except (
-                aiohttp.ClientError,
-                aiohttp.ServerDisconnectedError,
-                ConnectionError,
-            ) as e:
-                logger.warning(
-                    f"Connection error when sending embed: {str(e)}, retrying in {retry_delay}s (attempt {attempt + 1}/{max_retries})"
-                )
+            except (aiohttp.ClientError, aiohttp.ServerDisconnectedError, ConnectionError) as e:
+                tree_log('warning', 'Connection error when sending embed', {'event': 'SEND_EMBED_CONNECTION_ERROR', 'error': str(e), 'retry_delay': retry_delay, 'attempt': attempt + 1, 'max_retries': max_retries})
                 await asyncio.sleep(retry_delay)
                 retry_delay *= 2  # Exponential backoff
 
             except Exception as e:
-                logger.error(f"Unexpected error when sending embed: {str(e)}")
-                if (
-                    attempt == max_retries - 1
-                ):  # Only log full traceback on final attempt
-                    logger.error(f"Full traceback: {traceback.format_exc()}")
+                tree_log('error', 'Unexpected error when sending embed', {'event': 'SEND_EMBED_UNEXPECTED_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
+                if attempt == max_retries - 1:
+                    tree_log('error', 'Full traceback on final embed send attempt', {'event': 'SEND_EMBED_FINAL_TRACEBACK', 'traceback': traceback.format_exc()})
                 break  # Don't retry unexpected errors
 
         if attempt == max_retries - 1:
-            logger.error(f"Failed to send Discord embed after {max_retries} attempts")
+            tree_log('error', 'Failed to send Discord embed after max attempts', {'event': 'SEND_EMBED_MAX_ATTEMPTS_FAIL', 'max_retries': max_retries})
 
     def start_user_session(self, user_id: int):
         """Start tracking a user's voice session."""
         # Only create session if we have complete data
         # This method is called from button interactions when user is in VC but not tracked
         # We should get the member object to create a proper session
-        logger.debug(
-            f"start_user_session called for user {user_id} but incomplete data - skipping"
-        )
+        tree_log('debug', 'start_user_session called for user', {'event': 'SESSION_START', 'user_id': user_id})
+        tree_log('debug', 'start_user_session called for user but incomplete data - skipping', {'event': 'SESSION_START_INCOMPLETE', 'user_id': user_id})
         # Don't create incomplete sessions - let the proper join event handle it
 
     def end_user_session(self, user_id: int):

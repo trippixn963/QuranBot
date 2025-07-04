@@ -6,6 +6,7 @@ import json
 import os
 import asyncio
 from typing import Optional, Dict, Any, List
+from src.monitoring.logging.tree_log import tree_log
 
 QUESTIONS_FILE = "data/quran_questions.json"
 SCORES_FILE = "data/quran_question_scores.json"
@@ -18,15 +19,26 @@ class QuranScoreManager:
     def load_scores(self):
         if os.path.exists(self.file_path):
             with open(self.file_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                try:
+                    scores = json.load(f)
+                    tree_log('info', 'Loaded Quran question scores', {'event': 'SCORES_LOADED', 'count': len(scores)})
+                    return scores
+                except Exception as e:
+                    tree_log('error', 'Failed to load scores', {'event': 'SCORES_LOAD_ERROR', 'error': str(e)})
+                    return {}
         return {}
     def save_scores(self):
         with open(self.file_path, 'w', encoding='utf-8') as f:
-            json.dump(self.scores, f, indent=2, ensure_ascii=False)
+            try:
+                json.dump(self.scores, f, indent=2, ensure_ascii=False)
+                tree_log('debug', 'Saved Quran question scores', {'event': 'SCORES_SAVED', 'count': len(self.scores)})
+            except Exception as e:
+                tree_log('error', 'Failed to save scores', {'event': 'SCORES_SAVE_ERROR', 'error': str(e)})
     def add_point(self, user_id):
         user_id = str(user_id)
         self.scores[user_id] = self.scores.get(user_id, 0) + 1
         self.save_scores()
+        tree_log('info', 'Added point to user', {'event': 'SCORE_ADDED', 'user_id': user_id, 'score': self.scores[user_id]})
     def get_leaderboard(self, limit=10):
         return sorted(self.scores.items(), key=lambda x: x[1], reverse=True)[:limit]
 
@@ -51,6 +63,7 @@ class QuranMCQView(discord.ui.View):
         if self.timer_task:
             self.timer_task.cancel()
         if self.original_message:
+            tree_log('info', 'MCQ timed out, revealing results', {'event': 'MCQ_TIMEOUT'})
             await self.reveal_results()
 
     async def start_timer_update(self):
@@ -62,6 +75,7 @@ class QuranMCQView(discord.ui.View):
         # Final update at 0
         if self.original_message:
             await self.update_embed_timer()
+        tree_log('debug', 'Timer update finished', {'event': 'MCQ_TIMER_FINISHED'})
 
     async def update_embed_timer(self):
         if not self.original_message:
@@ -126,6 +140,7 @@ class QuranMCQView(discord.ui.View):
             results.append(f"{emoji} {name}: {selected_en} / {selected_ar}")
             if correct:
                 self.score_manager.add_point(user_id)
+        tree_log('info', 'Revealing MCQ results', {'event': 'MCQ_RESULTS', 'results_count': len(results)})
         if not results:
             results_text = "No one answered in time."
         else:
@@ -169,7 +184,9 @@ class QuranMCQView(discord.ui.View):
                         lines.append(f"{medal} <@{user_id}> — **{score}** point{'s' if score != 1 else ''}")
                     leaderboard_embed.add_field(name="Top Scorers", value="\n".join(lines), inline=False)
                 await channel.send(embed=leaderboard_embed)
+                tree_log('info', 'Sent answer and leaderboard embeds', {'event': 'MCQ_ANSWER_LEADERBOARD_SENT'})
         except Exception as e:
+            tree_log('error', 'Failed to send answer/leaderboard embed', {'event': 'MCQ_ANSWER_LEADERBOARD_ERROR', 'error': str(e)})
             pass
 
     async def update_answered_list(self):
@@ -177,6 +194,7 @@ class QuranMCQView(discord.ui.View):
             return
         embed = self.build_embed()
         await self.original_message.edit(embed=embed, view=self)
+        tree_log('debug', 'Updated answered list', {'event': 'MCQ_ANSWERED_LIST_UPDATED', 'answered_count': len(self.answers)})
 
 class QuranMCQButton(discord.ui.Button):
     def __init__(self, label: str, idx: int, view: QuranMCQView):
@@ -234,10 +252,12 @@ class QuranQuestionCog(commands.Cog):
         # Restrict to owner only
         if (hasattr(ctx, 'user') and ctx.user.id != 259725211664908288) or (hasattr(ctx, 'author') and ctx.author.id != 259725211664908288):
             await ctx.send("❌ Only the bot owner can use this command.", ephemeral=True)
+            tree_log('warning', 'Non-owner tried to use askquranquestion', {'event': 'ASKQ_NONOWNER', 'user_id': getattr(ctx, 'user', getattr(ctx, 'author', None)).id})
             return
         question = self.get_random_question()
         if not question:
             await ctx.send("❌ No questions available.")
+            tree_log('warning', 'No questions available for askquranquestion', {'event': 'ASKQ_NO_QUESTIONS'})
             return
         choices_text = ""
         for idx, (en, ar) in enumerate(zip(question["choices_en"], question["choices_ar"])):
@@ -256,12 +276,14 @@ class QuranQuestionCog(commands.Cog):
         view.original_message = sent_msg
         view.timer_task = asyncio.create_task(view.start_timer_update())
         await view.update_answered_list()
+        tree_log('info', 'Quran question sent', {'event': 'ASKQ_SENT', 'user_id': getattr(ctx, 'user', getattr(ctx, 'author', None)).id})
 
     @commands.hybrid_command(name="leaderboard", description="Show the Quran question leaderboard.", with_app_command_only=True)
     async def leaderboard(self, ctx):
         leaderboard = self.score_manager.get_leaderboard()
         if not leaderboard:
             await ctx.send("No scores yet!")
+            tree_log('info', 'Leaderboard requested, but no scores yet', {'event': 'LEADERBOARD_EMPTY', 'user_id': getattr(ctx, 'user', getattr(ctx, 'author', None)).id})
             return
         embed = discord.Embed(
             title="🏆 Quran Question Leaderboard",
@@ -280,6 +302,9 @@ class QuranQuestionCog(commands.Cog):
                 entry = f"{medal} {mention}\nPoints: {score}"
             embed.add_field(name="\u200b", value=entry, inline=False)
         await ctx.send(embed=embed)
+        tree_log('info', 'Leaderboard sent', {'event': 'LEADERBOARD_SENT', 'user_id': getattr(ctx, 'user', getattr(ctx, 'author', None)).id, 'count': len(leaderboard)})
 
 async def setup(bot):
-    await bot.add_cog(QuranQuestionCog(bot)) 
+    tree_log('info', 'Setting up QuranQuestionCog', {'event': 'COG_SETUP'})
+    await bot.add_cog(QuranQuestionCog(bot))
+    tree_log('info', 'QuranQuestionCog loaded', {'event': 'COG_LOADED'}) 

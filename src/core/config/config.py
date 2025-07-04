@@ -29,7 +29,7 @@ import platform
 import shutil
 from typing import Optional, List, Dict, Any
 from dotenv import load_dotenv
-from monitoring.logging.log_helpers import log_function_call, log_operation
+from src.monitoring.logging.tree_log import tree_log
 import datetime
 import pytz
 import time
@@ -108,7 +108,6 @@ class Config:
     DEVELOPER_ID: int = int(os.getenv("DEVELOPER_ID", "0"))
 
     @classmethod
-    @log_function_call
     def get_ffmpeg_path(cls) -> str:
         """
         Get FFmpeg path with cross-platform detection and fallbacks.
@@ -129,9 +128,7 @@ class Config:
             # First check if explicitly set in environment
             env_path = os.getenv("FFMPEG_PATH")
             if env_path and os.path.exists(env_path):
-                from monitoring.logging.logger import logger
-
-                logger.info(f"✅ Using FFmpeg from environment: {env_path}")
+                tree_log('info', 'Using FFmpeg from environment', {'event': 'FFMPEG_ENV', 'path': env_path})
                 return env_path
 
             # Try to find ffmpeg in system PATH
@@ -139,16 +136,12 @@ class Config:
             if ffmpeg_binary:
                 # Get the directory containing ffmpeg
                 ffmpeg_dir = os.path.dirname(ffmpeg_binary)
-                from monitoring.logging.logger import logger
-
-                logger.info(f"✅ Found FFmpeg in PATH: {ffmpeg_dir}")
+                tree_log('info', 'Found FFmpeg in PATH', {'event': 'FFMPEG_PATH', 'path': ffmpeg_dir})
                 return ffmpeg_dir
 
             # Platform-specific fallback paths
             system = platform.system().lower()
-            from monitoring.logging.logger import logger
-
-            logger.info(f"🔍 Searching for FFmpeg on {system}...")
+            tree_log('info', 'Searching for FFmpeg', {'event': 'FFMPEG_SEARCH', 'system': system})
 
             if system == "windows":
                 windows_paths = [
@@ -162,7 +155,7 @@ class Config:
                     if os.path.exists(path) and os.path.exists(
                         os.path.join(path, "ffmpeg.exe")
                     ):
-                        logger.info(f"✅ Found FFmpeg on Windows: {path}")
+                        tree_log('info', 'Found FFmpeg on Windows', {'event': 'FFMPEG_WIN', 'path': path})
                         return path
 
             elif system == "linux":
@@ -176,7 +169,7 @@ class Config:
                     if os.path.exists(path) and os.path.exists(
                         os.path.join(path, "ffmpeg")
                     ):
-                        logger.info(f"✅ Found FFmpeg on Linux: {path}")
+                        tree_log('info', 'Found FFmpeg on Linux', {'event': 'FFMPEG_LINUX', 'path': path})
                         return path
 
             elif system == "darwin":  # macOS
@@ -185,7 +178,7 @@ class Config:
                     if os.path.exists(path) and os.path.exists(
                         os.path.join(path, "ffmpeg")
                     ):
-                        logger.info(f"✅ Found FFmpeg on macOS: {path}")
+                        tree_log('info', 'Found FFmpeg on macOS', {'event': 'FFMPEG_MAC', 'path': path})
                         return path
 
             # Final fallback based on platform
@@ -194,16 +187,11 @@ class Config:
             else:
                 fallback_path = "/usr/bin"
 
-            logger.warning(f"⚠️ Using fallback FFmpeg path: {fallback_path}")
+            tree_log('warning', 'Using fallback FFmpeg path', {'event': 'FFMPEG_FALLBACK', 'path': fallback_path})
             return fallback_path
 
         except Exception as e:
-            from monitoring.logging.logger import logger
-
-            logger.error(f"❌ Error detecting FFmpeg path: {e}")
-            logger.error(
-                f"🔍 FFmpeg detection error traceback: {traceback.format_exc()}"
-            )
+            tree_log('error', 'Error detecting FFmpeg path', {'event': 'FFMPEG_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
 
             # Return a reasonable default
             if platform.system().lower() == "windows":
@@ -212,7 +200,6 @@ class Config:
                 return "/usr/bin"
 
     @classmethod
-    @log_function_call
     def validate(cls) -> bool:
         """
         Validate configuration settings.
@@ -223,64 +210,50 @@ class Config:
         Returns:
             bool: True if configuration is valid, False otherwise
         """
-        from monitoring.logging.logger import logger
-
         try:
-            logger.info("🔍 Validating configuration settings...")
+            tree_log('info', 'Validating configuration settings', {'event': 'CONFIG_VALIDATE_START'})
 
             # Check Discord token
             if not cls.DISCORD_TOKEN or cls.DISCORD_TOKEN == "your_token_here":
-                logger.critical("❌ Error: Discord token not configured!")
-                logger.critical("💡 Please set DISCORD_TOKEN in your .env file")
+                tree_log('critical', 'Discord token not configured', {'event': 'CONFIG_TOKEN_MISSING'})
+                tree_log('critical', 'Please set DISCORD_TOKEN in your .env file', {'event': 'CONFIG_TOKEN_HINT'})
                 return False
             else:
-                logger.info("✅ Discord token configured")
+                tree_log('info', 'Discord token configured', {'event': 'CONFIG_TOKEN_OK'})
 
             # Check audio folder
             if not os.path.exists(cls.AUDIO_FOLDER):
-                logger.warning(f"⚠️ Audio folder '{cls.AUDIO_FOLDER}' not found!")
-                logger.warning(
-                    "💡 Please ensure the audio folder exists and contains reciter subfolders"
-                )
+                tree_log('warning', 'Audio folder not found', {'event': 'CONFIG_AUDIO_FOLDER_MISSING', 'folder': cls.AUDIO_FOLDER})
+                tree_log('warning', 'Please ensure the audio folder exists and contains reciter subfolders', {'event': 'CONFIG_AUDIO_FOLDER_HINT'})
             else:
-                logger.info(f"✅ Audio folder found: {cls.AUDIO_FOLDER}")
+                tree_log('info', 'Audio folder found', {'event': 'CONFIG_AUDIO_FOLDER_OK', 'folder': cls.AUDIO_FOLDER})
 
             # Check FFmpeg
             ffmpeg_path = cls.get_ffmpeg_path()
-            if os.path.exists(
-                os.path.join(
-                    ffmpeg_path,
-                    (
-                        "ffmpeg.exe"
-                        if platform.system().lower() == "windows"
-                        else "ffmpeg"
-                    ),
-                )
-            ):
-                logger.info(f"✅ FFmpeg found at: {ffmpeg_path}")
+            ffmpeg_bin = "ffmpeg.exe" if platform.system().lower() == "windows" else "ffmpeg"
+            if os.path.exists(os.path.join(ffmpeg_path, ffmpeg_bin)):
+                tree_log('info', 'FFmpeg found', {'event': 'CONFIG_FFMPEG_OK', 'path': ffmpeg_path})
             else:
-                logger.warning(f"⚠️ FFmpeg not found at: {ffmpeg_path}")
-                logger.warning("💡 Please install FFmpeg for audio playback")
+                tree_log('warning', 'FFmpeg not found', {'event': 'CONFIG_FFMPEG_MISSING', 'path': ffmpeg_path})
+                tree_log('warning', 'Please install FFmpeg for audio playback', {'event': 'CONFIG_FFMPEG_HINT'})
 
             # Check required directories
             required_dirs = ["logs", "data"]
             for dir_name in required_dirs:
                 if not os.path.exists(dir_name):
-                    logger.info(f"📁 Creating required directory: {dir_name}")
+                    tree_log('info', 'Creating required directory', {'event': 'CONFIG_MKDIR', 'dir': dir_name})
                     os.makedirs(dir_name, exist_ok=True)
                 else:
-                    logger.info(f"✅ Required directory exists: {dir_name}")
+                    tree_log('info', 'Required directory exists', {'event': 'CONFIG_DIR_OK', 'dir': dir_name})
 
-            logger.info("✅ Configuration validation completed")
+            tree_log('info', 'Configuration validation completed', {'event': 'CONFIG_VALIDATE_DONE'})
             return True
 
         except Exception as e:
-            logger.error(f"❌ Configuration validation failed: {e}")
-            logger.error(f"🔍 Validation error traceback: {traceback.format_exc()}")
+            tree_log('error', 'Configuration validation failed', {'event': 'CONFIG_VALIDATE_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
             return False
 
     @classmethod
-    @log_function_call
     def get_reciter_display_name(cls, folder_name: str) -> str:
         """
         Get the display name for a reciter folder name.
@@ -306,7 +279,6 @@ class Config:
         return display_names.get(folder_name, folder_name)
 
     @classmethod
-    @log_function_call
     def get_reciter_arabic_name(cls, folder_name: str) -> str:
         """
         Get the Arabic name for a reciter folder name.
@@ -332,7 +304,6 @@ class Config:
         return arabic_names.get(folder_name, "")
 
     @classmethod
-    @log_function_call
     def get_available_reciters(cls) -> List[str]:
         """
         Get list of available reciters from the audio folder.
@@ -343,16 +314,14 @@ class Config:
         Returns:
             List[str]: List of available reciter display names
         """
-        from monitoring.logging.logger import logger
-
         try:
             reciters = []
 
             if not os.path.exists(cls.AUDIO_FOLDER):
-                logger.warning(f"⚠️ Audio folder not found: {cls.AUDIO_FOLDER}")
+                tree_log('warning', 'Audio folder not found', {'event': 'RECITERS_AUDIO_FOLDER_MISSING', 'folder': cls.AUDIO_FOLDER})
                 return reciters
 
-            logger.info(f"🔍 Scanning for reciters in: {cls.AUDIO_FOLDER}")
+            tree_log('info', 'Scanning for reciters', {'event': 'RECITERS_SCAN', 'folder': cls.AUDIO_FOLDER})
 
             for item in os.listdir(cls.AUDIO_FOLDER):
                 item_path = os.path.join(cls.AUDIO_FOLDER, item)
@@ -365,21 +334,19 @@ class Config:
                         if has_mp3:
                             display_name = cls.get_reciter_display_name(item)
                             reciters.append(display_name)
-                            logger.debug(f"✅ Found reciter: {display_name}")
+                            tree_log('debug', 'Found reciter', {'event': 'RECITER_FOUND', 'display_name': display_name})
                     except (PermissionError, OSError) as e:
-                        logger.warning(f"⚠️ Cannot access folder {item}: {e}")
+                        tree_log('warning', 'Cannot access reciter folder', {'event': 'RECITER_FOLDER_ACCESS_ERROR', 'folder': item, 'error': str(e)})
                         continue
 
-            logger.info(f"✅ Found {len(reciters)} available reciters")
+            tree_log('info', 'Available reciters found', {'event': 'RECITERS_FOUND', 'count': len(reciters)})
             return sorted(reciters)
 
         except Exception as e:
-            logger.error(f"❌ Error scanning for reciters: {e}")
-            logger.error(f"🔍 Reciter scan error traceback: {traceback.format_exc()}")
+            tree_log('error', 'Error scanning for reciters', {'event': 'RECITERS_SCAN_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
             return []
 
     @classmethod
-    @log_function_call
     def get_folder_name_from_display(cls, display_name: str) -> str:
         """
         Get the folder name from a display name.
@@ -408,7 +375,6 @@ class Config:
         return display_to_folder.get(display_name, display_name)
 
     @classmethod
-    @log_function_call
     def get_reciter_info(cls, reciter_name: str) -> Dict[str, Any]:
         """
         Get comprehensive information about a specific reciter.
@@ -422,22 +388,18 @@ class Config:
         Returns:
             Dict[str, Any]: Dictionary containing reciter information
         """
-        from monitoring.logging.logger import logger
-
         try:
             reciter_path = os.path.join(cls.AUDIO_FOLDER, reciter_name)
 
             if not os.path.exists(reciter_path) or not os.path.isdir(reciter_path):
-                logger.warning(f"⚠️ Reciter path not found: {reciter_path}")
+                tree_log('warning', 'Reciter path not found', {'event': 'RECITER_PATH_MISSING', 'path': reciter_path})
                 return {"exists": False, "files": 0, "path": reciter_path}
 
             mp3_files = [
                 f for f in os.listdir(reciter_path) if f.lower().endswith(".mp3")
             ]
 
-            logger.debug(
-                f"✅ Found {len(mp3_files)} MP3 files for reciter: {reciter_name}"
-            )
+            tree_log('debug', 'Found MP3 files for reciter', {'event': 'RECITER_MP3_FOUND', 'reciter': reciter_name, 'count': len(mp3_files)})
 
             return {
                 "exists": True,
@@ -449,12 +411,10 @@ class Config:
             }
 
         except Exception as e:
-            logger.error(f"❌ Error getting reciter info for {reciter_name}: {e}")
-            logger.error(f"🔍 Reciter info error traceback: {traceback.format_exc()}")
+            tree_log('error', 'Error getting reciter info', {'event': 'RECITER_INFO_ERROR', 'reciter': reciter_name, 'error': str(e), 'traceback': traceback.format_exc()})
             return {"exists": False, "files": 0, "path": "", "error": str(e)}
 
     @classmethod
-    @log_function_call
     def get_audio_files(cls, reciter_name: Optional[str] = None) -> List[str]:
         """
         Get list of audio files from the configured folder or specific reciter.
@@ -468,13 +428,11 @@ class Config:
         Returns:
             List[str]: Sorted list of audio file paths
         """
-        from monitoring.logging.logger import logger
-
         try:
             audio_files = []
 
             if not os.path.exists(cls.AUDIO_FOLDER):
-                logger.warning(f"⚠️ Audio folder not found: {cls.AUDIO_FOLDER}")
+                tree_log('warning', 'Audio folder not found', {'event': 'AUDIO_FILES_FOLDER_MISSING', 'folder': cls.AUDIO_FOLDER})
                 return audio_files
 
             if reciter_name:
@@ -484,28 +442,24 @@ class Config:
                     for file in os.listdir(reciter_path):
                         if file.lower().endswith(".mp3"):
                             audio_files.append(os.path.join(reciter_path, file))
-                    logger.debug(
-                        f"✅ Found {len(audio_files)} audio files for reciter: {reciter_name}"
-                    )
+                    tree_log('debug', 'Found audio files for reciter', {'event': 'AUDIO_FILES_RECITER', 'reciter': reciter_name, 'count': len(audio_files)})
                 else:
-                    logger.warning(f"⚠️ Reciter path not found: {reciter_path}")
+                    tree_log('warning', 'Reciter path not found', {'event': 'AUDIO_FILES_RECITER_PATH_MISSING', 'reciter': reciter_name, 'path': reciter_path})
             else:
                 # Get files from all reciters (legacy behavior)
                 for root, dirs, files in os.walk(cls.AUDIO_FOLDER):
                     for file in files:
                         if file.lower().endswith(".mp3"):
                             audio_files.append(os.path.join(root, file))
-                logger.debug(f"✅ Found {len(audio_files)} total audio files")
+                tree_log('debug', 'Found total audio files', {'event': 'AUDIO_FILES_TOTAL', 'count': len(audio_files)})
 
             return sorted(audio_files)
 
         except Exception as e:
-            logger.error(f"❌ Error getting audio files: {e}")
-            logger.error(f"🔍 Audio files error traceback: {traceback.format_exc()}")
+            tree_log('error', 'Error getting audio files', {'event': 'AUDIO_FILES_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
             return []
 
     @classmethod
-    @log_function_call
     def get_current_reciter(cls) -> str:
         """Get the current active reciter display name."""
         # Convert the default reciter (which is a display name) to folder name first
@@ -513,7 +467,6 @@ class Config:
         return cls.get_reciter_display_name(folder_name)
 
     @classmethod
-    @log_function_call
     def setup_environment(cls) -> None:
         """
         Setup environment variables and paths.
@@ -526,35 +479,30 @@ class Config:
         The method includes comprehensive error handling and logging
         to ensure reliable environment setup.
         """
-        from monitoring.logging.logger import logger
-
         try:
-            logger.info("🔧 Setting up environment...")
+            tree_log('info', 'Setting up environment', {'event': 'ENV_SETUP_START'})
 
             # Add FFmpeg to PATH
             ffmpeg_path = cls.get_ffmpeg_path()
             if ffmpeg_path not in os.environ.get("PATH", ""):
                 os.environ["PATH"] += os.pathsep + ffmpeg_path
-                logger.info(f"✅ Added FFmpeg to PATH: {ffmpeg_path}")
+                tree_log('info', 'Added FFmpeg to PATH', {'event': 'ENV_FFMPEG_PATH_ADDED', 'path': ffmpeg_path})
             else:
-                logger.info("✅ FFmpeg already in PATH")
+                tree_log('info', 'FFmpeg already in PATH', {'event': 'ENV_FFMPEG_PATH_EXISTS'})
 
             # Create necessary directories
             required_dirs = ["logs", cls.AUDIO_FOLDER, "data"]
             for dir_name in required_dirs:
                 try:
                     os.makedirs(dir_name, exist_ok=True)
-                    logger.info(f"✅ Directory ready: {dir_name}")
+                    tree_log('info', 'Directory ready', {'event': 'ENV_DIR_READY', 'dir': dir_name})
                 except Exception as e:
-                    logger.error(f"❌ Failed to create directory {dir_name}: {e}")
+                    tree_log('error', 'Failed to create directory', {'event': 'ENV_DIR_ERROR', 'dir': dir_name, 'error': str(e)})
 
-            logger.info("✅ Environment setup completed")
+            tree_log('info', 'Environment setup completed', {'event': 'ENV_SETUP_DONE'})
 
         except Exception as e:
-            logger.error(f"❌ Environment setup failed: {e}")
-            logger.error(
-                f"🔍 Environment setup error traceback: {traceback.format_exc()}"
-            )
+            tree_log('error', 'Environment setup failed', {'event': 'ENV_SETUP_ERROR', 'error': str(e), 'traceback': traceback.format_exc()})
             raise
 
     @classmethod
@@ -575,17 +523,11 @@ class Config:
                 "action": action,
                 "user_id": user_id,
                 "user_name": user_name,
-                "timestamp_unix": int(
-                    time.time()
-                ),  # Unix timestamp for Discord formatting
+                "timestamp_unix": int(time.time()),
             }
-            from monitoring.logging.logger import logger
-
-            logger.debug(f"📝 Activity logged: {action} by {user_name} ({user_id})")
+            tree_log('debug', 'Activity logged', {'event': 'LAST_ACTIVITY_SET', 'action': action, 'user_id': user_id, 'user_name': user_name})
         except Exception as e:
-            from monitoring.logging.logger import logger
-
-            logger.error(f"❌ Failed to set last activity: {e}")
+            tree_log('error', 'Failed to set last activity', {'event': 'LAST_ACTIVITY_ERROR', 'error': str(e)})
 
     @classmethod
     def set_user_timezone(cls, user_id: int, timezone_str: str) -> None:
@@ -598,13 +540,9 @@ class Config:
         """
         try:
             cls.user_timezones[user_id] = timezone_str
-            from monitoring.logging.logger import logger
-
-            logger.debug(f"🌍 Timezone set for user {user_id}: {timezone_str}")
+            tree_log('debug', 'Timezone set for user', {'event': 'USER_TZ_SET', 'user_id': user_id, 'timezone': timezone_str})
         except Exception as e:
-            from monitoring.logging.logger import logger
-
-            logger.error(f"❌ Failed to set timezone for user {user_id}: {e}")
+            tree_log('error', 'Failed to set timezone for user', {'event': 'USER_TZ_ERROR', 'user_id': user_id, 'error': str(e)})
 
     @classmethod
     def get_user_timezone(cls, user_id: int) -> str:
@@ -688,13 +626,9 @@ class Config:
         """
         try:
             cls.loop_user_id = user_id
-            from monitoring.logging.logger import logger
-
-            logger.debug(f"🔁 Loop enabled by user: {user_id}")
+            tree_log('debug', 'Loop enabled by user', {'event': 'LOOP_USER_SET', 'user_id': user_id})
         except Exception as e:
-            from monitoring.logging.logger import logger
-
-            logger.error(f"❌ Failed to set loop user: {e}")
+            tree_log('error', 'Failed to set loop user', {'event': 'LOOP_USER_ERROR', 'error': str(e)})
 
     @classmethod
     def set_shuffle_user(cls, user_id: int) -> None:
@@ -706,13 +640,9 @@ class Config:
         """
         try:
             cls.shuffle_user_id = user_id
-            from monitoring.logging.logger import logger
-
-            logger.debug(f"🔀 Shuffle enabled by user: {user_id}")
+            tree_log('debug', 'Shuffle enabled by user', {'event': 'SHUFFLE_USER_SET', 'user_id': user_id})
         except Exception as e:
-            from monitoring.logging.logger import logger
-
-            logger.error(f"❌ Failed to set shuffle user: {e}")
+            tree_log('error', 'Failed to set shuffle user', {'event': 'SHUFFLE_USER_ERROR', 'error': str(e)})
 
 
 def set_loop_user(user_id: int) -> None:

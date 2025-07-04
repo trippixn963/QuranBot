@@ -6,49 +6,8 @@ import asyncio
 import logging
 from datetime import datetime
 from typing import Optional, Dict, Any
-
-# Enhanced logger for admin commands
-logger = logging.getLogger(__name__)
-
-def log_operation(operation: str, level: str = "INFO", extra: Optional[Dict[str, Any]] = None, error: Optional[Exception] = None):
-    """Enhanced logging with operation tracking and structured data."""
-    emoji_map = {
-        "init": "🚀", "auth": "🔐", "command": "⚡", "restart": "🔄", 
-        "reciter": "🎤", "error": "❌", "success": "✅", "check": "🔍"
-    }
-    
-    emoji = emoji_map.get(operation, "ℹ️")
-    level_emoji = {"DEBUG": "🔍", "INFO": "ℹ️", "WARNING": "⚠️", "ERROR": "❌", "CRITICAL": "🔥"}
-    
-    # Format timestamp with new format: MM-DD | HH:MM:SS AM/PM
-    timestamp = datetime.now().strftime('%m-%d | %I:%M:%S %p')
-    
-    log_data = {
-        "operation": operation,
-        "timestamp": timestamp,
-        "component": "admin_commands"
-    }
-    
-    if extra:
-        log_data.update(extra)
-    
-    if error:
-        log_data["error"] = str(error)
-        log_data["error_type"] = type(error).__name__
-        level = "ERROR"
-    
-    log_message = f"{emoji} {level_emoji.get(level, 'ℹ️')} Admin Commands - {operation.upper()}"
-    
-    if level == "DEBUG":
-        logger.debug(log_message, extra={"extra": log_data})
-    elif level == "INFO":
-        logger.info(log_message, extra={"extra": log_data})
-    elif level == "WARNING":
-        logger.warning(log_message, extra={"extra": log_data})
-    elif level == "ERROR":
-        logger.error(log_message, extra={"extra": log_data})
-    elif level == "CRITICAL":
-        logger.critical(log_message, extra={"extra": log_data})
+import traceback
+from src.monitoring.logging.tree_log import tree_log
 
 # Get admin ID from environment variable
 ADMIN_USER_IDS = os.getenv('ADMIN_USER_IDS', '').split(',') if os.getenv('ADMIN_USER_IDS') else []
@@ -67,7 +26,7 @@ def is_admin(interaction: discord.Interaction) -> bool:
         
         user_id = interaction.user.id
         
-        log_operation("check", "DEBUG", {
+        tree_log('debug', 'Checking admin permission', {
             "user_id": user_id,
             "user_name": interaction.user.name,
             "admin_ids": admin_ids,
@@ -75,7 +34,7 @@ def is_admin(interaction: discord.Interaction) -> bool:
         })
         
         if user_id in admin_ids:
-            log_operation("auth", "INFO", {
+            tree_log('info', 'Admin permission granted', {
                 "user_id": user_id,
                 "user_name": interaction.user.name,
                 "check_type": "admin_permission",
@@ -83,7 +42,7 @@ def is_admin(interaction: discord.Interaction) -> bool:
             })
             return True
         
-        log_operation("auth", "WARNING", {
+        tree_log('warning', 'Admin permission denied', {
             "user_id": user_id,
             "user_name": interaction.user.name,
             "check_type": "admin_permission",
@@ -92,11 +51,12 @@ def is_admin(interaction: discord.Interaction) -> bool:
         return False
         
     except Exception as e:
-        log_operation("check", "ERROR", {
+        tree_log('error', 'Error during admin permission check', {
             "user_id": interaction.user.id if interaction.user else None,
             "check_type": "admin_permission",
-            "error_details": "admin_check_failed"
-        }, e)
+            "error_details": "admin_check_failed",
+            "traceback": traceback.format_exc()
+        })
         return False
 
 class AdminCommands(app_commands.Group):
@@ -104,13 +64,13 @@ class AdminCommands(app_commands.Group):
     
     def __init__(self):
         super().__init__(name="admin", description="Admin commands for Quran Bot")
-        log_operation("init", "INFO", {"component": "AdminCommands"})
+        tree_log('info', 'AdminCommands initialized', {"component": "AdminCommands"})
     
     @app_commands.command(name="restart", description="Restart the Quran Bot")
     async def restart(self, interaction: discord.Interaction):
         """Restart the bot with enhanced logging and error handling."""
         try:
-            log_operation("command", "INFO", {
+            tree_log('info', 'Restart command invoked', {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
                 "command": "restart",
@@ -120,7 +80,7 @@ class AdminCommands(app_commands.Group):
             
             # Check admin permissions
             if not is_admin(interaction):
-                log_operation("auth", "WARNING", {
+                tree_log('warning', 'Restart denied: not admin', {
                     "user_id": interaction.user.id,
                     "user_name": interaction.user.name,
                     "command": "restart",
@@ -140,7 +100,7 @@ class AdminCommands(app_commands.Group):
                     if creator and creator.avatar:
                         embed.set_author(name=creator.name, icon_url=creator.avatar.url)
                 except Exception as e:
-                    log_operation("auth", "WARNING", {"error": str(e)})
+                    tree_log('warning', 'Error fetching creator for embed', {"error": str(e), "traceback": traceback.format_exc()})
                 
                 if interaction.client.user and interaction.client.user.avatar:
                     embed.set_thumbnail(url=interaction.client.user.avatar.url)
@@ -161,7 +121,7 @@ class AdminCommands(app_commands.Group):
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
             
-            log_operation("restart", "INFO", {
+            tree_log('info', 'Restart initiated', {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
                 "command": "restart",
@@ -175,11 +135,12 @@ class AdminCommands(app_commands.Group):
             await interaction.client.close()
             
         except Exception as e:
-            log_operation("command", "ERROR", {
+            tree_log('error', 'Error during restart command', {
                 "user_id": interaction.user.id if interaction.user else None,
                 "command": "restart",
-                "error_details": "restart_command_failed"
-            }, e)
+                "error_details": "restart_command_failed",
+                "traceback": traceback.format_exc()
+            })
             
             try:
                 await interaction.response.send_message(
@@ -192,7 +153,7 @@ class AdminCommands(app_commands.Group):
 async def setup(bot):
     """Setup the admin commands with enhanced logging."""
     try:
-        log_operation("init", "INFO", {
+        tree_log('info', 'Setting up admin commands', {
             "component": "setup",
             "bot_name": bot.user.name if bot.user else "Unknown"
         })
@@ -200,14 +161,15 @@ async def setup(bot):
         admin_commands = AdminCommands()
         bot.tree.add_command(admin_commands)
         
-        log_operation("success", "INFO", {
+        tree_log('info', 'Admin commands loaded', {
             "component": "setup",
             "action": "admin_commands_loaded",
             "commands": ["restart"]
         })
         
     except Exception as e:
-        log_operation("error", "CRITICAL", {
+        tree_log('critical', 'Error during admin command setup', {
             "component": "setup",
-            "error_details": "setup_failed"
-        }, e) 
+            "error_details": "setup_failed",
+            "traceback": traceback.format_exc()
+        }) 

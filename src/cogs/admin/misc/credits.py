@@ -5,8 +5,8 @@ from typing import Optional, Dict, Any
 import os
 
 # Import the main project logger
-from monitoring.logging.logger import logger
-from monitoring.logging.log_helpers import log_async_function_call, log_function_call, log_operation
+from monitoring.logging.log_helpers import log_async_function_call, log_function_call
+from src.monitoring.logging.tree_log import tree_log
 from core.config.config import Config
 
 def log_operation(operation: str, level: str = "INFO", extra: Optional[Dict[str, Any]] = None, error: Optional[Exception] = None):
@@ -120,7 +120,8 @@ async def credits_command(interaction: discord.Interaction):
     bot = interaction.client
     
     # Log the command usage
-    log_operation("credits", "INFO", {
+    tree_log('info', 'Credits command executed', {
+        "operation": "credits",
         "user_id": interaction.user.id,
         "user_name": interaction.user.name,
         "action": "credits_command_executed",
@@ -132,7 +133,8 @@ async def credits_command(interaction: discord.Interaction):
     
     await interaction.response.send_message(embed=embed)
     
-    log_operation("credits", "INFO", {
+    tree_log('info', 'Credits displayed', {
+        "operation": "credits",
         "user_id": interaction.user.id,
         "user_name": interaction.user.name,
         "action": "credits_displayed"
@@ -141,7 +143,8 @@ async def credits_command(interaction: discord.Interaction):
 async def setup(bot):
     """Setup the admin credits command."""
     try:
-        log_operation("init", "INFO", {
+        tree_log('info', 'Setting up credits command', {
+            "operation": "init",
             "component": "setup",
             "bot_name": bot.user.name if bot.user else "Unknown"
         })
@@ -149,16 +152,20 @@ async def setup(bot):
         # Add the command to the command tree
         bot.tree.add_command(credits_command)
         
-        log_operation("init", "INFO", {
+        tree_log('info', 'Credits command loaded', {
+            "operation": "init",
             "component": "setup",
             "status": "success",
             "command": "credits"
         })
         
     except Exception as e:
-        log_operation("error", "CRITICAL", {
+        import traceback
+        tree_log('critical', 'Error during credits command setup', {
+            "operation": "error",
             "component": "setup",
             "error_details": "setup_failed",
-            "error": str(e)
-        }, e)
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        })
         raise 

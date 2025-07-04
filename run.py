@@ -25,6 +25,7 @@ from pathlib import Path
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 
 from src.monitoring.logging.logger import logger
+from src.monitoring.logging.tree_log import tree_log
 
 
 def validate_environment():
@@ -37,21 +38,21 @@ def validate_environment():
     try:
         # Check if we're in the correct directory
         if not Path("src").exists():
-            logger.error("❌ Invalid working directory: 'src' folder not found")
+            tree_log('error', "Invalid working directory: 'src' folder not found", {'event': 'ENV_VALIDATE', 'cwd': str(os.getcwd())})
             return False
 
         # Check for required directories
         required_dirs = ["data", "logs", "audio"]
         for dir_name in required_dirs:
             if not Path(dir_name).exists():
-                logger.warning(f"⚠️  Directory '{dir_name}' not found - creating it")
+                tree_log('warning', f"Directory '{dir_name}' not found - creating it", {'event': 'DIR_CREATE', 'dir': dir_name})
                 Path(dir_name).mkdir(exist_ok=True)
 
-        logger.info("✅ Environment validation completed successfully")
+        tree_log('info', "Environment validation completed successfully", {'event': 'ENV_VALIDATE'})
         return True
 
     except Exception as e:
-        logger.error(f"❌ Environment validation failed: {e}")
+        tree_log('error', f"Environment validation failed: {e}", {'event': 'ENV_VALIDATE', 'traceback': traceback.format_exc()})
         return False
 
 
@@ -62,21 +63,17 @@ def setup_exception_handling():
         """Handle uncaught exceptions with comprehensive logging."""
         if issubclass(exc_type, KeyboardInterrupt):
             # Handle graceful shutdown
-            logger.info("🛑 Received interrupt signal - shutting down gracefully")
+            tree_log('info', "Received interrupt signal - shutting down gracefully", {'event': 'SHUTDOWN', 'type': str(exc_type)})
             sys.__excepthook__(exc_type, exc_value, exc_traceback)
             return
 
         # Log the full exception details
-        logger.critical(
-            f"💥 Uncaught exception: {exc_type.__name__}: {exc_value}",
-            exc_info=(exc_type, exc_value, exc_traceback),
-        )
-
-        # Log additional context
-        logger.critical("🔍 Exception context:")
-        logger.critical(f"   Type: {exc_type.__name__}")
-        logger.critical(f"   Value: {exc_value}")
-        logger.critical(f"   Traceback: {traceback.format_tb(exc_traceback)}")
+        tree_log('critical', f"Uncaught exception: {exc_type.__name__}: {exc_value}", {
+            'event': 'UNCAUGHT_EXCEPTION',
+            'type': exc_type.__name__,
+            'value': str(exc_value),
+            'traceback': ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+        })
 
     sys.excepthook = handle_exception
 
@@ -93,40 +90,37 @@ def main():
     - Graceful shutdown procedures
     """
     try:
-        logger.info("🚀 QuranBot startup initiated")
-        logger.info("=" * 50)
-        logger.info("📋 Starting environment validation...")
+        tree_log('info', "QuranBot startup initiated", {'event': 'STARTUP'})
+        tree_log('info', "=" * 50)
+        tree_log('info', "Starting environment validation...", {'event': 'ENV_VALIDATE_START'})
 
         # Validate environment
         if not validate_environment():
-            logger.error("❌ Environment validation failed - exiting")
+            tree_log('error', "Environment validation failed - exiting", {'event': 'ENV_VALIDATE_FAIL'})
             sys.exit(1)
 
         # Setup exception handling
         setup_exception_handling()
-        logger.info("✅ Exception handling configured")
+        tree_log('info', "Exception handling configured", {'event': 'EXCEPTION_HOOK'})
 
         # Import and start the bot
-        logger.info("📦 Importing bot modules...")
+        tree_log('info', "Importing bot modules...", {'event': 'IMPORT_BOT'})
         from bot.quran_bot import main as bot_main
 
-        logger.info("🎯 Starting Quran Bot...")
+        tree_log('info', "Starting Quran Bot...", {'event': 'BOT_START'})
         bot_main()
 
     except ImportError as e:
-        logger.error(f"❌ Import error: {e}")
-        logger.error(
-            "💡 Make sure all dependencies are installed: pip install -r requirements.txt"
-        )
+        tree_log('error', f"Import error: {e}", {'event': 'IMPORT_ERROR', 'traceback': traceback.format_exc()})
+        tree_log('info', "Make sure all dependencies are installed: pip install -r requirements.txt", {'event': 'DEPENDENCY_HINT'})
         sys.exit(1)
 
     except Exception as e:
-        logger.error(f"❌ Startup failed: {e}")
-        logger.error(f"🔍 Full traceback: {traceback.format_exc()}")
+        tree_log('error', f"Startup failed: {e}", {'event': 'STARTUP_FAIL', 'traceback': traceback.format_exc()})
         sys.exit(1)
 
     finally:
-        logger.info("🏁 QuranBot shutdown complete")
+        tree_log('info', "QuranBot shutdown complete", {'event': 'SHUTDOWN'})
 
 
 if __name__ == "__main__":

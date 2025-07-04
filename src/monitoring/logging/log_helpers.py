@@ -14,7 +14,7 @@ except ImportError:
     eastern = pytz.timezone("America/New_York")
 
 # Use the main logger from logger_fixed
-from .logger import logger
+from src.monitoring.logging.tree_log import tree_log
 
 def get_system_metrics():
     process = psutil.Process()
@@ -76,38 +76,26 @@ def get_eastern_now():
         return datetime.now()
 
 def log_operation(operation: str, level: str = "INFO", extra: Optional[Dict[str, Any]] = None, error: Optional[Exception] = None):
-    """Enhanced logging with operation tracking and structured data."""
-    current_time = get_eastern_now()
-    timestamp = current_time.strftime('%m-%d | %I:%M:%S %p')
-    
-    log_data = {
-        "operation": operation,
-        "timestamp": timestamp,
-        "component": "log_helpers",
-        "timezone": "US/Eastern"
-    }
-    
-    if extra:
-        log_data.update(extra)
-    
-    if error:
-        log_data["error"] = str(error)
-        log_data["error_type"] = type(error).__name__
-        log_data["traceback"] = traceback.format_exc()
-        level = "ERROR"
-    
-    log_message = f"Log Helpers - {operation.upper()}"
-    
-    if level == "DEBUG":
-        logger.debug(log_message, extra={"extra": log_data})
-    elif level == "INFO":
-        logger.info(log_message, extra={"extra": log_data})
-    elif level == "WARNING":
-        logger.warning(log_message, extra={"extra": log_data})
-    elif level == "ERROR":
-        logger.error(log_message, extra={"extra": log_data})
-    elif level == "CRITICAL":
-        logger.critical(log_message, extra={"extra": log_data})
+    """Enhanced logging with operation tracking and structured data using tree_log."""
+    try:
+        current_time = get_eastern_now()
+        timestamp = current_time.strftime('%m-%d | %I:%M:%S %p')
+        log_data = {
+            "operation": operation,
+            "timestamp": timestamp,
+            "component": "log_helpers",
+            "timezone": "US/Eastern"
+        }
+        if extra:
+            log_data.update(extra)
+        if error:
+            log_data["error"] = str(error)
+            log_data["error_type"] = type(error).__name__
+            log_data["traceback"] = traceback.format_exc()
+            level = "ERROR"
+        tree_log(level.lower(), f"Log Helpers - {operation.upper()}", log_data)
+    except Exception as e:
+        tree_log('error', 'log_operation failed', {'operation': operation, 'error': str(e), 'traceback': traceback.format_exc()})
 
 def log_function_call(func: Callable):
     @functools.wraps(func)
@@ -119,20 +107,20 @@ def log_function_call(func: Callable):
             response_time = (time.time() - start_time) * 1000
             system_metrics_after = get_system_metrics()
             now = get_eastern_now()
-            logger.info(f"FUNC_CALL | {func.__name__}", extra={
-                "ResponseTime": f"{response_time:.2f}ms",
-                "MemoryChange": f"{system_metrics_after['memory_rss_mb'] - system_metrics_before['memory_rss_mb']:+.1f}MB",
-                "CPUChange": f"{system_metrics_after['cpu_percent'] - system_metrics_before['cpu_percent']:+.1f}%"
+            tree_log('info', f'FUNC_CALL | {func.__name__}', {
+                'ResponseTime': f'{response_time:.2f}ms',
+                'MemoryChange': f"{system_metrics_after['memory_rss_mb'] - system_metrics_before['memory_rss_mb']:+.1f}MB",
+                'CPUChange': f"{system_metrics_after['cpu_percent'] - system_metrics_before['cpu_percent']:+.1f}%"
             })
             return result
         except Exception as e:
             response_time = (time.time() - start_time) * 1000
             system_metrics_after = get_system_metrics()
             now = get_eastern_now()
-            logger.error(f"FUNC_ERROR | {func.__name__}", extra={
-                "ResponseTime": f"{response_time:.2f}ms",
-                "Error": str(e),
-                "Traceback": traceback.format_exc()
+            tree_log('error', f'FUNC_ERROR | {func.__name__}', {
+                'ResponseTime': f'{response_time:.2f}ms',
+                'Error': str(e),
+                'Traceback': traceback.format_exc()
             })
             raise
     return wrapper
@@ -147,20 +135,20 @@ def log_async_function_call(func: Callable):
             response_time = (time.time() - start_time) * 1000
             system_metrics_after = get_system_metrics()
             now = get_eastern_now()
-            logger.info(f"ASYNC_FUNC_CALL | {func.__name__}", extra={
+            tree_log('info', f"ASYNC_FUNC_CALL | {func.__name__}", extra={"extra": {
                 "ResponseTime": f"{response_time:.2f}ms",
                 "MemoryChange": f"{system_metrics_after['memory_rss_mb'] - system_metrics_before['memory_rss_mb']:+.1f}MB",
                 "CPUChange": f"{system_metrics_after['cpu_percent'] - system_metrics_before['cpu_percent']:+.1f}%"
-            })
+            }})
             return result
         except Exception as e:
             response_time = (time.time() - start_time) * 1000
             system_metrics_after = get_system_metrics()
             now = get_eastern_now()
-            logger.error(f"ASYNC_FUNC_ERROR | {func.__name__}", extra={
+            tree_log('error', f"ASYNC_FUNC_ERROR | {func.__name__}", extra={"extra": {
                 "ResponseTime": f"{response_time:.2f}ms",
                 "Error": str(e),
                 "Traceback": traceback.format_exc()
-            })
+            }})
             raise
     return wrapper 
