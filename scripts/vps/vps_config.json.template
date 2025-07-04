@@ -1,20 +1,20 @@
 {
   "vps": {
-    "ip": "159.89.90.90",
-    "user": "root",
-    "ssh_key": "quranbot_key",
-    "ssh_key_path": "C:/Users/hanna/Documents/QuranBot/quranbot_key"
+    "ip": "YOUR_VPS_IP_ADDRESS",
+    "user": "YOUR_VPS_USERNAME",
+    "ssh_key": "YOUR_SSH_KEY_FILENAME",
+    "ssh_key_path": "PATH_TO_YOUR_SSH_KEY"
   },
   "bot": {
     "directory": "/home/QuranAudioBot",
-    "local_project": "C:/Users/hanna/Documents/QuranBot",
+    "local_project": "PATH_TO_YOUR_LOCAL_PROJECT",
     "repo_url": "https://github.com/yourusername/QuranBot.git",
     "venv_name": "venv",
     "log_file": "bot.log",
     "service_name": "quranbot"
   },
   "audio": {
-    "local_path": "C:/Users/hanna/Documents/QuranBot/audio",
+    "local_path": "PATH_TO_YOUR_LOCAL_AUDIO_FOLDER",
     "remote_path": "/home/QuranAudioBot/audio"
   },
   "backup": {

@@ -62,9 +62,12 @@ audio/
 *.m4a
 *.ogg
 
-# Bot State and Configuration
-# Note: bot_state.json and custom_surah_mapping.json are now in data/ folder
-# and should be tracked in git for open source distribution
+# Bot State and Configuration (Contains runtime data - should not be tracked)
+bot_state.json
+data/bot_state.json
+data/user_vc_sessions.json
+data/daily_verses_queue.json
+data/daily_verses_state.json
 
 # Temporary Files
 *.tmp
@@ -79,6 +82,10 @@ backup/
 
 # Deployment Files
 deploy_temp/
+
+# VPS Configuration (Contains sensitive server info)
+scripts/vps/vps_config.json
+vps_config.json
 
 # Test Files
 .pytest_cache/
@@ -121,6 +128,8 @@ Icon
 *.key
 id_rsa
 id_rsa.pub
+quranbot_key
+quranbot_key.pub
 
 # Database Files
 *.db
