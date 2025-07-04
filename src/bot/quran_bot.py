@@ -547,7 +547,7 @@ class QuranBot(discord.Client):
         else:
             return self.original_playlist if self.original_playlist else mp3_files
 
-    def get_audio_duration(self, file_path):
+    async def get_audio_duration(self, file_path):
         """Get the duration of an audio file using FFmpeg."""
         try:
             # Try ffprobe first
@@ -555,7 +555,7 @@ class QuranBot(discord.Client):
                 'ffprobe', '-v', 'quiet', '-show_entries', 'format=duration',
                 '-of', 'csv=p=0', file_path
             ]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            result = await asyncio.to_thread(subprocess.run, cmd, capture_output=True, text=True, timeout=15)
             if result.returncode == 0:
                 duration = float(result.stdout.strip())
                 return duration
@@ -567,7 +567,7 @@ class QuranBot(discord.Client):
             cmd = [
                 'ffmpeg', '-i', file_path, '-f', 'null', '-'
             ]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            result = await asyncio.to_thread(subprocess.run, cmd, capture_output=True, text=True, timeout=30)
             # Parse duration from ffmpeg output
             import re
             for line in result.stderr.split('\n'):
@@ -601,7 +601,7 @@ class QuranBot(discord.Client):
         file_name = os.path.basename(mp3_file)
         surah_info = get_surah_from_filename(file_name)
         surah_display = get_surah_display_name(surah_info['number'])
-        total_duration = self.get_audio_duration(mp3_file)
+        total_duration = await self.get_audio_duration(mp3_file)
         for attempt in range(max_retries + 1):
             try:
                 # Ensure previous audio is stopped
@@ -956,7 +956,7 @@ class QuranBot(discord.Client):
             return time.time() - self.playback_start_time
         return 0
 
-    def validate_audio_file(self, file_path):
+    async def validate_audio_file(self, file_path):
         try:
             if not os.path.exists(file_path):
                 logger.error(f"Audio file not found during validation: {file_path}")
@@ -978,7 +978,7 @@ class QuranBot(discord.Client):
                 "csv=p=0",
                 file_path,
             ]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            result = await asyncio.to_thread(subprocess.run, cmd, capture_output=True, text=True, timeout=10)
             if result.returncode == 0 and result.stdout.strip():
                 codec = result.stdout.strip()
                 logger.debug(f"Audio file validation successful for {file_path}: codec={codec}, size={file_size/1024/1024:.1f}MB")
