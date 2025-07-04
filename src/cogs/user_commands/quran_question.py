@@ -81,16 +81,14 @@ class QuranMCQView(discord.ui.View):
         if self.bot_user and self.bot_user.avatar:
             embed.set_thumbnail(url=self.bot_user.avatar.url)
         
-        # Add English question in separate black code block
+        # Use daily verse emojis for question fields
         embed.add_field(
-            name="❓ Question (English)",
+            name="📝 Question (English)",
             value=f"```{self.question['question_en']}```",
             inline=False
         )
-        
-        # Add Arabic question in separate black code block
         embed.add_field(
-            name="❓ Question (Arabic)",
+            name="🌙 Question (Arabic)",
             value=f"```{self.question['question_ar']}```",
             inline=False
         )
@@ -109,16 +107,9 @@ class QuranMCQView(discord.ui.View):
     def get_answered_list(self):
         if not self.answers:
             return "No one yet."
-        names = []
-        if self.original_message and getattr(self.original_message, 'guild', None) is not None:
-            for user_id in self.answers.keys():
-                guild = self.original_message.guild
-                user = guild.get_member(user_id) if guild is not None else None
-                name = user.display_name if user else f"<@{user_id}>"
-                names.append(name)
-        else:
-            names = [f"<@{uid}>" for uid in self.answers.keys()]
-        return ", ".join(names)
+        ids = list(self.answers.keys())
+        mentions = [f"<@{uid}>" for uid in ids]
+        return " | ".join(mentions)
 
     async def reveal_results(self):
         if not self.original_message:
@@ -159,6 +150,25 @@ class QuranMCQView(discord.ui.View):
                 if self.bot_user and self.bot_user.avatar:
                     answer_embed.set_thumbnail(url=self.bot_user.avatar.url)
                 await channel.send(embed=answer_embed)
+
+                # Send the leaderboard embed after the answer reveal
+                leaderboard = self.score_manager.get_leaderboard()
+                leaderboard_embed = discord.Embed(
+                    title="Quran Question Leaderboard",
+                    color=discord.Color.gold()
+                )
+                if self.bot_user and self.bot_user.avatar:
+                    leaderboard_embed.set_thumbnail(url=self.bot_user.avatar.url)
+                if not leaderboard:
+                    leaderboard_embed.description = "No one has answered any questions yet!"
+                else:
+                    medals = ["🥇", "🥈", "🥉"]
+                    lines = []
+                    for i, (user_id, score) in enumerate(leaderboard):
+                        medal = medals[i] if i < len(medals) else f"{i+1}."
+                        lines.append(f"{medal} <@{user_id}> — **{score}** point{'s' if score != 1 else ''}")
+                    leaderboard_embed.add_field(name="Top Scorers", value="\n".join(lines), inline=False)
+                await channel.send(embed=leaderboard_embed)
         except Exception as e:
             pass
 
@@ -221,6 +231,10 @@ class QuranQuestionCog(commands.Cog):
 
     @commands.hybrid_command(name="askquranquestion", description="Ask a random Quran multiple choice question.", with_app_command_only=True)
     async def ask_quran_question(self, ctx):
+        # Restrict to owner only
+        if (hasattr(ctx, 'user') and ctx.user.id != 259725211664908288) or (hasattr(ctx, 'author') and ctx.author.id != 259725211664908288):
+            await ctx.send("❌ Only the bot owner can use this command.", ephemeral=True)
+            return
         question = self.get_random_question()
         if not question:
             await ctx.send("❌ No questions available.")
@@ -245,6 +259,10 @@ class QuranQuestionCog(commands.Cog):
 
     @commands.hybrid_command(name="leaderboard", description="Show the Quran question leaderboard.", with_app_command_only=True)
     async def leaderboard(self, ctx):
+        # Restrict to owner only
+        if (hasattr(ctx, 'user') and ctx.user.id != 259725211664908288) or (hasattr(ctx, 'author') and ctx.author.id != 259725211664908288):
+            await ctx.send("❌ Only the bot owner can use this command.", ephemeral=True)
+            return
         leaderboard = self.score_manager.get_leaderboard()
         if not leaderboard:
             await ctx.send("No scores yet!")
