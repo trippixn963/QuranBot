@@ -533,6 +533,7 @@ class SurahSelect(Select):
 
     @log_select_interaction
     async def callback(self, interaction: discord.Interaction):
+        tree_log('debug', 'SurahSelect callback entered', {'user_id': interaction.user.id, 'user_name': interaction.user.name, 'values': self.values})
         if not is_in_voice_channel(interaction):
             error_embed = await create_response_embed(
                 interaction, 
@@ -734,6 +735,7 @@ class ReciterSelect(Select):
 
     @log_select_interaction
     async def callback(self, interaction: discord.Interaction):
+        tree_log('debug', 'ReciterSelect callback entered', {'user_id': interaction.user.id, 'user_name': interaction.user.name, 'values': self.values})
         if not is_in_voice_channel(interaction):
             error_embed = await create_response_embed(
                 interaction, 
@@ -1104,6 +1106,7 @@ class ControlPanelView(View):
     @log_button_interaction
     @discord.ui.button(label="◀️ Previous Page", style=discord.ButtonStyle.secondary, custom_id="surah_prev_page", row=2)
     async def surah_prev_page(self, interaction: discord.Interaction, button: Button):
+        tree_log('debug', 'Previous button callback entered', {'user_id': interaction.user.id, 'user_name': interaction.user.name})
         if not is_in_voice_channel(interaction):
             await interaction.response.send_message("You must be in the correct voice channel to use this!", ephemeral=True, delete_after=300)
             return
@@ -1136,6 +1139,7 @@ class ControlPanelView(View):
     @log_button_interaction
     @discord.ui.button(label="Next Page ▶️", style=discord.ButtonStyle.secondary, custom_id="surah_next_page", row=2)
     async def surah_next_page(self, interaction: discord.Interaction, button: Button):
+        tree_log('debug', 'Next button callback entered', {'user_id': interaction.user.id, 'user_name': interaction.user.name})
         if not is_in_voice_channel(interaction):
             error_embed = await create_response_embed(
                 interaction, 
@@ -1178,6 +1182,7 @@ class ControlPanelView(View):
     @log_button_interaction
     @discord.ui.button(label="⏮️ Previous", style=discord.ButtonStyle.danger, custom_id="previous", row=3)
     async def previous_button(self, interaction: discord.Interaction, button: Button):
+        tree_log('debug', 'Previous button callback entered', {'user_id': interaction.user.id, 'user_name': interaction.user.name})
         if not is_in_voice_channel(interaction):
             error_embed = await create_response_embed(
                 interaction, 
@@ -1403,6 +1408,7 @@ class ControlPanelView(View):
     @log_button_interaction
     @discord.ui.button(label="⏭️ Next", style=discord.ButtonStyle.success, custom_id="skip", row=3)
     async def skip_button(self, interaction: discord.Interaction, button: Button):
+        tree_log('debug', 'Next button callback entered', {'user_id': interaction.user.id, 'user_name': interaction.user.name})
         if not is_in_voice_channel(interaction):
             error_embed = await create_response_embed(
                 interaction, 
