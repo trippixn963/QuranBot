@@ -15,6 +15,7 @@ from datetime import datetime
 from typing import Optional, Dict, Any
 from discord.ui import View, Select, Button, Modal, TextInput
 import functools
+from discord import app_commands
 
 # Updated imports for new structure
 from monitoring.logging.logger import logger
