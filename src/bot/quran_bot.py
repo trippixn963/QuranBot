@@ -270,7 +270,7 @@ class QuranBot(commands.Bot):
                 raise
 
             try:
-                self.state_manager = StateManager()  # Initialize immediately
+                self.state_manager = StateManager("data/bot_state.json")  # Use data directory for state
                 logger.info("✅ State manager initialized")
             except Exception as e:
                 logger.error(f"❌ Failed to initialize state manager: {e}")
