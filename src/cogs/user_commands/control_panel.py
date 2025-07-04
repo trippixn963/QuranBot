@@ -121,45 +121,6 @@ def get_bot_state(bot) -> Dict[str, Any]:
     except Exception as e:
         return {"bot_state_error": str(e)}
 
-def log_operation(operation: str, level: str = "INFO", extra: Optional[Dict[str, Any]] = None, error: Optional[Exception] = None):
-    """Enhanced logging with operation tracking and structured data."""
-    # Format timestamp with new format: MM-DD | HH:MM:SS AM/PM
-    timestamp = datetime.now().strftime('%m-%d | %I:%M:%S %p')
-    log_data = {
-        "operation": operation,
-        "timestamp": timestamp,
-        "component": "control_panel"
-    }
-    if extra:
-        log_data.update(extra)
-    if error:
-        log_data["error"] = str(error)
-        log_data["error_type"] = type(error).__name__
-        log_data["traceback"] = traceback.format_exc()
-        level = "ERROR"
-    tree_log(level.lower(), f"ControlPanel - {operation}", log_data)
-
-def is_in_voice_channel(interaction: discord.Interaction) -> bool:
-    """Check if the user is in the correct voice channel."""
-    if not interaction.guild:
-        return False
-        
-    # Get the bot's voice client
-    voice_client = interaction.guild.voice_client
-    if not voice_client:
-        return False
-        
-    # Get the user's voice state
-    if not isinstance(interaction.user, discord.Member):
-        return False
-        
-    voice_state = interaction.user.voice
-    if not voice_state:
-        return False
-        
-    # Check if user is in the same channel as the bot
-    return voice_state.channel == voice_client.channel
-
 def log_button_interaction(func):
     """Enhanced decorator to log detailed button interaction metrics"""
     @functools.wraps(func)
@@ -590,7 +551,7 @@ class SurahSelect(Select):
             current_surah = self.bot.state_manager.get_current_song_index()
             
             # Log the selection
-            log_operation("surah_select", "INFO", {
+            tree_log('info', 'surah_select', {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
                 "selected_surah": selected_surah,
@@ -629,11 +590,12 @@ class SurahSelect(Select):
                         raise Exception("Voice client not available or not connected")
                         
                 except Exception as e:
-                    log_operation("restart_playback", "ERROR", {
+                    tree_log('error', 'Error restarting playback', {
                         "user_id": interaction.user.id,
                         "user_name": interaction.user.name,
                         "selected_surah": selected_surah,
-                        "error": str(e)
+                        "error": str(e),
+                        "traceback": traceback.format_exc()
                     })
                     await interaction.followup.send(f"❌ Error restarting playback: {str(e)}", ephemeral=True)
 
@@ -683,10 +645,11 @@ class SurahSelect(Select):
                 )
                 await interaction.response.send_message(embed=error_embed, ephemeral=True)
         except Exception as e:
-            log_operation("surah_select", "ERROR", {
+            tree_log('error', 'Error selecting surah', {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
-                "error": str(e)
+                "error": str(e),
+                "traceback": traceback.format_exc()
             })
             error_embed = await create_response_embed(
                 interaction, 
@@ -789,7 +752,7 @@ class ReciterSelect(Select):
             current_surah = self.bot.state_manager.get_current_song_index()
 
             # Log the selection
-            log_operation("reciter_select", "INFO", {
+            tree_log('info', 'reciter_select', {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
                 "selected_reciter": selected_reciter,
@@ -840,11 +803,12 @@ class ReciterSelect(Select):
                         raise Exception("Voice client not available or not connected")
 
                 except Exception as e:
-                    log_operation("restart_playback", "ERROR", {
+                    tree_log('error', 'Error restarting playback', {
                         "user_id": interaction.user.id,
                         "user_name": interaction.user.name,
                         "selected_reciter": selected_reciter,
-                        "error": str(e)
+                        "error": str(e),
+                        "traceback": traceback.format_exc()
                     })
                     await interaction.followup.send(f"Error restarting playback: {str(e)}", ephemeral=True)
 
@@ -860,11 +824,12 @@ class ReciterSelect(Select):
                 await view.update_panel_status()
 
         except Exception as e:
-            log_operation("reciter_select", "ERROR", {
+            tree_log('error', 'Error selecting reciter', {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
                 "selected_reciter": selected_reciter,
-                "error": str(e)
+                "error": str(e),
+                "traceback": traceback.format_exc()
             })
             error_embed = await create_response_embed(
                 interaction, 
@@ -952,8 +917,9 @@ class ControlPanelView(View):
             }
             
         except Exception as e:
-            log_operation("get_detailed_status", "ERROR", {
-                "error": str(e)
+            tree_log('error', 'Error loading surah info', {
+                "error": str(e),
+                "traceback": traceback.format_exc()
             })
             return {
                 'status': "❓ **Status Unknown**",
@@ -1153,10 +1119,11 @@ class ControlPanelView(View):
             await interaction.response.edit_message(view=self, delete_after=300)
             
         except Exception as e:
-            log_operation("prev_page", "ERROR", {
+            tree_log('error', 'Error changing page', {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
-                "error": str(e)
+                "error": str(e),
+                "traceback": traceback.format_exc()
             })
             error_embed = await create_response_embed(
                 interaction, 
@@ -1194,10 +1161,11 @@ class ControlPanelView(View):
             await interaction.response.edit_message(view=self, delete_after=300)
             
         except Exception as e:
-            log_operation("next_page", "ERROR", {
+            tree_log('error', 'Error changing page', {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
-                "error": str(e)
+                "error": str(e),
+                "traceback": traceback.format_exc()
             })
             error_embed = await create_response_embed(
                 interaction, 
@@ -1269,10 +1237,11 @@ class ControlPanelView(View):
                         raise Exception("Voice client not available or not connected")
                     
                 except Exception as e:
-                    log_operation("restart_playback", "ERROR", {
+                    tree_log('error', 'Error restarting playback', {
                         "user_id": interaction.user.id,
                         "user_name": interaction.user.name,
-                        "error": str(e)
+                        "error": str(e),
+                        "traceback": traceback.format_exc()
                     })
                     error_embed = await create_response_embed(
                         interaction,
@@ -1297,10 +1266,11 @@ class ControlPanelView(View):
             )
             await interaction.followup.send(embed=confirmation_embed, ephemeral=True)
         except Exception as e:
-            log_operation("previous", "ERROR", {
+            tree_log('error', 'Error playing previous surah', {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
-                "error": str(e)
+                "error": str(e),
+                "traceback": traceback.format_exc()
             })
             error_embed = await create_response_embed(
                 interaction, 
@@ -1355,10 +1325,11 @@ class ControlPanelView(View):
             await self.update_panel_status()
             
         except Exception as e:
-            log_operation("loop", "ERROR", {
+            tree_log('error', 'Error toggling loop mode', {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
-                "error": str(e)
+                "error": str(e),
+                "traceback": traceback.format_exc()
             })
             error_embed = await create_response_embed(
                 interaction, 
@@ -1414,10 +1385,11 @@ class ControlPanelView(View):
             await self.update_panel_status()
             
         except Exception as e:
-            log_operation("shuffle", "ERROR", {
+            tree_log('error', 'Error toggling shuffle mode', {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
-                "error": str(e)
+                "error": str(e),
+                "traceback": traceback.format_exc()
             })
             error_embed = await create_response_embed(
                 interaction, 
@@ -1490,10 +1462,11 @@ class ControlPanelView(View):
                         raise Exception("Voice client not available or not connected")
                     
                 except Exception as e:
-                    log_operation("restart_playback", "ERROR", {
+                    tree_log('error', 'Error restarting playback', {
                         "user_id": interaction.user.id,
                         "user_name": interaction.user.name,
-                        "error": str(e)
+                        "error": str(e),
+                        "traceback": traceback.format_exc()
                     })
                     error_embed = await create_response_embed(
                         interaction,
@@ -1518,10 +1491,11 @@ class ControlPanelView(View):
             )
             await interaction.followup.send(embed=confirmation_embed, ephemeral=True)
         except Exception as e:
-            log_operation("skip", "ERROR", {
+            tree_log('error', 'Error playing next surah', {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
-                "error": str(e)
+                "error": str(e),
+                "traceback": traceback.format_exc()
             })
             error_embed = await create_response_embed(
                 interaction, 
@@ -1538,10 +1512,11 @@ class ControlPanelView(View):
             modal = SearchModal(self.bot)
             await interaction.response.send_modal(modal)
         except Exception as e:
-            log_operation("search_button", "ERROR", {
+            tree_log('error', 'Error opening search modal', {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
-                "error": str(e)
+                "error": str(e),
+                "traceback": traceback.format_exc()
             })
             error_embed = await create_response_embed(
                 interaction,
@@ -1993,10 +1968,11 @@ class SearchModal(Modal, title="🔍 Search Surah"):
                 )
                 
         except Exception as e:
-            log_operation("search_modal", "ERROR", {
+            tree_log('error', 'Error searching', {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
-                "error": str(e)
+                "error": str(e),
+                "traceback": traceback.format_exc()
             })
             
             error_embed = await create_response_embed(
@@ -2076,10 +2052,11 @@ class SearchResultView(View):
                         raise Exception("Voice client not available or not connected")
                     
                 except Exception as e:
-                    log_operation("search_play_restart", "ERROR", {
+                    tree_log('error', 'Error restarting playback', {
                         "user_id": interaction.user.id,
                         "user_name": interaction.user.name,
-                        "error": str(e)
+                        "error": str(e),
+                        "traceback": traceback.format_exc()
                     })
                     await interaction.followup.send(f"Error restarting playback: {str(e)}", ephemeral=True)
             
@@ -2104,11 +2081,12 @@ class SearchResultView(View):
             await interaction.followup.send(embed=success_embed, ephemeral=True)
             
         except Exception as e:
-            log_operation("search_play", "ERROR", {
+            tree_log('error', 'Error playing surah', {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
                 "surah_number": self.surah_number,
-                "error": str(e)
+                "error": str(e),
+                "traceback": traceback.format_exc()
             })
             
             error_embed = await create_response_embed(
@@ -2139,11 +2117,12 @@ class SearchResultView(View):
             await interaction.response.send_message(embed=info_embed, ephemeral=True, delete_after=300)
             
         except Exception as e:
-            log_operation("search_info", "ERROR", {
+            tree_log('error', 'Error showing surah info', {
                 "user_id": interaction.user.id,
                 "user_name": interaction.user.name,
                 "surah_number": self.surah_number,
-                "error": str(e)
+                "error": str(e),
+                "traceback": traceback.format_exc()
             })
             
             error_embed = await create_response_embed(
