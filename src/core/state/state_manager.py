@@ -132,7 +132,10 @@ class StateManager:
             'shuffle_enabled_by': None,  # Stores user ID who enabled shuffle
             'shuffle_enabled_by_name': None,  # Stores username who enabled shuffle
             'last_change': None,  # Stores the last user action
-            'last_change_time': None  # Stores when the last change happened
+            'last_change_time': None,  # Stores when the last change happened
+            'playback_position': 0,  # Current playback position in seconds
+            'playback_start_time': None,  # When playback started (for calculating position)
+            'last_position_save': None  # When position was last saved
         }
         
         if os.path.exists(self.state_file):
@@ -707,6 +710,102 @@ class StateManager:
             'shuffle_enabled_by': None,
             'shuffle_enabled_by_name': None,
             'last_change': None,
-            'last_change_time': None
+            'last_change_time': None,
+            'playback_position': 0,
+            'playback_start_time': None,
+            'last_position_save': None
         }
-        self._save_state() 
+        self._save_state()
+
+    def get_playback_position(self) -> float:
+        """Get the current playback position in seconds."""
+        return self.state.get('playback_position', 0)
+    
+    def set_playback_position(self, position: float):
+        """Set the current playback position in seconds."""
+        try:
+            log_operation("playback_position", "DEBUG", {
+                "action": "set_playback_position",
+                "position": position,
+                "previous_position": self.state.get('playback_position', 0)
+            })
+            
+            self.state['playback_position'] = max(0, position)  # Ensure non-negative
+            self.state['last_position_save'] = datetime.now().isoformat()
+            self._save_state()
+            
+        except Exception as e:
+            log_operation("playback_position", "ERROR", {
+                "action": "set_playback_position_failed",
+                "position": position,
+                "error": str(e),
+                "error_type": type(e).__name__
+            }, e)
+    
+    def set_playback_start_time(self, start_time: float):
+        """Set when playback started (Unix timestamp)."""
+        try:
+            log_operation("playback_start", "INFO", {
+                "action": "set_playback_start_time",
+                "start_time": start_time,
+                "previous_start_time": self.state.get('playback_start_time')
+            })
+            
+            self.state['playback_start_time'] = start_time
+            self._save_state()
+            
+        except Exception as e:
+            log_operation("playback_start", "ERROR", {
+                "action": "set_playback_start_time_failed",
+                "start_time": start_time,
+                "error": str(e),
+                "error_type": type(e).__name__
+            }, e)
+    
+    def get_playback_start_time(self) -> Optional[float]:
+        """Get when playback started (Unix timestamp)."""
+        return self.state.get('playback_start_time')
+    
+    def save_playback_position(self, current_time: float):
+        """Save the current playback position based on elapsed time."""
+        try:
+            start_time = self.get_playback_start_time()
+            if start_time:
+                position = current_time - start_time
+                self.set_playback_position(position)
+                
+                log_operation("playback_position", "DEBUG", {
+                    "action": "save_playback_position",
+                    "current_time": current_time,
+                    "start_time": start_time,
+                    "calculated_position": position
+                })
+                
+        except Exception as e:
+            log_operation("playback_position", "ERROR", {
+                "action": "save_playback_position_failed",
+                "current_time": current_time,
+                "error": str(e),
+                "error_type": type(e).__name__
+            }, e)
+    
+    def clear_playback_position(self):
+        """Clear playback position (when stopping or changing tracks)."""
+        try:
+            log_operation("playback_position", "INFO", {
+                "action": "clear_playback_position",
+                "previous_position": self.state.get('playback_position', 0),
+                "previous_start_time": self.state.get('playback_start_time')
+            })
+            
+            self.state['playback_position'] = 0
+            self.state['playback_start_time'] = None
+            self.state['last_position_save'] = None
+            self._save_state()
+            
+        except Exception as e:
+            log_operation("playback_position", "ERROR", {
+                "action": "clear_playback_position_failed",
+                "error": str(e),
+                "error_type": type(e).__name__
+            }, e) 

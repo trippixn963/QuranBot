@@ -614,7 +614,7 @@ class SurahSelect(Select):
                 f"**Now playing Surah {selected_surah}: {surah_name}**" + (f"\n*{arabic_name}*" if arabic_name else ""), 
                 discord.Color.green()
             )
-            await interaction.followup.send(embed=confirmation_embed, ephemeral=True, delete_after=300)
+            await interaction.followup.send(embed=confirmation_embed, ephemeral=True)
             
         except ValueError:
             error_embed = await create_response_embed(
@@ -623,7 +623,7 @@ class SurahSelect(Select):
                 "Invalid surah selection. Please try again.", 
                 discord.Color.red()
             )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True, delete_after=300)
+            await interaction.response.send_message(embed=error_embed, ephemeral=True)
         except Exception as e:
             log_operation("surah_select", "ERROR", {
                 "user_id": interaction.user.id,
@@ -636,7 +636,7 @@ class SurahSelect(Select):
                 f"Error selecting surah: {str(e)}", 
                 discord.Color.red()
             )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True, delete_after=300)
+            await interaction.response.send_message(embed=error_embed, ephemeral=True)
 
 class ReciterSelect(Select):
     def __init__(self, bot):

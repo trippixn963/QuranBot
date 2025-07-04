@@ -15,6 +15,7 @@ import asyncio
 from monitoring.logging.logger import logger
 from monitoring.logging.log_helpers import log_operation
 from core.config.config import Config
+from cogs.user_commands.quran_question import QuranQuestionCog
 
 class DailyVerseManager:
     """Daily verse manager that handles verse scheduling and sending."""
@@ -242,8 +243,59 @@ class DailyVerseManager:
             logger.info(f"Daily verse sent: {verse['surah_name']} {verse['ayah']}", 
                        extra={'event': 'VERSE_SENT', 'surah': verse['surah'], 'ayah': verse['ayah'], 'channel_id': text_channel.id})
             
+            # Schedule sending a Quran question after 1 minute
+            asyncio.create_task(self.send_quran_question_after_delay(text_channel, delay=60))
+            
         except Exception as e:
             logger.error(f"Failed to send daily verse: {e}", extra={'event': 'VERSE_SEND_ERROR'})
+
+    async def send_quran_question_after_delay(self, channel, delay=60):
+        logger.info("[QURAN_QUESTION_DEBUG] Called send_quran_question_after_delay", extra={'event': 'QURAN_QUESTION_DEBUG'})
+        try:
+            await asyncio.sleep(delay)
+            logger.info("[QURAN_QUESTION_DEBUG] Slept for delay, now attempting to get cog", extra={'event': 'QURAN_QUESTION_DEBUG'})
+            question_cog = None
+            for attempt in range(10):
+                question_cog = self.bot.get_cog('QuranQuestionCog')
+                if question_cog:
+                    break
+                logger.warning(f"[QURAN_QUESTION_DEBUG] QuranQuestionCog not loaded, retrying... ({attempt+1}/10)", extra={'event': 'QURAN_QUESTION_COG_RETRY'})
+                await asyncio.sleep(1)
+            if not question_cog:
+                logger.error("QuranQuestionCog not loaded after retries!", extra={'event': 'QURAN_QUESTION_COG_MISSING'})
+                await channel.send("❌ Quran question system is not available. Please contact an admin.")
+                return
+            logger.info("[QURAN_QUESTION_DEBUG] Found QuranQuestionCog, getting question", extra={'event': 'QURAN_QUESTION_DEBUG'})
+            question = question_cog.get_random_question()
+            if not question:
+                await channel.send("❌ No Quran questions available.")
+                logger.error("No Quran questions available!", extra={'event': 'QURAN_QUESTION_NO_QUESTIONS'})
+                return
+            logger.info("[QURAN_QUESTION_DEBUG] Got question, building embed", extra={'event': 'QURAN_QUESTION_DEBUG'})
+            choices_text = ""
+            for idx, (en, ar) in enumerate(zip(question["choices_en"], question["choices_ar"])):
+                label = chr(65 + idx)
+                choices_text += f"**{label}.** {en} / {ar}\n"
+            embed = discord.Embed(
+                title="❓ Quran Question (MCQ)",
+                description=f"**EN:** {question['question_en']}\n**AR:** {question['question_ar']}\n\n{choices_text}",
+                color=discord.Color.dark_embed()
+            )
+            embed.set_footer(text="Choose the correct answer below.")
+            from cogs.user_commands.quran_question import QuranMCQView
+            logger.info("[QURAN_QUESTION_DEBUG] Creating MCQ view and sending embed", extra={'event': 'QURAN_QUESTION_DEBUG'})
+            view = QuranMCQView(question, self.bot.user, question_cog.score_manager)
+            sent_msg = await channel.send(embed=embed, view=view)
+            view.original_message = sent_msg
+            await view.update_answered_list()
+            view.timer_task = asyncio.create_task(view.start_timer_update())
+            logger.info("[QURAN_QUESTION_DEBUG] Question embed sent successfully", extra={'event': 'QURAN_QUESTION_DEBUG'})
+        except Exception as e:
+            logger.error(f"[QURAN_QUESTION_DEBUG] Exception in send_quran_question_after_delay: {e}", extra={'event': 'QURAN_QUESTION_SEND_ERROR'})
+            try:
+                await channel.send(f"❌ Failed to send Quran question: {e}")
+            except Exception:
+                pass
 
 # Global instance
 daily_verse_manager = None
@@ -271,6 +323,12 @@ async def setup(bot):
                     await interaction.response.send_message("❌ You do not have permission to use this command!", ephemeral=True)
                     return
                 
+                # Cooldown: don't send if a verse was sent in the last 60 seconds
+                now = datetime.now()
+                if daily_verse_manager.last_verse_time and (now - daily_verse_manager.last_verse_time).total_seconds() < 60:
+                    await interaction.response.send_message("⚠️ A verse was just sent. Please wait a minute before sending another.", ephemeral=True)
+                    return
+                
                 # Get next verse from queue
                 verse = daily_verse_manager.get_next_verse()
                 if not verse:
@@ -288,6 +346,7 @@ async def setup(bot):
                     # Update state
                     daily_verse_manager.last_sent_verse = verse
                     daily_verse_manager.save_last_sent_verse(verse)
+                    daily_verse_manager.last_verse_time = now
                     
                     await interaction.response.send_message("✅ Verse sent!", ephemeral=True)
                     
@@ -327,11 +386,19 @@ async def setup(bot):
                     inline=True
                 )
                 
-                embed.add_field(
-                    name="Channel",
-                    value=f"<#{daily_verse_manager.get_daily_verse_channel().id}>",
-                    inline=True
-                )
+                channel = daily_verse_manager.get_daily_verse_channel()
+                if channel:
+                    embed.add_field(
+                        name="Channel",
+                        value=f"<#{channel.id}>",
+                        inline=True
+                    )
+                else:
+                    embed.add_field(
+                        name="Channel",
+                        value="❌ Not configured",
+                        inline=True
+                    )
                 
                 embed.add_field(
                     name="Interval",
@@ -362,96 +429,7 @@ async def setup(bot):
                 logger.error(f"Failed to get verse status: {e}", extra={'event': 'VERSE_STATUS_ERROR'})
                 await interaction.response.send_message("❌ Failed to get verse status!", ephemeral=True)
         
-        @bot.tree.command(name="reshuffleverses", description="Reshuffle the verse queue (Admin only)")
-        async def reshuffle_verses(interaction: discord.Interaction):
-            """Reshuffle the verse queue manually."""
-            try:
-                # Check if manager is initialized
-                if daily_verse_manager is None:
-                    await interaction.response.send_message("❌ Daily verse system not initialized!", ephemeral=True)
-                    return
-                
-                # Permission check
-                if not hasattr(interaction.user, 'guild_permissions') or not getattr(interaction.user, 'guild_permissions').administrator:
-                    await interaction.response.send_message("❌ You do not have permission to use this command!", ephemeral=True)
-                    return
-                
-                daily_verse_manager.reshuffle_verse_queue()
-                
-                embed = discord.Embed(
-                    title="✅ Verses Reshuffled",
-                    description=f"Verse queue has been reshuffled with {len(daily_verse_manager.verse_queue)} verses",
-                    color=0x00ff00,
-                    timestamp=datetime.now()
-                )
-                
-                await interaction.response.send_message(embed=embed)
-                
-                logger.info(f"Verses reshuffled by {interaction.user.name}", 
-                           extra={'event': 'VERSE_RESHUFFLE', 'user_id': interaction.user.id})
-                
-            except Exception as e:
-                logger.error(f"Failed to reshuffle verses: {e}", extra={'event': 'VERSE_RESHUFFLE_ERROR'})
-                await interaction.response.send_message("❌ Failed to reshuffle verses!", ephemeral=True)
-        
-        @bot.tree.command(name="listchannels", description="List all available channels (Admin only)")
-        async def list_channels(interaction: discord.Interaction):
-            """List all available channels for debugging."""
-            try:
-                # Permission check
-                if not hasattr(interaction.user, 'guild_permissions') or not getattr(interaction.user, 'guild_permissions').administrator:
-                    await interaction.response.send_message("❌ You do not have permission to use this command!", ephemeral=True)
-                    return
-                
-                guild = interaction.guild
-                if not guild:
-                    await interaction.response.send_message("❌ This command can only be used in a guild!", ephemeral=True)
-                    return
-                
-                embed = discord.Embed(
-                    title="📋 Available Channels",
-                    description=f"Channels in {guild.name}",
-                    color=0x00aaff,
-                    timestamp=datetime.now()
-                )
-                
-                text_channels = []
-                voice_channels = []
-                
-                for channel in guild.channels:
-                    if isinstance(channel, discord.TextChannel):
-                        text_channels.append(f"<#{channel.id}> - {channel.name}")
-                    elif isinstance(channel, discord.VoiceChannel):
-                        voice_channels.append(f"<#{channel.id}> - {channel.name}")
-                
-                if text_channels:
-                    embed.add_field(
-                        name="📝 Text Channels",
-                        value="\n".join(text_channels[:10]),  # Limit to first 10
-                        inline=False
-                    )
-                
-                if voice_channels:
-                    embed.add_field(
-                        name="🔊 Voice Channels",
-                        value="\n".join(voice_channels[:10]),  # Limit to first 10
-                        inline=False
-                    )
-                
-                embed.add_field(
-                    name="Total Channels",
-                    value=f"Text: {len(text_channels)}, Voice: {len(voice_channels)}",
-                    inline=True
-                )
-                
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-                
-                logger.info(f"Channel list requested by {interaction.user.name}", 
-                           extra={'event': 'CHANNEL_LIST_REQUEST', 'user_id': interaction.user.id})
-                
-            except Exception as e:
-                logger.error(f"Failed to list channels: {e}", extra={'event': 'CHANNEL_LIST_ERROR'})
-                await interaction.response.send_message("❌ Failed to list channels!", ephemeral=True)
+
         
         # Start the daily verse task
         await daily_verse_manager.start_daily_verse_task()

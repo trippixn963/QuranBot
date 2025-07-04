@@ -1,89 +1,61 @@
-# 📖 QuranBot - Discord 24/7 Quran Streaming Bot
+# 🕌 QuranBot
 
 <div align="center">
-  <img src="images/BANNER (Still).png" alt="QuranBot Banner" width="800"/>
+  <img src="images/PFP (Full - Still).png" alt="QuranBot Logo" width="200"/>
   
-  [![MIT License](https://img.shields.io/github/license/JohnHamwi/QuranAudioBot)](LICENSE)
-  [![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
-  [![Last Commit](https://img.shields.io/github/last-commit/JohnHamwi/QuranAudioBot)](https://github.com/JohnHamwi/QuranAudioBot/commits/master)
-  [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-  [![Discord.py](https://img.shields.io/badge/discord.py-2.3.0%2B-blue)](https://discordpy.readthedocs.io/)
-  [![Stability](https://img.shields.io/badge/stability-production%20ready-brightgreen)](https://github.com/JohnHamwi/QuranAudioBot)
+  **24/7 Quran Streaming Bot with Interactive Controls**
+  
+  [![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://www.python.org/downloads/)
+  [![Discord.py](https://img.shields.io/badge/Discord.py-2.3+-green.svg)](https://discordpy.readthedocs.io/)
+  [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+  
+  *Built with ❤️ for the Muslim Ummah*
 </div>
 
-> **🚨 Disclaimer:** This project is provided as-is, with no support or warranty. Issues and pull requests may not be reviewed or answered. See [SUPPORT.md](SUPPORT.md) for details.
+---
 
-A professional Discord bot for continuous Quran recitation with multiple reciters, interactive controls, and comprehensive monitoring. Built with enterprise-grade stability and reliability.
+## 🌟 Features
 
-## 🌟 Key Features
+### 🎵 **24/7 Audio Streaming**
+- **Continuous Quran Recitation** - Never-ending stream of beautiful recitations
+- **Multiple Professional Reciters** - Choose from various renowned reciters
+- **114 Complete Surahs** - Full Quran with proper Arabic pronunciation
+- **Automatic Playback** - Seamless transitions between surahs
 
-### 🎵 **Audio Excellence**
-- **24/7 Quran Streaming** - Continuous playback of all 114 surahs
-- **Multiple Professional Reciters** - Support for 4+ high-quality reciters
-- **Seamless Audio Transitions** - No gaps or interruptions between surahs
-- **High-Quality Audio Processing** - FFmpeg-powered audio streaming
+### 🎮 **Interactive Control Panel**
+- **Beautiful Discord UI** - Rich embeds with buttons and select menus
+- **Real-time Controls** - Play, pause, skip, loop, shuffle functionality
+- **Surah Browser** - Easy navigation through all 114 surahs
+- **Reciter Selection** - Switch between different reciters on-the-fly
+- **Search Function** - Find specific surahs quickly
 
-### 🎮 **Interactive Experience**
-- **Rich Control Panel** - Beautiful Discord embeds with playback controls
-- **Slash Commands** - Modern Discord interaction system
-- **Real-time Status Updates** - Dynamic presence with current surah info
-- **User Activity Tracking** - Monitor voice channel activity with session duration tracking
+### 📖 **Daily Verse System**
+- **Automatic Posting** - Sends verses every 3 hours
+- **Beautiful Embeds** - Arabic text and English translation in separate code blocks
+- **No Repeats** - Intelligent shuffling prevents immediate repeats
+- **Dua Reactions** - Interactive emoji reactions for engagement
 
-### 🛡️ **Enterprise Stability** ⭐ **LATEST**
-- **Robust Connection Handling** - Advanced voice connection management with heartbeat monitoring
-- **Automatic Error Recovery** - Self-healing from network issues and Discord API hiccups
-- **FFmpeg Process Management** - Comprehensive audio process cleanup prevents conflicts
-- **Network Resilience** - Exponential backoff retry logic with configurable timeouts
-- **Health Monitoring** - Real-time bot health and performance tracking
-- **Auto-Reconnection** - Intelligent reconnection with connection stability monitoring
-- **Playback Locking** - Prevents multiple surahs from playing simultaneously
-- **Voice Session Management** - Handles Discord voice session expirations gracefully
+### ❓ **Quran Question System**
+- **Multiple Choice Questions** - Interactive Quran knowledge tests
+- **Bilingual Support** - Questions in both English and Arabic
+- **Leaderboard System** - Track user scores and achievements
+- **Timer System** - 1-minute countdown with dynamic updates
 
-### 🎨 **Professional UI** ✨ **UPDATED**
-- **Clean Embed Design** - Minimal, clutter-free Discord embeds without redundant information
-- **Clickable User Mentions** - Interactive user fields with @mention format
-- **Session-Based Time Tracking** - Focus on current session duration instead of lifetime totals
-- **Streamlined Activity Logs** - Cleaner join/leave notifications without unnecessary channel info
-- **Dynamic Presence** - Themed emojis and real surah names
-- **Rich Notifications** - Surah change alerts with reciter info
+### 📊 **Advanced Monitoring**
+- **Real-time Logging** - Comprehensive activity tracking
+- **Health Monitoring** - System status and performance metrics
+- **User Session Tracking** - Voice channel activity monitoring
+- **Error Handling** - Robust error recovery and reporting
 
-## 🎵 Supported Reciters
-
-<div align="center">
-  <table>
-    <tr>
-      <td><strong>Saad Al Ghamdi</strong></td>
-      <td><strong>Maher Al Muaiqly</strong></td>
-      <td><strong>Muhammad Al Luhaidan</strong></td>
-      <td><strong>Rashid Al Afasy</strong></td>
-    </tr>
-    <tr>
-      <td>Beautiful, clear recitation</td>
-      <td>Popular and melodious</td>
-      <td>Traditional style</td>
-      <td>Modern and engaging</td>
-    </tr>
-    <tr>
-      <td><strong>Abdul Basit Abdul Samad</strong></td>
-      <td><strong>Yasser Al Dosari</strong></td>
-      <td colspan="2"></td>
-    </tr>
-    <tr>
-      <td>Legendary classical style</td>
-      <td>Contemporary and powerful</td>
-      <td colspan="2"></td>
-    </tr>
-  </table>
-</div>
+---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-
-- Python 3.8+
-- FFmpeg installed
+- Python 3.13+
+- FFmpeg installed and in PATH
 - Discord Bot Token
-- Discord Server with voice channel
+- Discord Server with appropriate permissions
 
 ### Installation
 
@@ -98,235 +70,213 @@ A professional Discord bot for continuous Quran recitation with multiple reciter
    pip install -r requirements.txt
    ```
 
-3. **Setup environment**
+3. **Set up environment variables**
    ```bash
    cp env_template.txt .env
-   # Edit .env with your Discord bot configuration
+   # Edit .env with your configuration
    ```
 
-4. **Add audio files**
-   - Create `audio/` directory
-   - Add reciter folders with MP3 files (1-114.mp3)
+4. **Configure audio files**
+   - Place Quran audio files in the `audio/` directory
+   - Organize by reciter: `audio/reciter_name/surah_files.mp3`
 
 5. **Run the bot**
    ```bash
    python run.py
    ```
 
+---
+
 ## ⚙️ Configuration
 
-### Environment Variables (.env)
-
+### Environment Variables
 ```env
 # Discord Configuration
-DISCORD_TOKEN=your_bot_token_here
+DISCORD_TOKEN=your_discord_bot_token
 TARGET_CHANNEL_ID=your_voice_channel_id
+TARGET_GUILD_ID=your_guild_id
 PANEL_CHANNEL_ID=your_control_panel_channel_id
+DAILY_VERSE_CHANNEL_ID=your_daily_verse_channel_id
 LOGS_CHANNEL_ID=your_logs_channel_id
-DAILY_VERSE_CHANNEL_ID=your_daily_verse_text_channel_id
+
+# Admin Configuration
+ADMIN_USER_IDS=user_id1,user_id2,user_id3
+DEVELOPER_ID=your_developer_id
 
 # Audio Configuration
 AUDIO_FOLDER=audio
-DEFAULT_RECITER=Saad Al Ghamdi
-AUDIO_QUALITY=128k
+AUTO_VOICE_CONNECT=true
+AUTO_RECONNECT=true
 
-# FFmpeg Configuration
-FFMPEG_PATH=C:\ffmpeg\bin  # Windows
-# FFMPEG_PATH=/usr/bin     # Linux/macOS
+# Logging Configuration
+LOG_LEVEL=INFO
 ```
 
-### Audio File Structure
+### Required Permissions
+- **Send Messages** - For embeds and responses
+- **Use Slash Commands** - For bot commands
+- **Connect** - To join voice channels
+- **Speak** - To play audio
+- **Manage Messages** - For control panel management
+- **Add Reactions** - For daily verse interactions
 
-```
-audio/
-├── Saad Al Ghamdi/
-│   ├── 1.mp3
-│   ├── 2.mp3
-│   └── ... (114.mp3)
-├── Maher Al Muaiqly/
-│   ├── 1.mp3
-│   └── ... (114.mp3)
-└── ... (other reciters)
-```
+---
 
-## 🎮 Commands
+## 📋 Available Commands
 
-### Slash Commands
+### User Commands (Everyone)
+| Command | Description |
+|---------|-------------|
+| `/askquranquestion` | Ask a random Quran multiple choice question |
+| `/leaderboard` | Show the Quran question leaderboard |
+| `/versestatus` | Check daily verse status |
 
-- `/control` - Open interactive control panel
-- `/status` - Show bot status and health
-- `/restart` - Restart the bot (Admin only)
-- `/skip` - Skip current surah
-- `/reconnect` - Reconnect to voice channel
-- `/credits` - Show bot credits (now without the '(you)' label)
-- `/logs` - View recent logs
-- `/sendverse` - Send a daily verse immediately (Admin only)
-- `/versestatus` - Check daily verse status
-- `/reshuffleverses` - Reshuffle the daily verse queue (Admin only)
-- `/listchannels` - List all available channels (Admin only)
+### Admin Commands (Admin Only)
+| Command | Description |
+|---------|-------------|
+| `/admin restart` | Restart the Quran Bot |
+| `/stop stop` | Stop the Quran Bot completely |
+| `/credits` | Show bot credits and information |
+| `/info` | Get bot logs and configuration |
+| `/sendverse` | Send a verse now (Admin only) |
 
-### Control Panel Features
+### Interactive Control Panel
+- **Persistent UI** - Always available in designated channel
+- **Surah Selection** - Browse and select different surahs
+- **Reciter Selection** - Choose from available reciters
+- **Playback Controls** - Play, pause, skip, previous, loop, shuffle
+- **Search Function** - Search for specific surahs
+- **Real-time Status** - Shows current playback status and timer
 
-- **Surah Selection** - Paginated surah browser with emojis
-- **Reciter Selection** - Dropdown with available reciters
-- **Playback Controls** - Play, pause, skip, loop
-- **Real-time Status** - Current surah and reciter info
+---
 
-## 🏗️ Project Structure
+## 📁 Project Structure
 
 ```
 QuranBot/
-├── src/
-│   ├── bot/
-│   │   └── quran_bot.py          # Main bot implementation
-│   ├── cogs/
-│   │   ├── admin_commands/       # Admin slash commands
-│   │   ├── user_commands/        # User slash commands
-│   │   └── utility_commands/     # Utility commands
-│   └── utils/
-│       ├── config.py             # Configuration management
-│       ├── logger.py             # Enhanced logging system
-│       ├── health.py             # Health monitoring
-│       ├── state_manager.py      # Bot state persistence
-│       └── surah_mapper.py       # Surah name mapping
-├── scripts/
-│   ├── vps/                      # VPS management scripts
-│   ├── windows/                  # Windows utilities
-│   ├── linux/                    # Linux utilities
-│   └── macos/                    # macOS utilities
-├── audio/                        # Audio files (not in git)
-├── logs/                         # Log files
-├── backup/                       # Backup versions
-├── requirements.txt              # Python dependencies
-├── run.py                        # Entry point
-└── README.md                     # This file
+├── 📁 src/                          # Main source code
+│   ├── 📁 bot/                      # Bot core functionality
+│   │   └── quran_bot.py            # Main bot class
+│   ├── 📁 cogs/                     # Discord command modules
+│   │   ├── 📁 admin/               # Admin commands
+│   │   │   ├── 📁 bot_control/     # Bot control commands
+│   │   │   ├── 📁 monitoring/      # Monitoring commands
+│   │   │   └── 📁 misc/            # Miscellaneous admin commands
+│   │   └── 📁 user_commands/       # User-facing commands
+│   │       ├── control_panel.py    # Interactive control panel
+│   │       ├── daily_verse.py      # Daily verse system
+│   │       └── quran_question.py   # Quran question system
+│   ├── 📁 core/                     # Core functionality
+│   │   ├── 📁 config/              # Configuration management
+│   │   ├── 📁 mapping/             # Surah mapping utilities
+│   │   └── 📁 state/               # State management
+│   └── 📁 monitoring/               # Monitoring and logging
+│       ├── 📁 health/              # Health monitoring
+│       └── 📁 logging/             # Logging system
+├── 📁 audio/                        # Quran audio files
+├── 📁 data/                         # Data storage
+│   ├── bot_state.json              # Bot state persistence
+│   ├── daily_verses_pool.json      # Daily verse database
+│   ├── quran_questions.json        # Question database
+│   └── user_vc_sessions.json       # User session tracking
+├── 📁 images/                       # Bot images and assets
+├── 📁 logs/                         # Application logs
+├── 📁 scripts/                      # Utility scripts
+│   ├── 📁 windows/                 # Windows-specific scripts
+│   ├── 📁 linux/                   # Linux-specific scripts
+│   ├── 📁 macos/                   # macOS-specific scripts
+│   └── 📁 vps/                     # VPS management scripts
+├── requirements.txt                 # Python dependencies
+├── run.py                          # Bot entry point
+└── README.md                       # This file
 ```
 
-## 🖥️ VPS Deployment
+---
 
-### Automated Setup
+## 🎯 Key Features Explained
 
-```bash
-# Upload files to VPS
-scp -r . root@your-vps-ip:/opt/quranbot/
+### Daily Verse System
+- **Automatic Scheduling** - Posts verses every 3 hours automatically
+- **Beautiful Formatting** - Arabic and English text in separate black code blocks
+- **Smart Shuffling** - Prevents immediate repeats until all verses are used
+- **Interactive Elements** - Dua emoji reactions for user engagement
 
-# Run setup script
-ssh root@your-vps-ip "cd /opt/quranbot && chmod +x deploy_temp/setup_vps.sh && ./deploy_temp/setup_vps.sh"
-```
+### Quran Question System
+- **Bilingual Questions** - Questions in both English and Arabic
+- **Multiple Choice** - 4 options with A, B, C, D format
+- **Timer System** - 1-minute countdown with 10-second updates
+- **Score Tracking** - Persistent leaderboard with user mentions
+- **Answer Reveal** - Shows correct answer and user responses
 
-### Manual Setup
-
-1. **Install system dependencies**
-   ```bash
-   apt update && apt upgrade -y
-   apt install -y python3 python3-pip python3-venv ffmpeg
-   ```
-
-2. **Setup Python environment**
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
-
-3. **Create systemd service**
-   ```bash
-   # Copy the service file from deploy_temp/setup_vps.sh
-   systemctl daemon-reload
-   systemctl enable quranbot
-   systemctl start quranbot
-   ```
-
-### VPS Management Scripts
-
-```bash
-# Start bot
-./scripts/vps/start_bot.sh
-
-# Stop bot
-./scripts/vps/stop_bot.sh
-
-# Restart bot
-./scripts/vps/restart_bot.sh
-
-# Check status
-./scripts/vps/status_bot.sh
-```
-
-## 🔧 Advanced Features
-
-### Stability Improvements ⭐ **Latest**
-
-- **Connection Monitoring** - Continuous heartbeat checks every 30 seconds
-- **Robust Error Recovery** - Handles Discord API issues gracefully
-- **FFmpeg Process Management** - Prevents audio conflicts and memory leaks
-- **Network Resilience** - Exponential backoff for connection retries
-- **Health Monitoring** - Real-time performance and error tracking
-- **Playback Locking** - Ensures only one surah plays at a time
-- **Voice Session Management** - Handles Discord session expirations
+### Control Panel Features
+- **Real-time Updates** - Live status updates every 10 seconds
+- **Surah Navigation** - Paginated browsing through all 114 surahs
+- **Reciter Switching** - Change reciters without interrupting playback
+- **Playback Controls** - Full media control functionality
+- **Search Capability** - Find surahs by name or number
 
 ### Monitoring & Logging
+- **Comprehensive Logging** - Detailed activity tracking
+- **Health Monitoring** - System performance metrics
+- **User Session Tracking** - Voice channel activity
+- **Error Recovery** - Automatic reconnection and error handling
+- **Discord Integration** - Real-time logs sent to Discord channels
 
-- **Structured Logging** - Enhanced logging with user avatars and context
-- **Performance Tracking** - Monitor operation timing and bottlenecks
-- **Error Reporting** - Comprehensive error tracking and reporting
-- **Health Dashboard** - Real-time bot health status
+---
 
-### User Experience
+## 🔧 Development
 
-- **Voice Activity Tracking** - Monitor user joins/leaves with duration
-- **Interaction Counting** - Track user engagement with the bot
-- **Professional Embeds** - Beautiful, branded Discord embeds
-- **Dynamic Presence** - Real-time status updates with surah info
+### Local Development
+```bash
+# Install development dependencies
+pip install -r requirements-dev.txt
 
-## 📊 Performance Metrics
+# Run with development settings
+python run.py
+```
 
-- **Uptime**: 99.9%+ with auto-reconnection
-- **Audio Quality**: High-quality MP3 streaming
-- **Response Time**: <1 second for commands
-- **Memory Usage**: Optimized for 24/7 operation
-- **Network Resilience**: Handles Discord API hiccups
+### VPS Deployment
+```bash
+# Use VPS management scripts
+./scripts/vps/vps_manager.py
+```
+
+### Audio File Management
+```bash
+# Validate audio files
+python scripts/windows/validate_audio_files.py
+
+# Check FFmpeg status
+./scripts/windows/check_ffmpeg_status.bat
+```
+
+---
 
 ## 🤝 Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+### Development Setup
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+---
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support
+---
 
-For support information, see [SUPPORT.md](SUPPORT.md).
+## 🙏 Acknowledgments
 
-## 🆕 Recent Improvements (Latest Update)
-
-### 🧹 **Embed System Overhaul**
-- **Removed Footer Clutter** - All embeds now have clean, minimal design without footers
-- **Eliminated Redundant Fields** - Removed unnecessary "Channel" fields since bot operates on single channel
-- **Enhanced User Interaction** - All user fields now use clickable @mention format for better UX
-- **Simplified Time Tracking** - Session duration resets on leave, focusing on current activity
-
-### 📊 **Activity Logging Improvements**
-- **Cleaner Join/Leave Messages** - Streamlined format with essential information only
-- **Better User Identification** - Clickable user mentions replace plain display names
-- **Session-Focused Tracking** - Time tracking resets each session for relevant data
-- **Reduced Visual Noise** - Removed redundant channel information across all embeds
-
-## 📅 Daily Verse Feature
-
-- **Automatic Daily Verses:** Sends a random Quran verse every 3 hours to a configurable text channel (e.g., 🌐┃chat・الدردشة).
-- **Beautiful Embeds:** Each verse is shown in a clean embed with:
-  - Arabic text in a black code block
-  - English translation in a black code block
-  - Dua emoji (🤲) reaction
-  - No time footer, and the embed color matches the bot's profile picture
-- **No Repeats:** Verses are shuffled and cycled with no immediate repeats until all are used.
-- **Admin Controls:**
-  - `/sendverse` — Send a verse immediately
-  - `/versestatus` — Check daily verse status
-  - `/reshuffleverses` — Reshuffle the verse queue
-  - `/listchannels` — List all available channels
+- **Quran Audio** - Professional recitations from various reciters
+- **Discord.py** - Excellent Discord API wrapper
+- **FFmpeg** - Powerful audio processing
+- **Muslim Community** - For inspiration and support
 
 ---
 

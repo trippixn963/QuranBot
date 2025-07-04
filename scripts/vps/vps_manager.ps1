@@ -23,7 +23,8 @@ function Show-Menu {
     Write-Host "8. Upload Audio Files" -ForegroundColor Green
     Write-Host "9. Create Backup" -ForegroundColor Green
     Write-Host "10. Setup Environment" -ForegroundColor Green
-    Write-Host "11. Exit" -ForegroundColor Red
+    Write-Host "11. Kill All Python" -ForegroundColor Red
+    Write-Host "12. Exit" -ForegroundColor Red
     Write-Host ""
 }
 
@@ -175,6 +176,40 @@ function Setup-Environment {
     Write-Host "✅ Environment setup completed!" -ForegroundColor Green
 }
 
+function Kill-AllPython {
+    Write-Host "KILLING ALL PYTHON PROCESSES..." -ForegroundColor Red
+    
+    # Get list of Python processes before killing
+    Write-Host "Python processes found:" -ForegroundColor Yellow
+    $pythonProcesses = ssh -i $SSH_KEY "${VPS_USER}@${VPS_IP}" "ps aux | grep python | grep -v grep" 2>&1
+    if ($LASTEXITCODE -eq 0 -and $pythonProcesses) {
+        $pythonProcesses -split "`n" | ForEach-Object { Write-Host "  - $_" -ForegroundColor Gray }
+    } else {
+        Write-Host "  No Python processes found" -ForegroundColor Gray
+    }
+    
+    # Force kill all Python processes
+    Write-Host "Force killing all Python processes..." -ForegroundColor Red
+    ssh -i $SSH_KEY "${VPS_USER}@${VPS_IP}" "pkill -9 -f python" 2>&1
+    
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "✅ All Python processes killed!" -ForegroundColor Green
+        
+        # Verify no Python processes remain
+        Start-Sleep -Seconds 2
+        $remainingProcesses = ssh -i $SSH_KEY "${VPS_USER}@${VPS_IP}" "ps aux | grep python | grep -v grep" 2>&1
+        
+        if ($LASTEXITCODE -eq 0 -and $remainingProcesses) {
+            Write-Host "⚠️ Warning: Some Python processes may still be running:" -ForegroundColor Yellow
+            $remainingProcesses -split "`n" | ForEach-Object { Write-Host "  - $_" -ForegroundColor Gray }
+        } else {
+            Write-Host "✅ Confirmed all Python processes terminated" -ForegroundColor Green
+        }
+    } else {
+        Write-Host "⚠️ May have failed to kill some Python processes" -ForegroundColor Yellow
+    }
+}
+
 # Main menu loop
 do {
     Show-Menu
@@ -191,7 +226,8 @@ do {
         "8" { Upload-AudioFiles }
         "9" { New-Backup }
         "10" { Setup-Environment }
-        "11" { 
+        "11" { Kill-AllPython }
+        "12" { 
             Write-Host "👋 Goodbye!" -ForegroundColor Yellow
             exit 
         }

@@ -102,6 +102,8 @@ async def create_credits_embed(bot, interaction: discord.Interaction) -> discord
         value="• 24/7 Continuous Streaming\n"
               "• Multiple Professional Reciters\n"
               "• Interactive Control Panel\n"
+              "• Daily Verse System\n"
+              "• Quran Question System\n"
               "• Real-time Activity Logging",
         inline=False
     )

@@ -1,0 +1,92 @@
+[
+  {
+    "id": 1,
+    "question_en": "What is the longest surah in the Quran?",
+    "question_ar": "ما هي أطول سورة في القرآن؟",
+    "choices_en": ["Al-Baqarah", "Al-Fatiha", "Al-Ikhlas", "Al-Kahf"],
+    "choices_ar": ["البقرة", "الفاتحة", "الإخلاص", "الكهف"],
+    "answer_en": "Al-Baqarah",
+    "answer_ar": "البقرة"
+  },
+  {
+    "id": 2,
+    "question_en": "Which surah is known as the 'Heart of the Quran'?",
+    "question_ar": "أي سورة تُعرف بـ 'قلب القرآن'؟",
+    "choices_en": ["Yasin", "Maryam", "Al-Baqarah", "Al-Fil"],
+    "choices_ar": ["يس", "مريم", "البقرة", "الفيل"],
+    "answer_en": "Yasin",
+    "answer_ar": "يس"
+  },
+  {
+    "id": 3,
+    "question_en": "What is the shortest surah in the Quran?",
+    "question_ar": "ما هي أقصر سورة في القرآن؟",
+    "choices_en": ["Al-Kawthar", "Al-Falaq", "Al-Nas", "Al-Ikhlas"],
+    "choices_ar": ["الكوثر", "الفلق", "الناس", "الإخلاص"],
+    "answer_en": "Al-Kawthar",
+    "answer_ar": "الكوثر"
+  },
+  {
+    "id": 4,
+    "question_en": "Which surah was revealed first?",
+    "question_ar": "ما هي أول سورة نزلت؟",
+    "choices_en": ["Al-Alaq", "Al-Fatiha", "Al-Baqarah", "Al-Nas"],
+    "choices_ar": ["العلق", "الفاتحة", "البقرة", "الناس"],
+    "answer_en": "Al-Alaq",
+    "answer_ar": "العلق"
+  },
+  {
+    "id": 5,
+    "question_en": "Which surah does not begin with Bismillah?",
+    "question_ar": "أي سورة لا تبدأ بالبسملة؟",
+    "choices_en": ["At-Tawbah", "Al-Fatiha", "Al-Ikhlas", "Al-Mulk"],
+    "choices_ar": ["التوبة", "الفاتحة", "الإخلاص", "الملك"],
+    "answer_en": "At-Tawbah",
+    "answer_ar": "التوبة"
+  },
+  {
+    "id": 6,
+    "question_en": "How many surahs are there in the Quran?",
+    "question_ar": "كم عدد سور القرآن؟",
+    "choices_en": ["114", "99", "120", "112"],
+    "choices_ar": ["١١٤", "٩٩", "١٢٠", "١١٢"],
+    "answer_en": "114",
+    "answer_ar": "١١٤"
+  },
+  {
+    "id": 7,
+    "question_en": "Which prophet is mentioned most in the Quran?",
+    "question_ar": "أي نبي ذُكر أكثر في القرآن؟",
+    "choices_en": ["Musa (Moses)", "Isa (Jesus)", "Ibrahim (Abraham)", "Muhammad (PBUH)"],
+    "choices_ar": ["موسى", "عيسى", "إبراهيم", "محمد ﷺ"],
+    "answer_en": "Musa (Moses)",
+    "answer_ar": "موسى"
+  },
+  {
+    "id": 8,
+    "question_en": "Which surah is named after a woman?",
+    "question_ar": "أي سورة سميت باسم امرأة؟",
+    "choices_en": ["Maryam", "Yusuf", "Nuh", "Hud"],
+    "choices_ar": ["مريم", "يوسف", "نوح", "هود"],
+    "answer_en": "Maryam",
+    "answer_ar": "مريم"
+  },
+  {
+    "id": 9,
+    "question_en": "Which surah is called 'The Opening'?",
+    "question_ar": "أي سورة تُسمى 'الفاتحة'؟",
+    "choices_en": ["Al-Fatiha", "Al-Baqarah", "Al-Nas", "Al-Fil"],
+    "choices_ar": ["الفاتحة", "البقرة", "الناس", "الفيل"],
+    "answer_en": "Al-Fatiha",
+    "answer_ar": "الفاتحة"
+  },
+  {
+    "id": 10,
+    "question_en": "Which surah tells the story of the People of the Cave?",
+    "question_ar": "أي سورة تروي قصة أصحاب الكهف؟",
+    "choices_en": ["Al-Kahf", "Al-Mulk", "Al-Qasas", "Al-Anbiya"],
+    "choices_ar": ["الكهف", "الملك", "القصص", "الأنبياء"],
+    "answer_en": "Al-Kahf",
+    "answer_ar": "الكهف"
+  }
+] 

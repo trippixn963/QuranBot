@@ -304,6 +304,42 @@ class VPSManager:
             print("ERROR: Failed to upload audio files!")
             return False
 
+    def copy_file_to_vps(self, local_file_path: str, remote_file_path: Optional[str] = None) -> bool:
+        """Copy a specific file to VPS."""
+        print(f"Copying file: {local_file_path}")
+        
+        if not os.path.exists(local_file_path):
+            print(f"ERROR: Local file not found: {local_file_path}")
+            return False
+        
+        # If no remote path specified, use the same relative path in bot directory
+        if remote_file_path is None:
+            # Get relative path from local project root
+            local_project = self.config['local_project']
+            if local_file_path.startswith(local_project):
+                relative_path = os.path.relpath(local_file_path, local_project)
+                remote_file_path = f"{self.config['bot_directory']}/{relative_path}"
+            else:
+                print(f"ERROR: File must be within project directory: {local_project}")
+                return False
+        
+        # Create remote directory if it doesn't exist
+        remote_dir = os.path.dirname(remote_file_path)
+        self.run_ssh_command(f"mkdir -p {remote_dir}")
+        
+        # Copy file using scp
+        scp_cmd = f"scp -i {self.config['ssh_key_path']} \"{local_file_path}\" {self.config['user']}@{self.config['ip']}:{remote_file_path}"
+        
+        print(f"Running: {scp_cmd}")
+        result = subprocess.run(scp_cmd, shell=True)
+        
+        if result.returncode == 0:
+            print(f"SUCCESS: File copied successfully to {remote_file_path}")
+            return True
+        else:
+            print(f"ERROR: Failed to copy file to {remote_file_path}")
+            return False
+
     def backup_bot(self) -> bool:
         """Create a backup of the bot."""
         print("Creating backup...")
@@ -458,6 +494,48 @@ class VPSManager:
             print(f"Failed to send Discord notification: {e}")
             return False
 
+    def kill_all_python(self) -> bool:
+        """Kill all Python processes on the VPS."""
+        print("KILLING ALL PYTHON PROCESSES...")
+        self.send_discord_notification("Killing all Python processes")
+        
+        # Get list of Python processes before killing
+        ps_cmd = "ps aux | grep python | grep -v grep"
+        ps_result = self.run_ssh_command(ps_cmd)
+        
+        if ps_result.returncode == 0 and ps_result.stdout.strip():
+            print("Python processes found:")
+            for line in ps_result.stdout.strip().split('\n'):
+                if line.strip():
+                    print(f"  - {line}")
+        else:
+            print("No Python processes found")
+        
+        # Force kill all Python processes
+        kill_cmd = "pkill -9 -f python"
+        result = self.run_ssh_command(kill_cmd, capture_output=False)
+        
+        if result.returncode == 0:
+            print("SUCCESS: All Python processes killed!")
+            self.send_discord_notification("All Python processes killed successfully!")
+            
+            # Verify no Python processes remain
+            time.sleep(2)
+            verify_cmd = "ps aux | grep python | grep -v grep"
+            verify_result = self.run_ssh_command(verify_cmd)
+            
+            if verify_result.returncode == 0 and verify_result.stdout.strip():
+                print("WARNING: Some Python processes may still be running:")
+                print(verify_result.stdout)
+            else:
+                print("SUCCESS: Confirmed all Python processes terminated")
+            
+            return True
+        else:
+            print("WARNING: May have failed to kill some Python processes")
+            self.send_discord_notification("Warning: May have failed to kill some Python processes")
+            return False
+
     def emergency_restart(self) -> bool:
         """Emergency restart - force kill and restart everything."""
         print("EMERGENCY: Emergency restart initiated...")
@@ -578,12 +656,14 @@ class VPSManager:
             print()
             print("UTILITIES:")
             print("20. Upload Audio Files       - Upload audio files to VPS")
-            print("21. Update System            - Update system packages on VPS")
-            print("22. Emergency Restart        - Force kill and restart everything")
-            print("23. Exit                     - Close the VPS manager")
+            print("21. Copy File to VPS         - Copy a specific file to VPS")
+            print("22. Update System            - Update system packages on VPS")
+            print("23. Kill All Python          - Force kill all Python processes")
+            print("24. Emergency Restart        - Force kill and restart everything")
+            print("25. Exit                     - Close the VPS manager")
             print("="*80)
             
-            choice = input("Enter your choice (1-23): ").strip()
+            choice = input("Enter your choice (1-25): ").strip()
             
             if choice == "1":
                 self.check_connection()
@@ -653,10 +733,18 @@ class VPSManager:
                 else:
                     print("ERROR: No path provided!")
             elif choice == "21":
-                self.update_system()
+                file_path = input("Enter local file path: ").strip()
+                if file_path:
+                    self.copy_file_to_vps(file_path)
+                else:
+                    print("ERROR: No file path provided!")
             elif choice == "22":
-                self.emergency_restart()
+                self.update_system()
             elif choice == "23":
+                self.kill_all_python()
+            elif choice == "24":
+                self.emergency_restart()
+            elif choice == "25":
                 print("Goodbye!")
                 break
             else:
@@ -737,7 +825,7 @@ def main():
     parser.add_argument("action", nargs="?", choices=[
         "status", "start", "stop", "restart", "deploy", "logs", "search-logs", "clear-logs", "download-logs",
         "upload", "backup", "list-backups", "restore", "cleanup-backups", "setup", "monitor",
-        "system-info", "disk-space", "network", "update", "emergency-restart", "check", "menu"
+        "system-info", "disk-space", "network", "update", "kill-python", "emergency-restart", "check", "menu"
     ], help="Action to perform")
     parser.add_argument("--lines", "-l", type=int, default=50, help="Number of log lines to show")
     parser.add_argument("--audio-path", "-a", help="Path to audio files for upload")
@@ -766,6 +854,7 @@ def main():
     disk-space          - Show disk space on VPS
     network             - Test internet, DNS, open ports
     update              - Update system packages on VPS
+    kill-python         - Force kill all Python processes
     emergency-restart   - Force kill and restart everything
     check               - Test SSH connection to VPS
     menu                - Interactive menu (default)
@@ -833,6 +922,8 @@ def main():
         manager.check_network_status()
     elif args.action == "update":
         manager.update_system()
+    elif args.action == "kill-python":
+        manager.kill_all_python()
     elif args.action == "emergency-restart":
         manager.emergency_restart()
     elif args.action == "check":

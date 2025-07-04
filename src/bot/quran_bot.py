@@ -4,6 +4,7 @@ Professional 24/7 Quran streaming bot with local audio support.
 """
 
 import discord
+from discord.ext import commands
 import asyncio
 import os
 import sys
@@ -33,14 +34,14 @@ from core.state.state_manager import StateManager
 from core.mapping.surah_mapper import get_surah_from_filename, get_surah_emoji, get_surah_display_name
 from monitoring.logging.log_helpers import log_async_function_call, log_function_call, log_operation, get_system_metrics, get_discord_context, get_bot_state
 
-class QuranBot(discord.Client):
+class QuranBot(commands.Bot):
     """Professional Discord bot for 24/7 Quran streaming."""
     
     def __init__(self):
         """Initialize the QuranBot with enhanced error handling and monitoring."""
         # Initialize base client with all intents
         intents = discord.Intents.all()
-        super().__init__(intents=intents)
+        super().__init__(command_prefix="!", intents=intents)
         
         # Bot state
         self.start_time = datetime.now()  # Track when the bot starts
@@ -55,8 +56,7 @@ class QuranBot(discord.Client):
         self.max_connection_failures = 5  # Maximum number of consecutive failures before giving up
         self.playback_start_time = None
         
-        # Initialize command tree for slash commands
-        self.tree = discord.app_commands.CommandTree(self)
+        # Command tree is automatically created by commands.Bot
         
         # Initialize bot state
         self.current_song_index = 0
@@ -132,13 +132,11 @@ class QuranBot(discord.Client):
         # Load individual command files
         commands_to_load = [
             'src.cogs.admin.bot_control.restart',
-            'src.cogs.admin.monitoring.status',
-            'src.cogs.admin.misc.skip',
-            'src.cogs.admin.bot_control.reconnect',
             'src.cogs.admin.misc.credits',
             'src.cogs.admin.monitoring.utility_logs',
             'src.cogs.user_commands.control_panel',
-            'src.cogs.user_commands.daily_verse'
+            'src.cogs.user_commands.daily_verse',
+            'src.cogs.user_commands.quran_question'
         ]
         
         for command in commands_to_load:
@@ -535,6 +533,18 @@ class QuranBot(discord.Client):
             if has_mp3:
                 self.current_reciter = folder_name  # Store the folder name
                 self.original_playlist = []  # Reset playlist cache on reciter switch
+                
+                # Reset playback timer and state when switching reciters
+                if hasattr(self, 'playback_start_time'):
+                    self.playback_start_time = None
+                    self.state_manager.clear_playback_position()
+                    logger.info(f"Reset playback timer for new reciter: {reciter_name}")
+                
+                # Reset to beginning of new reciter's playlist
+                self.state_manager.set_current_song_index(0)
+                self.state_manager.set_current_song_name("")
+                logger.info(f"Reset to beginning of new reciter's playlist: {reciter_name}")
+                
                 logger.info(f"Switched to reciter: {reciter_name} (folder: {folder_name})", 
                            extra={'event': 'RECITER_CHANGE', 'reciter': reciter_name, 'folder': folder_name})
                 return True
@@ -598,21 +608,40 @@ class QuranBot(discord.Client):
             return self.original_playlist if self.original_playlist else mp3_files
 
     def get_audio_duration(self, file_path):
-        """Get the duration of an audio file using FFmpeg."""
+        """Get the duration of an audio file using FFmpeg with enhanced error handling."""
+        if not os.path.exists(file_path):
+            logger.error(f"Audio file not found: {file_path}", extra={"event": "FILE_NOT_FOUND", "file": file_path})
+            return None
+            
+        if os.path.getsize(file_path) == 0:
+            logger.error(f"Audio file is empty: {file_path}", extra={"event": "EMPTY_FILE", "file": file_path})
+            return None
+
         try:
-            # Try ffprobe first
+            # Try ffprobe first with timeout and better error handling
             cmd = [
                 'ffprobe', '-v', 'quiet', '-show_entries', 'format=duration',
                 '-of', 'csv=p=0', file_path
             ]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-            if result.returncode == 0:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+            if result.returncode == 0 and result.stdout.strip():
                 duration = float(result.stdout.strip())
-                return duration
+                if duration > 0:
+                    logger.debug(f"Got duration via ffprobe for {file_path}: {duration}s", 
+                               extra={"event": "FFPROBE_SUCCESS", "file": file_path, "duration": duration})
+                    return duration
+                else:
+                    logger.warning(f"ffprobe returned zero duration for {file_path}", 
+                                 extra={"event": "FFPROBE_ZERO_DURATION", "file": file_path})
+            else:
+                logger.debug(f"ffprobe failed for {file_path}: {result.stderr}", 
+                           extra={"event": "FFPROBE_FAILED", "file": file_path, "stderr": result.stderr})
+        except subprocess.TimeoutExpired:
+            logger.warning(f"ffprobe timeout for {file_path}", extra={"event": "FFPROBE_TIMEOUT", "file": file_path})
         except Exception as e:
-            logger.debug(f"ffprobe failed for {file_path}: {e}", extra={"event": "FFPROBE", "file": file_path})
+            logger.debug(f"ffprobe exception for {file_path}: {e}", extra={"event": "FFPROBE_EXCEPTION", "file": file_path})
         
-        # Fallback: try to get duration using ffmpeg
+        # Fallback: try to get duration using ffmpeg with better error handling
         try:
             cmd = [
                 'ffmpeg', '-i', file_path, '-f', 'null', '-'
@@ -630,32 +659,111 @@ class QuranBot(discord.Client):
                         seconds = int(duration_match.group(3))
                         centiseconds = int(duration_match.group(4))
                         total_seconds = hours * 3600 + minutes * 60 + seconds + centiseconds / 100
-                        return total_seconds
+                        if total_seconds > 0:
+                            logger.debug(f"Got duration via ffmpeg fallback for {file_path}: {total_seconds}s", 
+                                       extra={"event": "FFMPEG_DURATION_SUCCESS", "file": file_path, "duration": total_seconds})
+                            return total_seconds
+                        else:
+                            logger.warning(f"ffmpeg fallback returned zero duration for {file_path}", 
+                                         extra={"event": "FFMPEG_ZERO_DURATION", "file": file_path})
+        except subprocess.TimeoutExpired:
+            logger.warning(f"ffmpeg duration fallback timeout for {file_path}", 
+                         extra={"event": "FFMPEG_DURATION_TIMEOUT", "file": file_path})
         except Exception as e:
-            logger.debug(f"ffmpeg duration fallback failed for {file_path}: {e}", extra={"event": "FFMPEG_DURATION", "file": file_path})
+            logger.debug(f"ffmpeg duration fallback exception for {file_path}: {e}", 
+                       extra={"event": "FFMPEG_DURATION_EXCEPTION", "file": file_path})
         
         # Final fallback: estimate based on file size (rough approximation)
         try:
             file_size = os.path.getsize(file_path)
-            # Rough estimate: 1 MB ≈ 1 minute for typical MP3 quality
-            estimated_duration = file_size / (1024 * 1024) * 60
-            logger.info(f"Using estimated duration for {file_path}: {estimated_duration:.1f} seconds", 
-                       extra={"event": "ESTIMATED_DURATION", "file": file_path})
-            return estimated_duration
+            if file_size == 0:
+                logger.error(f"Cannot estimate duration for empty file: {file_path}", 
+                           extra={"event": "ESTIMATE_EMPTY_FILE", "file": file_path})
+                return None
+                
+            # Rough estimate: 1 MB ≈ 1 minute for typical MP3 quality (128kbps)
+            # More accurate estimation based on typical MP3 bitrates
+            estimated_duration = file_size / (128 * 1024 / 8)  # bytes / (bits per second / 8)
+            if estimated_duration > 0:
+                logger.info(f"Using estimated duration for {file_path}: {estimated_duration:.1f} seconds (file size: {file_size/1024/1024:.1f}MB)", 
+                           extra={"event": "ESTIMATED_DURATION", "file": file_path, "duration": estimated_duration, "file_size_mb": file_size/1024/1024})
+                return estimated_duration
+            else:
+                logger.error(f"Estimated duration is zero for {file_path}", 
+                           extra={"event": "ESTIMATE_ZERO_DURATION", "file": file_path})
+                return None
         except Exception as e:
-            logger.warning(f"Could not estimate duration for {file_path}: {e}", extra={"event": "DURATION_FAILED", "file": file_path})
+            logger.warning(f"Could not estimate duration for {file_path}: {e}", 
+                         extra={"event": "DURATION_ESTIMATE_FAILED", "file": file_path})
             return None
+
+    def validate_audio_file(self, file_path):
+        """Validate audio file integrity and format."""
+        if not os.path.exists(file_path):
+            logger.error(f"Audio file not found during validation: {file_path}", 
+                       extra={"event": "VALIDATION_FILE_NOT_FOUND", "file": file_path})
+            return False
+            
+        try:
+            file_size = os.path.getsize(file_path)
+            if file_size == 0:
+                logger.error(f"Audio file is empty during validation: {file_path}", 
+                           extra={"event": "VALIDATION_EMPTY_FILE", "file": file_path})
+                return False
+                
+            # Check if file is a valid audio file using ffprobe
+            cmd = [
+                'ffprobe', '-v', 'quiet', '-select_streams', 'a:0', 
+                '-show_entries', 'stream=codec_name', '-of', 'csv=p=0', file_path
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            
+            if result.returncode == 0 and result.stdout.strip():
+                codec = result.stdout.strip()
+                logger.debug(f"Audio file validation successful for {file_path}: codec={codec}, size={file_size/1024/1024:.1f}MB", 
+                           extra={"event": "VALIDATION_SUCCESS", "file": file_path, "codec": codec, "size_mb": file_size/1024/1024})
+                return True
+            else:
+                logger.error(f"Audio file validation failed for {file_path}: {result.stderr}", 
+                           extra={"event": "VALIDATION_FAILED", "file": file_path, "stderr": result.stderr})
+                return False
+                
+        except subprocess.TimeoutExpired:
+            logger.error(f"Audio file validation timeout for {file_path}", 
+                       extra={"event": "VALIDATION_TIMEOUT", "file": file_path})
+            return False
+        except Exception as e:
+            logger.error(f"Audio file validation exception for {file_path}: {e}", 
+                       extra={"event": "VALIDATION_EXCEPTION", "file": file_path})
+            return False
 
     async def play_surah_with_retries(self, voice_client, mp3_file, max_retries=2):
         """Play a surah with retries and robust FFmpeg error handling. Also updates dynamic presence timer."""
         file_name = os.path.basename(mp3_file)
         surah_info = get_surah_from_filename(file_name)
         surah_display = get_surah_display_name(surah_info['number'])
+        
+        # Validate audio file before attempting playback
+        if not self.validate_audio_file(mp3_file):
+            logger.error(f"Skipping invalid audio file: {mp3_file}", 
+                       extra={"event": "INVALID_AUDIO_FILE", "file": file_name})
+            return False
+            
         total_duration = self.get_audio_duration(mp3_file)
+        if not total_duration:
+            logger.error(f"Could not determine duration for {mp3_file}, skipping", 
+                       extra={"event": "NO_DURATION", "file": file_name})
+            return False
+            
+        logger.info(f"Starting playback of {surah_display} ({file_name}) - Duration: {total_duration:.1f}s", 
+                   extra={"event": "PLAYBACK_START", "file": file_name, "duration": total_duration})
+        
         for attempt in range(max_retries + 1):
             try:
-                # Ensure previous audio is stopped
+                # Ensure previous audio is stopped with better error handling
                 if voice_client.is_playing():
+                    logger.debug(f"Stopping previous audio before playing {file_name}", 
+                               extra={"event": "STOP_PREVIOUS", "file": file_name})
                     voice_client.stop()
                     # Wait up to 5 seconds for audio to stop
                     for _ in range(5):
@@ -663,71 +771,135 @@ class QuranBot(discord.Client):
                             break
                         await asyncio.sleep(1)
                     if voice_client.is_playing():
-                        logger.warning(f"Previous audio did not stop in time, skipping {file_name}", extra={"event": "AUDIO", "file": file_name})
+                        logger.warning(f"Previous audio did not stop in time, skipping {file_name}", 
+                                     extra={"event": "STOP_TIMEOUT", "file": file_name})
                         return False
-                source = discord.FFmpegPCMAudio(mp3_file)
+                        
+                # Create FFmpeg source with error handling
+                try:
+                    source = discord.FFmpegPCMAudio(mp3_file)
+                    logger.debug(f"Created FFmpeg source for {file_name}", 
+                               extra={"event": "FFMPEG_SOURCE_CREATED", "file": file_name})
+                except Exception as e:
+                    logger.error(f"Failed to create FFmpeg source for {file_name}: {e}", 
+                               extra={"event": "FFMPEG_SOURCE_FAILED", "file": file_name, "attempt": attempt+1})
+                    raise
+                    
+                # Start playback
                 voice_client.play(source)
+                logger.debug(f"Started playback of {file_name}", 
+                           extra={"event": "PLAYBACK_STARTED", "file": file_name})
+                
                 wait_count = 0
                 max_wait = int(total_duration) if total_duration else 900
                 start_time = time.time()
-                # Dynamic presence update loop
+                
+                # Dynamic presence update loop with better error handling
                 while voice_client.is_playing() and voice_client.is_connected() and wait_count < max_wait:
-                    elapsed = int(time.time() - start_time)
-                    # Format elapsed and total
-                    elapsed_str = f"{elapsed//60}:{elapsed%60:02d}"
-                    total_str = f"{int(total_duration)//60}:{int(total_duration)%60:02d}" if total_duration else "?"
-                    emoji = get_surah_emoji(surah_info['number'])
-                    presence_str = f"{emoji} {surah_info['english_name']} — {elapsed_str} / {total_str}"
-                    activity = discord.Activity(
-                        type=discord.ActivityType.listening, 
-                        name=presence_str,
-                        # You can add small images here if you have them
-                        # large_image="quran_icon",  # Large image key
-                        # small_image="playing",     # Small image key
-                        # large_text=f"Listening to {surah_info['english_name']}",  # Hover text
-                        # small_text="Quran Bot"     # Small image hover text
-                    )
-                    await self.change_presence(activity=activity)
-                    # Wait 5 seconds or until playback ends
-                    for _ in range(5):
-                        if not voice_client.is_playing() or not voice_client.is_connected():
-                            break
-                        await asyncio.sleep(1)
+                    try:
+                        elapsed = int(time.time() - start_time)
+                        # Format elapsed and total
+                        elapsed_str = f"{elapsed//60}:{elapsed%60:02d}"
+                        total_str = f"{int(total_duration)//60}:{int(total_duration)%60:02d}" if total_duration else "?"
+                        emoji = get_surah_emoji(surah_info['number'])
+                        presence_str = f"{emoji} {surah_info['english_name']} — {elapsed_str} / {total_str}"
+                        activity = discord.Activity(
+                            type=discord.ActivityType.listening, 
+                            name=presence_str
+                        )
+                        await self.change_presence(activity=activity)
+                        
+                        # Save playback position every 30 seconds
+                        if wait_count % 6 == 0:  # Every 30 seconds (6 * 5 second intervals)
+                            current_time = time.time()
+                            self.state_manager.save_playback_position(current_time)
+                        
+                        # Wait 5 seconds or until playback ends
+                        for _ in range(5):
+                            if not voice_client.is_playing() or not voice_client.is_connected():
+                                break
+                            await asyncio.sleep(1)
+                            wait_count += 1
+                            
+                    except Exception as e:
+                        logger.warning(f"Error during presence update for {file_name}: {e}", 
+                                     extra={"event": "PRESENCE_UPDATE_ERROR", "file": file_name})
+                        # Continue playback even if presence update fails
+                        await asyncio.sleep(5)
                         wait_count += 1
                 
                 # Wait for playback to actually finish (FFmpeg might have terminated but audio could still be buffered)
                 if voice_client.is_connected():
                     # Give a small buffer for any remaining audio
                     await asyncio.sleep(2)
+                    
                 # Final update to show full duration
-                if total_duration:
-                    emoji = get_surah_emoji(surah_info['number'])
-                    presence_str = f"{emoji} {surah_info['english_name']} — {int(total_duration)//60}:{int(total_duration)%60:02d} / {int(total_duration)//60}:{int(total_duration)%60:02d}"
-                    await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=presence_str))
+                try:
+                    if total_duration:
+                        emoji = get_surah_emoji(surah_info['number'])
+                        presence_str = f"{emoji} {surah_info['english_name']} — {int(total_duration)//60}:{int(total_duration)%60:02d} / {int(total_duration)//60}:{int(total_duration)%60:02d}"
+                        await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=presence_str))
+                except Exception as e:
+                    logger.warning(f"Error in final presence update for {file_name}: {e}", 
+                                 extra={"event": "FINAL_PRESENCE_ERROR", "file": file_name})
+                
+                # Clear playback position when surah finishes
+                self.state_manager.clear_playback_position()
+                # Reset the playback start time for the next surah
+                self.playback_start_time = time.time()
+                self.state_manager.set_playback_start_time(self.playback_start_time)
+                
                 # Additional buffer
                 await asyncio.sleep(3)
+                
+                logger.info(f"Successfully completed playback of {surah_display} ({file_name})", 
+                           extra={"event": "PLAYBACK_SUCCESS", "file": file_name, "duration": total_duration})
                 return True  # Success
+                
             except discord.errors.ConnectionClosed as e:
                 if "4006" in str(e) or "session expired" in str(e).lower():
                     # Handle session expired error
                     guild_id = voice_client.guild.id if voice_client.guild else None
+                    logger.warning(f"Voice session expired for {file_name}, guild_id: {guild_id}", 
+                                 extra={"event": "SESSION_EXPIRED", "file": file_name, "guild_id": guild_id})
                     await self.handle_voice_session_expired(guild_id)
                     return False
                 else:
+                    logger.error(f"Voice connection closed for {file_name}: {e}", 
+                               extra={"event": "VOICE_CONNECTION_CLOSED", "file": file_name, "attempt": attempt+1})
                     log_error(e, f"voice_connection_{file_name}", additional_data={"attempt": attempt+1})
                     self.health_monitor.record_error(e, f"voice_connection_{file_name}")
+                    
+            except discord.errors.ClientException as e:
+                logger.error(f"Discord client exception for {file_name}: {e}", 
+                           extra={"event": "DISCORD_CLIENT_ERROR", "file": file_name, "attempt": attempt+1})
+                log_error(e, f"discord_client_{file_name}", additional_data={"attempt": attempt+1})
+                self.health_monitor.record_error(e, f"discord_client_{file_name}")
+                
             except Exception as e:
+                logger.error(f"FFmpeg playback error for {file_name}: {e}", 
+                           extra={"event": "FFMPEG_PLAYBACK_ERROR", "file": file_name, "attempt": attempt+1})
                 log_error(e, f"ffmpeg_playback_{file_name}", additional_data={"attempt": attempt+1})
                 self.health_monitor.record_error(e, f"ffmpeg_playback_{file_name}")
+                
                 # Try to forcibly stop playback if stuck
-                if voice_client.is_playing():
-                    voice_client.stop()
-                    for _ in range(5):
-                        if not voice_client.is_playing():
-                            break
-                        await asyncio.sleep(1)
+                try:
+                    if voice_client.is_playing():
+                        voice_client.stop()
+                        logger.debug(f"Force stopped playback for {file_name}", 
+                                   extra={"event": "FORCE_STOP", "file": file_name})
+                        for _ in range(5):
+                            if not voice_client.is_playing():
+                                break
+                            await asyncio.sleep(1)
+                except Exception as stop_error:
+                    logger.warning(f"Error while force stopping {file_name}: {stop_error}", 
+                                 extra={"event": "FORCE_STOP_ERROR", "file": file_name})
+                    
                 await asyncio.sleep(2)  # Short delay before retry
-        logger.error(f"FFmpeg failed for {file_name} after {max_retries+1} attempts. Skipping.", extra={"event": "FFMPEG", "file": file_name})
+                
+        logger.error(f"FFmpeg failed for {file_name} after {max_retries+1} attempts. Skipping.", 
+                   extra={"event": "FFMPEG_FINAL_FAILURE", "file": file_name, "attempts": max_retries+1})
         return False
 
     async def play_quran_files(self, voice_client: discord.VoiceClient, channel: discord.VoiceChannel):
@@ -759,7 +931,24 @@ class QuranBot(discord.Client):
                 current_index = 0
             self.is_streaming = True
             self.health_monitor.set_streaming_status(True)
-            self.playback_start_time = time.time()  # Start timer when playback starts
+            
+            # Set playback start time for position tracking
+            current_time = time.time()
+            
+            # Restore playback position if available
+            saved_position = self.state_manager.get_playback_position()
+            if saved_position > 0:
+                logger.info(f"Restoring playback position: {saved_position:.1f} seconds", 
+                           extra={'event': 'restore_position', 'position': saved_position})
+                # Adjust the start time to account for the saved position
+                # This makes the timer show the correct elapsed time
+                self.playback_start_time = current_time - saved_position
+                self.state_manager.set_playback_start_time(self.playback_start_time)
+            else:
+                # No saved position, start from beginning
+                self.playback_start_time = current_time
+                self.state_manager.set_playback_start_time(current_time)
+            
             t2 = time.time()
             log_performance("playback_init", t2-t1)
             consecutive_failures = 0
@@ -769,7 +958,9 @@ class QuranBot(discord.Client):
                 if self.loop_enabled and self.current_audio_file:
                     # Dedicated loop for continuous surah repetition
                     while self.loop_enabled and self.is_streaming and voice_client.is_connected() and self.current_audio_file:
-                        mp3_file = os.path.join(Config.AUDIO_FOLDER, self.current_reciter, self.current_audio_file)
+                        if self.current_audio_file is None or self.current_reciter is None:
+                            break
+                        mp3_file = os.path.join(Config.AUDIO_FOLDER, str(self.current_reciter), str(self.current_audio_file))
                         if os.path.exists(mp3_file):
                             file_name = os.path.basename(mp3_file)
                             try:
@@ -937,10 +1128,16 @@ class QuranBot(discord.Client):
                 except Exception as e:
                     log_error(e, f"disconnect_voice_guild_{guild_id}")
             
-            # Save final state
+            # Save final state and position
             if hasattr(self, 'current_audio_file') and self.current_audio_file:
                 self.state_manager.set_current_song_name(self.current_audio_file)
                 logger.info(f"Saved final state: {self.current_audio_file}")
+            
+            # Save final playback position if currently playing
+            if self.is_streaming and hasattr(self, 'playback_start_time') and self.playback_start_time:
+                current_time = time.time()
+                self.state_manager.save_playback_position(current_time)
+                logger.info("Saved final playback position")
             
             # Close Discord client
             await self.close()
@@ -991,7 +1188,7 @@ class QuranBot(discord.Client):
                     channel = voice_client.channel
                     break
             
-            if voice_client and channel and hasattr(voice_client, 'is_connected') and voice_client.is_connected():
+            if voice_client and channel and hasattr(voice_client, 'is_connected') and getattr(voice_client, 'is_connected', lambda: False)():
                 # Stop current playback
                 self.is_streaming = False
                 await asyncio.sleep(1)  # Give time for current playback to stop

@@ -53,12 +53,13 @@ echo.
 echo UTILITIES:
 echo 20. Upload Audio Files       - Upload audio files to VPS
 echo 21. Update System            - Update system packages on VPS
-echo 22. Emergency Restart        - Force kill and restart everything
-echo 23. Exit                     - Close the VPS manager
+echo 22. Kill All Python          - Force kill all Python processes
+echo 23. Emergency Restart        - Force kill and restart everything
+echo 24. Exit                     - Close the VPS manager
 echo.
 echo ================================================================================
 
-set /p choice="Enter your choice (1-23): "
+set /p choice="Enter your choice (1-24): "
 
 if "%choice%"=="1" goto check_connection
 if "%choice%"=="2" goto get_status
@@ -81,8 +82,9 @@ if "%choice%"=="18" goto disk_space
 if "%choice%"=="19" goto network_status
 if "%choice%"=="20" goto upload_audio
 if "%choice%"=="21" goto update_system
-if "%choice%"=="22" goto emergency_restart
-if "%choice%"=="23" goto exit
+if "%choice%"=="22" goto kill_python
+if "%choice%"=="23" goto emergency_restart
+if "%choice%"=="24" goto exit
 echo Invalid choice!
 pause
 goto menu
@@ -492,6 +494,31 @@ if %errorlevel%==0 (
     echo SUCCESS: System updated successfully!
 ) else (
     echo ERROR: Failed to update system!
+)
+pause
+goto menu
+
+:kill_python
+echo KILLING ALL PYTHON PROCESSES...
+echo.
+echo Python processes found:
+ssh -i "%SSH_KEY_PATH%" %VPS_USER%@%VPS_IP% "ps aux | grep python | grep -v grep"
+echo.
+echo Force killing all Python processes...
+ssh -i "%SSH_KEY_PATH%" %VPS_USER%@%VPS_IP% "pkill -9 -f python"
+if %errorlevel%==0 (
+    echo SUCCESS: All Python processes killed!
+    timeout /t 2 /nobreak >nul
+    echo.
+    echo Verifying no Python processes remain...
+    ssh -i "%SSH_KEY_PATH%" %VPS_USER%@%VPS_IP% "ps aux | grep python | grep -v grep"
+    if !errorlevel!==0 (
+        echo WARNING: Some Python processes may still be running!
+    ) else (
+        echo SUCCESS: Confirmed all Python processes terminated
+    )
+) else (
+    echo WARNING: May have failed to kill some Python processes
 )
 pause
 goto menu
