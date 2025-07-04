@@ -564,6 +564,7 @@ class SurahSelect(Select):
             
             # Define restart_playback function
             async def restart_playback():
+                tree_log('debug', 'restart_playback called (SurahSelect)', {'user_id': interaction.user.id, 'user_name': interaction.user.name, 'selected_surah': selected_surah})
                 try:
                     # Stop current playback
                     self.bot.is_streaming = False
@@ -577,9 +578,8 @@ class SurahSelect(Select):
                             break
                     
                     if voice_client and voice_client.is_connected():
-                        # Restart playback with new surah
                         self.bot.is_streaming = True
-                        # Start a new playback task
+                        tree_log('debug', 'Calling play_quran_files (SurahSelect)', {'user_id': interaction.user.id, 'user_name': interaction.user.name, 'selected_surah': selected_surah})
                         asyncio.create_task(self.bot.play_quran_files(voice_client, voice_client.channel))
                         
                         # Update the panel status
@@ -782,6 +782,7 @@ class ReciterSelect(Select):
 
             # Define restart_playback function
             async def restart_playback():
+                tree_log('debug', 'restart_playback called (ReciterSelect)', {'user_id': interaction.user.id, 'user_name': interaction.user.name, 'selected_reciter': selected_reciter})
                 try:
                     # Stop current playback
                     self.bot.is_streaming = False
@@ -795,9 +796,8 @@ class ReciterSelect(Select):
                             break
 
                     if voice_client and voice_client.is_connected():
-                        # Restart playback with new reciter
                         self.bot.is_streaming = True
-                        # Start a new playback task
+                        tree_log('debug', 'Calling play_quran_files (ReciterSelect)', {'user_id': interaction.user.id, 'user_name': interaction.user.name, 'selected_reciter': selected_reciter})
                         asyncio.create_task(self.bot.play_quran_files(voice_client, voice_client.channel))
                     else:
                         raise Exception("Voice client not available or not connected")
@@ -1213,6 +1213,7 @@ class ControlPanelView(View):
             
             # Define restart_playback function
             async def restart_playback():
+                tree_log('debug', 'restart_playback called (Previous)', {'user_id': interaction.user.id, 'user_name': interaction.user.name, 'current_index': current_index})
                 try:
                     # Stop current playback
                     self.bot.is_streaming = False
@@ -1228,7 +1229,7 @@ class ControlPanelView(View):
                     if voice_client and voice_client.is_connected():
                         # Restart playback with previous surah
                         self.bot.is_streaming = True
-                        # Start a new playback task
+                        tree_log('debug', 'Calling play_quran_files (Previous)', {'user_id': interaction.user.id, 'user_name': interaction.user.name, 'current_index': current_index})
                         asyncio.create_task(self.bot.play_quran_files(voice_client, voice_client.channel))
                         
                         # Update the panel status
@@ -1438,6 +1439,7 @@ class ControlPanelView(View):
             
             # Define restart_playback function
             async def restart_playback():
+                tree_log('debug', 'restart_playback called (Next)', {'user_id': interaction.user.id, 'user_name': interaction.user.name, 'current_index': current_index})
                 try:
                     # Stop current playback
                     self.bot.is_streaming = False
@@ -1453,7 +1455,7 @@ class ControlPanelView(View):
                     if voice_client and voice_client.is_connected():
                         # Restart playback with next surah
                         self.bot.is_streaming = True
-                        # Start a new playback task
+                        tree_log('debug', 'Calling play_quran_files (Next)', {'user_id': interaction.user.id, 'user_name': interaction.user.name, 'current_index': current_index})
                         asyncio.create_task(self.bot.play_quran_files(voice_client, voice_client.channel))
                         
                         # Update the panel status
