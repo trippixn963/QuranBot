@@ -1,24 +1,15 @@
 {
-  "vps": {
-    "ip": "YOUR_VPS_IP_ADDRESS",
-    "user": "YOUR_VPS_USERNAME",
-    "ssh_key": "YOUR_SSH_KEY_FILENAME",
-    "ssh_key_path": "PATH_TO_YOUR_SSH_KEY"
-  },
-  "bot": {
-    "directory": "/home/QuranAudioBot",
-    "local_project": "PATH_TO_YOUR_LOCAL_PROJECT",
-    "repo_url": "https://github.com/yourusername/QuranBot.git",
-    "venv_name": "venv",
-    "log_file": "bot.log",
-    "service_name": "quranbot"
-  },
-  "audio": {
-    "local_path": "PATH_TO_YOUR_LOCAL_AUDIO_FOLDER",
-    "remote_path": "/home/QuranAudioBot/audio"
-  },
-  "backup": {
-    "directory": "/home/QuranAudioBot/backups",
-    "exclude_patterns": ["venv", "*.log", "__pycache__", ".git"]
-  }
+    "vps_host": "your-vps-ip-or-domain.com",
+    "vps_port": 22,
+    "vps_username": "your-username",
+    "vps_password": "your-password",
+    "vps_key_path": "path/to/private/key",
+    "bot_directory": "/home/username/QuranBot",
+    "backup_directory": "/home/username/QuranBot/backups",
+    "logs_directory": "/home/username/QuranBot/logs",
+    "audio_directory": "/home/username/QuranBot/audio",
+    "local_logs_dir": "./logs",
+    "local_audio_dir": "./audio",
+    "ssh_timeout": 30,
+    "command_timeout": 60
 } 

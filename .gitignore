@@ -2,11 +2,13 @@
 # QuranBot - Git Ignore File
 # =============================================================================
 
-# Environment Variables
+# Environment Variables & Secrets
 .env
 .env.local
 .env.production
 .env.staging
+.env.*
+*.env
 
 # Python
 __pycache__/
@@ -68,6 +70,32 @@ data/bot_state.json
 data/user_vc_sessions.json
 data/daily_verses_queue.json
 data/daily_verses_state.json
+data/quran_question_scores.json
+
+# VPS Configuration (Contains sensitive server info)
+scripts/vps/vps_config.json
+vps_config.json
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+quranbot_key
+quranbot_key.pub
+
+# SSH Keys and Certificates
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+known_hosts
+
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
 
 # Temporary Files
 *.tmp
@@ -79,13 +107,10 @@ tmp/
 backup/
 *.bak
 *.backup
+backups/
 
 # Deployment Files
 deploy_temp/
-
-# VPS Configuration (Contains sensitive server info)
-scripts/vps/vps_config.json
-vps_config.json
 
 # Test Files
 .pytest_cache/
@@ -123,19 +148,6 @@ Thumbs.db
 Icon
 ._*
 
-# SSH Keys (if accidentally committed)
-*.pem
-*.key
-id_rsa
-id_rsa.pub
-quranbot_key
-quranbot_key.pub
-
-# Database Files
-*.db
-*.sqlite
-*.sqlite3
-
 # Cache Directories
 .cache/
 .pytest_cache/
@@ -161,4 +173,21 @@ safety.txt
 
 # Local Development
 local_config.py
-test_config.py 
+test_config.py
+
+# Data directories (contains user data)
+data_vps/
+data_local/
+
+# Monitoring and Health Check Files
+health_check.json
+monitoring_data.json
+
+# Discord Bot Tokens and Secrets
+discord_token.txt
+bot_secrets.json
+secrets.json
+
+# Server Configuration
+server_config.json
+vps_credentials.json 

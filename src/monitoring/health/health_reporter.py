@@ -8,6 +8,7 @@ import discord
 from datetime import datetime, timedelta
 from typing import Optional
 from .health import HealthMonitor
+from monitoring.logging.logger import logger, log_tree_start, log_tree_item, log_tree_end
 
 class HealthReporter:
     """Health reporter that sends periodic status updates."""
@@ -46,7 +47,6 @@ class HealthReporter:
                 break
             except Exception as e:
                 # Log error and continue
-                from monitoring.logging.logger import logger
                 logger.error(f"Health reporter error: {e}")
                 await asyncio.sleep(60)  # Wait 1 minute before retrying
                 
@@ -55,11 +55,19 @@ class HealthReporter:
         try:
             channel = self.bot.get_channel(self.channel_id)
             if not channel:
-                from monitoring.logging.logger import logger
                 logger.warning(f"Health reporter: Could not find channel {self.channel_id}")
                 return
                 
             health_status = self.health_monitor.get_health_status()
+            
+            log_tree_start("Health Report Summary")
+            log_tree_item(f"🔋 Uptime: {health_status['uptime']}")
+            log_tree_item(f"🎵 Songs Played: {health_status['songs_played']}")
+            log_tree_item(f"❌ Errors: {health_status['errors_count']}")
+            log_tree_item(f"🔌 Reconnections: {health_status['reconnections']}")
+            log_tree_item(f"📡 Streaming: {'✅ Active' if health_status['is_streaming'] else '❌ Inactive'}")
+            log_tree_item(f"📊 Error Rate: {health_status['error_rate']:.2%}", is_last=True)
+            log_tree_end()
             
             # Create embed
             embed = discord.Embed(
@@ -122,7 +130,6 @@ class HealthReporter:
             await channel.send(embed=embed)
             
         except Exception as e:
-            from monitoring.logging.logger import logger
             logger.error(f"Failed to send health report: {e}")
             
     async def send_immediate_report(self):

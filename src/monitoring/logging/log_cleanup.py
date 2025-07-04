@@ -11,6 +11,7 @@ from pathlib import Path
 import logging
 from typing import List, Dict, Any
 import json
+from monitoring.logging.logger import log_tree_start, log_tree_item, log_tree_end
 
 class LogCleanupManager:
     """Manages log file cleanup, compression, and archiving."""
@@ -264,16 +265,17 @@ def setup_log_cleanup_scheduler():
                 results = cleanup_manager.run_full_cleanup()
                 
                 # Log cleanup results
-                logger = logging.getLogger('QuranBot')
-                logger.info(f"Log cleanup completed: {results['stats']['active_folders']} active folders, "
-                           f"{results['stats']['archived_folders']} archived, "
-                           f"{results['stats']['total_size_mb']}MB total")
-                
+                log_tree_start("Log Cleanup Summary")
+                log_tree_item(f"📦 Active Folders: {results['stats']['active_folders']}")
+                log_tree_item(f"🗄️ Archived: {results['stats']['archived_folders']}")
+                log_tree_item(f"💾 Total Size: {results['stats']['total_size_mb']}MB")
                 if results['compression']['compressed']:
-                    logger.info(f"Compressed: {', '.join(results['compression']['compressed'])}")
-                
+                    log_tree_item(f"🗜️ Compressed: {', '.join(results['compression']['compressed'])}")
                 if results['deletion']['deleted']:
-                    logger.info(f"Deleted: {', '.join(results['deletion']['deleted'])}")
+                    log_tree_item(f"🗑️ Deleted: {', '.join(results['deletion']['deleted'])}", is_last=True)
+                else:
+                    log_tree_item("No deletions", is_last=True)
+                log_tree_end()
                 
             except Exception as e:
                 logger = logging.getLogger('QuranBot')

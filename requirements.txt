@@ -18,6 +18,12 @@ colorama>=0.4.6
 # Audio Processing
 PyNaCl>=1.5.0
 
+# Time Zone
+pytz>=2024.1
+
+# SSH and VPS Management
+paramiko>=3.0.0
+
 # =============================================================================
 # Development Dependencies (Optional)
 # Uncomment these for development work

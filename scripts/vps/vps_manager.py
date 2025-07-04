@@ -1,937 +1,1014 @@
 #!/usr/bin/env python3
 """
-VPS Manager for QuranBot
-Manages the QuranBot deployment on the VPS with specific configuration.
+QuranBot VPS Manager
+Handles all VPS management actions via SSH.
 """
 
+import argparse
+import json
 import os
 import sys
-import subprocess
-import json
 import time
-import argparse
-import psutil
-import requests
-from pathlib import Path
-from typing import Dict, List, Optional
+import subprocess
 from datetime import datetime, timedelta
+from pathlib import Path
+import paramiko
+import logging
 
-# VPS Configuration
-VPS_CONFIG = {
-    "ip": "159.89.90.90",
-    "user": "root",
-    "ssh_key": "quranbot_key",
-    "ssh_key_path": "C:\\Users\\hanna\\Documents\\QuranBot\\quranbot_key",
-    "bot_directory": "/home/QuranAudioBot",
-    "local_project": "C:/Users/hanna/Documents/QuranBot",
-    "repo_url": "https://github.com/yourusername/QuranBot.git",  # Update with your actual repo URL
-    "venv_name": "venv",
-    "log_file": "bot.log",
-    "service_name": "quranbot",
-    "discord_webhook": "https://discord.com/api/webhooks/1390306713999249438/GtYAxLATdciVSo9X43zFoTmu3P-XHB0h5MP2v7JlZZeWxvk9LKmzLRiqWPEEkZcHhq7F",  # Discord webhook for VPS notifications
-    "backup_retention_days": 7,
-    "auto_restart_on_failure": True,
-    "monitoring_interval": 300  # 5 minutes
-}
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 class VPSManager:
     def __init__(self):
-        self.config = VPS_CONFIG
-        self.ssh_base_cmd = f"ssh -i {self.config['ssh_key_path']} {self.config['user']}@{self.config['ip']}"
+        self.config = self.load_config()
+        self.ssh_client = None
         
-    def run_ssh_command(self, command: str, capture_output: bool = True) -> subprocess.CompletedProcess:
-        """Run a command on the VPS via SSH."""
-        # Escape the command properly for SSH
-        escaped_command = command.replace("'", "'\"'\"'")
-        full_command = f"{self.ssh_base_cmd} \"{escaped_command}\""
-        print(f"Running: {full_command}")
-        
+    def load_config(self):
+        """Load VPS configuration from JSON file."""
+        config_path = Path(__file__).parent / "vps_config.json"
+        if not config_path.exists():
+            print("❌ VPS config file not found!")
+            print(f"Please copy vps_config.json.template to vps_config.json and fill in your VPS details.")
+            print(f"Expected location: {config_path}")
+            sys.exit(1)
+            
         try:
-            if capture_output:
-                result = subprocess.run(full_command, shell=True, capture_output=True, text=True)
-            else:
-                result = subprocess.run(full_command, shell=True)
-            return result
+            with open(config_path, 'r') as f:
+                return json.load(f)
+        except json.JSONDecodeError as e:
+            print(f"❌ Invalid JSON in config file: {e}")
+            sys.exit(1)
         except Exception as e:
-            print(f"Error running SSH command: {e}")
-            return subprocess.CompletedProcess(full_command, 1, "", str(e))
-
-    def check_connection(self) -> bool:
+            print(f"❌ Error loading config: {e}")
+            sys.exit(1)
+    
+    def connect_ssh(self):
+        """Establish SSH connection to VPS."""
+        try:
+            self.ssh_client = paramiko.SSHClient()
+            self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            # Try key-based authentication first, then password
+            try:
+                if self.config.get('vps_key_path') and os.path.exists(self.config['vps_key_path']):
+                    self.ssh_client.connect(
+                        hostname=self.config['vps_host'],
+                        port=self.config['vps_port'],
+                        username=self.config['vps_username'],
+                        key_filename=self.config['vps_key_path'],
+                        timeout=self.config['ssh_timeout']
+                    )
+                else:
+                    self.ssh_client.connect(
+                        hostname=self.config['vps_host'],
+                        port=self.config['vps_port'],
+                        username=self.config['vps_username'],
+                        password=self.config['vps_password'],
+                        timeout=self.config['ssh_timeout']
+                    )
+                return True
+            except Exception as e:
+                print(f"❌ SSH connection failed: {e}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ SSH setup failed: {e}")
+            return False
+    
+    def execute_command(self, command, timeout=None):
+        """Execute command on VPS and return result."""
+        if not self.ssh_client:
+            if not self.connect_ssh():
+                return None, None, False
+                
+        try:
+            timeout = timeout or self.config['command_timeout']
+            if self.ssh_client:  # Type check for linter
+                stdin, stdout, stderr = self.ssh_client.exec_command(command, timeout=timeout)
+                
+                output = stdout.read().decode('utf-8').strip()
+                error = stderr.read().decode('utf-8').strip()
+                exit_code = stdout.channel.recv_exit_status()
+                
+                return output, error, exit_code == 0
+            else:
+                return None, None, False
+            
+        except Exception as e:
+            print(f"❌ Command execution failed: {e}")
+            return None, None, False
+    
+    def disconnect(self):
+        """Close SSH connection."""
+        if self.ssh_client:
+            self.ssh_client.close()
+            self.ssh_client = None
+    
+    def check_connection(self):
         """Test SSH connection to VPS."""
-        print("Testing SSH connection...")
-        result = self.run_ssh_command("echo 'Connection successful'")
-        if result.returncode == 0:
-            print("SUCCESS: SSH connection successful!")
-            return True
-        else:
-            print("ERROR: SSH connection failed!")
-            print(f"Error: {result.stderr}")
-            return False
-
-    def get_system_info(self) -> Dict:
-        """Get comprehensive system information."""
-        print("Getting system information...")
+        print("🔍 Testing SSH connection to VPS...")
         
-        info = {}
-        
-        # CPU and Memory
-        cpu_result = self.run_ssh_command("top -bn1 | grep 'Cpu(s)' | awk '{print $2}' | cut -d'%' -f1")
-        mem_result = self.run_ssh_command("free | grep Mem | awk '{printf \"%.1f\", $3/$2 * 100.0}'")
-        disk_result = self.run_ssh_command("df -h / | tail -1 | awk '{print $5}' | sed 's/%//'")
-        
-        info['cpu_usage'] = cpu_result.stdout.strip() if cpu_result.returncode == 0 else "Unknown"
-        info['memory_usage'] = mem_result.stdout.strip() if mem_result.returncode == 0 else "Unknown"
-        info['disk_usage'] = disk_result.stdout.strip() if disk_result.returncode == 0 else "Unknown"
-        
-        # System uptime
-        uptime_result = self.run_ssh_command("uptime -p")
-        info['uptime'] = uptime_result.stdout.strip() if uptime_result.returncode == 0 else "Unknown"
-        
-        # Load average
-        load_result = self.run_ssh_command("cat /proc/loadavg | awk '{print $1, $2, $3}'")
-        info['load_average'] = load_result.stdout.strip() if load_result.returncode == 0 else "Unknown"
-        
-        # Network connections
-        net_result = self.run_ssh_command("netstat -an | grep ESTABLISHED | wc -l")
-        info['active_connections'] = net_result.stdout.strip() if net_result.returncode == 0 else "Unknown"
-        
-        return info
-
-    def get_bot_status(self) -> Dict:
-        """Get current bot status."""
-        print("Getting bot status...")
-        
-        # Check if bot process is running
-        result = self.run_ssh_command(f"ps aux | grep 'python run.py' | grep -v grep")
-        is_running = result.returncode == 0 and result.stdout.strip()
-        
-        # Get recent logs
-        log_result = self.run_ssh_command(f"tail -10 {self.config['bot_directory']}/{self.config['log_file']}")
-        recent_logs = log_result.stdout if log_result.returncode == 0 else "No logs available"
-        
-        # Get disk usage
-        disk_result = self.run_ssh_command(f"df -h {self.config['bot_directory']}")
-        disk_usage = disk_result.stdout if disk_result.returncode == 0 else "Unknown"
-        
-        # Get memory usage
-        mem_result = self.run_ssh_command("free -h")
-        memory_usage = mem_result.stdout if disk_result.returncode == 0 else "Unknown"
-        
-        # Get bot uptime
-        if is_running:
-            uptime_result = self.run_ssh_command("ps -eo pid,etime,cmd | grep 'python run.py' | grep -v grep | awk '{print $2}'")
-            bot_uptime = uptime_result.stdout.strip() if uptime_result.returncode == 0 else "Unknown"
-        else:
-            bot_uptime = "Not running"
-        
-        return {
-            "is_running": bool(is_running),
-            "recent_logs": recent_logs,
-            "disk_usage": disk_usage,
-            "memory_usage": memory_usage,
-            "bot_uptime": bot_uptime
-        }
-
-    def start_bot(self) -> bool:
-        """Start the QuranBot on VPS."""
-        print("Starting QuranBot...")
-        
-        # Kill any existing processes
-        self.run_ssh_command(f"pkill -f 'python run.py'", capture_output=False)
-        time.sleep(2)
-        
-        # Start the bot
-        start_cmd = f"cd {self.config['bot_directory']} && source {self.config['venv_name']}/bin/activate && nohup python run.py &"
-        result = self.run_ssh_command(start_cmd, capture_output=False)
-        
-        if result.returncode == 0:
-            print("SUCCESS: Bot started successfully!")
-            self.send_discord_notification("Bot started successfully!")
-            time.sleep(3)
-            # Verify it's running
-            status = self.get_bot_status()
-            if status["is_running"]:
-                print("SUCCESS: Bot is confirmed running!")
-                return True
+        if self.connect_ssh():
+            print("✅ SSH connection successful!")
+            
+            # Test basic command execution
+            output, error, success = self.execute_command("echo 'Connection test successful'")
+            if success:
+                print("✅ Command execution test passed!")
             else:
-                print("WARNING: Bot may not have started properly. Check logs.")
-                self.send_discord_notification("Bot may not have started properly. Check logs.")
-                return False
-        else:
-            print("ERROR: Failed to start bot!")
-            self.send_discord_notification("Failed to start bot!")
-            return False
-
-    def stop_bot(self) -> bool:
-        """Stop the QuranBot on VPS."""
-        print("Stopping QuranBot...")
-        result = self.run_ssh_command(f"pkill -f 'python run.py'", capture_output=False)
-        
-        if result.returncode == 0:
-            print("SUCCESS: Bot stopped successfully!")
-            self.send_discord_notification("Bot stopped successfully!")
+                print("❌ Command execution test failed!")
+                
+            self.disconnect()
             return True
         else:
-            print("WARNING: Bot may not have been running or failed to stop.")
-            self.send_discord_notification("Bot may not have been running or failed to stop.")
+            print("❌ SSH connection failed!")
             return False
-
-    def restart_bot(self) -> bool:
-        """Restart the QuranBot on VPS."""
-        print("Restarting QuranBot...")
-        self.send_discord_notification("Restarting bot...")
+    
+    def get_bot_status(self):
+        """Check if bot is running and get uptime."""
+        print("🔍 Checking bot status...")
         
-        # Step 1: Stop the bot
-        print("Step 1: Stopping bot...")
-        stop_result = self.run_ssh_command(f"pkill -f 'python run.py'", capture_output=False)
-        time.sleep(3)  # Wait for process to fully stop
-        
-        # Step 2: Start the bot
-        print("Step 2: Starting bot...")
-        start_cmd = f"cd {self.config['bot_directory']} && source {self.config['venv_name']}/bin/activate && nohup python run.py &"
-        start_result = self.run_ssh_command(start_cmd, capture_output=False)
-        
-        if start_result.returncode == 0:
-            print("SUCCESS: Bot restart command sent!")
-            time.sleep(3)  # Wait for bot to start
+        if not self.connect_ssh():
+            return False
             
-            # Step 3: Verify bot is running
-            print("Step 3: Verifying bot is running...")
-            status = self.get_bot_status()
-            if status["is_running"]:
-                print("SUCCESS: Bot restarted successfully!")
-                self.send_discord_notification("Bot restarted successfully!")
-                return True
-            else:
-                print("ERROR: Bot restart failed! Bot is not running.")
-                self.send_discord_notification("Bot restart failed! Bot is not running.")
-                return False
-        else:
-            print("ERROR: Failed to start bot during restart!")
-            self.send_discord_notification("Failed to start bot during restart!")
-            return False
-
-    def deploy_bot(self) -> bool:
-        """Deploy the bot to VPS (pull latest changes and restart)."""
-        print("Deploying QuranBot...")
-        self.send_discord_notification("Starting bot deployment...")
-        
-        # Pull latest changes
-        pull_cmd = f"cd {self.config['bot_directory']} && git pull origin master"
-        result = self.run_ssh_command(pull_cmd)
-        
-        if result.returncode != 0:
-            print("ERROR: Failed to pull latest changes!")
-            print(f"Error: {result.stderr}")
-            self.send_discord_notification("Failed to pull latest changes!")
-            return False
-        
-        print("SUCCESS: Code updated successfully!")
-        self.send_discord_notification("Code updated successfully!")
-        
-        # Install/update dependencies
-        install_cmd = f"cd {self.config['bot_directory']} && source {self.config['venv_name']}/bin/activate && pip install -r requirements.txt"
-        result = self.run_ssh_command(install_cmd)
-        
-        if result.returncode != 0:
-            print("WARNING: Some dependencies may not have installed properly.")
-            self.send_discord_notification("Warning: Some dependencies may not have installed properly.")
-        
-        # Restart the bot
-        return self.restart_bot()
-
-    def view_logs(self, lines: int = 50) -> None:
-        """View bot logs."""
-        print(f"Showing last {lines} lines of bot logs...")
-        result = self.run_ssh_command(f"tail -{lines} {self.config['bot_directory']}/{self.config['log_file']}")
-        
-        if result.returncode == 0:
-            print("\n" + "="*80)
-            print("BOT LOGS:")
-            print("="*80)
-            print(result.stdout)
-            print("="*80)
-        else:
-            print("ERROR: Failed to retrieve logs!")
-
-    def search_logs(self, search_term: str, lines: int = 100) -> None:
-        """Search bot logs for specific terms."""
-        print(f"Searching logs for '{search_term}'...")
-        result = self.run_ssh_command(f"grep -n '{search_term}' {self.config['bot_directory']}/{self.config['log_file']} | tail -{lines}")
-        
-        if result.returncode == 0 and result.stdout.strip():
-            print("\n" + "="*80)
-            print(f"LOG SEARCH RESULTS FOR '{search_term}':")
-            print("="*80)
-            print(result.stdout)
-            print("="*80)
-        else:
-            print(f"ERROR: No results found for '{search_term}'")
-
-    def clear_logs(self) -> bool:
-        """Clear old log files."""
-        print("Clearing old log files...")
-        result = self.run_ssh_command(f"cd {self.config['bot_directory']} && find . -name '*.log*' -mtime +7 -delete")
-        
-        if result.returncode == 0:
-            print("SUCCESS: Old log files cleared successfully!")
-            return True
-        else:
-            print("ERROR: Failed to clear log files!")
-            return False
-
-    def upload_audio_files(self, local_audio_path: str) -> bool:
-        """Upload audio files to VPS."""
-        print("Uploading audio files...")
-        
-        if not os.path.exists(local_audio_path):
-            print(f"ERROR: Local audio path not found: {local_audio_path}")
-            return False
-        
-        # Create remote audio directory
-        self.run_ssh_command(f"mkdir -p {self.config['bot_directory']}/audio")
-        
-        # Upload using scp
-        scp_cmd = f"scp -i {self.config['ssh_key_path']} -r {local_audio_path}/* {self.config['user']}@{self.config['ip']}:{self.config['bot_directory']}/audio/"
-        
-        print(f"Running: {scp_cmd}")
-        result = subprocess.run(scp_cmd, shell=True)
-        
-        if result.returncode == 0:
-            print("SUCCESS: Audio files uploaded successfully!")
-            return True
-        else:
-            print("ERROR: Failed to upload audio files!")
-            return False
-
-    def copy_file_to_vps(self, local_file_path: str, remote_file_path: Optional[str] = None) -> bool:
-        """Copy a specific file to VPS."""
-        print(f"Copying file: {local_file_path}")
-        
-        if not os.path.exists(local_file_path):
-            print(f"ERROR: Local file not found: {local_file_path}")
-            return False
-        
-        # If no remote path specified, use the same relative path in bot directory
-        if remote_file_path is None:
-            # Get relative path from local project root
-            local_project = self.config['local_project']
-            if local_file_path.startswith(local_project):
-                relative_path = os.path.relpath(local_file_path, local_project)
-                remote_file_path = f"{self.config['bot_directory']}/{relative_path}"
-            else:
-                print(f"ERROR: File must be within project directory: {local_project}")
-                return False
-        
-        # Create remote directory if it doesn't exist
-        remote_dir = os.path.dirname(remote_file_path)
-        self.run_ssh_command(f"mkdir -p {remote_dir}")
-        
-        # Copy file using scp
-        scp_cmd = f"scp -i {self.config['ssh_key_path']} \"{local_file_path}\" {self.config['user']}@{self.config['ip']}:{remote_file_path}"
-        
-        print(f"Running: {scp_cmd}")
-        result = subprocess.run(scp_cmd, shell=True)
-        
-        if result.returncode == 0:
-            print(f"SUCCESS: File copied successfully to {remote_file_path}")
-            return True
-        else:
-            print(f"ERROR: Failed to copy file to {remote_file_path}")
-            return False
-
-    def backup_bot(self) -> bool:
-        """Create a backup of the bot."""
-        print("Creating backup...")
-        self.send_discord_notification("Creating backup...")
-        
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        backup_cmd = f"cd {self.config['bot_directory']} && tar -czf backup_{timestamp}.tar.gz --exclude=venv --exclude=*.log --exclude=__pycache__ ."
-        result = self.run_ssh_command(backup_cmd)
-        
-        if result.returncode == 0:
-            print(f"SUCCESS: Backup created: backup_{timestamp}.tar.gz")
-            self.send_discord_notification(f"Backup created: `backup_{timestamp}.tar.gz`")
-            return True
-        else:
-            print("ERROR: Failed to create backup!")
-            self.send_discord_notification("Failed to create backup!")
-            return False
-
-    def list_backups(self) -> None:
-        """List available backups."""
-        print("Listing available backups...")
-        result = self.run_ssh_command(f"cd {self.config['bot_directory']} && ls -la *.tar.gz 2>/dev/null || echo 'No backup files found'")
-        
-        if result.returncode == 0:
-            print("\n" + "="*80)
-            print("AVAILABLE BACKUPS:")
-            print("="*80)
-            print(result.stdout)
-            print("="*80)
-
-    def restore_backup(self, backup_name: str) -> bool:
-        """Restore from a backup."""
-        print(f"Restoring from backup: {backup_name}")
-        self.send_discord_notification(f"Restoring from backup: `{backup_name}`")
-        
-        # Stop bot first
-        self.stop_bot()
-        
-        # Restore backup
-        restore_cmd = f"cd {self.config['bot_directory']} && tar -xzf {backup_name} --strip-components=0"
-        result = self.run_ssh_command(restore_cmd)
-        
-        if result.returncode == 0:
-            print("SUCCESS: Backup restored successfully!")
-            self.send_discord_notification("Backup restored successfully!")
-            # Restart bot
-            return self.start_bot()
-        else:
-            print("ERROR: Failed to restore backup!")
-            self.send_discord_notification("Failed to restore backup!")
-            return False
-
-    def cleanup_old_backups(self) -> bool:
-        """Clean up old backup files."""
-        print("Cleaning up old backups...")
-        days = self.config.get('backup_retention_days', 7)
-        cleanup_cmd = f"cd {self.config['bot_directory']} && find . -name '*.tar.gz' -mtime +{days} -delete"
-        result = self.run_ssh_command(cleanup_cmd)
-        
-        if result.returncode == 0:
-            print(f"SUCCESS: Old backups (older than {days} days) cleaned up!")
-            return True
-        else:
-            print("ERROR: Failed to cleanup old backups!")
-            return False
-
-    def setup_environment(self) -> bool:
-        """Initial setup of the bot environment on VPS."""
-        print("Setting up bot environment...")
-        
-        # Clone repository if it doesn't exist
-        clone_cmd = f"if [ ! -d '{self.config['bot_directory']}' ]; then git clone {self.config['repo_url']} {self.config['bot_directory']}; fi"
-        result = self.run_ssh_command(clone_cmd)
-        
-        if result.returncode != 0:
-            print("ERROR: Failed to clone repository!")
-            return False
-        
-        # Create virtual environment
-        venv_cmd = f"cd {self.config['bot_directory']} && python3 -m venv {self.config['venv_name']}"
-        result = self.run_ssh_command(venv_cmd)
-        
-        if result.returncode != 0:
-            print("ERROR: Failed to create virtual environment!")
-            return False
-        
-        # Install dependencies
-        install_cmd = f"cd {self.config['bot_directory']} && source {self.config['venv_name']}/bin/activate && pip install -r requirements.txt"
-        result = self.run_ssh_command(install_cmd)
-        
-        if result.returncode != 0:
-            print("WARNING: Some dependencies may not have installed properly.")
-        
-        # Create necessary directories
-        mkdir_cmd = f"cd {self.config['bot_directory']} && mkdir -p logs audio"
-        self.run_ssh_command(mkdir_cmd)
-        
-        print("SUCCESS: Environment setup completed!")
-        return True
-
-    def monitor_bot(self, duration_minutes: int = 60) -> None:
-        """Monitor bot continuously for specified duration."""
-        print(f"Monitoring bot for {duration_minutes} minutes...")
-        self.send_discord_notification(f"Starting bot monitoring for {duration_minutes} minutes...")
-        end_time = time.time() + (duration_minutes * 60)
-        
-        while time.time() < end_time:
-            status = self.get_bot_status()
-            system_info = self.get_system_info()
-            
-            print(f"\n{'='*60}")
-            print(f"Status Check - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-            print(f"{'='*60}")
-            print(f"Bot Running: {'YES' if status['is_running'] else 'NO'}")
-            print(f"Bot Uptime: {status['bot_uptime']}")
-            print(f"CPU Usage: {system_info['cpu_usage']}%")
-            print(f"Memory Usage: {system_info['memory_usage']}%")
-            print(f"Disk Usage: {system_info['disk_usage']}%")
-            print(f"Load Average: {system_info['load_average']}")
-            
-            # Check for critical issues
-            cpu_usage = float(system_info['cpu_usage']) if system_info['cpu_usage'] != "Unknown" else 0
-            mem_usage = float(system_info['memory_usage']) if system_info['memory_usage'] != "Unknown" else 0
-            disk_usage = float(system_info['disk_usage']) if system_info['disk_usage'] != "Unknown" else 0
-            
-            if cpu_usage > 90:
-                self.send_discord_notification(f"WARNING: High CPU usage: {cpu_usage}%")
-            if mem_usage > 90:
-                self.send_discord_notification(f"WARNING: High memory usage: {mem_usage}%")
-            if disk_usage > 90:
-                self.send_discord_notification(f"WARNING: High disk usage: {disk_usage}%")
-            
-            if not status['is_running'] and self.config.get('auto_restart_on_failure', False):
-                print("Bot is down, attempting auto-restart...")
-                self.send_discord_notification("Bot is down, attempting auto-restart...")
-                self.start_bot()
-            
-            time.sleep(self.config.get('monitoring_interval', 300))  # 5 minutes default
-        
-        self.send_discord_notification("Bot monitoring completed!")
-
-    def send_discord_notification(self, message: str) -> bool:
-        """Send notification to Discord webhook."""
-        if not self.config.get('discord_webhook'):
-            return False
-        
         try:
-            payload = {"content": f"**QuranBot VPS**: {message}"}
-            response = requests.post(self.config['discord_webhook'], json=payload, timeout=10)
-            return response.status_code == 204
-        except Exception as e:
-            print(f"Failed to send Discord notification: {e}")
-            return False
-
-    def kill_all_python(self) -> bool:
-        """Kill all Python processes on the VPS."""
-        print("KILLING ALL PYTHON PROCESSES...")
-        self.send_discord_notification("Killing all Python processes")
-        
-        # Get list of Python processes before killing
-        ps_cmd = "ps aux | grep python | grep -v grep"
-        ps_result = self.run_ssh_command(ps_cmd)
-        
-        if ps_result.returncode == 0 and ps_result.stdout.strip():
-            print("Python processes found:")
-            for line in ps_result.stdout.strip().split('\n'):
-                if line.strip():
-                    print(f"  - {line}")
-        else:
-            print("No Python processes found")
-        
-        # Force kill all Python processes
-        kill_cmd = "pkill -9 -f python"
-        result = self.run_ssh_command(kill_cmd, capture_output=False)
-        
-        if result.returncode == 0:
-            print("SUCCESS: All Python processes killed!")
-            self.send_discord_notification("All Python processes killed successfully!")
+            # Check if bot process is running
+            output, error, success = self.execute_command(
+                "ps aux | grep 'python3.*run.py' | grep -v grep"
+            )
             
-            # Verify no Python processes remain
-            time.sleep(2)
-            verify_cmd = "ps aux | grep python | grep -v grep"
-            verify_result = self.run_ssh_command(verify_cmd)
-            
-            if verify_result.returncode == 0 and verify_result.stdout.strip():
-                print("WARNING: Some Python processes may still be running:")
-                print(verify_result.stdout)
+            if output:
+                print("✅ Bot is running!")
+                print(f"📊 Process info:\n{output}")
+                
+                # Get uptime
+                uptime_output, _, _ = self.execute_command("uptime")
+                if uptime_output:
+                    print(f"🕒 System uptime: {uptime_output}")
+                    
+                # Get bot directory info
+                dir_output, _, _ = self.execute_command(f"ls -la {self.config['bot_directory']}")
+                if dir_output:
+                    print(f"📁 Bot directory contents:\n{dir_output}")
             else:
-                print("SUCCESS: Confirmed all Python processes terminated")
-            
-            return True
-        else:
-            print("WARNING: May have failed to kill some Python processes")
-            self.send_discord_notification("Warning: May have failed to kill some Python processes")
+                print("❌ Bot is not running!")
+                
+        finally:
+            self.disconnect()
+    
+    def start_bot(self):
+        """Start the QuranBot on VPS."""
+        print("🚀 Starting QuranBot...")
+        
+        if not self.connect_ssh():
             return False
-
-    def emergency_restart(self) -> bool:
-        """Emergency restart - force kill and restart everything."""
-        print("EMERGENCY: Emergency restart initiated...")
-        self.send_discord_notification("EMERGENCY: Emergency restart initiated...")
+            
+        try:
+            # Change to bot directory and start
+            command = f"cd {self.config['bot_directory']} && nohup python3 run.py > logs/bot.log 2>&1 &"
+            output, error, success = self.execute_command(command)
+            
+            if success:
+                print("✅ Bot start command executed!")
+                time.sleep(2)  # Wait a moment
+                self.get_bot_status()  # Check if it's actually running
+            else:
+                print(f"❌ Failed to start bot: {error}")
+                
+        finally:
+            self.disconnect()
+    
+    def stop_bot(self):
+        """Stop the QuranBot on VPS."""
+        print("🛑 Stopping QuranBot...")
         
-        # Force kill all Python processes
-        self.run_ssh_command("pkill -9 -f python", capture_output=False)
-        time.sleep(5)
-        
-        # Clean up any zombie processes
-        self.run_ssh_command("killall -9 python", capture_output=False)
+        if not self.connect_ssh():
+            return False
+            
+        try:
+            # Find and kill bot processes
+            command = "pkill -f 'python3.*run.py'"
+            output, error, success = self.execute_command(command)
+            
+            if success:
+                print("✅ Bot stop command executed!")
+                time.sleep(1)
+                self.get_bot_status()  # Verify it's stopped
+            else:
+                print(f"❌ Failed to stop bot: {error}")
+                
+        finally:
+            self.disconnect()
+    
+    def restart_bot(self):
+        """Stop and restart the bot."""
+        print("🔄 Restarting QuranBot...")
+        self.stop_bot()
         time.sleep(2)
+        self.start_bot()
+    
+    def deploy_bot(self):
+        """Pull latest code and restart, NEVER touching the data directory."""
+        print("🚀 Deploying latest bot code...")
+        print("🌲 [SAFE] The data directory will NEVER be touched, overwritten, or deleted during deploy.")
         
-        # Restart bot
-        result = self.start_bot()
-        if result:
-            self.send_discord_notification("SUCCESS: Emergency restart completed successfully!")
-        else:
-            self.send_discord_notification("ERROR: Emergency restart failed!")
-        return result
-
-    def check_disk_space(self) -> Dict:
-        """Check disk space on VPS."""
-        print("Checking disk space...")
-        print()
-        print("Main Disk Usage:")
-        result = self.run_ssh_command("df -h /")
-        if result.returncode == 0:
-            print(result.stdout.strip())
-        else:
-            print("ERROR: Failed to get disk usage!")
-        
-        print()
-        print("All Mounted Disks:")
-        result = self.run_ssh_command("df -h | grep -E '^/dev/'")
-        if result.returncode == 0:
-            print(result.stdout.strip())
-        else:
-            print("ERROR: Failed to get disk information!")
-        
-        return {}
-
-    def check_network_status(self) -> Dict:
-        """Check network connectivity and status."""
-        print("Checking network status...")
-        
-        # Check internet connectivity
-        ping_result = self.run_ssh_command("ping -c 3 8.8.8.8")
-        # Check DNS
-        dns_result = self.run_ssh_command("nslookup google.com")
-        # Check open ports
-        ports_result = self.run_ssh_command("netstat -tlnp | grep LISTEN")
-        
-        print("\n" + "="*80)
-        print("NETWORK STATUS:")
-        print("="*80)
-        print("Internet Connectivity:")
-        print(ping_result.stdout if ping_result.returncode == 0 else "ERROR: No internet connection")
-        print("\nDNS Resolution:")
-        print(dns_result.stdout if dns_result.returncode == 0 else "ERROR: DNS issues")
-        print("\nOpen Ports:")
-        print(ports_result.stdout if ports_result.returncode == 0 else "No listening ports found")
-        print("="*80)
-        
-        return {
-            "internet": ping_result.returncode == 0,
-            "dns": dns_result.returncode == 0,
-            "ports": ports_result.stdout if ports_result.returncode == 0 else ""
-        }
-
-    def update_system(self) -> bool:
-        """Update system packages."""
-        print("Updating system packages...")
-        
-        update_cmd = "apt update && apt upgrade -y"
-        result = self.run_ssh_command(update_cmd)
-        
-        if result.returncode == 0:
-            print("SUCCESS: System updated successfully!")
-            return True
-        else:
-            print("ERROR: Failed to update system!")
+        if not self.connect_ssh():
             return False
-
-    def interactive_menu(self):
-        """Interactive menu for VPS management."""
-        while True:
-            print("\n" + "="*80)
-            print("                    QuranBot VPS Manager")
-            print("="*80)
-            print()
-            print("BOT CONTROL:")
-            print("1.  Check Connection          - Test SSH connection to VPS")
-            print("2.  Get Bot Status           - Check if bot is running and get uptime")
-            print("3.  Start Bot                - Start the QuranBot on VPS")
-            print("4.  Stop Bot                 - Stop the QuranBot on VPS")
-            print("5.  Restart Bot              - Stop and restart the bot")
-            print("6.  Deploy Bot               - Pull latest code and restart")
-            print()
-            print("LOGS & MONITORING:")
-            print("7.  View Logs                - Show recent bot log entries")
-            print("8.  Search Logs              - Search logs for specific terms")
-            print("9.  Download All Logs        - Download all log files to local logs folder")
-            print("10. Clear Old Logs           - Remove log files older than 7 days")
-            print()
-            print("BACKUP & RESTORE:")
-            print("11. Create Backup            - Create timestamped backup of bot")
-            print("12. List Backups             - Show all available backup files")
-            print("13. Restore Backup           - Restore bot from backup file")
-            print("14. Cleanup Old Backups      - Remove backups older than 7 days")
-            print()
-            print("SYSTEM MANAGEMENT:")
-            print("15. Setup Environment        - Initial bot setup (first time only)")
-            print("16. Monitor Bot              - Continuous monitoring with alerts")
-            print("17. System Information       - CPU, memory, disk usage, uptime")
-            print("18. Check Disk Space         - Show disk space on VPS")
-            print("19. Check Network Status     - Test internet, DNS, open ports")
-            print()
-            print("UTILITIES:")
-            print("20. Upload Audio Files       - Upload audio files to VPS")
-            print("21. Copy File to VPS         - Copy a specific file to VPS")
-            print("22. Update System            - Update system packages on VPS")
-            print("23. Kill All Python          - Force kill all Python processes")
-            print("24. Emergency Restart        - Force kill and restart everything")
-            print("25. Exit                     - Close the VPS manager")
-            print("="*80)
             
-            choice = input("Enter your choice (1-25): ").strip()
+        try:
+            # Stop bot first
+            self.execute_command("pkill -f 'python3.*run.py'")
+            time.sleep(2)
             
-            if choice == "1":
-                self.check_connection()
-            elif choice == "2":
-                status = self.get_bot_status()
-                print(f"\nBot Status: {'RUNNING' if status['is_running'] else 'STOPPED'}")
-                print(f"Bot Uptime: {status['bot_uptime']}")
-            elif choice == "3":
+            # Only pull latest code, do not touch data directory
+            command = f"cd {self.config['bot_directory']} && git pull"
+            output, error, success = self.execute_command(command)
+            
+            if success:
+                print("✅ Code updated successfully!")
+                print(f"📝 Git output:\n{output}")
+                print("🌲 [SAFE] The data directory was NOT modified.")
+                
+                # Install any new dependencies
+                install_cmd = f"cd {self.config['bot_directory']} && pip install -r requirements.txt"
+                install_output, install_error, install_success = self.execute_command(install_cmd)
+                
+                if install_success:
+                    print("✅ Dependencies updated!")
+                else:
+                    print(f"⚠️ Dependency update had issues: {install_error}")
+                
+                # Start bot
                 self.start_bot()
-            elif choice == "4":
-                self.stop_bot()
-            elif choice == "5":
-                self.restart_bot()
-            elif choice == "6":
-                self.deploy_bot()
-            elif choice == "7":
-                lines = input("Number of log lines to show (default 50): ").strip()
-                lines = int(lines) if lines.isdigit() else 50
-                self.view_logs(lines)
-            elif choice == "8":
-                search_term = input("Enter search term: ").strip()
-                if search_term:
-                    lines = input("Number of lines to search (default 100): ").strip()
-                    lines = int(lines) if lines.isdigit() else 100
-                    self.search_logs(search_term, lines)
-                else:
-                    print("ERROR: No search term provided!")
-            elif choice == "9":
-                self.download_all_logs()
-            elif choice == "10":
-                self.clear_logs()
-            elif choice == "11":
-                self.backup_bot()
-            elif choice == "12":
-                self.list_backups()
-            elif choice == "13":
-                backup_name = input("Enter backup filename: ").strip()
-                if backup_name:
-                    self.restore_backup(backup_name)
-                else:
-                    print("ERROR: No backup name provided!")
-            elif choice == "14":
-                self.cleanup_old_backups()
-            elif choice == "15":
-                self.setup_environment()
-            elif choice == "16":
-                duration = input("Monitoring duration in minutes (default 60): ").strip()
-                duration = int(duration) if duration.isdigit() else 60
-                self.monitor_bot(duration)
-            elif choice == "17":
-                info = self.get_system_info()
-                print(f"\nSystem Information:")
-                print(f"CPU Usage: {info['cpu_usage']}%")
-                print(f"Memory Usage: {info['memory_usage']}%")
-                print(f"Disk Usage: {info['disk_usage']}%")
-                print(f"Uptime: {info['uptime']}")
-                print(f"Load Average: {info['load_average']}")
-                print(f"Active Connections: {info['active_connections']}")
-            elif choice == "18":
-                self.check_disk_space()
-            elif choice == "19":
-                self.check_network_status()
-            elif choice == "20":
-                audio_path = input("Enter local audio files path: ").strip()
-                if audio_path:
-                    self.upload_audio_files(audio_path)
-                else:
-                    print("ERROR: No path provided!")
-            elif choice == "21":
-                file_path = input("Enter local file path: ").strip()
-                if file_path:
-                    self.copy_file_to_vps(file_path)
-                else:
-                    print("ERROR: No file path provided!")
-            elif choice == "22":
-                self.update_system()
-            elif choice == "23":
-                self.kill_all_python()
-            elif choice == "24":
-                self.emergency_restart()
-            elif choice == "25":
-                print("Goodbye!")
-                break
             else:
-                print("ERROR: Invalid choice!")
-            
-            input("\nPress Enter to continue...")
-
-    def download_all_logs(self) -> bool:
-        """Download all log files from VPS to local logs folder."""
-        print("Downloading all log files from VPS...")
+                print(f"❌ Failed to update code: {error}")
+                
+        finally:
+            self.disconnect()
+    
+    def view_logs(self):
+        """Show recent bot log entries."""
+        print("📋 Viewing recent bot logs...")
         
-        # Create local logs directory if it doesn't exist
-        local_logs_dir = os.path.join(self.config['local_project'], 'logs')
-        os.makedirs(local_logs_dir, exist_ok=True)
-        
-        # Get timestamp for the download
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        
-        # Create a tar.gz of all logs on VPS
-        remote_logs_archive = f"logs_backup_{timestamp}.tar.gz"
-        create_archive_cmd = f"cd {self.config['bot_directory']} && tar -czf {remote_logs_archive} logs/ *.log 2>/dev/null || echo 'No logs found'"
-        
-        print("Step 1: Creating log archive on VPS...")
-        result = self.run_ssh_command(create_archive_cmd)
-        
-        if result.returncode != 0:
-            print("ERROR: Failed to create log archive on VPS!")
+        if not self.connect_ssh():
             return False
-        
-        # Download the archive
-        print("Step 2: Downloading log archive...")
-        local_archive_path = os.path.join(local_logs_dir, remote_logs_archive)
-        
-        # Use proper path formatting for Windows
-        scp_cmd = f"scp -i {self.config['ssh_key_path']} {self.config['user']}@{self.config['ip']}:{self.config['bot_directory']}/{remote_logs_archive} \"{local_logs_dir}\""
-        
-        print(f"Running: {scp_cmd}")
-        result = subprocess.run(scp_cmd, shell=True)
-        
-        if result.returncode == 0:
-            print(f"SUCCESS: Log archive downloaded to: {local_archive_path}")
             
-            # Extract the archive
-            print("Step 3: Extracting logs...")
-            extract_cmd = f"cd \"{local_logs_dir}\" && tar -xzf {remote_logs_archive}"
-            result = subprocess.run(extract_cmd, shell=True)
+        try:
+            # Get recent log entries
+            command = f"tail -n 50 {self.config['logs_directory']}/bot.log"
+            output, error, success = self.execute_command(command)
             
-            if result.returncode == 0:
-                print(f"SUCCESS: Logs extracted to: {local_logs_dir}")
+            if success and output:
+                print("📋 Recent log entries:")
+                print("=" * 50)
+                print(output)
+                print("=" * 50)
+            else:
+                print("❌ No logs found or error occurred!")
                 
-                # Clean up the archive
-                os.remove(local_archive_path)
-                print("SUCCESS: Temporary archive removed")
+        finally:
+            self.disconnect()
+    
+    def search_logs(self):
+        """Search logs for specific terms."""
+        print("🔍 Searching logs...")
+        
+        search_term = input("Enter search term: ").strip()
+        if not search_term:
+            print("❌ No search term provided!")
+            return
+            
+        if not self.connect_ssh():
+            return False
+            
+        try:
+            # Search logs for the term
+            command = f"grep -i '{search_term}' {self.config['logs_directory']}/*.log | tail -n 20"
+            output, error, success = self.execute_command(command)
+            
+            if success and output:
+                print(f"🔍 Search results for '{search_term}':")
+                print("=" * 50)
+                print(output)
+                print("=" * 50)
+            else:
+                print(f"❌ No matches found for '{search_term}'!")
                 
-                # List downloaded files
-                log_files = [f for f in os.listdir(local_logs_dir) if f.endswith('.log')]
-                if log_files:
-                    print(f"\nDownloaded log files:")
+        finally:
+            self.disconnect()
+    
+    def download_logs(self):
+        """Download all log files to local logs folder."""
+        print("📥 Downloading logs from VPS...")
+        
+        local_logs_dir = Path(self.config['local_logs_dir'])
+        local_logs_dir.mkdir(exist_ok=True)
+        
+        if not self.connect_ssh():
+            return False
+            
+        try:
+            # Create SFTP session
+            if self.ssh_client:  # Type check for linter
+                sftp = self.ssh_client.open_sftp()
+                
+                # List log files on VPS
+                try:
+                    log_files = sftp.listdir(self.config['logs_directory'])
+                    log_files = [f for f in log_files if f.endswith('.log')]
+                    
+                    if not log_files:
+                        print("❌ No log files found on VPS!")
+                        return
+                        
+                    print(f"📁 Found {len(log_files)} log files")
+                    
+                    # Download each log file
                     for log_file in log_files:
-                        print(f"  - {log_file}")
-                else:
-                    print("No log files found on VPS")
-                
-                # Clean up remote archive
-                cleanup_cmd = f"cd {self.config['bot_directory']} && rm -f {remote_logs_archive}"
-                self.run_ssh_command(cleanup_cmd)
-                
-                return True
+                        remote_path = f"{self.config['logs_directory']}/{log_file}"
+                        local_path = local_logs_dir / log_file
+                        
+                        print(f"📥 Downloading {log_file}...")
+                        sftp.get(remote_path, str(local_path))
+                        print(f"✅ Downloaded {log_file}")
+                        
+                    print(f"✅ All logs downloaded to {local_logs_dir}")
+                    
+                except Exception as e:
+                    print(f"❌ Error downloading logs: {e}")
+                finally:
+                    sftp.close()
             else:
-                print("ERROR: Failed to extract log archive!")
-                return False
-        else:
-            print("ERROR: Failed to download log archive!")
+                print("❌ SSH client not available!")
+                
+        finally:
+            self.disconnect()
+    
+    def clear_old_logs(self):
+        """Remove log files older than 7 days."""
+        print("🧹 Clearing old logs (older than 7 days)...")
+        
+        if not self.connect_ssh():
             return False
+            
+        try:
+            # Find and remove old log files
+            command = f"find {self.config['logs_directory']} -name '*.log' -mtime +7 -delete"
+            output, error, success = self.execute_command(command)
+            
+            if success:
+                print("✅ Old logs cleared successfully!")
+                
+                # Show remaining log files
+                list_cmd = f"ls -la {self.config['logs_directory']}/*.log"
+                list_output, _, _ = self.execute_command(list_cmd)
+                if list_output:
+                    print("📁 Remaining log files:")
+                    print(list_output)
+            else:
+                print(f"❌ Failed to clear old logs: {error}")
+                
+        finally:
+            self.disconnect()
+    
+    def create_backup(self):
+        """Create timestamped backup of bot."""
+        print("💾 Creating backup...")
+        
+        if not self.connect_ssh():
+            return False
+            
+        try:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_name = f"QuranBot_Backup_{timestamp}.tar.gz"
+            backup_path = f"{self.config['backup_directory']}/{backup_name}"
+            
+            # Create backup
+            command = f"cd {self.config['bot_directory']} && tar -czf {backup_path} --exclude=audio --exclude=logs --exclude=backups ."
+            output, error, success = self.execute_command(command)
+            
+            if success:
+                print(f"✅ Backup created: {backup_name}")
+                
+                # Get backup size
+                size_cmd = f"ls -lh {backup_path}"
+                size_output, _, _ = self.execute_command(size_cmd)
+                if size_output:
+                    print(f"📊 Backup size: {size_output}")
+            else:
+                print(f"❌ Failed to create backup: {error}")
+                
+        finally:
+            self.disconnect()
+    
+    def list_backups(self):
+        """Show all available backup files."""
+        print("📋 Listing available backups...")
+        
+        if not self.connect_ssh():
+            return False
+            
+        try:
+            # List backup files
+            command = f"ls -lah {self.config['backup_directory']}/*.tar.gz"
+            output, error, success = self.execute_command(command)
+            
+            if success and output:
+                print("📁 Available backups:")
+                print("=" * 50)
+                print(output)
+                print("=" * 50)
+            else:
+                print("❌ No backups found!")
+                
+        finally:
+            self.disconnect()
+    
+    def restore_backup(self):
+        """Restore bot from backup file."""
+        print("🔄 Restoring from backup...")
+        
+        if not self.connect_ssh():
+            return False
+            
+        try:
+            # List available backups
+            list_cmd = f"ls {self.config['backup_directory']}/*.tar.gz"
+            list_output, _, _ = self.execute_command(list_cmd)
+            
+            if not list_output:
+                print("❌ No backups found!")
+                return
+                
+            print("📁 Available backups:")
+            backups = list_output.strip().split('\n')
+            for i, backup in enumerate(backups, 1):
+                print(f"{i}. {backup.split('/')[-1]}")
+            
+            # Get user choice
+            try:
+                choice = int(input("Enter backup number to restore: ")) - 1
+                if 0 <= choice < len(backups):
+                    selected_backup = backups[choice]
+                    print(f"🔄 Restoring from: {selected_backup.split('/')[-1]}")
+                    
+                    # Stop bot first
+                    self.execute_command("pkill -f 'python.*run.py'")
+                    time.sleep(2)
+                    
+                    # Restore backup
+                    restore_cmd = f"cd {self.config['bot_directory']} && tar -xzf {selected_backup}"
+                    output, error, success = self.execute_command(restore_cmd)
+                    
+                    if success:
+                        print("✅ Backup restored successfully!")
+                        self.start_bot()
+                    else:
+                        print(f"❌ Failed to restore backup: {error}")
+                else:
+                    print("❌ Invalid choice!")
+            except ValueError:
+                print("❌ Invalid input!")
+                
+        finally:
+            self.disconnect()
+    
+    def cleanup_old_backups(self):
+        """Remove backups older than 7 days."""
+        print("🧹 Cleaning up old backups (older than 7 days)...")
+        
+        if not self.connect_ssh():
+            return False
+            
+        try:
+            # Find and remove old backups
+            command = f"find {self.config['backup_directory']} -name '*.tar.gz' -mtime +7 -delete"
+            output, error, success = self.execute_command(command)
+            
+            if success:
+                print("✅ Old backups cleaned up!")
+                
+                # Show remaining backups
+                self.list_backups()
+            else:
+                print(f"❌ Failed to cleanup old backups: {error}")
+                
+        finally:
+            self.disconnect()
+    
+    def setup_environment(self):
+        """Initial bot setup (first time only)."""
+        print("🔧 Setting up bot environment...")
+        
+        if not self.connect_ssh():
+            return False
+            
+        try:
+            print("📦 Installing system dependencies...")
+            
+            # Update system packages
+            update_cmd = "sudo apt update && sudo apt upgrade -y"
+            output, error, success = self.execute_command(update_cmd)
+            
+            if success:
+                print("✅ System packages updated!")
+                
+                # Install Python and pip
+                python_cmd = "sudo apt install -y python3 python3-pip python3-venv"
+                output, error, success = self.execute_command(python_cmd)
+                
+                if success:
+                    print("✅ Python environment installed!")
+                    
+                    # Install bot dependencies using system packages
+                    print("📦 Installing Python dependencies...")
+                    
+                    # Install required packages via apt
+                    packages = ["python3-psutil", "python3-discord", "python3-dotenv", "python3-pynacl", "python3-pytz"]
+                    for package in packages:
+                        install_cmd = f"sudo apt install -y {package}"
+                        output, error, success = self.execute_command(install_cmd)
+                        if success:
+                            print(f"✅ Installed {package}")
+                        else:
+                            print(f"⚠️ Failed to install {package}: {error}")
+                    
+                    # Create necessary directories
+                    dirs_cmd = f"cd {self.config['bot_directory']} && mkdir -p logs backups audio"
+                    self.execute_command(dirs_cmd)
+                    print("✅ Directories created!")
+                    
+                    print("✅ Environment setup complete!")
+                else:
+                    print(f"❌ Failed to install Python: {error}")
+            else:
+                print(f"❌ Failed to update system: {error}")
+                
+        finally:
+            self.disconnect()
+    
+    def monitor_bot(self):
+        """Continuous monitoring with alerts."""
+        print("📊 Starting bot monitoring (Ctrl+C to stop)...")
+        
+        if not self.connect_ssh():
+            return False
+            
+        try:
+            while True:
+                # Check bot status
+                output, error, success = self.execute_command(
+                    "ps aux | grep 'python3.*run.py' | grep -v grep"
+                )
+                
+                if output:
+                    print(f"✅ Bot running - {datetime.now().strftime('%H:%M:%S')}")
+                else:
+                    print(f"❌ Bot stopped - {datetime.now().strftime('%H:%M:%S')}")
+                    
+                time.sleep(30)  # Check every 30 seconds
+                
+        except KeyboardInterrupt:
+            print("\n🛑 Monitoring stopped.")
+        finally:
+            self.disconnect()
+    
+    def system_info(self):
+        """Get CPU, memory, disk usage, uptime."""
+        print("💻 Getting system information...")
+        
+        if not self.connect_ssh():
+            return False
+            
+        try:
+            # System uptime
+            uptime_output, _, _ = self.execute_command("uptime")
+            if uptime_output:
+                print(f"🕒 Uptime: {uptime_output}")
+            
+            # CPU and memory usage
+            top_output, _, _ = self.execute_command("top -bn1 | head -20")
+            if top_output:
+                print(f"💻 CPU/Memory:\n{top_output}")
+            
+            # Disk usage
+            df_output, _, _ = self.execute_command("df -h")
+            if df_output:
+                print(f"💾 Disk usage:\n{df_output}")
+            
+            # Memory details
+            mem_output, _, _ = self.execute_command("free -h")
+            if mem_output:
+                print(f"🧠 Memory details:\n{mem_output}")
+                
+        finally:
+            self.disconnect()
+    
+    def check_disk_space(self):
+        """Show disk space on VPS."""
+        print("💾 Checking disk space...")
+        
+        if not self.connect_ssh():
+            return False
+            
+        try:
+            # Get disk usage
+            command = "df -h"
+            output, error, success = self.execute_command(command)
+            
+            if success and output:
+                print("💾 Disk space usage:")
+                print("=" * 50)
+                print(output)
+                print("=" * 50)
+                
+                # Check specific directories
+                bot_dir_size, _, _ = self.execute_command(f"du -sh {self.config['bot_directory']}")
+                if bot_dir_size:
+                    print(f"📁 Bot directory size: {bot_dir_size}")
+                    
+            else:
+                print("❌ Failed to get disk space info!")
+                
+        finally:
+            self.disconnect()
+    
+    def check_network_status(self):
+        """Test internet, DNS, open ports."""
+        print("🌐 Checking network status...")
+        
+        if not self.connect_ssh():
+            return False
+            
+        try:
+            # Test internet connectivity
+            ping_output, _, ping_success = self.execute_command("ping -c 3 8.8.8.8")
+            if ping_success:
+                print("✅ Internet connectivity: OK")
+            else:
+                print("❌ Internet connectivity: FAILED")
+            
+            # Test DNS resolution
+            nslookup_output, _, dns_success = self.execute_command("nslookup google.com")
+            if dns_success:
+                print("✅ DNS resolution: OK")
+            else:
+                print("❌ DNS resolution: FAILED")
+            
+            # Check open ports
+            netstat_output, _, _ = self.execute_command("netstat -tlnp | grep LISTEN")
+            if netstat_output:
+                print("🔌 Open ports:")
+                print(netstat_output)
+            
+            # Network interfaces
+            ifconfig_output, _, _ = self.execute_command("ip addr show")
+            if ifconfig_output:
+                print("🌐 Network interfaces:")
+                print(ifconfig_output)
+                
+        finally:
+            self.disconnect()
+    
+    def upload_audio(self):
+        """Upload audio files to VPS."""
+        print("📤 Uploading audio files to VPS...")
+        
+        local_audio_dir = Path(self.config['local_audio_dir'])
+        if not local_audio_dir.exists():
+            print("❌ Local audio directory not found!")
+            return
+            
+        if not self.connect_ssh():
+            return False
+            
+        try:
+            # Create SFTP session
+            if self.ssh_client:  # Type check for linter
+                sftp = self.ssh_client.open_sftp()
+                
+                # List local audio files
+                audio_files = list(local_audio_dir.glob("*.mp3"))
+                
+                if not audio_files:
+                    print("❌ No audio files found in local directory!")
+                    return
+                    
+                print(f"📁 Found {len(audio_files)} audio files")
+                
+                # Upload each file
+                for audio_file in audio_files:
+                    remote_path = f"{self.config['audio_directory']}/{audio_file.name}"
+                    local_path = str(audio_file)
+                    
+                    print(f"📤 Uploading {audio_file.name}...")
+                    try:
+                        sftp.put(local_path, remote_path)
+                        print(f"✅ Uploaded {audio_file.name}")
+                    except Exception as e:
+                        print(f"❌ Failed to upload {audio_file.name}: {e}")
+                        
+                print("✅ Audio upload complete!")
+                
+            else:
+                print("❌ SSH client not available!")
+                
+        except Exception as e:
+            print(f"❌ Error during upload: {e}")
+        finally:
+            if self.ssh_client and 'sftp' in locals():
+                sftp.close()
+            self.disconnect()
+    
+    def update_system(self):
+        """Update system packages on VPS."""
+        print("🔄 Updating system packages...")
+        
+        if not self.connect_ssh():
+            return False
+            
+        try:
+            # Update package lists
+            update_cmd = "sudo apt update"
+            output, error, success = self.execute_command(update_cmd)
+            
+            if success:
+                print("✅ Package lists updated!")
+                
+                # Upgrade packages
+                upgrade_cmd = "sudo apt upgrade -y"
+                output, error, success = self.execute_command(upgrade_cmd)
+                
+                if success:
+                    print("✅ System packages upgraded!")
+                    
+                    # Clean up
+                    cleanup_cmd = "sudo apt autoremove -y && sudo apt autoclean"
+                    self.execute_command(cleanup_cmd)
+                    print("✅ System cleanup completed!")
+                else:
+                    print(f"❌ Failed to upgrade packages: {error}")
+            else:
+                print(f"❌ Failed to update package lists: {error}")
+                
+        finally:
+            self.disconnect()
+    
+    def kill_all_python(self):
+        """Force kill all Python processes."""
+        print("💀 Force killing all Python processes...")
+        
+        if not self.connect_ssh():
+            return False
+            
+        try:
+            # Kill all Python processes
+            command = "sudo pkill -9 python"
+            output, error, success = self.execute_command(command)
+            
+            if success:
+                print("✅ All Python processes killed!")
+                
+                # Verify no Python processes remain
+                check_cmd = "ps aux | grep python | grep -v grep"
+                check_output, _, _ = self.execute_command(check_cmd)
+                
+                if not check_output:
+                    print("✅ No Python processes remaining!")
+                else:
+                    print("⚠️ Some Python processes may still be running:")
+                    print(check_output)
+            else:
+                print(f"❌ Failed to kill Python processes: {error}")
+                
+        finally:
+            self.disconnect()
+    
+    def download_data(self):
+        """Download data directory from VPS for editing."""
+        print("📥 Downloading data directory from VPS...")
+        
+        local_data_dir = Path("data_vps")
+        local_data_dir.mkdir(exist_ok=True)
+        
+        if not self.connect_ssh():
+            return False
+            
+        try:
+            # Create SFTP session
+            if self.ssh_client:  # Type check for linter
+                sftp = self.ssh_client.open_sftp()
+                
+                # List data files on VPS
+                try:
+                    data_files = sftp.listdir(f"{self.config['bot_directory']}/data")
+                    
+                    if not data_files:
+                        print("❌ No data files found on VPS!")
+                        return
+                        
+                    print(f"📁 Found {len(data_files)} data files")
+                    
+                    # Download each data file
+                    for data_file in data_files:
+                        remote_path = f"{self.config['bot_directory']}/data/{data_file}"
+                        local_path = local_data_dir / data_file
+                        
+                        print(f"📥 Downloading {data_file}...")
+                        sftp.get(remote_path, str(local_path))
+                        print(f"✅ Downloaded {data_file}")
+                        
+                    print(f"✅ All data files downloaded to {local_data_dir}")
+                    print("📝 You can now edit the files in the 'data_vps' directory")
+                    print("📤 Use 'Upload Data' option to send changes back to VPS")
+                    
+                except Exception as e:
+                    print(f"❌ Error downloading data: {e}")
+                finally:
+                    sftp.close()
+            else:
+                print("❌ SSH client not available!")
+                
+        finally:
+            self.disconnect()
+    
+    def upload_data(self):
+        """Upload edited data directory back to VPS."""
+        print("📤 Uploading data directory to VPS...")
+        
+        local_data_dir = Path("data_vps")
+        if not local_data_dir.exists():
+            print("❌ Local data_vps directory not found!")
+            print("📥 Please download data first using 'Download Data' option")
+            return
+            
+        if not self.connect_ssh():
+            return False
+            
+        try:
+            # Create SFTP session
+            if self.ssh_client:  # Type check for linter
+                sftp = self.ssh_client.open_sftp()
+                
+                # List local data files
+                data_files = list(local_data_dir.glob("*"))
+                
+                if not data_files:
+                    print("❌ No data files found in local data_vps directory!")
+                    return
+                    
+                print(f"📁 Found {len(data_files)} data files to upload")
+                
+                # Upload each file
+                for data_file in data_files:
+                    remote_path = f"{self.config['bot_directory']}/data/{data_file.name}"
+                    local_path = str(data_file)
+                    
+                    print(f"📤 Uploading {data_file.name}...")
+                    try:
+                        sftp.put(local_path, remote_path)
+                        print(f"✅ Uploaded {data_file.name}")
+                    except Exception as e:
+                        print(f"❌ Failed to upload {data_file.name}: {e}")
+                        
+                print("✅ Data upload complete!")
+                print("🔄 Consider restarting the bot to load new data")
+                
+            else:
+                print("❌ SSH client not available!")
+                
+        except Exception as e:
+            print(f"❌ Error during upload: {e}")
+        finally:
+            sftp.close()
+            self.disconnect()
+    
+    def emergency_restart(self):
+        """Force kill and restart everything."""
+        print("🚨 Emergency restart initiated...")
+        
+        if not self.connect_ssh():
+            return False
+            
+        try:
+            # Kill all Python processes
+            self.execute_command("sudo pkill -9 python")
+            time.sleep(2)
+            
+            # Kill any remaining bot processes
+            self.execute_command("pkill -f 'python3.*run.py'")
+            time.sleep(2)
+            
+            # Clear any lock files
+            self.execute_command(f"rm -f {self.config['bot_directory']}/*.lock")
+            
+            # Restart bot
+            print("🔄 Restarting bot after emergency cleanup...")
+            self.start_bot()
+            
+        finally:
+            self.disconnect()
 
 def main():
-    parser = argparse.ArgumentParser(description="QuranBot VPS Manager - Complete VPS management tool for QuranBot")
-    parser.add_argument("action", nargs="?", choices=[
-        "status", "start", "stop", "restart", "deploy", "logs", "search-logs", "clear-logs", "download-logs",
-        "upload", "backup", "list-backups", "restore", "cleanup-backups", "setup", "monitor",
-        "system-info", "disk-space", "network", "update", "kill-python", "emergency-restart", "check", "menu"
-    ], help="Action to perform")
-    parser.add_argument("--lines", "-l", type=int, default=50, help="Number of log lines to show")
-    parser.add_argument("--audio-path", "-a", help="Path to audio files for upload")
-    parser.add_argument("--search-term", "-s", help="Search term for logs")
-    parser.add_argument("--backup-name", "-b", help="Backup filename for restore")
-    parser.add_argument("--duration", "-d", type=int, default=60, help="Monitoring duration in minutes")
-    
-    # Add detailed help for each action
-    parser.add_argument_group("Available Actions", description="""
-    status              - Check if bot is running and get uptime
-    start               - Start the QuranBot on VPS
-    stop                - Stop the QuranBot on VPS
-    restart             - Stop and restart the bot
-    deploy              - Pull latest code and restart
-    logs                - Show recent bot log entries
-    search-logs         - Search logs for specific terms
-    clear-logs          - Remove log files older than 7 days
-    upload              - Upload audio files to VPS
-    backup              - Create timestamped backup of bot
-    list-backups        - Show all available backup files
-    restore             - Restore bot from backup file
-    cleanup-backups     - Remove backups older than 7 days
-    setup               - Initial bot setup (first time only)
-    monitor             - Continuous monitoring with alerts
-    system-info         - CPU, memory, disk usage, uptime
-    disk-space          - Show disk space on VPS
-    network             - Test internet, DNS, open ports
-    update              - Update system packages on VPS
-    kill-python         - Force kill all Python processes
-    emergency-restart   - Force kill and restart everything
-    check               - Test SSH connection to VPS
-    menu                - Interactive menu (default)
-    """)
+    parser = argparse.ArgumentParser(description='QuranBot VPS Manager')
+    parser.add_argument('--check-connection', action='store_true', help='Test SSH connection to VPS')
+    parser.add_argument('--get-bot-status', action='store_true', help='Check if bot is running and get uptime')
+    parser.add_argument('--start-bot', action='store_true', help='Start the QuranBot on VPS')
+    parser.add_argument('--stop-bot', action='store_true', help='Stop the QuranBot on VPS')
+    parser.add_argument('--restart-bot', action='store_true', help='Stop and restart the bot')
+    parser.add_argument('--deploy-bot', action='store_true', help='Pull latest code and restart')
+    parser.add_argument('--view-logs', action='store_true', help='Show recent bot log entries')
+    parser.add_argument('--search-logs', action='store_true', help='Search logs for specific terms')
+    parser.add_argument('--download-logs', action='store_true', help='Download all log files to local logs folder')
+    parser.add_argument('--clear-old-logs', action='store_true', help='Remove log files older than 7 days')
+    parser.add_argument('--create-backup', action='store_true', help='Create timestamped backup of bot')
+    parser.add_argument('--list-backups', action='store_true', help='Show all available backup files')
+    parser.add_argument('--restore-backup', action='store_true', help='Restore bot from backup file')
+    parser.add_argument('--cleanup-old-backups', action='store_true', help='Remove backups older than 7 days')
+    parser.add_argument('--setup-environment', action='store_true', help='Initial bot setup (first time only)')
+    parser.add_argument('--monitor-bot', action='store_true', help='Continuous monitoring with alerts')
+    parser.add_argument('--system-info', action='store_true', help='CPU, memory, disk usage, uptime')
+    parser.add_argument('--check-disk-space', action='store_true', help='Show disk space on VPS')
+    parser.add_argument('--check-network-status', action='store_true', help='Test internet, DNS, open ports')
+    parser.add_argument('--upload-audio', action='store_true', help='Upload audio files to VPS')
+    parser.add_argument('--update-system', action='store_true', help='Update system packages on VPS')
+    parser.add_argument('--kill-all-python', action='store_true', help='Force kill all Python processes')
+    parser.add_argument('--download-data', action='store_true', help='Download data directory from VPS for editing')
+    parser.add_argument('--upload-data', action='store_true', help='Upload edited data directory back to VPS')
+    parser.add_argument('--emergency-restart', action='store_true', help='Force kill and restart everything')
     
     args = parser.parse_args()
     
-    manager = VPSManager()
+    # Create VPS manager instance
+    vps_manager = VPSManager()
     
-    if args.action == "status":
-        status = manager.get_bot_status()
-        print(f"Bot Status: {'RUNNING' if status['is_running'] else 'STOPPED'}")
-        print(f"Bot Uptime: {status['bot_uptime']}")
-    elif args.action == "start":
-        manager.start_bot()
-    elif args.action == "stop":
-        manager.stop_bot()
-    elif args.action == "restart":
-        manager.restart_bot()
-    elif args.action == "deploy":
-        manager.deploy_bot()
-    elif args.action == "logs":
-        manager.view_logs(args.lines)
-    elif args.action == "search-logs":
-        if args.search_term:
-            manager.search_logs(args.search_term, args.lines)
+    try:
+        # Execute requested action
+        if args.check_connection:
+            vps_manager.check_connection()
+        elif args.get_bot_status:
+            vps_manager.get_bot_status()
+        elif args.start_bot:
+            vps_manager.start_bot()
+        elif args.stop_bot:
+            vps_manager.stop_bot()
+        elif args.restart_bot:
+            vps_manager.restart_bot()
+        elif args.deploy_bot:
+            vps_manager.deploy_bot()
+        elif args.view_logs:
+            vps_manager.view_logs()
+        elif args.search_logs:
+            vps_manager.search_logs()
+        elif args.download_logs:
+            vps_manager.download_logs()
+        elif args.clear_old_logs:
+            vps_manager.clear_old_logs()
+        elif args.create_backup:
+            vps_manager.create_backup()
+        elif args.list_backups:
+            vps_manager.list_backups()
+        elif args.restore_backup:
+            vps_manager.restore_backup()
+        elif args.cleanup_old_backups:
+            vps_manager.cleanup_old_backups()
+        elif args.setup_environment:
+            vps_manager.setup_environment()
+        elif args.monitor_bot:
+            vps_manager.monitor_bot()
+        elif args.system_info:
+            vps_manager.system_info()
+        elif args.check_disk_space:
+            vps_manager.check_disk_space()
+        elif args.check_network_status:
+            vps_manager.check_network_status()
+        elif args.upload_audio:
+            vps_manager.upload_audio()
+        elif args.update_system:
+            vps_manager.update_system()
+        elif args.kill_all_python:
+            vps_manager.kill_all_python()
+        elif args.download_data:
+            vps_manager.download_data()
+        elif args.upload_data:
+            vps_manager.upload_data()
+        elif args.emergency_restart:
+            vps_manager.emergency_restart()
         else:
-            print("ERROR: Please provide search term with --search-term")
-    elif args.action == "clear-logs":
-        manager.clear_logs()
-    elif args.action == "download-logs":
-        manager.download_all_logs()
-    elif args.action == "upload":
-        if args.audio_path:
-            manager.upload_audio_files(args.audio_path)
-        else:
-            print("ERROR: Please provide audio path with --audio-path")
-    elif args.action == "backup":
-        manager.backup_bot()
-    elif args.action == "list-backups":
-        manager.list_backups()
-    elif args.action == "restore":
-        if args.backup_name:
-            manager.restore_backup(args.backup_name)
-        else:
-            print("ERROR: Please provide backup name with --backup-name")
-    elif args.action == "cleanup-backups":
-        manager.cleanup_old_backups()
-    elif args.action == "setup":
-        manager.setup_environment()
-    elif args.action == "monitor":
-        manager.monitor_bot(args.duration)
-    elif args.action == "system-info":
-        info = manager.get_system_info()
-        print(f"\nSystem Information:")
-        print(f"CPU Usage: {info['cpu_usage']}%")
-        print(f"Memory Usage: {info['memory_usage']}%")
-        print(f"Disk Usage: {info['disk_usage']}%")
-        print(f"Uptime: {info['uptime']}")
-        print(f"Load Average: {info['load_average']}")
-        print(f"Active Connections: {info['active_connections']}")
-    elif args.action == "disk-space":
-        manager.check_disk_space()
-    elif args.action == "network":
-        manager.check_network_status()
-    elif args.action == "update":
-        manager.update_system()
-    elif args.action == "kill-python":
-        manager.kill_all_python()
-    elif args.action == "emergency-restart":
-        manager.emergency_restart()
-    elif args.action == "check":
-        manager.check_connection()
-    elif args.action == "menu" or not args.action:
-        manager.interactive_menu()
-    else:
-        parser.print_help()
+            print("❌ No action specified. Use --help for available options.")
+            sys.exit(1)
+            
+    except KeyboardInterrupt:
+        print("\n🛑 Operation cancelled by user.")
+    except Exception as e:
+        print(f"❌ Unexpected error: {e}")
+        sys.exit(1)
+    finally:
+        vps_manager.disconnect()
 
 if __name__ == "__main__":
     main() 

@@ -1,129 +1,190 @@
 # QuranBot VPS Manager
 
-This directory contains scripts to manage your QuranBot deployment on the VPS.
-
-## Configuration
-
-Your VPS information is configured in the scripts:
-
-- **VPS IP**: `159.89.90.90`
-- **SSH User**: `root`
-- **SSH Key**: `quranbot_key` (located at `C:/Users/hanna/Documents/QuranBot/quranbot_key`)
-- **Bot Directory**: `/home/QuranAudioBot`
-
-## Available Scripts
-
-### 1. Python Script (`vps_manager.py`)
-A comprehensive Python script with all VPS management features.
-
-**Usage:**
-```bash
-# Interactive menu
-python vps_manager.py menu
-
-# Direct commands
-python vps_manager.py status
-python vps_manager.py start
-python vps_manager.py stop
-python vps_manager.py restart
-python vps_manager.py deploy
-python vps_manager.py logs --lines 100
-python vps_manager.py upload --audio-path "C:/path/to/audio"
-python vps_manager.py backup
-python vps_manager.py setup
-python vps_manager.py check
-```
-
-### 2. Windows Batch Script (`vps_manager.bat`)
-A Windows batch file for easy VPS management.
-
-**Usage:**
-```cmd
-# Run the script
-vps_manager.bat
-```
-
-### 3. PowerShell Script (`vps_manager.ps1`)
-A PowerShell script for Windows with better error handling.
-
-**Usage:**
-```powershell
-# Run the script
-.\vps_manager.ps1
-```
+A comprehensive SSH-based management tool for controlling the QuranBot on your VPS.
 
 ## Features
 
-### Basic Management
-- ✅ **Check Connection**: Test SSH connection to VPS
-- ✅ **Get Status**: Check if bot is running and view recent logs
-- ✅ **Start Bot**: Start the QuranBot
-- ✅ **Stop Bot**: Stop the QuranBot
-- ✅ **Restart Bot**: Restart the QuranBot
+### Bot Control
+- ✅ Check SSH connection to VPS
+- ✅ Get bot status and uptime
+- ✅ Start/Stop/Restart bot
+- ✅ Deploy latest code from git
 
-### Deployment
-- ✅ **Deploy**: Pull latest changes from Git and restart bot
-- ✅ **Setup Environment**: Initial setup (clone repo, create venv, install deps)
+### Logs & Monitoring
+- ✅ View recent bot logs
+- ✅ Search logs for specific terms
+- ✅ Download all logs to local machine
+- ✅ Clear old logs (older than 7 days)
 
-### Monitoring
-- ✅ **View Logs**: View bot logs (configurable number of lines)
-- ✅ **Upload Audio**: Upload audio files to VPS
-- ✅ **Create Backup**: Create timestamped backup of bot files
+### Backup & Restore
+- ✅ Create timestamped backups
+- ✅ List available backups
+- ✅ Restore from backup
+- ✅ Cleanup old backups
 
-## Quick Commands
+### System Management
+- ✅ Initial environment setup
+- ✅ Continuous bot monitoring
+- ✅ System information (CPU, memory, disk)
+- ✅ Network status checks
+- ✅ System package updates
 
-### Check if bot is running:
+### Utilities
+- ✅ Upload audio files to VPS
+- ✅ Force kill Python processes
+- ✅ Emergency restart procedures
+
+## Setup
+
+### 1. Install Dependencies
+
 ```bash
-ssh -i quranbot_key root@159.89.90.90 "ps aux | grep 'python run.py' | grep -v grep"
+pip install paramiko
 ```
 
-### View recent logs:
+### 2. Configure VPS Connection
+
+1. Copy the template config file:
 ```bash
-ssh -i quranbot_key root@159.89.90.90 "tail -20 /home/QuranAudioBot/bot.log"
+cp vps_config.json.template vps_config.json
 ```
 
-### Restart bot:
-```bash
-ssh -i quranbot_key root@159.89.90.90 "cd /home/QuranAudioBot && pkill -f 'python run.py' && sleep 2 && source venv/bin/activate && nohup python run.py > bot.log 2>&1 &"
+2. Edit `vps_config.json` with your VPS details:
+```json
+{
+    "vps_host": "your-vps-ip-or-domain.com",
+    "vps_port": 22,
+    "vps_username": "your-username",
+    "vps_password": "your-password",
+    "vps_key_path": "path/to/private/key",
+    "bot_directory": "/home/username/QuranBot",
+    "backup_directory": "/home/username/QuranBot/backups",
+    "logs_directory": "/home/username/QuranBot/logs",
+    "audio_directory": "/home/username/QuranBot/audio",
+    "local_logs_dir": "./logs",
+    "local_audio_dir": "./audio",
+    "ssh_timeout": 30,
+    "command_timeout": 60
+}
 ```
 
-### Deploy updates:
-```bash
-ssh -i quranbot_key root@159.89.90.90 "cd /home/QuranAudioBot && git pull origin main && source venv/bin/activate && pip install -r requirements.txt && pkill -f 'python run.py' && sleep 2 && nohup python run.py > bot.log 2>&1 &"
+### 3. Authentication Options
+
+#### Password Authentication
+```json
+{
+    "vps_password": "your-password",
+    "vps_key_path": null
+}
 ```
 
-## Configuration File
+#### SSH Key Authentication (Recommended)
+```json
+{
+    "vps_password": null,
+    "vps_key_path": "~/.ssh/id_rsa"
+}
+```
 
-The `vps_config.json` file contains all the configuration settings. You can edit this file to update paths or add new settings.
+## Usage
 
-## Troubleshooting
+### Via Batch Menu (Windows)
+```bash
+scripts/quranbot_manager.bat
+```
+Then select "VPS Manager" and choose your action.
 
-### SSH Connection Issues
-1. Make sure the SSH key file exists at the specified path
-2. Check that the SSH key has correct permissions (600)
-3. Verify the VPS IP and username are correct
+### Direct Command Line
+```bash
+# Test connection
+python scripts/vps/vps_manager.py --check-connection
 
-### Bot Not Starting
-1. Check if the virtual environment exists
-2. Verify all dependencies are installed
-3. Check the bot logs for error messages
+# Check bot status
+python scripts/vps/vps_manager.py --get-bot-status
 
-### Audio Upload Issues
-1. Ensure the local audio path exists
-2. Check available disk space on VPS
-3. Verify SSH key permissions
+# Start bot
+python scripts/vps/vps_manager.py --start-bot
+
+# View logs
+python scripts/vps/vps_manager.py --view-logs
+
+# Create backup
+python scripts/vps/vps_manager.py --create-backup
+
+# Deploy latest code
+python scripts/vps/vps_manager.py --deploy-bot
+```
+
+## Available Commands
+
+| Command | Description |
+|---------|-------------|
+| `--check-connection` | Test SSH connection to VPS |
+| `--get-bot-status` | Check if bot is running and get uptime |
+| `--start-bot` | Start the QuranBot on VPS |
+| `--stop-bot` | Stop the QuranBot on VPS |
+| `--restart-bot` | Stop and restart the bot |
+| `--deploy-bot` | Pull latest code and restart |
+| `--view-logs` | Show recent bot log entries |
+| `--search-logs` | Search logs for specific terms |
+| `--download-logs` | Download all log files to local logs folder |
+| `--clear-old-logs` | Remove log files older than 7 days |
+| `--create-backup` | Create timestamped backup of bot |
+| `--list-backups` | Show all available backup files |
+| `--restore-backup` | Restore bot from backup file |
+| `--cleanup-old-backups` | Remove backups older than 7 days |
+| `--setup-environment` | Initial bot setup (first time only) |
+| `--monitor-bot` | Continuous monitoring with alerts |
+| `--system-info` | CPU, memory, disk usage, uptime |
+| `--check-disk-space` | Show disk space on VPS |
+| `--check-network-status` | Test internet, DNS, open ports |
+| `--upload-audio` | Upload audio files to VPS |
+| `--update-system` | Update system packages on VPS |
+| `--kill-all-python` | Force kill all Python processes |
+| `--emergency-restart` | Force kill and restart everything |
 
 ## Security Notes
 
-- Keep your SSH key secure and don't share it
-- The SSH key should have restricted permissions (600)
-- Consider using a non-root user for better security
-- Regularly update your VPS and dependencies
+1. **SSH Key Authentication**: Use SSH keys instead of passwords for better security
+2. **Firewall**: Ensure your VPS firewall allows SSH connections
+3. **User Permissions**: The VPS user should have sudo access for system operations
+4. **Config File**: Keep `vps_config.json` secure and don't commit it to version control
 
-## Support
+## Troubleshooting
 
-If you encounter issues:
-1. Check the bot logs first
-2. Verify SSH connectivity
-3. Ensure all paths and configurations are correct
-4. Check VPS resources (disk space, memory, CPU) 
+### Connection Issues
+- Verify VPS IP/hostname is correct
+- Check SSH port (default: 22)
+- Ensure SSH service is running on VPS
+- Test with `ssh username@hostname` manually
+
+### Permission Issues
+- Ensure VPS user has sudo access
+- Check file permissions on bot directory
+- Verify Python environment is accessible
+
+### Bot Not Starting
+- Check Python dependencies are installed
+- Verify environment variables are set
+- Check bot logs for specific errors
+- Ensure bot directory structure is correct
+
+## File Structure
+
+```
+scripts/vps/
+├── vps_manager.py          # Main VPS management script
+├── vps_config.json.template # Configuration template
+└── README.md              # This documentation
+```
+
+## Error Handling
+
+The VPS manager includes comprehensive error handling:
+- Connection timeouts
+- Authentication failures
+- Command execution errors
+- File transfer issues
+- Network connectivity problems
+
+All errors are logged with descriptive messages to help with troubleshooting. 

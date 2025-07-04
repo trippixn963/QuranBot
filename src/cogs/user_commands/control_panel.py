@@ -17,12 +17,15 @@ from discord.ui import View, Select, Button, Modal, TextInput
 import functools
 from discord import app_commands
 
+# Move Config import here
+from core.config.config import Config as BotConfig
+
 # Updated imports for new structure
-from monitoring.logging.logger import logger
+from monitoring.logging.logger import logger, log_tree_start, log_tree_item, log_tree_end
 from monitoring.logging.log_helpers import log_async_function_call, log_function_call, log_operation, get_system_metrics, get_discord_context, get_bot_state
 from core.state.panel_manager import panel_manager
 from core.mapping.surah_mapper import get_surah_names, get_surah_emoji, get_surah_info
-from core.config.config import Config, set_loop_user, set_shuffle_user
+from core.config.config import set_loop_user, set_shuffle_user
 
 def get_system_metrics():
     """Get comprehensive system metrics"""
@@ -203,21 +206,17 @@ def log_button_interaction(func):
             user = interaction.user
             member = interaction.guild.get_member(user.id) if interaction.guild else None
             
-            logger.info(f"├─ 👤 User Details: {user.name}#{user.discriminator} (ID: {user.id})", 
-                       extra={'event': 'BUTTON_USER_DETAILS', 'user_id': user.id, 'username': user.name, 'discriminator': user.discriminator})
-            logger.info(f"├─ 🏠 Guild: {interaction.guild.name if interaction.guild else 'DM'} (ID: {interaction.guild.id if interaction.guild else 'DM'})", 
-                       extra={'event': 'BUTTON_USER_DETAILS', 'guild_id': interaction.guild.id if interaction.guild else None, 'guild_name': interaction.guild.name if interaction.guild else 'DM'})
-            logger.info(f"├─ 📅 Account Created: {user.created_at.strftime('%Y-%m-%d %H:%M:%S')}", 
-                       extra={'event': 'BUTTON_USER_DETAILS', 'account_created': user.created_at.isoformat()})
+            log_tree_start("User Interaction Details")
+            log_tree_item(f"👤 User: {user.name}#{user.discriminator} (ID: {user.id})")
+            log_tree_item(f"🏠 Guild: {interaction.guild.name if interaction.guild else 'DM'} (ID: {interaction.guild.id if interaction.guild else 'DM'})")
+            log_tree_item(f"📅 Account Created: {user.created_at.strftime('%Y-%m-%d %H:%M:%S')}")
             if member:
-                logger.info(f"├─ 🎭 Roles: {len(member.roles)} roles", 
-                           extra={'event': 'BUTTON_USER_DETAILS', 'role_count': len(member.roles)})
-                logger.info(f"├─ 📍 Joined Server: {member.joined_at.strftime('%Y-%m-%d %H:%M:%S') if member.joined_at else 'Unknown'}", 
-                           extra={'event': 'BUTTON_USER_DETAILS', 'joined_at': member.joined_at.isoformat() if member.joined_at else None})
+                log_tree_item(f"🎭 Roles: {len(member.roles)} roles")
+                log_tree_item(f"📍 Joined Server: {member.joined_at.strftime('%Y-%m-%d %H:%M:%S') if member.joined_at else 'Unknown'}")
             channel_name = interaction.channel.name if interaction.channel and hasattr(interaction.channel, 'name') else 'DM'
             channel_id = interaction.channel.id if interaction.channel and hasattr(interaction.channel, 'id') else 'DM'
-            logger.info(f"└─ 💬 Channel: {channel_name} (ID: {channel_id})", 
-                       extra={'event': 'BUTTON_USER_DETAILS', 'channel_id': channel_id, 'channel_name': channel_name})
+            log_tree_item(f"💬 Channel: {channel_name} (ID: {channel_id})", is_last=True)
+            log_tree_end()
             
             # Log to Discord
             await self.bot.discord_logger.log_user_button_click(interaction, button_name)
@@ -301,21 +300,17 @@ def log_select_interaction(func):
             user = interaction.user
             member = interaction.guild.get_member(user.id) if interaction.guild else None
             
-            logger.info(f"├─ 👤 User Details: {user.name}#{user.discriminator} (ID: {user.id})", 
-                       extra={'event': 'SELECT_USER_DETAILS', 'user_id': user.id, 'username': user.name, 'discriminator': user.discriminator})
-            logger.info(f"├─ 🏠 Guild: {interaction.guild.name if interaction.guild else 'DM'} (ID: {interaction.guild.id if interaction.guild else 'DM'})", 
-                       extra={'event': 'SELECT_USER_DETAILS', 'guild_id': interaction.guild.id if interaction.guild else None, 'guild_name': interaction.guild.name if interaction.guild else 'DM'})
-            logger.info(f"├─ 📅 Account Created: {user.created_at.strftime('%Y-%m-%d %H:%M:%S')}", 
-                       extra={'event': 'SELECT_USER_DETAILS', 'account_created': user.created_at.isoformat()})
+            log_tree_start("User Interaction Details")
+            log_tree_item(f"👤 User: {user.name}#{user.discriminator} (ID: {user.id})")
+            log_tree_item(f"🏠 Guild: {interaction.guild.name if interaction.guild else 'DM'} (ID: {interaction.guild.id if interaction.guild else 'DM'})")
+            log_tree_item(f"📅 Account Created: {user.created_at.strftime('%Y-%m-%d %H:%M:%S')}")
             if member:
-                logger.info(f"├─ 🎭 Roles: {len(member.roles)} roles", 
-                           extra={'event': 'SELECT_USER_DETAILS', 'role_count': len(member.roles)})
-                logger.info(f"├─ 📍 Joined Server: {member.joined_at.strftime('%Y-%m-%d %H:%M:%S') if member.joined_at else 'Unknown'}", 
-                           extra={'event': 'SELECT_USER_DETAILS', 'joined_at': member.joined_at.isoformat() if member.joined_at else None})
+                log_tree_item(f"🎭 Roles: {len(member.roles)} roles")
+                log_tree_item(f"📍 Joined Server: {member.joined_at.strftime('%Y-%m-%d %H:%M:%S') if member.joined_at else 'Unknown'}")
             channel_name = interaction.channel.name if interaction.channel and hasattr(interaction.channel, 'name') else 'DM'
             channel_id = interaction.channel.id if interaction.channel and hasattr(interaction.channel, 'id') else 'DM'
-            logger.info(f"└─ 💬 Channel: {channel_name} (ID: {channel_id})", 
-                       extra={'event': 'SELECT_USER_DETAILS', 'channel_id': channel_id, 'channel_name': channel_name})
+            log_tree_item(f"💬 Channel: {channel_name} (ID: {channel_id})", is_last=True)
+            log_tree_end()
             
             # Log to Discord
             await self.bot.discord_logger.log_user_select_interaction(interaction, select_name, selected_value)
@@ -588,7 +583,7 @@ class SurahSelect(Select):
                         "selected_surah": selected_surah,
                         "error": str(e)
                     })
-                    await interaction.followup.send(f"❌ Error restarting playback: {str(e)}", ephemeral=True, delete_after=300)
+                    await interaction.followup.send(f"❌ Error restarting playback: {str(e)}", ephemeral=True)
 
             # Acknowledge the interaction
             await interaction.response.defer()
@@ -602,7 +597,7 @@ class SurahSelect(Select):
             arabic_name = self.get_arabic_name(selected_surah)
             
             # Record last activity for surah change
-            Config.set_last_activity(
+            BotConfig.set_last_activity(
                 action=f"Switched to Surah {selected_surah}",
                 user_id=interaction.user.id,
                 user_name=interaction.user.name
@@ -618,13 +613,23 @@ class SurahSelect(Select):
             await interaction.followup.send(embed=confirmation_embed, ephemeral=True)
             
         except ValueError:
-            error_embed = await create_response_embed(
-                interaction, 
-                "❌ Invalid Selection", 
-                "Invalid surah selection. Please try again.", 
-                discord.Color.red()
-            )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+            # Check if interaction was already deferred
+            if interaction.response.is_done():
+                error_embed = await create_response_embed(
+                    interaction, 
+                    "❌ Invalid Selection", 
+                    "Invalid surah selection. Please try again.", 
+                    discord.Color.red()
+                )
+                await interaction.followup.send(embed=error_embed, ephemeral=True)
+            else:
+                error_embed = await create_response_embed(
+                    interaction, 
+                    "❌ Invalid Selection", 
+                    "Invalid surah selection. Please try again.", 
+                    discord.Color.red()
+                )
+                await interaction.response.send_message(embed=error_embed, ephemeral=True)
         except Exception as e:
             log_operation("surah_select", "ERROR", {
                 "user_id": interaction.user.id,
@@ -637,7 +642,11 @@ class SurahSelect(Select):
                 f"Error selecting surah: {str(e)}", 
                 discord.Color.red()
             )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+            # Check if interaction was already deferred
+            if interaction.response.is_done():
+                await interaction.followup.send(embed=error_embed, ephemeral=True)
+            else:
+                await interaction.response.send_message(embed=error_embed, ephemeral=True)
 
 class ReciterSelect(Select):
     def __init__(self, bot):
@@ -662,16 +671,14 @@ class ReciterSelect(Select):
                 reciter_options = self.bot.get_available_reciters()
             else:
                 # Fallback to config method
-                from core.config.config import Config
-                reciter_options = Config.get_available_reciters()
+                reciter_options = BotConfig.get_available_reciters()
             
             # Create select options with Arabic names as descriptions
             options = []
             for reciter in reciter_options:
                 # Get the folder name for this reciter
-                from core.config.config import Config
-                folder_name = Config.get_folder_name_from_display(reciter)
-                arabic_name = Config.get_reciter_arabic_name(folder_name)
+                folder_name = BotConfig.get_folder_name_from_display(reciter)
+                arabic_name = BotConfig.get_reciter_arabic_name(folder_name)
                 
                 # Create description with Arabic name
                 description = arabic_name if arabic_name else f"Reciter: {reciter}"
@@ -752,7 +759,7 @@ class ReciterSelect(Select):
                 return
 
             # Record last activity for reciter change
-            Config.set_last_activity(
+            BotConfig.set_last_activity(
                 action=f"Switched to {selected_reciter}",
                 user_id=interaction.user.id,
                 user_name=interaction.user.name
@@ -787,7 +794,7 @@ class ReciterSelect(Select):
                         "selected_reciter": selected_reciter,
                         "error": str(e)
                     })
-                    await interaction.followup.send(f"Error restarting playback: {str(e)}", ephemeral=True, delete_after=300)
+                    await interaction.followup.send(f"Error restarting playback: {str(e)}", ephemeral=True)
 
             # Acknowledge the interaction
             await interaction.response.defer()
@@ -813,7 +820,11 @@ class ReciterSelect(Select):
                 f"Error selecting reciter: {str(e)}", 
                 discord.Color.red()
             )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True, delete_after=300)
+            # Check if interaction was already deferred
+            if interaction.response.is_done():
+                await interaction.followup.send(embed=error_embed, ephemeral=True)
+            else:
+                await interaction.response.send_message(embed=error_embed, ephemeral=True)
 
 class ControlPanelView(View):
     def __init__(self, bot):
@@ -905,9 +916,8 @@ class ControlPanelView(View):
             
             # Try to get duration from bot's method
             if hasattr(self.bot, 'get_audio_duration'):
-                from core.config.config import Config
                 import os
-                audio_path = os.path.join(Config.AUDIO_FOLDER, self.bot.current_reciter, surah_name)
+                audio_path = os.path.join(BotConfig.AUDIO_FOLDER, self.bot.current_reciter, surah_name)
                 if os.path.exists(audio_path):
                     duration = self.bot.get_audio_duration(audio_path)
                     if duration:
@@ -978,8 +988,7 @@ class ControlPanelView(View):
             timer_line = ""
             if current_surah_name and hasattr(self.bot, 'get_audio_duration'):
                 import os
-                from core.config.config import Config
-                audio_path = os.path.join(Config.AUDIO_FOLDER, self.bot.current_reciter, current_surah_name)
+                audio_path = os.path.join(BotConfig.AUDIO_FOLDER, self.bot.current_reciter, current_surah_name)
                 if os.path.exists(audio_path):
                     total_duration = self.bot.get_audio_duration(audio_path)
                     # Try to get current playback time if available
@@ -1002,7 +1011,7 @@ class ControlPanelView(View):
             
             # Loop status with user tracking
             if loop_enabled:
-                loop_user_id = Config.get_loop_user()
+                loop_user_id = BotConfig.get_loop_user()
                 if loop_user_id:
                     loop_status = f"ON - <@{loop_user_id}>"
                 else:
@@ -1012,7 +1021,7 @@ class ControlPanelView(View):
             
             # Shuffle status with user tracking
             if shuffle_enabled:
-                shuffle_user_id = Config.get_shuffle_user()
+                shuffle_user_id = BotConfig.get_shuffle_user()
                 if shuffle_user_id:
                     shuffle_status = f"ON - <@{shuffle_user_id}>"
                 else:
@@ -1034,13 +1043,13 @@ class ControlPanelView(View):
             )
 
             # Add Last Activity to status block (only show for 15 minutes after action)
-            if Config.should_show_last_activity():
-                last_activity = Config.get_last_activity()
+            if BotConfig.should_show_last_activity():
+                last_activity = BotConfig.get_last_activity()
                 if last_activity:
                     last_action = last_activity.get('action', 'Unknown')
                     last_user_id = last_activity.get('user_id', None)
                     last_user_mention = f'<@{last_user_id}>' if last_user_id else 'Unknown'
-                    last_time = Config.get_last_activity_discord_time()
+                    last_time = BotConfig.get_last_activity_discord_time()
                     
                     if last_time:
                         last_activity_line = f"\n**Last Activity:** {last_action} by {last_user_mention} at {last_time}"
@@ -1178,7 +1187,7 @@ class ControlPanelView(View):
             self.bot.state_manager.set_current_song_index(current_index - 1)
             
             # Record last activity for previous
-            Config.set_last_activity(
+            BotConfig.set_last_activity(
                 action="Went to Previous Surah",
                 user_id=interaction.user.id,
                 user_name=interaction.user.name
@@ -1271,10 +1280,10 @@ class ControlPanelView(View):
             # Track user who toggled loop
             if self.bot.loop_enabled:
                 set_loop_user(interaction.user.id)
-                Config.set_last_activity("Enabled Loop", interaction.user.id, interaction.user.name)
+                BotConfig.set_last_activity("Enabled Loop", interaction.user.id, interaction.user.name)
             else:
                 set_loop_user(None)
-                Config.set_last_activity("Disabled Loop", interaction.user.id, interaction.user.name)
+                BotConfig.set_last_activity("Disabled Loop", interaction.user.id, interaction.user.name)
             
             # Update button style
             button.style = discord.ButtonStyle.success if self.bot.loop_enabled else discord.ButtonStyle.secondary
@@ -1329,11 +1338,11 @@ class ControlPanelView(View):
             # Track user who toggled shuffle
             if self.bot.shuffle_enabled:
                 set_shuffle_user(interaction.user.id)
-                Config.set_last_activity("Enabled Shuffle", interaction.user.id, interaction.user.name)
+                BotConfig.set_last_activity("Enabled Shuffle", interaction.user.id, interaction.user.name)
             else:
                 set_shuffle_user(None)
-                Config.set_shuffle_user(None)
-                Config.set_last_activity("Disabled Shuffle", interaction.user.id, interaction.user.name)
+                BotConfig.set_shuffle_user(None)
+                BotConfig.set_last_activity("Disabled Shuffle", interaction.user.id, interaction.user.name)
             
             # Update button style
             button.style = discord.ButtonStyle.success if self.bot.shuffle_enabled else discord.ButtonStyle.secondary
@@ -1399,7 +1408,7 @@ class ControlPanelView(View):
             self.bot.state_manager.set_current_song_index(current_index + 1)
             
             # Record last activity for skip
-            Config.set_last_activity(
+            BotConfig.set_last_activity(
                 action="Skipped to Next Surah",
                 user_id=interaction.user.id,
                 user_name=interaction.user.name
@@ -1495,35 +1504,29 @@ class ControlPanelView(View):
 async def setup(bot):
     """Set up the control panel cog."""
     try:
+        print("🔧 CONTROL PANEL SETUP STARTED")
+        log_operation("setup", "INFO", {"phase": "setup_started", "bot_user": bot.user.name if bot.user else "Unknown"})
+        
         # Force reset the panel manager to clear any old state
         panel_manager.reset()
+        print("🔧 Panel manager reset")
         
         # Create the control panel view
         view = ControlPanelView(bot)
+        print("🔧 Control panel view created")
         
         # Ensure select menu options are properly set
         view.surah_select.update_options()
         view.reciter_select.update_options()
-        
-        # Debug logging
-        log_operation("setup", "DEBUG", {
-            "surah_options_count": len(view.surah_select.options),
-            "reciter_options_count": len(view.reciter_select.options),
-            "surah_options": [opt.label for opt in view.surah_select.options[:5]],  # First 5 options
-            "reciter_options": [opt.label for opt in view.reciter_select.options]
-        })
+        print(f"🔧 Surah options: {len(view.surah_select.options)}, Reciter options: {len(view.reciter_select.options)}")
         
         # Verify options are set
         if not view.surah_select.options:
-            log_operation("setup", "ERROR", {
-                "error": "Surah select has no options"
-            })
+            print("❌ Surah select has no options")
             return
             
         if not view.reciter_select.options:
-            log_operation("setup", "ERROR", {
-                "error": "Reciter select has no options"
-            })
+            print("❌ Reciter select has no options")
             return
         
         # Create the initial embed
@@ -1560,8 +1563,7 @@ async def setup(bot):
         timer_line = ""
         if current_surah_name and hasattr(bot, 'get_audio_duration'):
             import os
-            from core.config.config import Config
-            audio_path = os.path.join(Config.AUDIO_FOLDER, bot.current_reciter, current_surah_name)
+            audio_path = os.path.join(BotConfig.AUDIO_FOLDER, bot.current_reciter, current_surah_name)
             if os.path.exists(audio_path):
                 total_duration = bot.get_audio_duration(audio_path)
                 # Try to get current playback time if available
@@ -1584,7 +1586,7 @@ async def setup(bot):
         
         # Loop status with user tracking
         if loop_enabled:
-            loop_user_id = Config.get_loop_user()
+            loop_user_id = BotConfig.get_loop_user()
             if loop_user_id:
                 loop_status = f"ON - <@{loop_user_id}>"
             else:
@@ -1594,7 +1596,7 @@ async def setup(bot):
         
         # Shuffle status with user tracking
         if shuffle_enabled:
-            shuffle_user_id = Config.get_shuffle_user()
+            shuffle_user_id = BotConfig.get_shuffle_user()
             if shuffle_user_id:
                 shuffle_status = f"ON - <@{shuffle_user_id}>"
             else:
@@ -1616,13 +1618,13 @@ async def setup(bot):
         )
 
         # Add Last Activity to status block (only show for 15 minutes after action)
-        if Config.should_show_last_activity():
-            last_activity = Config.get_last_activity()
+        if BotConfig.should_show_last_activity():
+            last_activity = BotConfig.get_last_activity()
             if last_activity:
                 last_action = last_activity.get('action', 'Unknown')
                 last_user_id = last_activity.get('user_id', None)
                 last_user_mention = f'<@{last_user_id}>' if last_user_id else 'Unknown'
-                last_time = Config.get_last_activity_discord_time()
+                last_time = BotConfig.get_last_activity_discord_time()
                 
                 if last_time:
                     last_activity_line = f"\n**Last Activity:** {last_action} by {last_user_mention} at {last_time}"
@@ -1638,18 +1640,22 @@ async def setup(bot):
         # Define create_panel function
         async def create_panel():
             try:
-                # Get the target channel
-                from core.config.config import Config
-                panel_channel_id = Config.PANEL_CHANNEL_ID
+                print("🔧 [create_panel] Starting panel creation...")
+                # Get the target channel (Config is already imported at module level)
+                panel_channel_id = BotConfig.PANEL_CHANNEL_ID
+                print(f"🔧 [create_panel] Looking for channel ID: {panel_channel_id}")
                 
                 # Find the channel
                 channel = None
                 for guild in bot.guilds:
+                    print(f"🔧 [create_panel] Checking guild: {guild.name} ({guild.id})")
                     channel = guild.get_channel(panel_channel_id)
                     if channel:
+                        print(f"🔧 [create_panel] Found channel: {channel.name} ({channel.id}) in guild {guild.name}")
                         break
                 
                 if not channel:
+                    print(f"❌ [create_panel] Panel channel not found! ID: {panel_channel_id}")
                     log_operation("setup", "ERROR", {
                         "error": "Panel channel not found",
                         "panel_channel_id": panel_channel_id
@@ -1658,6 +1664,7 @@ async def setup(bot):
                 
                 # Delete all messages in the channel (clear the whole chat)
                 try:
+                    print(f"🔧 [create_panel] Clearing messages in channel: {channel.name} ({channel.id})")
                     log_operation("setup", "INFO", {
                         "action": "clearing_channel",
                         "channel_id": channel.id,
@@ -1671,9 +1678,9 @@ async def setup(bot):
                             await message.delete()
                             deleted_count += 1
                         except Exception as delete_error:
-                            # Skip messages we can't delete (e.g., too old)
+                            print(f"⚠️ [create_panel] Could not delete message: {delete_error}")
                             continue
-                    
+                    print(f"🔧 [create_panel] Deleted {deleted_count} messages from channel {channel.name}")
                     log_operation("setup", "INFO", {
                         "action": "channel_cleared",
                         "deleted_count": deleted_count,
@@ -1681,6 +1688,7 @@ async def setup(bot):
                     })
                     
                 except Exception as e:
+                    print(f"⚠️ [create_panel] Failed to clear channel: {e}")
                     log_operation("setup", "WARNING", {
                         "error": f"Failed to clear channel: {str(e)}",
                         "channel_id": channel.id
@@ -1689,6 +1697,7 @@ async def setup(bot):
                 # Ensure options are still set before sending
                 view.surah_select.update_options()
                 view.reciter_select.update_options()
+                print("🔧 [create_panel] Updated select menu options.")
                 
                 # Debug logging before sending
                 log_operation("setup", "DEBUG", {
@@ -1700,6 +1709,7 @@ async def setup(bot):
                 
                 # Ensure we have at least one option for each select menu
                 if not view.surah_select.options:
+                    print("⚠️ [create_panel] Surah select has no options, adding fallback.")
                     log_operation("setup", "WARNING", {
                         "error": "Surah select has no options, adding fallback"
                     })
@@ -1712,6 +1722,7 @@ async def setup(bot):
                     )
                 
                 if not view.reciter_select.options:
+                    print("⚠️ [create_panel] Reciter select has no options, adding fallback.")
                     log_operation("setup", "WARNING", {
                         "error": "Reciter select has no options, adding fallback"
                     })
@@ -1723,21 +1734,30 @@ async def setup(bot):
                         )
                     )
                 
+                print("🔧 [create_panel] Sending new panel message...")
                 # Send the new panel
                 panel_message = await channel.send(embed=embed, view=view)
+                print(f"✅ [create_panel] Panel message sent! Message ID: {panel_message.id}")
                 
                 # Store the message reference
                 view.set_panel_message(panel_message)
+                print("🔧 [create_panel] Panel message reference stored in view.")
+                
+                # Register the panel with the panel manager
+                panel_manager.register_panel(view)
+                print("🔧 [create_panel] Panel registered with panel_manager.")
                 
                 log_operation("setup", "INFO", {
                     "channel_id": channel.id,
                     "channel_name": channel.name,
                     "guild_id": channel.guild.id,
                     "guild_name": channel.guild.name,
-                    "panel_message_id": panel_message.id
+                    "panel_message_id": panel_message.id,
+                    "panel_registered": True
                 })
                 
             except Exception as e:
+                print(f"❌ [create_panel] Exception: {e}")
                 log_operation("setup", "ERROR", {
                     "error": str(e)
                 })
@@ -1745,25 +1765,36 @@ async def setup(bot):
         # Create the panel with delay
         async def delayed_create_panel():
             try:
+                print("🔧 DELAYED PANEL CREATION STARTED")
+                log_operation("setup", "INFO", {"phase": "delayed_create_started"})
+                
                 # Wait for bot to be ready
                 await bot.wait_until_ready()
+                print("🔧 Bot is ready")
                 
                 # Wait additional time for guilds to be available
                 await asyncio.sleep(5)
+                print("🔧 Waited 5 seconds, now creating panel")
                 
                 # Create the panel
                 await create_panel()
+                print("✅ [delayed_create_panel] create_panel() finished!")
                 
             except Exception as e:
+                print(f"❌ [delayed_create_panel] Exception: {e}")
                 log_operation("setup", "ERROR", {
                     "error": str(e),
                     "phase": "delayed_create"
                 })
         
         # Start the delayed panel creation
+        print("🔧 Starting delayed panel creation task")
+        log_operation("setup", "INFO", {"phase": "starting_delayed_task"})
         asyncio.create_task(delayed_create_panel())
+        print("🔧 Delayed panel creation task started")
         
     except Exception as e:
+        print(f"🔧 ERROR in control panel setup: {e}")
         log_operation("setup", "ERROR", {
             "error": str(e),
             "phase": "initial_setup"
@@ -1976,8 +2007,7 @@ class SearchResultView(View):
                         self.bot.state_manager.set_last_change("search_play", interaction.user.id, interaction.user.name, f"Surah {self.surah_number}")
                         
                         # Record last activity for surah change
-                        from core.config.config import Config
-                        Config.set_last_activity(
+                        BotConfig.set_last_activity(
                             action=f"Switched to Surah {self.surah_number}",
                             user_id=interaction.user.id,
                             user_name=interaction.user.name
@@ -1998,7 +2028,7 @@ class SearchResultView(View):
                         "user_name": interaction.user.name,
                         "error": str(e)
                     })
-                    await interaction.followup.send(f"Error restarting playback: {str(e)}", ephemeral=True, delete_after=300)
+                    await interaction.followup.send(f"Error restarting playback: {str(e)}", ephemeral=True)
             
             # Acknowledge the interaction
             await interaction.response.defer()
@@ -2018,7 +2048,7 @@ class SearchResultView(View):
                 discord.Color.green()
             )
             
-            await interaction.followup.send(embed=success_embed, ephemeral=True, delete_after=300)
+            await interaction.followup.send(embed=success_embed, ephemeral=True)
             
         except Exception as e:
             log_operation("search_play", "ERROR", {
