@@ -963,11 +963,12 @@ class ControlPanelView(View):
         return arabic_names.get(surah_number, "")
 
     async def update_panel_status(self):
-        """Update the panel message with current status"""
+        logger.debug("[DEBUG] Entered update_panel_status")
         if not self.panel_message:
+            logger.debug("[DEBUG] panel_message is not set, exiting update_panel_status")
             return
         try:
-            # Get current state
+            logger.debug("[DEBUG] Gathering current state for panel status")
             current_reciter = self.bot.current_reciter or "*Not selected*"
             current_surah_index = self.bot.state_manager.get_current_song_index()
             current_surah_name = self.bot.state_manager.get_current_song_name()
@@ -975,7 +976,8 @@ class ControlPanelView(View):
             loop_enabled = getattr(self.bot, 'loop_enabled', False)
             shuffle_enabled = getattr(self.bot, 'shuffle_enabled', False)
 
-            # Get surah info
+            logger.debug(f"[DEBUG] State: reciter={current_reciter}, surah_index={current_surah_index}, surah_name={current_surah_name}, is_playing={is_playing}, loop={loop_enabled}, shuffle={shuffle_enabled}")
+
             surah_display = "*Not playing*"
             surah_emoji = ""
             surah_number = None
@@ -983,22 +985,19 @@ class ControlPanelView(View):
                 from core.mapping.surah_mapper import get_surah_info, get_surah_emoji
                 surah_number = current_surah_index + 1
                 surah_info = get_surah_info(surah_number)
-                # Use non-padded surah number
                 surah_display = f"{surah_number}. {surah_info['english_name']}"
                 surah_emoji = get_surah_emoji(surah_number)
 
-            # Get timer info
             timer_line = ""
             if current_surah_name and hasattr(self.bot, 'get_audio_duration'):
                 import os
                 audio_path = os.path.join(BotConfig.AUDIO_FOLDER, self.bot.current_reciter, current_surah_name)
+                logger.debug(f"[DEBUG] Checking audio path: {audio_path}")
                 if os.path.exists(audio_path):
                     total_duration = await self.bot.get_audio_duration(audio_path)
-                    # Try to get current playback time if available
                     current_time = 0
                     if hasattr(self.bot, 'get_current_playback_time'):
                         current_time = self.bot.get_current_playback_time()
-                    # Clamp current_time to total_duration
                     if total_duration is not None:
                         current_time = min(current_time, total_duration)
                     minutes = int(current_time // 60)
@@ -1007,12 +1006,10 @@ class ControlPanelView(View):
                     total_seconds = int(total_duration % 60)
                     timer_line = f"`{minutes}:{seconds:02d} / {total_minutes}:{total_seconds:02d}`"
 
-            # Status icons
             status_icon = "▶️" if is_playing else "⏸️"
             loop_icon = "🔁" if loop_enabled else "🔁"
             shuffle_icon = "🔀" if shuffle_enabled else "🔀"
-            
-            # Loop status with user tracking
+
             if loop_enabled:
                 loop_user_id = BotConfig.get_loop_user()
                 if loop_user_id:
@@ -1021,8 +1018,7 @@ class ControlPanelView(View):
                     loop_status = "ON"
             else:
                 loop_status = "OFF"
-            
-            # Shuffle status with user tracking
+
             if shuffle_enabled:
                 shuffle_user_id = BotConfig.get_shuffle_user()
                 if shuffle_user_id:
@@ -1032,7 +1028,6 @@ class ControlPanelView(View):
             else:
                 shuffle_status = "OFF"
 
-            # Build the Markdown-style status block with extra spacing
             status_block = f"• **Now Playing:** {surah_emoji} {surah_display}  \n"
             if timer_line:
                 status_block += f"{timer_line}\n"
@@ -1045,7 +1040,6 @@ class ControlPanelView(View):
                 f"• **Shuffle:** {shuffle_icon} {shuffle_status}  \n"
             )
 
-            # Add Last Activity to status block (only show for 15 minutes after action)
             if BotConfig.should_show_last_activity():
                 last_activity = BotConfig.get_last_activity()
                 if last_activity:
@@ -1053,15 +1047,13 @@ class ControlPanelView(View):
                     last_user_id = last_activity.get('user_id', None)
                     last_user_mention = f'<@{last_user_id}>' if last_user_id else 'Unknown'
                     last_time = BotConfig.get_last_activity_discord_time()
-                    
                     if last_time:
                         last_activity_line = f"\n**Last Activity:** {last_action} by {last_user_mention} at {last_time}"
                     else:
                         last_activity_line = f"\n**Last Activity:** {last_action} by {last_user_mention}"
-                    
                     status_block += last_activity_line
 
-            # Create the embed
+            logger.debug("[DEBUG] Creating embed for panel message")
             embed = discord.Embed(
                 title="🕌 QuranBot Control Panel",
                 color=discord.Color.green()
@@ -1069,11 +1061,13 @@ class ControlPanelView(View):
             if self.bot.user and self.bot.user.avatar:
                 embed.set_thumbnail(url=self.bot.user.avatar.url)
             embed.add_field(name="\u200b", value=status_block, inline=False)
-            # No footer - removed as requested
 
+            logger.debug("[DEBUG] Editing panel message with new embed")
             await self.panel_message.edit(embed=embed)
+            logger.debug("[DEBUG] Successfully updated panel message")
         except discord.errors.HTTPException as e:
-            if e.status in [500, 502, 503, 504, 429]:  # Server errors or rate limit
+            logger.error(f"[DEBUG] HTTPException in update_panel_status: {e}")
+            if e.status in [500, 502, 503, 504, 429]:
                 log_operation("update_panel", "WARNING", {
                     "error": f"Discord server error {e.status}: {e.text}",
                     "retry_later": True
@@ -1081,12 +1075,16 @@ class ControlPanelView(View):
             else:
                 log_operation("update_panel", "ERROR", {"error": f"HTTP error {e.status}: {e.text}"})
         except (aiohttp.ClientError, aiohttp.ServerDisconnectedError, ConnectionError) as e:
+            logger.error(f"[DEBUG] Connection error in update_panel_status: {e}")
             log_operation("update_panel", "WARNING", {
                 "error": f"Connection error: {str(e)}",
                 "retry_later": True
             })
         except Exception as e:
-            log_operation("update_panel", "ERROR", {"error": str(e)})
+            import traceback
+            logger.error(f"[DEBUG] Exception in update_panel_status: {e}\n{traceback.format_exc()}")
+            log_operation("update_panel", "ERROR", {"error": str(e), "traceback": traceback.format_exc()})
+        logger.debug("[DEBUG] Exiting update_panel_status")
 
     @log_button_interaction
     @discord.ui.button(label="◀️ Previous Page", style=discord.ButtonStyle.secondary, custom_id="surah_prev_page", row=2)
