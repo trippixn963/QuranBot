@@ -158,6 +158,7 @@ class DiscordEmbedLogger:
                                 "username": member.display_name,
                                 "total_time": 0.0,
                                 "interactions": 0,
+                                "interaction_count": 0,
                             }
                             logger.info(
                                 f"📝 Initialized session for {member.display_name} already in VC"
@@ -262,6 +263,7 @@ class DiscordEmbedLogger:
                             "total_time": session_data.get("total_time", 0.0),
                             "daily_joins": session_data.get("daily_joins", {}),
                             "interactions": session_data.get("interactions", {}),
+                            "interaction_count": session_data.get("interaction_count", 0),
                         }
                 logger.info(f"📝 Loaded {len(self.user_sessions)} existing VC sessions")
             else:
@@ -296,6 +298,7 @@ class DiscordEmbedLogger:
                     "total_time": session_data.get("total_time", 0.0),
                     "daily_joins": session_data.get("daily_joins", {}),
                     "interactions": session_data.get("interactions", {}),
+                    "interaction_count": session_data.get("interaction_count", 0),
                 }
             with open(self.sessions_file, "w") as f:
                 json.dump(serializable_data, f, indent=2)
@@ -482,6 +485,7 @@ class DiscordEmbedLogger:
                 "total_time": session["total_time"] if session else 0.0,
                 "daily_joins": session["daily_joins"] if session else {},
                 "interactions": {},
+                "interaction_count": 0,
             }
         else:
             # Already tracked (e.g. after restart), do not reset joined_at or session_duration
@@ -583,9 +587,11 @@ class DiscordEmbedLogger:
         """Log when a user clicks a button."""
         # Increment interaction count for user if they have an active session
         if interaction.user.id in self.user_sessions:
-            self.user_sessions[interaction.user.id]["interactions"] = (
-                self.user_sessions[interaction.user.id].get("interactions", 0) + 1
-            )
+            # Safely increment the simple count
+            session = self.user_sessions[interaction.user.id]
+            if not isinstance(session.get("interaction_count"), int):
+                session["interaction_count"] = 0
+            session["interaction_count"] += 1
 
         embed = discord.Embed(
             title="📝 User Interaction Log", color=0x9B59B6  # Discord purple color
@@ -676,9 +682,11 @@ class DiscordEmbedLogger:
         """Log when a user interacts with a select menu."""
         # Increment interaction count for user if they have an active session
         if interaction.user.id in self.user_sessions:
-            self.user_sessions[interaction.user.id]["interactions"] = (
-                self.user_sessions[interaction.user.id].get("interactions", 0) + 1
-            )
+            # Safely increment the simple count
+            session = self.user_sessions[interaction.user.id]
+            if not isinstance(session.get("interaction_count"), int):
+                session["interaction_count"] = 0
+            session["interaction_count"] += 1
 
         embed = discord.Embed(
             title="📝 User Interaction Log", color=0x9B59B6  # Discord purple color
