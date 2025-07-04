@@ -36,24 +36,24 @@ class BotMetrics:
     Bot performance metrics data class.
 
     This class holds all the performance metrics for the bot
-    including uptime, songs played, errors, and current status.
+    including uptime, surahs played, errors, and current status.
 
     Attributes:
         start_time (datetime): When the bot started
-        songs_played (int): Total number of songs played
+        surahs_played (int): Total number of surahs played
         errors_count (int): Total number of errors encountered
         reconnections (int): Total number of reconnections
         last_activity (Optional[datetime]): Last activity timestamp
-        current_song (Optional[str]): Currently playing song
+        current_surah (Optional[str]): Currently playing surah
         is_streaming (bool): Whether the bot is currently streaming
     """
 
     start_time: datetime
-    songs_played: int = 0
+    surahs_played: int = 0
     errors_count: int = 0
     reconnections: int = 0
     last_activity: Optional[datetime] = None
-    current_song: Optional[str] = None
+    current_surah: Optional[str] = None
     is_streaming: bool = False
 
 
@@ -107,9 +107,9 @@ class HealthMonitor:
             song_name (str): Name of the currently playing song
         """
         try:
-            self.metrics.current_song = song_name
+            self.metrics.current_surah = song_name
             self.metrics.last_activity = datetime.now()
-            self.metrics.songs_played += 1
+            self.metrics.surahs_played += 1
 
             from ..logging.logger import logger
 
@@ -259,8 +259,8 @@ class HealthMonitor:
 
             # Calculate error rate safely
             error_rate = 0.0
-            if self.metrics.songs_played > 0:
-                error_rate = self.metrics.errors_count / self.metrics.songs_played
+            if self.metrics.surahs_played > 0:
+                error_rate = self.metrics.errors_count / self.metrics.surahs_played
 
             # Determine overall health status
             if self.metrics.errors_count < 5:
@@ -274,10 +274,12 @@ class HealthMonitor:
                 "status": status,
                 "uptime": self.get_uptime_string(),
                 "uptime_seconds": uptime.total_seconds(),
-                "songs_played": self.metrics.songs_played,
+                "songs_played": self.metrics.surahs_played,
+                "surahs_played": self.metrics.surahs_played,
                 "errors_count": self.metrics.errors_count,
                 "reconnections": self.metrics.reconnections,
-                "current_song": self.metrics.current_song,
+                "current_song": self.metrics.current_surah,
+                "current_surah": self.metrics.current_surah,
                 "is_streaming": self.metrics.is_streaming,
                 "last_activity": (
                     self.metrics.last_activity.isoformat()
@@ -299,9 +301,11 @@ class HealthMonitor:
                 "uptime": "Unknown",
                 "uptime_seconds": 0,
                 "songs_played": 0,
+                "surahs_played": 0,
                 "errors_count": 0,
                 "reconnections": 0,
                 "current_song": None,
+                "current_surah": None,
                 "is_streaming": False,
                 "last_activity": None,
                 "error_rate": 0.0,

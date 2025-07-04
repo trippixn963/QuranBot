@@ -168,16 +168,12 @@ class DiscordEmbedLogger:
                             log_tree_item(f"🕒 Joined at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", is_last=True)
                             log_tree_end()
                         else:
-                            # Update their join time to now (since we don't know when they actually joined during downtime)
+                            # Only update their join time and channel, preserve total_time and interactions
                             self.user_sessions[member.id]["joined_at"] = datetime.now()
-                            self.user_sessions[member.id][
-                                "username"
-                            ] = member.display_name
-                            self.user_sessions[member.id][
-                                "interactions"
-                            ] = 0  # Reset interactions for new session
+                            self.user_sessions[member.id]["channel_name"] = channel.name
+                            self.user_sessions[member.id]["username"] = member.display_name
                             logger.info(
-                                f"📝 Resumed session for {member.display_name} already in VC"
+                                f"📝 Resumed session for {member.display_name} already in VC (preserved total_time)"
                             )
                             log_tree_start("User VC Session")
                             log_tree_item(f"👤 User: {member.display_name} (ID: {member.id})")
@@ -251,34 +247,25 @@ class DiscordEmbedLogger:
     def _load_sessions(self) -> None:
         """
         Load existing user sessions from file.
-
-        This method loads persisted user session data from the JSON file,
-        handling data conversion and error recovery.
         """
         try:
             os.makedirs(os.path.dirname(self.sessions_file), exist_ok=True)
             if os.path.exists(self.sessions_file):
                 with open(self.sessions_file, "r") as f:
                     data = json.load(f)
-                    # Convert string keys back to int and string timestamps back to datetime
                     for user_id, session_data in data.items():
                         self.user_sessions[int(user_id)] = {
-                            "joined_at": datetime.fromisoformat(
-                                session_data["joined_at"]
-                            ),
-                            "channel_name": session_data["channel_name"],
-                            "username": session_data["username"],
-                            "total_time": session_data.get(
-                                "total_time", 0.0
-                            ),  # Accumulated time from previous sessions
-                            "interactions": session_data.get(
-                                "interactions", 0
-                            ),  # Interactions from previous sessions
+                            "joined_at": datetime.fromisoformat(session_data["joined_at"]),
+                            "channel_name": session_data.get("channel_name", "Unknown"),
+                            "username": session_data.get("username", "Unknown"),
+                            "session_duration": session_data.get("session_duration", 0.0),
+                            "total_time": session_data.get("total_time", 0.0),
+                            "daily_joins": session_data.get("daily_joins", {}),
+                            "interactions": session_data.get("interactions", {}),
                         }
                 logger.info(f"📝 Loaded {len(self.user_sessions)} existing VC sessions")
             else:
                 logger.info("📝 No existing VC sessions file found, starting fresh")
-
         except Exception as e:
             logger.error(f"❌ Failed to load VC sessions: {e}")
             logger.error(f"🔍 Load sessions error traceback: {traceback.format_exc()}")
@@ -287,16 +274,11 @@ class DiscordEmbedLogger:
     def _save_sessions(self) -> None:
         """
         Save current user sessions to file.
-
-        This method persists user session data to JSON format,
-        handling datetime serialization and error recovery.
         """
         try:
             os.makedirs(os.path.dirname(self.sessions_file), exist_ok=True)
-            # Convert datetime objects to strings for JSON serialization
             serializable_data = {}
             for user_id, session_data in self.user_sessions.items():
-                # Handle missing fields gracefully
                 joined_at = session_data.get("joined_at")
                 if joined_at:
                     joined_at_str = (
@@ -306,19 +288,18 @@ class DiscordEmbedLogger:
                     )
                 else:
                     joined_at_str = datetime.now().isoformat()
-
                 serializable_data[str(user_id)] = {
                     "joined_at": joined_at_str,
                     "channel_name": session_data.get("channel_name", "Unknown"),
                     "username": session_data.get("username", "Unknown"),
+                    "session_duration": session_data.get("session_duration", 0.0),
                     "total_time": session_data.get("total_time", 0.0),
-                    "interactions": session_data.get("interactions", 0),
+                    "daily_joins": session_data.get("daily_joins", {}),
+                    "interactions": session_data.get("interactions", {}),
                 }
-
             with open(self.sessions_file, "w") as f:
                 json.dump(serializable_data, f, indent=2)
             logger.debug(f"💾 Saved {len(self.user_sessions)} VC sessions to file")
-
         except Exception as e:
             logger.error(f"❌ Failed to save VC sessions: {e}")
             logger.error(f"🔍 Save sessions error traceback: {traceback.format_exc()}")
@@ -486,130 +467,112 @@ class DiscordEmbedLogger:
     # USER ACTIVITY EMBEDS
 
     async def log_user_joined_vc(self, member: discord.Member, channel_name: str):
-        """Log when a user joins the voice channel."""
-        # Increment daily join count
-        self._increment_daily_join_count(member.id)
-        daily_joins = self._get_daily_join_count(member.id)
-
+        """Log when a user joins a voice channel."""
+        now = datetime.now()
+        user_id = member.id
+        today = date.today().isoformat()
+        session = self.user_sessions.get(user_id)
+        if not session or not session.get("joined_at"):
+            # New session
+            self.user_sessions[user_id] = {
+                "joined_at": now,
+                "channel_name": channel_name,
+                "username": member.display_name,
+                "session_duration": 0.0,
+                "total_time": session["total_time"] if session else 0.0,
+                "daily_joins": session["daily_joins"] if session else {},
+                "interactions": {},
+            }
+        else:
+            # Already tracked (e.g. after restart), do not reset joined_at or session_duration
+            self.user_sessions[user_id]["channel_name"] = channel_name
+            self.user_sessions[user_id]["username"] = member.display_name
+        # Increment daily joins
+        daily_joins = self.user_sessions[user_id].setdefault("daily_joins", {})
+        daily_joins[today] = daily_joins.get(today, 0) + 1
+        self._save_sessions()
+        # Build embed
         embed = discord.Embed(
             title="👋 User Joined",
-            description=f"<@{member.id}> joined the voice channel",
-            color=0x00FF00,
+            description=f"{member.mention} joined the voice channel",
+            color=0x2ECC40,
         )
-
-        # Add user's profile picture
         if member.avatar:
             embed.set_thumbnail(url=member.avatar.url)
-
-        # Start tracking session with full information
-        join_time = datetime.now()
-        self.user_sessions[member.id] = {
-            "joined_at": join_time,
-            "channel_name": channel_name,
-            "username": member.display_name,
-            "guild_id": member.guild.id if member.guild else None,
-            "guild_name": member.guild.name if member.guild else None,
-            "total_time": self.user_sessions.get(member.id, {}).get(
-                "total_time", 0.0
-            ),  # Preserve total time
-            "interactions": 0,  # Track interactions during this session
-        }
-        self._save_sessions()
-
-        # Add session info to embed with Discord timestamp format
-        embed.add_field(name="User ID", value=str(member.id), inline=True)
-        embed.add_field(
-            name="Join Time", value=f"<t:{int(join_time.timestamp())}:F>", inline=True
-        )
-        embed.add_field(
-            name="Daily Joins",
-            value=f"{daily_joins} time{'s' if daily_joins != 1 else ''} today",
-            inline=True,
-        )
-
+        embed.add_field(name="User ID", value=str(user_id), inline=True)
+        embed.add_field(name="Session Start", value=now.strftime('%A, %B %d, %Y %I:%M %p'), inline=True)
+        # Session duration so far
+        joined_at = self.user_sessions[user_id]["joined_at"]
+        session_duration = (now - joined_at).total_seconds() + self.user_sessions[user_id].get("session_duration", 0.0)
+        embed.add_field(name="Session Duration", value=self.format_duration(session_duration), inline=True)
+        embed.add_field(name="Total Time", value=self.format_duration(self.user_sessions[user_id]["total_time"]), inline=True)
+        embed.add_field(name="Daily Joins", value=f"{daily_joins.get(today, 0)} times today", inline=True)
+        # Interactions so far
+        interactions = self.user_sessions[user_id].get("interactions", {})
+        if interactions:
+            actions = [f"{v}x {k}" for k, v in interactions.items()]
+            embed.add_field(name="Interactions", value=", ".join(actions), inline=False)
+        else:
+            embed.add_field(name="Interactions", value="None yet", inline=False)
+        embed.timestamp = now
         await self._send_embed(embed)
 
     async def log_user_left_vc(self, member: discord.Member, channel_name: str):
-        """Log when a user leaves the voice channel."""
-        # Get daily join count
-        daily_joins = self._get_daily_join_count(member.id)
-
-        embed = discord.Embed(
-            title="👋 User Left",
-            description=f"<@{member.id}> left the voice channel",
-            color=0xFF0000,
-        )
-
-        # Add user's profile picture
-        if member.avatar:
-            embed.set_thumbnail(url=member.avatar.url)
-
-        # Calculate session duration if we were tracking them
-        if member.id in self.user_sessions:
-            session_data = self.user_sessions[member.id]
-            session_start = session_data["joined_at"]
-            session_end = datetime.now()
-            duration = session_end - session_start
-            duration_secs = duration.total_seconds()
-
-            # Update total time before removing session
-            session_data["total_time"] = (
-                session_data.get("total_time", 0.0) + duration_secs
+        """Log when a user leaves a voice channel."""
+        now = datetime.now()
+        user_id = member.id
+        session = self.user_sessions.get(user_id)
+        if session and session.get("joined_at"):
+            # Calculate session duration
+            session_duration = (now - session["joined_at"]).total_seconds() + session.get("session_duration", 0.0)
+            # Add to total_time
+            session["total_time"] += session_duration
+            # Reset session_duration
+            session["session_duration"] = 0.0
+            # Prepare embed
+            embed = discord.Embed(
+                title="👋 User Left",
+                description=f"{member.mention} left the voice channel",
+                color=0xE74C3C,
             )
-
-            # Format durations for display
-            session_str = self.format_duration(duration_secs)
-            total_str = self.format_duration(session_data["total_time"])
-
-            embed.add_field(name="User ID", value=str(member.id), inline=True)
-            embed.add_field(
-                name="Session Start",
-                value=f"<t:{int(session_start.timestamp())}:F>",
-                inline=True,
-            )
-            embed.add_field(
-                name="Session End",
-                value=f"<t:{int(session_end.timestamp())}:F>",
-                inline=True,
-            )
-            embed.add_field(name="⏱️ Session Duration", value=session_str, inline=True)
-            embed.add_field(name="⌛ Total Time", value=total_str, inline=True)
-            embed.add_field(
-                name="Daily Joins",
-                value=f"{daily_joins} time{'s' if daily_joins != 1 else ''} today",
-                inline=True,
-            )
-
-            # Add interactions count
-            interactions = session_data.get("interactions", 0)
-            embed.add_field(
-                name="Interactions",
-                value=f"{interactions} interaction{'s' if interactions != 1 else ''}",
-                inline=True,
-            )
-
-            # Save total time to a temporary dict before deleting session
-            temp_total = session_data["total_time"]
-
-            # Clean up session - don't create incomplete session entries
-            del self.user_sessions[member.id]
-
+            if member.avatar:
+                embed.set_thumbnail(url=member.avatar.url)
+            embed.add_field(name="User ID", value=str(user_id), inline=True)
+            embed.add_field(name="Session Start", value=session["joined_at"].strftime('%A, %B %d, %Y %I:%M %p'), inline=True)
+            embed.add_field(name="Session End", value=now.strftime('%A, %B %d, %Y %I:%M %p'), inline=True)
+            embed.add_field(name="Session Duration", value=self.format_duration(session_duration), inline=True)
+            embed.add_field(name="Total Time", value=self.format_duration(session["total_time"]), inline=True)
+            # Daily joins
+            today = date.today().isoformat()
+            daily_joins = session.get("daily_joins", {})
+            embed.add_field(name="Daily Joins", value=f"{daily_joins.get(today, 0)} times today", inline=True)
+            # Interactions for this session
+            interactions = session.get("interactions", {})
+            if interactions:
+                actions = [f"{v}x {k}" for k, v in interactions.items()]
+                embed.add_field(name="Interactions", value=", ".join(actions), inline=False)
+            else:
+                embed.add_field(name="Interactions", value="None", inline=False)
+            embed.timestamp = now
+            await self._send_embed(embed)
+            # Reset session
+            session["joined_at"] = None
+            session["session_duration"] = 0.0
+            session["interactions"] = {}
             self._save_sessions()
         else:
-            # User wasn't tracked, show basic info
-            embed.add_field(name="User ID", value=str(member.id), inline=True)
-            embed.add_field(
-                name="Leave Time",
-                value=f"<t:{int(datetime.now().timestamp())}:F>",
-                inline=True,
+            # No session found, just log
+            embed = discord.Embed(
+                title="👋 User Left",
+                description=f"{member.mention} left the voice channel",
+                color=0xE74C3C,
             )
-            embed.add_field(
-                name="Daily Joins",
-                value=f"{daily_joins} time{'s' if daily_joins != 1 else ''} today",
-                inline=True,
-            )
-
-        await self._send_embed(embed)
+            if member.avatar:
+                embed.set_thumbnail(url=member.avatar.url)
+            embed.add_field(name="User ID", value=str(user_id), inline=True)
+            embed.timestamp = now
+            await self._send_embed(embed)
+            self._save_sessions()
 
     async def log_user_button_click(
         self,
@@ -667,13 +630,6 @@ class DiscordEmbedLogger:
                 interaction.user.id
             )  # Ensure we stop tracking if they're not in voice
             embed.add_field(name="Voice Status", value="❌ Not in Voice", inline=True)
-
-        # Bot latency
-        embed.add_field(
-            name="Bot Latency",
-            value=f"{round(interaction.client.latency * 1000)}ms",
-            inline=True,
-        )
 
         # Current surah info if playing
         if hasattr(interaction.client, "current_audio_file"):
@@ -744,14 +700,14 @@ class DiscordEmbedLogger:
         )
         embed.add_field(
             name="Response Time",
-            value=f"{interaction.client.latency * 1000:.0f} ms",
+            value=f"{round(interaction.client.latency * 1000)}ms",
             inline=True,
         )
 
         # Second row
         embed.add_field(name="User ID", value=str(interaction.user.id), inline=True)
 
-        # Voice status
+        # Voice status and duration
         member = (
             interaction.guild.get_member(interaction.user.id)
             if interaction.guild
@@ -771,13 +727,6 @@ class DiscordEmbedLogger:
             embed.add_field(name="Voice Status", value=duration_str, inline=True)
         else:
             embed.add_field(name="Voice Status", value="❌ Not in Voice", inline=True)
-
-        # Bot latency
-        embed.add_field(
-            name="Bot Latency",
-            value=f"{interaction.client.latency * 1000:.0f} ms",
-            inline=True,
-        )
 
         # Current surah info if playing
         if hasattr(interaction.client, "current_audio_file"):
@@ -949,3 +898,11 @@ class DiscordEmbedLogger:
             seconds = duration.seconds % 60
             return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
         return None
+
+    def track_interaction(self, user_id: int, action: str):
+        """Track a user interaction for the current session."""
+        session = self.user_sessions.get(user_id)
+        if session:
+            interactions = session.setdefault("interactions", {})
+            interactions[action] = interactions.get(action, 0) + 1
+            self._save_sessions()

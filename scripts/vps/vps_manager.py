@@ -136,9 +136,9 @@ class VPSManager:
             return False
             
         try:
-            # Check if bot process is running
+            # Check if bot process is running (check both python3 and python)
             output, error, success = self.execute_command(
-                "ps aux | grep 'python3.*run.py' | grep -v grep"
+                "ps aux | grep 'python.*run.py' | grep -v grep"
             )
             
             if output:
@@ -168,8 +168,8 @@ class VPSManager:
             return False
             
         try:
-            # Change to bot directory and start
-            command = f"cd {self.config['bot_directory']} && nohup python3 run.py > logs/bot.log 2>&1 &"
+            # Change to bot directory, activate virtual environment, and start
+            command = f"cd {self.config['bot_directory']} && source .venv/bin/activate && nohup python run.py > /dev/null 2>&1 &"
             output, error, success = self.execute_command(command)
             
             if success:
@@ -190,8 +190,8 @@ class VPSManager:
             return False
             
         try:
-            # Find and kill bot processes
-            command = "pkill -f 'python3.*run.py'"
+            # Find and kill bot processes (both python and python3)
+            command = "pkill -f 'python.*run.py'"
             output, error, success = self.execute_command(command)
             
             if success:
@@ -221,7 +221,7 @@ class VPSManager:
             
         try:
             # Stop bot first
-            self.execute_command("pkill -f 'python3.*run.py'")
+            self.execute_command("pkill -f 'python.*run.py'")
             time.sleep(2)
             
             # Only pull latest code, do not touch data directory
@@ -233,8 +233,8 @@ class VPSManager:
                 print(f"📝 Git output:\n{output}")
                 print("🌲 [SAFE] The data directory was NOT modified.")
                 
-                # Install any new dependencies
-                install_cmd = f"cd {self.config['bot_directory']} && pip install -r requirements.txt"
+                # Install any new dependencies in virtual environment
+                install_cmd = f"cd {self.config['bot_directory']} && source .venv/bin/activate && pip install -r requirements.txt"
                 install_output, install_error, install_success = self.execute_command(install_cmd)
                 
                 if install_success:
@@ -258,8 +258,18 @@ class VPSManager:
             return False
             
         try:
-            # Get recent log entries
-            command = f"tail -n 50 {self.config['logs_directory']}/bot.log"
+            # First try to find the most recent date-based log file
+            date_cmd = f"ls -t {self.config['logs_directory']}/*/quranbot.log 2>/dev/null | head -1"
+            date_output, _, _ = self.execute_command(date_cmd)
+            
+            if date_output and date_output.strip():
+                # Use the most recent date-based log file
+                log_file = date_output.strip()
+                command = f"tail -n 50 '{log_file}'"
+            else:
+                # Fallback to the old bot.log file
+                command = f"tail -n 50 {self.config['logs_directory']}/bot.log"
+            
             output, error, success = self.execute_command(command)
             
             if success and output:
@@ -286,8 +296,8 @@ class VPSManager:
             return False
             
         try:
-            # Search logs for the term
-            command = f"grep -i '{search_term}' {self.config['logs_directory']}/*.log | tail -n 20"
+            # Search logs for the term (including date-based folders)
+            command = f"grep -i '{search_term}' {self.config['logs_directory']}/*.log {self.config['logs_directory']}/*/quranbot*.log 2>/dev/null | tail -n 20"
             output, error, success = self.execute_command(command)
             
             if success and output:
@@ -316,10 +326,35 @@ class VPSManager:
             if self.ssh_client:  # Type check for linter
                 sftp = self.ssh_client.open_sftp()
                 
-                # List log files on VPS
+                # List log files on VPS (including date-based folders)
                 try:
-                    log_files = sftp.listdir(self.config['logs_directory'])
-                    log_files = [f for f in log_files if f.endswith('.log')]
+                    # Get all log files including those in date folders
+                    log_files = []
+                    
+                    # Get files in root logs directory
+                    try:
+                        root_files = sftp.listdir(self.config['logs_directory'])
+                        for file in root_files:
+                            if file.endswith('.log'):
+                                log_files.append((file, f"{self.config['logs_directory']}/{file}"))
+                    except:
+                        pass
+                    
+                    # Get files in date-based folders
+                    try:
+                        date_folders = sftp.listdir(self.config['logs_directory'])
+                        for folder in date_folders:
+                            if folder.count('-') == 2:  # Date format YYYY-MM-DD
+                                try:
+                                    folder_path = f"{self.config['logs_directory']}/{folder}"
+                                    folder_files = sftp.listdir(folder_path)
+                                    for file in folder_files:
+                                        if file.endswith('.log'):
+                                            log_files.append((f"{folder}/{file}", f"{folder_path}/{file}"))
+                                except:
+                                    pass
+                    except:
+                        pass
                     
                     if not log_files:
                         print("❌ No log files found on VPS!")
@@ -328,9 +363,11 @@ class VPSManager:
                     print(f"📁 Found {len(log_files)} log files")
                     
                     # Download each log file
-                    for log_file in log_files:
-                        remote_path = f"{self.config['logs_directory']}/{log_file}"
+                    for log_file, remote_path in log_files:
                         local_path = local_logs_dir / log_file
+                        
+                        # Create subdirectories if needed
+                        local_path.parent.mkdir(parents=True, exist_ok=True)
                         
                         print(f"📥 Downloading {log_file}...")
                         sftp.get(remote_path, str(local_path))
@@ -356,15 +393,15 @@ class VPSManager:
             return False
             
         try:
-            # Find and remove old log files
-            command = f"find {self.config['logs_directory']} -name '*.log' -mtime +7 -delete"
+            # Find and remove old log files (including date-based folders)
+            command = f"find {self.config['logs_directory']} -name '*.log' -mtime +7 -delete && find {self.config['logs_directory']} -type d -name '????-??-??' -mtime +7 -exec rm -rf {{}} + 2>/dev/null"
             output, error, success = self.execute_command(command)
             
             if success:
                 print("✅ Old logs cleared successfully!")
                 
-                # Show remaining log files
-                list_cmd = f"ls -la {self.config['logs_directory']}/*.log"
+                # Show remaining log files (including date-based folders)
+                list_cmd = f"find {self.config['logs_directory']} -name '*.log' -exec ls -la {{}} +"
                 list_output, _, _ = self.execute_command(list_cmd)
                 if list_output:
                     print("📁 Remaining log files:")
@@ -524,25 +561,32 @@ class VPSManager:
                 if success:
                     print("✅ Python environment installed!")
                     
-                    # Install bot dependencies using system packages
-                    print("📦 Installing Python dependencies...")
+                    # Create virtual environment
+                    print("🐍 Creating virtual environment...")
+                    venv_cmd = f"cd {self.config['bot_directory']} && python3 -m venv .venv"
+                    output, error, success = self.execute_command(venv_cmd)
                     
-                    # Install required packages via apt
-                    packages = ["python3-psutil", "python3-discord", "python3-dotenv", "python3-pynacl", "python3-pytz"]
-                    for package in packages:
-                        install_cmd = f"sudo apt install -y {package}"
+                    if success:
+                        print("✅ Virtual environment created!")
+                        
+                        # Install dependencies in virtual environment
+                        print("📦 Installing Python dependencies in virtual environment...")
+                        install_cmd = f"cd {self.config['bot_directory']} && source .venv/bin/activate && pip install -r requirements.txt"
                         output, error, success = self.execute_command(install_cmd)
+                        
                         if success:
-                            print(f"✅ Installed {package}")
+                            print("✅ Dependencies installed in virtual environment!")
                         else:
-                            print(f"⚠️ Failed to install {package}: {error}")
-                    
-                    # Create necessary directories
-                    dirs_cmd = f"cd {self.config['bot_directory']} && mkdir -p logs backups audio"
-                    self.execute_command(dirs_cmd)
-                    print("✅ Directories created!")
-                    
-                    print("✅ Environment setup complete!")
+                            print(f"⚠️ Some dependencies failed to install: {error}")
+                        
+                        # Create necessary directories
+                        dirs_cmd = f"cd {self.config['bot_directory']} && mkdir -p logs backups audio"
+                        self.execute_command(dirs_cmd)
+                        print("✅ Directories created!")
+                        
+                        print("✅ Environment setup complete!")
+                    else:
+                        print(f"❌ Failed to create virtual environment: {error}")
                 else:
                     print(f"❌ Failed to install Python: {error}")
             else:

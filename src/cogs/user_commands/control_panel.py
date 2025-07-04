@@ -27,6 +27,9 @@ from core.state.panel_manager import panel_manager
 from core.mapping.surah_mapper import get_surah_names, get_surah_emoji, get_surah_info
 from core.config.config import set_loop_user, set_shuffle_user
 
+# Add at the top of the file (module-level flag)
+panel_channel_cleared_once = False
+
 def get_system_metrics():
     """Get comprehensive system metrics"""
     process = psutil.Process()
@@ -1663,36 +1666,39 @@ async def setup(bot):
                     return
                 
                 # Delete all messages in the channel (clear the whole chat)
-                try:
-                    print(f"🔧 [create_panel] Clearing messages in channel: {channel.name} ({channel.id})")
-                    log_operation("setup", "INFO", {
-                        "action": "clearing_channel",
-                        "channel_id": channel.id,
-                        "channel_name": channel.name
-                    })
-                    
-                    # Delete all messages in the channel
-                    deleted_count = 0
-                    async for message in channel.history(limit=None):  # No limit to delete all messages
-                        try:
-                            await message.delete()
-                            deleted_count += 1
-                        except Exception as delete_error:
-                            print(f"⚠️ [create_panel] Could not delete message: {delete_error}")
-                            continue
-                    print(f"🔧 [create_panel] Deleted {deleted_count} messages from channel {channel.name}")
-                    log_operation("setup", "INFO", {
-                        "action": "channel_cleared",
-                        "deleted_count": deleted_count,
-                        "channel_id": channel.id
-                    })
-                    
-                except Exception as e:
-                    print(f"⚠️ [create_panel] Failed to clear channel: {e}")
-                    log_operation("setup", "WARNING", {
-                        "error": f"Failed to clear channel: {str(e)}",
-                        "channel_id": channel.id
-                    })
+                global panel_channel_cleared_once
+                if not panel_channel_cleared_once:
+                    try:
+                        print(f"🔧 [create_panel] Clearing messages in channel: {channel.name} ({channel.id})")
+                        log_operation("setup", "INFO", {
+                            "action": "clearing_channel",
+                            "channel_id": channel.id,
+                            "channel_name": channel.name
+                        })
+                        # Delete all messages in the channel
+                        deleted_count = 0
+                        async for message in channel.history(limit=None):  # No limit to delete all messages
+                            try:
+                                await message.delete()
+                                deleted_count += 1
+                            except Exception as delete_error:
+                                print(f"⚠️ [create_panel] Could not delete message: {delete_error}")
+                                continue
+                        print(f"🔧 [create_panel] Deleted {deleted_count} messages from channel {channel.name}")
+                        log_operation("setup", "INFO", {
+                            "action": "channel_cleared",
+                            "deleted_count": deleted_count,
+                            "channel_id": channel.id
+                        })
+                        panel_channel_cleared_once = True
+                    except Exception as e:
+                        print(f"⚠️ [create_panel] Failed to clear channel: {e}")
+                        log_operation("setup", "WARNING", {
+                            "error": f"Failed to clear channel: {str(e)}",
+                            "channel_id": channel.id
+                        })
+                else:
+                    print(f"🔧 [create_panel] Channel already cleared once, skipping clear.")
                 
                 # Ensure options are still set before sending
                 view.surah_select.update_options()

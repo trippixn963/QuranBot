@@ -76,56 +76,96 @@ class HealthReporter:
                 color=0x00ff00 if health_status['status'] == 'healthy' else 0xff9900,
                 timestamp=datetime.now()
             )
-            
+
+            # Add bot avatar as thumbnail
+            if self.bot.user and self.bot.user.avatar:
+                embed.set_thumbnail(url=self.bot.user.avatar.url)
+
             # Add fields
             embed.add_field(name="🔋 Uptime", value=health_status['uptime'], inline=True)
-            
+
             embed.add_field(
-                name="🎵 Songs Played",
-                value=str(health_status['songs_played']),
+                name="📖 Surahs Played",
+                value=str(health_status['songs_played']),  # Will update key in next step
                 inline=True
             )
-            
+
             embed.add_field(
                 name="❌ Errors",
                 value=str(health_status['errors_count']),
                 inline=True
             )
-            
+
             embed.add_field(
                 name="🔌 Reconnections",
                 value=str(health_status['reconnections']),
                 inline=True
             )
-            
+
             embed.add_field(
                 name="📡 Streaming",
                 value="✅ Active" if health_status['is_streaming'] else "❌ Inactive",
                 inline=True
             )
-            
+
             embed.add_field(
                 name="📊 Error Rate",
                 value=f"{health_status['error_rate']:.2%}",
                 inline=True
             )
-            
+
+            # Last activity
+            if health_status.get('last_activity'):
+                embed.add_field(
+                    name="🕒 Last Activity",
+                    value=health_status['last_activity'].replace('T', ' ')[:19],
+                    inline=True
+                )
+
+            # Currently Playing Surah
             if health_status['current_song']:
-                            embed.add_field(
-                name="🎵 Currently Playing",
-                value=health_status['current_song'],
-                inline=False
-            )
-            
+                embed.add_field(
+                    name="📖 Current Surah",
+                    value=health_status['current_song'],
+                    inline=False
+                )
+
+            # Recent errors
+            if health_status.get('recent_errors'):
+                error_lines = [f"• {e.get('message', str(e))[:80]}" for e in health_status['recent_errors']]
+                embed.add_field(
+                    name="⚠️ Recent Errors",
+                    value="\n".join(error_lines) or "None",
+                    inline=False
+                )
+
             # Add state information if available
             if hasattr(self.bot, 'state_manager'):
                 state_summary = self.bot.state_manager.get_state_summary()
                 embed.add_field(
                     name="📊 State Info",
-                    value=f"Song Index: {state_summary['current_song_index']}\nTotal Played: {state_summary['total_songs_played']}\nBot Starts: {state_summary['bot_start_count']}",
+                    value=f"Surah Index: {state_summary['current_song_index']}\nTotal Surahs Played: {state_summary['total_songs_played']}\nBot Starts: {state_summary['bot_start_count']}",
                     inline=False
                 )
-                
+
+            # Add version/config and host info (to be filled in next step)
+            import platform
+            import sys
+            version = getattr(self.bot, 'version', 'Unknown')
+            embed.add_field(
+                name="🛠️ Bot Version",
+                value=version,
+                inline=True
+            )
+            embed.add_field(
+                name="💻 Host Info",
+                value=f"{platform.system()} {platform.release()}\nPython {sys.version_info.major}.{sys.version_info.minor}",
+                inline=True
+            )
+
+            # Footer with bot name and time
+            embed.set_footer(text=f"{self.bot.user.name} • {datetime.now().strftime('%Y-%m-%d %I:%M %p')}")
+
             # Send the report
             await channel.send(embed=embed)
             
