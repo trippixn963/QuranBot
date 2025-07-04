@@ -911,7 +911,7 @@ class ControlPanelView(View):
                 'surah_info': "*Error loading surah info*"
             }
     
-    def get_duration_info(self, surah_name):
+    async def get_duration_info(self, surah_name):
         """Get duration information for current surah."""
         try:
             if not surah_name:
@@ -922,7 +922,7 @@ class ControlPanelView(View):
                 import os
                 audio_path = os.path.join(BotConfig.AUDIO_FOLDER, self.bot.current_reciter, surah_name)
                 if os.path.exists(audio_path):
-                    duration = self.bot.get_audio_duration(audio_path)
+                    duration = await self.bot.get_audio_duration(audio_path)
                     if duration:
                         minutes = int(duration // 60)
                         seconds = int(duration % 60)
@@ -993,7 +993,7 @@ class ControlPanelView(View):
                 import os
                 audio_path = os.path.join(BotConfig.AUDIO_FOLDER, self.bot.current_reciter, current_surah_name)
                 if os.path.exists(audio_path):
-                    total_duration = self.bot.get_audio_duration(audio_path)
+                    total_duration = await self.bot.get_audio_duration(audio_path)
                     # Try to get current playback time if available
                     current_time = 0
                     if hasattr(self.bot, 'get_current_playback_time'):
@@ -1568,7 +1568,7 @@ async def setup(bot):
             import os
             audio_path = os.path.join(BotConfig.AUDIO_FOLDER, bot.current_reciter, current_surah_name)
             if os.path.exists(audio_path):
-                total_duration = bot.get_audio_duration(audio_path)
+                total_duration = await bot.get_audio_duration(audio_path)
                 # Try to get current playback time if available
                 current_time = 0
                 if hasattr(bot, 'get_current_playback_time'):
