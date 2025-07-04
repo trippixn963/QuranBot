@@ -615,7 +615,11 @@ class QuranBot(discord.Client):
             if not mp3_files:
                 tree_log('error', 'No MP3 files found for playback.')
                 return
-            for mp3_file in mp3_files:
+            # Start from the current surah index
+            start_index = 0
+            if hasattr(self, 'state_manager') and hasattr(self.state_manager, 'get_current_song_index'):
+                start_index = self.state_manager.get_current_song_index() or 0
+            for mp3_file in mp3_files[start_index:]:
                 tree_log('info', 'Attempting to play file', {'file': mp3_file})
                 valid = await self.validate_audio_file(mp3_file)
                 tree_log('info', 'Validation result', {'file': mp3_file, 'valid': valid})
