@@ -1,14 +1,34 @@
 # =============================================================================
-# QuranBot - Git Ignore File
+# QuranBot .gitignore - Comprehensive exclusions for security and cleanliness
 # =============================================================================
 
-# Environment Variables & Secrets
+# Environment and Sensitive Files
 .env
-.env.local
-.env.production
-.env.staging
 .env.*
 *.env
+config.json
+config.yaml
+config.yml
+
+# Discord Bot Tokens and Keys
+token.txt
+bot_token.txt
+*.token
+*.key
+*.pem
+
+# Audio Files (too large for git)
+audio/
+*.mp3
+*.wav
+*.ogg
+*.flac
+*.m4a
+
+# Log Files
+logs/
+*.log
+*.log.*
 
 # Python
 __pycache__/
@@ -28,7 +48,6 @@ parts/
 sdist/
 var/
 wheels/
-share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -51,83 +70,7 @@ venv.bak/
 .DS_Store
 Thumbs.db
 
-# Logs
-logs/
-*.log
-*.log.*
-
-# Audio Files (Large files - exclude from git)
-audio/
-*.mp3
-*.wav
-*.flac
-*.m4a
-*.ogg
-
-# Bot State and Configuration (Contains runtime data - should not be tracked)
-bot_state.json
-data/bot_state.json
-data/user_vc_sessions.json
-data/daily_verses_queue.json
-data/daily_verses_state.json
-data/quran_question_scores.json
-
-# VPS Configuration (Contains sensitive server info)
-scripts/vps/vps_config.json
-vps_config.json
-*.pem
-*.key
-id_rsa
-id_rsa.pub
-quranbot_key
-quranbot_key.pub
-
-# SSH Keys and Certificates
-*.pem
-*.key
-*.crt
-*.p12
-*.pfx
-id_rsa*
-id_ed25519*
-known_hosts
-
-# Database Files
-*.db
-*.sqlite
-*.sqlite3
-
-# Temporary Files
-*.tmp
-*.temp
-temp/
-tmp/
-
-# Backup Files
-backup/
-*.bak
-*.backup
-backups/
-
-# Deployment Files
-deploy_temp/
-
-# Test Files
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-.nox/
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-
-# Documentation Build
-docs/_build/
-docs/build/
-
-# OS Generated Files
+# Operating System Files
 .DS_Store
 .DS_Store?
 ._*
@@ -136,58 +79,59 @@ docs/build/
 ehthumbs.db
 Thumbs.db
 
+# Temporary Files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+
+# Data Files (user-specific)
+data/
+user_data/
+*.sqlite
+*.db
+
+# FFmpeg and Media Tools
+ffmpeg/
+ffmpeg.exe
+ffprobe.exe
+
+# Process Files
+*.pid
+*.lock
+
+# Archive Files
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Coverage Reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Local History
+.history/
+
 # Windows
-*.lnk
+desktop.ini
 
 # Linux
 *~
 
 # macOS
 .AppleDouble
-.LSOverride
-Icon
-._*
-
-# Cache Directories
-.cache/
-.pytest_cache/
-.mypy_cache/
-
-# Jupyter Notebooks
-.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# pipenv
-Pipfile.lock
-
-# poetry
-poetry.lock
-
-# pyup
-safety.txt
-
-# bandit
-.bandit
-
-# Local Development
-local_config.py
-test_config.py
-
-# Data directories (contains user data)
-data_vps/
-data_local/
-
-# Monitoring and Health Check Files
-health_check.json
-monitoring_data.json
-
-# Discord Bot Tokens and Secrets
-discord_token.txt
-bot_secrets.json
-secrets.json
-
-# Server Configuration
-server_config.json
-vps_credentials.json 
+.LSOverride 

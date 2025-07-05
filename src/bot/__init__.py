@@ -1,4 +1,7 @@
-"""
-Bot module for Discord Quran Bot.
-Contains the main bot implementation and audio management.
-""" 
+# =============================================================================
+# QuranBot - Bot Package
+# =============================================================================
+# Contains the main Discord bot functionality
+# =============================================================================
+
+from .main import * 

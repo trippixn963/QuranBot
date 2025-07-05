@@ -1,7 +1,0 @@
-audio/
-backups/
-logs/
-__pycache__/
-.venv/
-.git/
-*.pyc 

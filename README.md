@@ -1,229 +1,244 @@
 # 🕌 QuranBot
 
 <div align="center">
-  <img src="images/BANNER (ANIMATED).gif" alt="QuranBot Animated Banner" width="800"/>
-  
-  **24/7 Quran Streaming Bot with Interactive Controls**
-  
-  [![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://www.python.org/downloads/)
-  [![Discord.py](https://img.shields.io/badge/Discord.py-2.3+-green.svg)](https://discordpy.readthedocs.io/)
-  [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-  [![Security](https://img.shields.io/badge/Security-Safe-brightgreen.svg)](SECURITY.md)
-  
-  *Built with ❤️ for the Muslim Ummah*
+
+**A Professional Discord Bot for 24/7 Quran Audio Streaming**
+
+[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://python.org)
+[![Discord.py](https://img.shields.io/badge/discord.py-2.3.0%2B-blue.svg)](https://github.com/Rapptz/discord.py)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Code Style](https://img.shields.io/badge/code%20style-organized-brightgreen.svg)](https://github.com/JohnHamwi/QuranAudioBot)
+
+*Built with ❤️ for the Muslim Ummah*
+
 </div>
 
 ---
 
-## 📖 Table of Contents
-- [Features](#-features)
-- [Quick Start](#-quick-start)
-- [Project Structure](#-project-structure)
-- [Configuration](#-configuration)
-- [Commands](#-commands)
-- [Security](#-security)
-- [Contributing](#-contributing)
-- [Support](#-support)
-- [License](#-license)
-
 ## 🌟 Features
 
-### 🎵 **Audio Streaming**
-- **24/7 Quran Recitation** - Continuous stream of beautiful recitations
-- **Multiple Reciters** - Choose from various renowned Qaris
-- **Complete Quran** - All 114 surahs with proper Arabic pronunciation
-- **Auto-Resume** - Remembers position after restarts
-
-### 🎮 **Interactive Controls**
-- **Discord UI** - Beautiful embeds with buttons and dropdowns
-- **Real-time Control** - Play, pause, skip, previous, volume
-- **Surah Selection** - Easy navigation through all surahs
-- **Reciter Switching** - Change reciters without interruption
-
-### 📊 **Smart Features**
-- **Daily Verses** - Automated verse sharing with translations
-- **Quran Questions** - Interactive knowledge testing
-- **Progress Tracking** - Monitor listening progress
-- **Health Monitoring** - System status and performance tracking
+- 🎵 **24/7 Audio Streaming** - Continuous Quran recitation in voice channels
+- 🎯 **Multiple Reciters** - Support for various renowned Qaris
+- 🔄 **Auto-Reconnection** - Automatic reconnection on voice disconnects
+- 📊 **Beautiful Logging** - Tree-style structured logging with timestamps
+- 🛡️ **Instance Management** - Prevents multiple bot instances running simultaneously
+- 📝 **Comprehensive Logging** - File-based logging with date organization
+- ⚡ **Optimized Performance** - Efficient audio streaming and memory management
+- 🔧 **Easy Configuration** - Environment-based configuration management
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.13+
-- FFmpeg
+
+- Python 3.8 or higher
+- FFmpeg installed and accessible
 - Discord Bot Token
-- Server with voice channel permissions
+- Voice channel permissions in your Discord server
 
-### Basic Setup
+### Installation
 
-1. **Clone & Install**
+1. **Clone the Repository**
    ```bash
-   git clone https://github.com/yourusername/QuranBot.git
-   cd QuranBot
+   git clone https://github.com/JohnHamwi/QuranAudioBot.git
+   cd QuranAudioBot
+   ```
+
+2. **Install Dependencies**
+   ```bash
    pip install -r requirements.txt
    ```
 
-2. **Configure Environment**
+3. **Configure Environment**
    ```bash
    cp env_template.txt .env
-   # Edit .env with your settings
+   # Edit .env with your Discord bot token and channel IDs
    ```
 
-3. **Add Audio Files**
+4. **Add Audio Files**
+   Create an `audio/` directory and organize your MP3 files by reciter:
    ```
    audio/
-   ├── Reciter1/
-   │   ├── 001.mp3  # Al-Fatiha
-   │   ├── 002.mp3  # Al-Baqarah
+   ├── Saad Al Ghamdi/
+   │   ├── 001.mp3
+   │   ├── 002.mp3
    │   └── ...
-   ├── Reciter2/
-   └── ...
+   └── Other Reciters/
+       └── ...
    ```
 
-4. **Start Bot**
+5. **Run the Bot**
    ```bash
-   python run.py
+   python main.py
    ```
-
-For detailed setup instructions, see [SECURITY_SETUP.md](SECURITY_SETUP.md).
 
 ## 📁 Project Structure
 
 ```
 QuranBot/
-├── 📂 src/                      # Source code
-│   ├── bot/                     # Core bot functionality
-│   ├── cogs/                    # Discord commands
-│   │   ├── admin/              # Admin features
-│   │   └── user/               # User features
-│   ├── core/                    # Core systems
-│   └── monitoring/              # Logging & health
-│
-├── 📂 data/                     # Bot data
-│   ├── daily_verses_pool.json   # Verse database
-│   ├── quran_questions.json     # Questions
-│   └── custom_surah_mapping.json # Surah mappings
-│
-├── 📂 scripts/                  # Utility scripts
-│   ├── local/                  # Local tools
-│   └── vps/                    # Deployment tools
-│
-├── 📂 audio/                    # Quran MP3s
-├── 📂 images/                   # Bot assets
-├── 📂 logs/                     # Log files
-│
-├── 📄 run.py                    # Entry point
-├── 📄 requirements.txt          # Dependencies
-├── 📄 SECURITY_SETUP.md         # Security guide
-└── 📄 README.md                 # This file
+├── main.py                    # 🚀 Main entry point
+├── bot_manager.py             # 🛠️ Bot instance management utility
+├── requirements.txt           # 📦 Dependencies
+├── CHANGELOG.md              # 📝 Version history
+├── env_template.txt          # 📋 Environment configuration template
+├── update_version.py         # 🔄 Version management tool
+└── src/                      # 📁 Source code package
+    ├── bot/                  # 🤖 Core bot functionality
+    │   └── main.py           # Main bot implementation
+    ├── utils/                # 🛠️ Utility functions
+    │   └── tree_log.py       # Tree-style logging system
+    └── config/               # ⚙️ Configuration management
+        └── __init__.py       # Package initialization
 ```
 
-## ⚙️ Configuration
+## 🔧 Configuration
 
-### Required Environment Variables
+### Environment Variables
+
+Copy `env_template.txt` to `.env` and configure the following:
+
 ```env
-# Core Settings
-DISCORD_BOT_TOKEN=your_bot_token
-DEVELOPER_ID=your_discord_id
+# Discord Bot Configuration
+DISCORD_TOKEN=your_discord_bot_token_here
 
-# Channel IDs
-AUDIO_CHANNEL_ID=voice_channel_id
-PANEL_CHANNEL_ID=control_panel_channel_id
+# Discord Channel IDs
+TARGET_CHANNEL_ID=your_voice_channel_id_here
+PANEL_CHANNEL_ID=your_control_panel_channel_id_here
+LOGS_CHANNEL_ID=your_logs_channel_id_here
+DAILY_VERSE_CHANNEL_ID=your_daily_verse_channel_id_here
+
+# Admin Configuration
+ADMIN_USER_ID=your_discord_user_id_here
+GUILD_ID=your_discord_server_id_here
+DEVELOPER_ID=your_discord_user_id_here
+
+# Audio Configuration
+AUDIO_FOLDER=audio
+DEFAULT_RECITER=Saad Al Ghamdi
+AUDIO_QUALITY=128k
+
+# FFmpeg Configuration (Optional - auto-detects if not specified)
+FFMPEG_PATH=auto-detect
 ```
 
-### Optional Settings
-```env
-# FFmpeg (Auto-detected if not set)
-FFMPEG_PATH=path_to_ffmpeg
+### Getting Discord IDs
 
-# Features
-AUTO_VOICE_CONNECT=true
-AUTO_RECONNECT=true
-LOG_LEVEL=INFO
+1. Enable Developer Mode in Discord Settings > Advanced > Developer Mode
+2. Right-click on channels/servers/users and select "Copy ID"
+3. For bot token: Discord Developer Portal > Your App > Bot > Token
+
+## 🎵 Audio Setup
+
+Place your Quran audio files in the `audio/` directory organized by reciter:
+
+```
+audio/
+├── Saad Al Ghamdi/
+│   ├── 001.mp3  # Al-Fatiha
+│   ├── 002.mp3  # Al-Baqarah
+│   └── ...
+├── Abdul Basit Abdul Samad/
+│   ├── 001.mp3
+│   └── ...
+└── Other Reciters/
+    └── ...
 ```
 
-## 🎮 Commands
+## 🛠️ Bot Management
 
-### User Commands
-| Command        | Description                |
-|---------------|----------------------------|
-| `/credits`    | Show bot credits           |
-| `/leaderboard`| Show Quran MCQ leaderboard |
+The bot includes a management utility (`bot_manager.py`) for easy control:
 
-*All other commands are restricted to the bot owner.*
+```bash
+# Check bot status
+python bot_manager.py status
 
-### Admin/Owner Commands
-| Command         | Description                                      |
-|----------------|--------------------------------------------------|
-| `/sendverse`   | Send a verse now (admin only)                    |
-| `/versestatus` | Check daily verse status                         |
-| `/status`      | Get comprehensive bot and system status          |
-| `/info`        | Get bot logs and configuration                   |
-| `/logs`        | View logs, system info, and bot status           |
-| `/restart`     | Restart the Quran Bot                            |
-| `/stop`        | Stop the Quran Bot                               |
-| `/reconnect`   | Reconnect to voice channel                       |
-| `/recreatepanel`| Recreate the control panel                      |
+# Stop the bot
+python bot_manager.py stop
 
-*Admin/owner commands are only available to the bot owner (you).*
+# Restart the bot
+python bot_manager.py restart
 
-## 🔒 Security
+# Start the bot
+python bot_manager.py start
+```
 
-This bot follows security best practices:
+## 📊 Logging System
 
-### ✅ **Security Features**
-- **No sensitive data in git** - All secrets excluded via .gitignore
-- **Environment-based configuration** - Secure credential management
-- **VPS deployment options** - Production-ready deployment
-- **Regular security updates** - Automated dependency updates
-- **Comprehensive logging** - Audit trail for all operations
+The bot features a beautiful tree-style logging system:
 
-### 🛡️ **Protected Data**
-- Discord bot tokens
-- SSH keys and certificates
-- VPS credentials
-- User session data
-- Bot state files
-- Audio files (large size)
+```
+🚀 Starting QuranBot v1.1.0...
+├─ version: 1.1.0
+├─ discord_token: ***HIDDEN***
+├─ structure: Organized in src/ directory
+└─ entry_point: main.py
 
-### 📋 **Security Checklist**
-- [x] Environment variables for secrets
-- [x] .gitignore excludes sensitive files
-- [x] No hardcoded credentials
-- [x] Secure VPS deployment
-- [x] Regular backup system
-- [x] Health monitoring
+🎯 QuranBot v1.1.0 Started
+├─ bot_user: Quran#1550
+├─ version: 1.1.0
+├─ guild_id: 1228455909827805308
+└─ target_channel_id: 1389675580253016144
+```
 
-See [SECURITY_SETUP.md](SECURITY_SETUP.md) for complete security documentation.
+### Log Files
 
-## 🤝 Contributing
+All logs are automatically saved to:
+- `logs/YYYY-MM-DD/YYYY-MM-DD.log` - Human-readable text logs
+- `logs/YYYY-MM-DD/YYYY-MM-DD.json` - Structured JSON logs
+- `logs/YYYY-MM-DD/YYYY-MM-DD-errors.log` - Error-only logs
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+## 🔄 Version Management
 
-### 🎯 **How to Contribute**
+Update the bot version using:
+
+```bash
+python update_version.py
+```
+
+This tool will:
+- Update version numbers in the code
+- Add entries to CHANGELOG.md
+- Guide you through documenting changes
+
+## 📚 Dependencies
+
+- `discord.py>=2.3.0` - Discord API wrapper
+- `PyNaCl>=1.5.0` - Voice support
+- `python-dotenv>=1.0.0` - Environment variable management
+- `psutil>=5.9.0` - Process monitoring for instance management
+- `pytz>=2023.3` - Timezone handling for logging
+
+## 🛡️ Security
+
+- ✅ Environment-based configuration
+- ✅ No sensitive data in repository
+- ✅ Comprehensive .gitignore for security
+- ✅ Instance management prevents conflicts
+- ✅ Secure token handling
+
+## 📝 Contributing
+
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
 4. Test thoroughly
 5. Submit a pull request
 
-## 💬 Support
-
-- 📖 [Documentation](docs/)
-- 🐛 [Issue Tracker](../../issues)
-- 💡 [Feature Requests](../../issues)
-- 📧 [Email Support](mailto:support@quranbot.com)
-
 ## 📄 License
 
-This project is licensed under the MIT License - see [LICENSE](LICENSE) for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built for the Muslim community
+- Inspired by the beauty of Quran recitation
+- Developed with modern Python best practices
 
 ---
 
 <div align="center">
-  <img src="images/PFP (Cropped - Animated).gif" alt="QuranBot Logo" width="100"/>
-  
-  **Made with ❤️ for the Muslim community**
-  
-  *May Allah bless this project and all who use it*
+
+**May Allah bless this project and all who use it** 🤲
+
+*"And it is He who sends down rain from the sky, and We produce thereby the vegetation of every kind"* - Quran 6:99
+
 </div> 
