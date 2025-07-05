@@ -11,6 +11,8 @@
 
 *Built with ❤️ for the Muslim Ummah*
 
+**🌐 Join Our Community:** [discord.gg/syria](https://www.discord.gg/syria)
+
 </div>
 
 ---
