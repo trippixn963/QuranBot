@@ -10,6 +10,7 @@ import pytz
 import os
 import json
 from pathlib import Path
+import secrets
 
 def get_timestamp():
     """Get current timestamp in EST timezone with custom format"""
@@ -40,6 +41,10 @@ def get_log_date():
         return now_est.strftime('%Y-%m-%d')
     except:
         return datetime.now().strftime('%Y-%m-%d')
+
+def generate_run_id():
+    """Generate a unique run ID for each bot instance"""
+    return secrets.token_hex(4).upper()
 
 def setup_log_directories():
     """Create log directory structure for today"""
@@ -107,6 +112,71 @@ def write_to_log_files(message, level="INFO", log_type="general"):
     except Exception as e:
         # Don't let logging errors crash the application
         print(f"Warning: Could not write to log files: {e}")
+
+def log_run_separator():
+    """Create a visual separator for new runs"""
+    separator_line = "=" * 80
+    timestamp = get_timestamp()
+    
+    # Print separator to console
+    print(f"\n{separator_line}")
+    print(f"{timestamp} 🚀 NEW BOT RUN STARTED")
+    print(f"{separator_line}")
+    
+    # Write separator to log files
+    write_to_log_files("", "INFO", "run_separator")
+    write_to_log_files(separator_line, "INFO", "run_separator")
+    write_to_log_files("🚀 NEW BOT RUN STARTED", "INFO", "run_separator")
+    write_to_log_files(separator_line, "INFO", "run_separator")
+
+def log_run_header(bot_name, version, run_id=None):
+    """Log run header with bot info and unique run ID"""
+    if run_id is None:
+        run_id = generate_run_id()
+    
+    timestamp = get_timestamp()
+    
+    # Create run header
+    header_info = [
+        f"🎯 {bot_name} v{version} - Run ID: {run_id}",
+        f"├─ started_at: {timestamp}",
+        f"├─ version: {version}",
+        f"├─ run_id: {run_id}",
+        f"└─ log_session: {get_log_date()}"
+    ]
+    
+    # Print to console
+    for line in header_info:
+        print(f"{timestamp} {line}")
+    
+    # Write to log files
+    for line in header_info:
+        write_to_log_files(line, "INFO", "run_header")
+    
+    return run_id
+
+def log_run_end(run_id, reason="Normal shutdown"):
+    """Log run end with run ID and reason"""
+    timestamp = get_timestamp()
+    
+    end_info = [
+        f"🏁 Bot Run Ended - Run ID: {run_id}",
+        f"├─ ended_at: {timestamp}",
+        f"├─ run_id: {run_id}",
+        f"└─ reason: {reason}"
+    ]
+    
+    # Print to console
+    for line in end_info:
+        print(f"{timestamp} {line}")
+    
+    # Write to log files
+    for line in end_info:
+        write_to_log_files(line, "INFO", "run_end")
+    
+    # Add spacing after run end
+    print()
+    write_to_log_files("", "INFO", "run_end")
 
 def log_tree(message, level="INFO"):
     """Tree-style logging with symbols"""

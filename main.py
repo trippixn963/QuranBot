@@ -15,7 +15,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 # Import and run the bot
 from bot.main import bot, DISCORD_TOKEN, BOT_NAME, BOT_VERSION
-from utils.tree_log import log_section_start, log_tree_branch, log_tree_final
+from utils.tree_log import (
+    log_section_start, log_tree_branch, log_tree_final, 
+    log_run_separator, log_run_header, log_run_end
+)
 
 def check_existing_instances():
     """
@@ -92,7 +95,7 @@ def stop_existing_instances(bot_processes):
     Stop existing bot instances.
     Returns True if successful, False otherwise.
     """
-    log_section_start("Stopping Existing Instances", "🛑")
+    log_section_start("Stopping Bot", "🛑")
     
     stopped_count = 0
     failed_count = 0
@@ -131,33 +134,47 @@ def stop_existing_instances(bot_processes):
     time.sleep(2)
     
     if failed_count == 0:
-        log_tree_final("status", f"✅ All {stopped_count} instances stopped successfully")
+        log_tree_final("status", f"✅ All {stopped_count} instances stopped")
         return True
     else:
         log_tree_final("status", f"⚠️ {stopped_count} stopped, {failed_count} failed - continuing anyway")
         return True  # Continue anyway since this is automated
 
 if __name__ == "__main__":
-    # Check for existing instances first
-    if not check_existing_instances():
-        print("\nExiting...")
-        sys.exit(0)
+    # Add run separator to distinguish between different runs
+    log_run_separator()
     
-    # Start the bot
-    log_section_start(f"Starting {BOT_NAME} v{BOT_VERSION}...", "🚀")
-    log_tree_branch("version", BOT_VERSION)
-    log_tree_branch("discord_token", "***HIDDEN***")
-    log_tree_branch("structure", "Organized in src/ directory")
-    log_tree_branch("instance_check", "✅ Passed (automated)")
-    log_tree_final("entry_point", "main.py")
+    # Log run header with unique run ID
+    run_id = log_run_header(BOT_NAME, BOT_VERSION)
     
     try:
-        bot.run(DISCORD_TOKEN)
-    except KeyboardInterrupt:
-        log_section_start("Shutdown", "👋")
-        log_tree_final("status", "Bot stopped by user")
+        # Check for existing instances first
+        if not check_existing_instances():
+            log_run_end(run_id, "Instance check failed")
+            print("\nExiting...")
+            sys.exit(0)
+        
+        # Start the bot
+        log_section_start(f"Starting {BOT_NAME} v{BOT_VERSION}...", "🚀")
+        log_tree_branch("version", BOT_VERSION)
+        log_tree_branch("discord_token", "***HIDDEN***")
+        log_tree_branch("structure", "Organized in src/ directory")
+        log_tree_branch("instance_check", "✅ Passed (automated)")
+        log_tree_final("entry_point", "main.py")
+        
+        try:
+            bot.run(DISCORD_TOKEN)
+        except KeyboardInterrupt:
+            log_section_start("Shutdown", "👋")
+            log_tree_final("status", "Bot stopped by user")
+            log_run_end(run_id, "User interrupt (Ctrl+C)")
+        except Exception as e:
+            log_section_start("Error", "❌")
+            log_tree_branch("error", str(e))
+            log_tree_final("status", "Bot crashed")
+            log_run_end(run_id, f"Crashed: {str(e)}")
+            raise
+            
     except Exception as e:
-        log_section_start("Error", "❌")
-        log_tree_branch("error", str(e))
-        log_tree_final("status", "Bot crashed")
+        log_run_end(run_id, f"Fatal error: {str(e)}")
         raise 
