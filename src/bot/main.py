@@ -18,7 +18,9 @@ from discord.ext import commands
 # =============================================================================
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load environment variables from the correct path
+env_path = os.path.join(os.path.dirname(__file__), "..", "config", ".env")
+load_dotenv(env_path)
 
 import os
 
@@ -35,6 +37,30 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 # =============================================================================
 import logging
 
+# =============================================================================
+# Import Audio Manager
+# =============================================================================
+from utils.audio_manager import AudioManager
+
+# =============================================================================
+# Import Control Panel Functions
+# =============================================================================
+from utils.control_panel import setup_control_panel
+
+# =============================================================================
+# Import Rich Presence Manager
+# =============================================================================
+from utils.rich_presence import RichPresenceManager, validate_rich_presence_dependencies
+
+# =============================================================================
+# Import Surah Mapping Functions
+# =============================================================================
+from utils.surah_mapper import (
+    format_now_playing,
+    get_surah_display,
+    get_surah_info,
+    validate_surah_number,
+)
 from utils.tree_log import (
     log_async_error,
     log_critical_error,
@@ -49,6 +75,12 @@ from utils.tree_log import (
     log_tree_final,
     log_warning_with_context,
 )
+
+# =============================================================================
+# Global Managers
+# =============================================================================
+rich_presence = None
+audio_manager = None
 
 
 class DiscordTreeHandler(logging.Handler):
@@ -245,12 +277,13 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # =============================================================================
 # Bot Version & Configuration
 # =============================================================================
-BOT_VERSION = "1.3.0"
+BOT_VERSION = "1.4.0"
 BOT_NAME = "QuranBot"
 
 # Configuration from Environment Variables
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 TARGET_CHANNEL_ID = int(os.getenv("TARGET_CHANNEL_ID") or "0")
+PANEL_CHANNEL_ID = int(os.getenv("PANEL_CHANNEL_ID") or "0")
 GUILD_ID = int(os.getenv("GUILD_ID") or "0")
 FFMPEG_PATH = os.getenv("FFMPEG_PATH", "ffmpeg")
 AUDIO_FOLDER = "audio/Saad Al Ghamdi"
@@ -282,6 +315,12 @@ def validate_configuration():
             "TARGET_CHANNEL_ID is missing or invalid in environment variables"
         )
 
+    # Check Panel Channel ID
+    if PANEL_CHANNEL_ID == 0:
+        warnings.append(
+            "PANEL_CHANNEL_ID is missing - control panel will not be created"
+        )
+
     # Check audio folder
     if not os.path.exists(AUDIO_FOLDER):
         warnings.append(f"Audio folder '{AUDIO_FOLDER}' does not exist")
@@ -298,6 +337,10 @@ def validate_configuration():
         )
     except Exception as e:
         log_error_with_traceback("Error checking FFmpeg availability", e)
+
+    # Validate Rich Presence dependencies
+    rp_validation = validate_rich_presence_dependencies(FFMPEG_PATH)
+    warnings.extend(rp_validation["warnings"])
 
     # Report results
     if errors:
@@ -319,12 +362,23 @@ def validate_configuration():
 # =============================================================================
 @bot.event
 async def on_ready():
+    global rich_presence, audio_manager
+
     try:
         log_section_start(f"{BOT_NAME} v{BOT_VERSION} Started")
         log_tree_branch("bot_user", f"{bot.user}")
         log_tree_branch("version", BOT_VERSION)
         log_tree_branch("guild_id", GUILD_ID)
         log_tree_final("target_channel_id", TARGET_CHANNEL_ID)
+
+        # Initialize Rich Presence Manager
+        rich_presence = RichPresenceManager(bot, FFMPEG_PATH)
+        log_tree_branch("rich_presence", "✅ Rich Presence Manager initialized")
+
+        # Initialize Audio Manager
+        audio_manager = AudioManager(bot, FFMPEG_PATH)
+        audio_manager.set_rich_presence(rich_presence)
+        log_tree_branch("audio_manager", "✅ Audio Manager initialized")
 
         # Validate configuration before proceeding
         if not validate_configuration():
@@ -353,8 +407,19 @@ async def on_ready():
             log_tree("Voice connection successful", "SUCCESS")
             log_tree_final("connected_to", channel.name)
 
-            # Start playing audio
-            await play_audio(voice_client)
+            # Set up AudioManager with voice client
+            audio_manager.set_voice_client(voice_client)
+
+            # Set up control panel with AudioManager
+            if PANEL_CHANNEL_ID != 0:
+                try:
+                    await setup_control_panel(bot, PANEL_CHANNEL_ID, audio_manager)
+                    log_tree("Control panel setup", "SUCCESS")
+                except Exception as e:
+                    log_error_with_traceback("Error setting up control panel", e)
+
+            # Start playing audio using AudioManager
+            await audio_manager.start_playback()
 
         except Exception as e:
             log_discord_error("on_ready", e, GUILD_ID, TARGET_CHANNEL_ID)
@@ -367,7 +432,8 @@ async def on_ready():
 # Audio Playback Functions
 # =============================================================================
 async def play_audio(voice_client):
-    """Play audio files from the audio folder"""
+    """Play audio files from the audio folder with Rich Presence"""
+    global rich_presence
 
     log_section_start("Audio Playback Started", "🎵")
     log_tree_branch("audio_folder", AUDIO_FOLDER)
@@ -396,9 +462,41 @@ async def play_audio(voice_client):
                     break
 
                 filename = os.path.basename(audio_file)
-                log_progress(i, len(audio_files))
-                log_tree_branch("file", filename)
-                log_tree_final("progress", f"{i}/{len(audio_files)}")
+
+                # Extract Surah number from filename (assumes format like "001.mp3" or "1.mp3")
+                try:
+                    surah_number = int(filename.split(".")[0])
+                    if validate_surah_number(surah_number):
+                        surah_display = get_surah_display(surah_number, "detailed")
+                        now_playing = format_now_playing(surah_number, "Saad Al Ghamdi")
+
+                        log_progress(i, len(audio_files))
+                        log_tree_branch("surah", surah_display)
+                        log_tree_final("progress", f"{i}/{len(audio_files)}")
+
+                        # Log the beautiful now playing format
+                        log_section_start("Now Playing", "🎵")
+                        for line in now_playing.split("\n"):
+                            if line.strip():
+                                log_tree_branch("info", line.strip())
+
+                        # Start Rich Presence tracking
+                        if rich_presence:
+                            await rich_presence.start_track(
+                                surah_number, audio_file, "Saad Al Ghamdi"
+                            )
+
+                    else:
+                        # Fallback to filename if not a valid Surah number
+                        log_progress(i, len(audio_files))
+                        log_tree_branch("file", filename)
+                        log_tree_final("progress", f"{i}/{len(audio_files)}")
+
+                except (ValueError, IndexError):
+                    # Fallback to filename if we can't extract Surah number
+                    log_progress(i, len(audio_files))
+                    log_tree_branch("file", filename)
+                    log_tree_final("progress", f"{i}/{len(audio_files)}")
 
                 # Create FFmpeg audio source
                 source = discord.FFmpegPCMAudio(
@@ -412,14 +510,24 @@ async def play_audio(voice_client):
                 while voice_client.is_playing():
                     await asyncio.sleep(1)
 
+                # Stop Rich Presence for this track
+                if rich_presence:
+                    await rich_presence.stop_track()
+
             except Exception as e:
                 log_error_with_traceback(f"Error playing {filename}", e)
+                # Stop Rich Presence on error
+                if rich_presence:
+                    await rich_presence.stop_track()
                 continue
 
         log_tree_end("Finished playing all audio files", "SUCCESS")
 
     except Exception as e:
         log_async_error("play_audio", e, f"Audio folder: {AUDIO_FOLDER}")
+        # Stop Rich Presence on error
+        if rich_presence:
+            await rich_presence.stop_track()
 
 
 # =============================================================================
@@ -428,6 +536,8 @@ async def play_audio(voice_client):
 @bot.event
 async def on_voice_state_update(member, before, after):
     """Handle voice state changes"""
+    global rich_presence, audio_manager
+
     try:
         # If bot gets disconnected, try to reconnect
         if member == bot.user and before.channel and not after.channel:
@@ -440,6 +550,10 @@ async def on_voice_state_update(member, before, after):
                 "after_channel", after.channel.name if after.channel else "None"
             )
 
+            # Stop AudioManager when disconnected
+            if audio_manager:
+                await audio_manager.stop_playback()
+
             guild = bot.get_guild(GUILD_ID)
             channel = guild.get_channel(TARGET_CHANNEL_ID)
             if channel:
@@ -447,7 +561,11 @@ async def on_voice_state_update(member, before, after):
                     log_tree("Attempting reconnection", "RETRY")
                     voice_client = await channel.connect()
                     log_tree("Reconnection successful", "SUCCESS")
-                    await play_audio(voice_client)
+
+                    # Reconnect AudioManager
+                    if audio_manager:
+                        audio_manager.set_voice_client(voice_client)
+                        await audio_manager.start_playback()
                 except Exception as e:
                     log_discord_error(
                         "voice_reconnection", e, GUILD_ID, TARGET_CHANNEL_ID
@@ -483,10 +601,17 @@ async def on_error(event, *args, **kwargs):
 @bot.event
 async def on_disconnect():
     """Handle Discord disconnection"""
+    global rich_presence, audio_manager
+
     try:
         log_section_start("Discord Disconnection", "⚠️")
         log_tree_branch("event", "on_disconnect")
         log_tree_final("status", "Bot disconnected from Discord")
+
+        # Stop AudioManager when disconnected
+        if audio_manager:
+            await audio_manager.stop_playback()
+
     except Exception as e:
         log_error_with_traceback("Error handling disconnect event", e)
 

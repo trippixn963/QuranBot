@@ -33,6 +33,7 @@ REQUIRED_FILES = [
     "bot_manager.py",
     "src/bot/main.py",
     "src/utils/tree_log.py",
+    "src/utils/surah_mapper.py",
     "config/.env",
     "requirements.txt",
 ]
@@ -44,6 +45,7 @@ PYTHON_FILES = [
     "bot_manager.py",
     "src/bot/main.py",
     "src/utils/tree_log.py",
+    "src/utils/surah_mapper.py",
     "tools/test_bot.py",
 ]
 
@@ -155,6 +157,7 @@ def test_imports():
 
     # Test local imports
     try:
+        from src.utils.surah_mapper import format_now_playing, get_surah_info
         from src.utils.tree_log import log_tree_branch as test_import
 
         log_tree_branch("local_imports", "✅ OK")
@@ -265,6 +268,79 @@ def test_logging_system():
         return False
 
 
+def test_surah_mapper():
+    """Test Surah mapping functionality"""
+    log_section_start("Testing Surah Mapper", "📖")
+
+    try:
+        from src.utils.surah_mapper import (
+            SURAH_DATABASE,
+            format_now_playing,
+            get_surah_display,
+            get_surah_info,
+            get_surah_stats,
+            validate_surah_number,
+        )
+
+        # Test database completeness
+        total_surahs = len(SURAH_DATABASE)
+        if total_surahs != 114:
+            log_tree_branch("database", f"❌ Expected 114 Surahs, found {total_surahs}")
+            return False
+        log_tree_branch("database", f"✅ All 114 Surahs present")
+
+        # Test specific Surahs
+        test_surahs = [1, 2, 36, 55, 112, 114]
+        for surah_num in test_surahs:
+            surah = get_surah_info(surah_num)
+            if not surah:
+                log_tree_branch("surah_info", f"❌ Surah {surah_num} missing")
+                return False
+            display = get_surah_display(surah_num, "short")
+            log_tree_branch(f"surah_{surah_num}", f"✅ {display}")
+
+        # Test validation
+        if not validate_surah_number(1) or not validate_surah_number(114):
+            log_tree_branch("validation", "❌ Validation failed for valid numbers")
+            return False
+        if validate_surah_number(0) or validate_surah_number(115):
+            log_tree_branch("validation", "❌ Validation passed for invalid numbers")
+            return False
+        log_tree_branch("validation", "✅ Number validation working")
+
+        # Test formatting
+        now_playing = format_now_playing(36, "Saad Al Ghamdi")
+        if "Ya-Sin" not in now_playing or "💚" not in now_playing:
+            log_tree_branch("formatting", "❌ Now playing format incorrect")
+            return False
+        log_tree_branch("formatting", "✅ Now playing format working")
+
+        # Test statistics
+        stats = get_surah_stats()
+        expected_keys = [
+            "total_surahs",
+            "meccan_surahs",
+            "medinan_surahs",
+            "total_verses",
+        ]
+        for key in expected_keys:
+            if key not in stats:
+                log_tree_branch("statistics", f"❌ Missing stat: {key}")
+                return False
+        log_tree_branch(
+            "statistics",
+            f"✅ Stats: {stats['total_surahs']} Surahs, {stats['total_verses']} verses",
+        )
+
+        log_tree_final("status", "✅ Surah Mapper OK")
+        return True
+
+    except Exception as e:
+        log_error_with_traceback("Surah mapper test failed", e)
+        log_tree_final("status", "❌ Surah Mapper Error")
+        return False
+
+
 def test_bot_manager():
     """Test bot manager functionality"""
     log_section_start("Testing Bot Manager", "🤖")
@@ -308,6 +384,7 @@ def run_all_tests():
         ("Environment Config", test_environment_config),
         ("Audio Directory", test_audio_directory),
         ("Logging System", test_logging_system),
+        ("Surah Mapper", test_surah_mapper),
         ("Bot Manager", test_bot_manager),
     ]
 
