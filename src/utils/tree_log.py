@@ -12,6 +12,9 @@ import json
 from pathlib import Path
 import secrets
 
+# Global variable to track sections for spacing
+_is_first_section = True
+
 def get_timestamp():
     """Get current timestamp in EST timezone with custom format"""
     try:
@@ -113,8 +116,16 @@ def write_to_log_files(message, level="INFO", log_type="general"):
         # Don't let logging errors crash the application
         print(f"Warning: Could not write to log files: {e}")
 
+def log_spacing():
+    """Add a blank line for visual separation"""
+    print()
+    write_to_log_files("", "INFO", "spacing")
+
 def log_run_separator():
     """Create a visual separator for new runs"""
+    global _is_first_section
+    _is_first_section = True  # Reset for new run
+    
     separator_line = "=" * 80
     timestamp = get_timestamp()
     
@@ -208,6 +219,14 @@ def log_tree_final(key, value):
 
 def log_section_start(title, emoji="🎯"):
     """Start a new section with emoji and title"""
+    global _is_first_section
+    
+    # Add spacing before section (except for the very first one)
+    if not _is_first_section:
+        log_spacing()
+    else:
+        _is_first_section = False
+    
     timestamp = get_timestamp()
     formatted_message = f"{emoji} {title}"
     print(f"{timestamp} {formatted_message}")
