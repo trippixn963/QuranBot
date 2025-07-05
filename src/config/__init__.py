@@ -4,4 +4,4 @@
 # Contains configuration and settings management
 # =============================================================================
 
-# Future: Configuration classes will go here 
+# Future: Configuration classes will go here

@@ -4,4 +4,4 @@
 # Contains the main Discord bot functionality
 # =============================================================================
 
-from .main import * 
+from .main import *

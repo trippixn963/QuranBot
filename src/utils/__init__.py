@@ -4,4 +4,4 @@
 # Contains utility functions including tree-style logging
 # =============================================================================
 
-from .tree_log import * 
+from .tree_log import *
