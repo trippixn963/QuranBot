@@ -6,19 +6,6 @@
 
 **A Discord Bot for 24/7 Quran Audio Streaming**
 
-> ⚠️ **IMPORTANT NOTICE - READ BEFORE USING**
->
-> **This is an "AS-IS" open source release with NO SUPPORT provided.**
->
-> ❌ **NO** bug fixes, security updates, or maintenance
-> ❌ **NO** setup assistance or troubleshooting help
-> ❌ **NO** feature requests or issue responses
-> ❌ **NO** warranty or guarantee of functionality
->
-> ✅ **Use only if you are experienced with Python/Discord bots**
-> ✅ **You assume all responsibility for security and maintenance**
-> ✅ **You can troubleshoot and fix issues independently**
-
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://python.org)
 [![Discord.py](https://img.shields.io/badge/discord.py-2.3.0%2B-blue.svg)](https://github.com/Rapptz/discord.py)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -27,6 +14,20 @@
 _Built with ❤️ for the Muslim Ummah - Shared as-is for educational purposes_
 
 </div>
+
+---
+
+## ⚠️ No Support Policy
+
+**This project is provided "AS-IS" with absolutely no support:**
+
+❌ No bug reports will be addressed
+❌ No feature requests will be considered
+❌ No setup assistance will be provided
+❌ No pull requests will be reviewed
+❌ No issues will be responded to
+
+**Use at your own risk and responsibility.**
 
 ---
 
@@ -40,6 +41,7 @@ _Built with ❤️ for the Muslim Ummah - Shared as-is for educational purposes_
 - 📝 **Comprehensive Logging** - File-based logging with date organization
 - ⚡ **Optimized Performance** - Efficient audio streaming and memory management
 - 🔧 **Easy Configuration** - Environment-based configuration management
+- 📖 **Beautiful Surah Names** - Displays Quran chapters with emojis and metadata
 
 ## 🚀 Quick Start
 
@@ -51,8 +53,6 @@ _Built with ❤️ for the Muslim Ummah - Shared as-is for educational purposes_
 - Voice channel permissions in your Discord server
 
 ### Installation
-
-⚠️ **Prerequisites:** You must be experienced with Python, Discord bots, and server administration.
 
 1. **Clone the Repository**
 
@@ -100,9 +100,9 @@ _Built with ❤️ for the Muslim Ummah - Shared as-is for educational purposes_
 
    ```
    audio/Saad Al Ghamdi/
-   ├── 001.mp3  # Al-Fatiha
-   ├── 002.mp3  # Al-Baqarah
-   ├── 003.mp3  # Aal-Imran
+   ├── 001.mp3  # 🕌 Al-Fatiha (The Opening)
+   ├── 002.mp3  # 🐄 Al-Baqarah (The Cow)
+   ├── 003.mp3  # 👨‍👩‍👧‍👦 Aal-Imran (The Family of Imran)
    └── ... (continue to 114.mp3)
    ```
 
@@ -119,6 +119,7 @@ QuranBot/
 ├── 📁 src/                     # Core application code
 │   ├── bot/main.py            # Main Discord bot implementation
 │   ├── utils/tree_log.py      # Logging system
+│   ├── utils/surah_mapper.py  # Surah name mapping with emojis
 │   └── config/                # Configuration modules
 ├── 📁 config/                  # Configuration files
 │   ├── .env.example           # Environment variables template
@@ -183,14 +184,24 @@ Place your Quran audio files in the `audio/` directory organized by reciter:
 ```
 audio/
 ├── Saad Al Ghamdi/
-│   ├── 001.mp3  # Al-Fatiha
-│   ├── 002.mp3  # Al-Baqarah
+│   ├── 001.mp3  # 🕌 Al-Fatiha (The Opening)
+│   ├── 002.mp3  # 🐄 Al-Baqarah (The Cow)
+│   ├── 036.mp3  # 💚 Ya-Sin (Ya-Sin)
 │   └── ...
 ├── Abdul Basit Abdul Samad/
 │   ├── 001.mp3
 │   └── ...
 └── Other Reciters/
     └── ...
+```
+
+The bot will automatically display beautiful Surah names with emojis:
+
+```
+🎵 **Now Playing**
+💚 **Ya-Sin** (Ya-Sin)
+📖 Surah 36 • 83 verses • Meccan
+🎤 Recited by **Saad Al Ghamdi**
 ```
 
 ## 🛠️ Bot Management
@@ -213,17 +224,16 @@ python main.py
 The bot features a beautiful tree-style logging system:
 
 ```
-🚀 Starting QuranBot v1.1.0...
-├─ version: 1.1.0
+🚀 Starting QuranBot v1.3.0...
+├─ version: 1.3.0
 ├─ discord_token: ***HIDDEN***
 ├─ structure: Organized in src/ directory
 └─ entry_point: main.py
 
-🎯 QuranBot v1.1.0 Started
-├─ bot_user: Quran#1550
-├─ version: 1.1.0
-├─ guild_id: 1228455909827805308
-└─ target_channel_id: 1389675580253016144
+🎵 **Now Playing**
+💚 **Ya-Sin** (Ya-Sin)
+📖 Surah 36 • 83 verses • Meccan
+🎤 Recited by **Saad Al Ghamdi**
 ```
 
 ### Log Files
@@ -238,7 +248,6 @@ All logs are automatically saved to:
 
 - **Single Guild Only:** This bot is designed for use in ONE Discord server only
 - **Audio Files:** You must provide your own Quran MP3 files (114 files, numbered 001.mp3 to 114.mp3)
-- **No Support:** This is provided as-is with no support, updates, or bug fixes
 - **Security:** Keep your bot token secure and never share it publicly
 
 ## 📚 Dependencies
@@ -256,18 +265,6 @@ All logs are automatically saved to:
 - ✅ Comprehensive .gitignore for security
 - ✅ Instance management prevents conflicts
 - ✅ Secure token handling
-
-## ⚠️ No Support Policy
-
-**This project is provided "AS-IS" with absolutely no support:**
-
-- ❌ No bug reports will be addressed
-- ❌ No feature requests will be considered
-- ❌ No setup assistance will be provided
-- ❌ No pull requests will be reviewed
-- ❌ No issues will be responded to
-
-**Use at your own risk and responsibility.**
 
 ## 📄 License
 
