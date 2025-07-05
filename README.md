@@ -1,6 +1,8 @@
-# 🕌 QuranBot
-
 <div align="center">
+
+![QuranBot Banner](<images/BANNER%20(ANIMATED).gif>)
+
+# 🕌 QuranBot
 
 **A Professional Discord Bot for 24/7 Quran Audio Streaming**
 
@@ -9,7 +11,7 @@
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Code Style](https://img.shields.io/badge/code%20style-organized-brightgreen.svg)](https://github.com/JohnHamwi/QuranAudioBot)
 
-*Built with ❤️ for the Muslim Ummah*
+_Built with ❤️ for the Muslim Ummah_
 
 **🌐 Join Our Community:** [discord.gg/syria](https://www.discord.gg/syria)
 
@@ -40,56 +42,93 @@
 ### Installation
 
 1. **Clone the Repository**
+
    ```bash
-   git clone https://github.com/JohnHamwi/QuranAudioBot.git
-   cd QuranAudioBot
+   git clone https://github.com/JohnHamwi/QuranBot.git
+   cd QuranBot
    ```
 
-2. **Install Dependencies**
+2. **Set Up Development Environment**
+
    ```bash
+   # Create virtual environment
+   python3 -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+   # Install dependencies
    pip install -r requirements.txt
    ```
 
-3. **Configure Environment**
+3. **Install FFmpeg** (macOS with Homebrew)
+
    ```bash
-   cp env_template.txt .env
-   # Edit .env with your Discord bot token and channel IDs
+   brew install ffmpeg
    ```
 
-4. **Add Audio Files**
-   Create an `audio/` directory and organize your MP3 files by reciter:
+4. **Configure Environment**
+
+   ```bash
+   # Copy and edit configuration
+   cp config/.env.template config/.env
+   # Edit config/.env with your Discord bot token and channel IDs
+   ```
+
+5. **Add Audio Files**
+   Place your Quran MP3 files in the audio directory:
+
    ```
    audio/
    ├── Saad Al Ghamdi/
-   │   ├── 001.mp3
-   │   ├── 002.mp3
-   │   └── ...
+   │   ├── 001.mp3  # Al-Fatiha
+   │   ├── 002.mp3  # Al-Baqarah
+   │   └── ... (114 total files)
    └── Other Reciters/
        └── ...
    ```
 
-5. **Run the Bot**
+6. **Run Development Environment**
+
    ```bash
-   python main.py
+   # Quick start (recommended)
+   ./run_dev.sh
+
+   # Or manually
+   source .venv/bin/activate
+   python tools/test_bot.py  # Run tests first
+   python main.py            # Start bot
    ```
 
 ## 📁 Project Structure
 
 ```
 QuranBot/
+├── 📁 src/                     # Core application code
+│   ├── bot/                    # Discord bot implementation
+│   ├── utils/                  # Utility functions (logging, etc.)
+│   └── config/                 # Configuration modules
+├── 📁 tools/                   # Development & deployment tools
+│   ├── test_bot.py            # Comprehensive testing suite
+│   ├── format_code.py         # Code formatting utility
+│   ├── deploy_to_vps.py       # Safe deployment tool
+│   └── update_version.py      # Version management helper
+├── 📁 docs/                    # Documentation files
+│   ├── DEV_SETUP.md           # Development setup guide
+│   ├── DEVELOPMENT_WORKFLOW.md # Complete workflow guide
+│   └── STYLE_GUIDE.md         # Coding standards & style
+├── 📁 config/                  # Configuration files
+│   ├── .env                   # Environment variables
+│   └── pyproject.toml         # Python project configuration
+├── 📁 scripts/                 # Executable scripts
+│   └── run_dev.sh             # Development startup script
+├── 📁 audio/                   # Quran audio files
+│   └── Saad Al Ghamdi/        # Default reciter (114 MP3 files)
+├── 📁 images/                  # Visual assets
+│   ├── BANNER (ANIMATED).gif  # Animated banner
+│   └── PFP (Cropped - Animated).gif # Logo
 ├── main.py                    # 🚀 Main entry point
-├── bot_manager.py             # 🛠️ Bot instance management utility
-├── requirements.txt           # 📦 Dependencies
-├── CHANGELOG.md              # 📝 Version history
-├── env_template.txt          # 📋 Environment configuration template
-├── update_version.py         # 🔄 Version management tool
-└── src/                      # 📁 Source code package
-    ├── bot/                  # 🤖 Core bot functionality
-    │   └── main.py           # Main bot implementation
-    ├── utils/                # 🛠️ Utility functions
-    │   └── tree_log.py       # Tree-style logging system
-    └── config/               # ⚙️ Configuration management
-        └── __init__.py       # Package initialization
+├── bot_manager.py             # 🛠️ Bot instance management
+├── run_dev.sh                 # 🚀 Quick development startup
+└── requirements.txt           # 📦 Dependencies
 ```
 
 ## 🔧 Configuration
@@ -145,9 +184,11 @@ audio/
     └── ...
 ```
 
-## 🛠️ Bot Management
+## 🛠️ Development Tools
 
-The bot includes a management utility (`bot_manager.py`) for easy control:
+QuranBot includes comprehensive development tools for a professional workflow:
+
+### Bot Management
 
 ```bash
 # Check bot status
@@ -161,6 +202,33 @@ python bot_manager.py restart
 
 # Start the bot
 python bot_manager.py start
+```
+
+### Testing & Quality Assurance
+
+```bash
+# Run comprehensive test suite (41 tests)
+python tools/test_bot.py
+
+# Format all code consistently
+python tools/format_code.py
+
+# Generate safe deployment guide
+python tools/deploy_to_vps.py
+```
+
+### Version Management
+
+```bash
+# Update version and changelog
+python tools/update_version.py
+```
+
+### Quick Development Startup
+
+```bash
+# One command to activate environment, run tests, and start bot
+./run_dev.sh
 ```
 
 ## 📊 Logging System
@@ -184,6 +252,7 @@ The bot features a beautiful tree-style logging system:
 ### Log Files
 
 All logs are automatically saved to:
+
 - `logs/YYYY-MM-DD/YYYY-MM-DD.log` - Human-readable text logs
 - `logs/YYYY-MM-DD/YYYY-MM-DD.json` - Structured JSON logs
 - `logs/YYYY-MM-DD/YYYY-MM-DD-errors.log` - Error-only logs
@@ -197,6 +266,7 @@ python update_version.py
 ```
 
 This tool will:
+
 - Update version numbers in the code
 - Add entries to CHANGELOG.md
 - Guide you through documenting changes
@@ -241,6 +311,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **May Allah bless this project and all who use it** 🤲
 
-*"And it is He who sends down rain from the sky, and We produce thereby the vegetation of every kind"* - Quran 6:99
+_"And it is He who sends down rain from the sky, and We produce thereby the vegetation of every kind"_ - Quran 6:99
 
-</div> 
+<br><br>
+
+![QuranBot Logo](<images/PFP%20(Cropped%20-%20Animated).gif>)
+
+</div>
