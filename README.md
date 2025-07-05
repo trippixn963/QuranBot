@@ -4,16 +4,27 @@
 
 # 🕌 QuranBot
 
-**A Professional Discord Bot for 24/7 Quran Audio Streaming**
+**A Discord Bot for 24/7 Quran Audio Streaming**
+
+> ⚠️ **IMPORTANT NOTICE - READ BEFORE USING**
+>
+> **This is an "AS-IS" open source release with NO SUPPORT provided.**
+>
+> ❌ **NO** bug fixes, security updates, or maintenance
+> ❌ **NO** setup assistance or troubleshooting help
+> ❌ **NO** feature requests or issue responses
+> ❌ **NO** warranty or guarantee of functionality
+>
+> ✅ **Use only if you are experienced with Python/Discord bots**
+> ✅ **You assume all responsibility for security and maintenance**
+> ✅ **You can troubleshoot and fix issues independently**
 
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://python.org)
 [![Discord.py](https://img.shields.io/badge/discord.py-2.3.0%2B-blue.svg)](https://github.com/Rapptz/discord.py)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Code Style](https://img.shields.io/badge/code%20style-organized-brightgreen.svg)](https://github.com/JohnHamwi/QuranAudioBot)
+[![No Support](https://img.shields.io/badge/support-none-red.svg)](#)
 
-_Built with ❤️ for the Muslim Ummah_
-
-**🌐 Join Our Community:** [discord.gg/syria](https://www.discord.gg/syria)
+_Built with ❤️ for the Muslim Ummah - Shared as-is for educational purposes_
 
 </div>
 
@@ -41,6 +52,8 @@ _Built with ❤️ for the Muslim Ummah_
 
 ### Installation
 
+⚠️ **Prerequisites:** You must be experienced with Python, Discord bots, and server administration.
+
 1. **Clone the Repository**
 
    ```bash
@@ -48,54 +61,55 @@ _Built with ❤️ for the Muslim Ummah_
    cd QuranBot
    ```
 
-2. **Set Up Development Environment**
+2. **Install Dependencies**
 
    ```bash
-   # Create virtual environment
-   python3 -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-   # Install dependencies
    pip install -r requirements.txt
    ```
 
-3. **Install FFmpeg** (macOS with Homebrew)
+3. **Install FFmpeg**
+
+   **macOS (Homebrew):**
 
    ```bash
    brew install ffmpeg
    ```
 
+   **Ubuntu/Debian:**
+
+   ```bash
+   sudo apt update
+   sudo apt install ffmpeg
+   ```
+
+   **Windows:** Download from https://ffmpeg.org/download.html
+
 4. **Configure Environment**
 
    ```bash
-   # Copy and edit configuration
-   cp config/.env.template config/.env
-   # Edit config/.env with your Discord bot token and channel IDs
+   # Copy example configuration
+   cp config/.env.example config/.env
+
+   # Edit config/.env with your Discord credentials
+   nano config/.env  # or use your preferred editor
    ```
 
 5. **Add Audio Files**
-   Place your Quran MP3 files in the audio directory:
+
+   Place 114 Quran MP3 files (numbered 001.mp3 to 114.mp3) in:
 
    ```
-   audio/
-   ├── Saad Al Ghamdi/
-   │   ├── 001.mp3  # Al-Fatiha
-   │   ├── 002.mp3  # Al-Baqarah
-   │   └── ... (114 total files)
-   └── Other Reciters/
-       └── ...
+   audio/Saad Al Ghamdi/
+   ├── 001.mp3  # Al-Fatiha
+   ├── 002.mp3  # Al-Baqarah
+   ├── 003.mp3  # Aal-Imran
+   └── ... (continue to 114.mp3)
    ```
 
-6. **Run Development Environment**
+6. **Run the Bot**
 
    ```bash
-   # Quick start (recommended)
-   ./run_dev.sh
-
-   # Or manually
-   source .venv/bin/activate
-   python tools/test_bot.py  # Run tests first
-   python main.py            # Start bot
+   python main.py
    ```
 
 ## 📁 Project Structure
@@ -103,69 +117,64 @@ _Built with ❤️ for the Muslim Ummah_
 ```
 QuranBot/
 ├── 📁 src/                     # Core application code
-│   ├── bot/                    # Discord bot implementation
-│   ├── utils/                  # Utility functions (logging, etc.)
-│   └── config/                 # Configuration modules
-├── 📁 tools/                   # Development & deployment tools
-│   ├── test_bot.py            # Comprehensive testing suite
-│   ├── format_code.py         # Code formatting utility
-│   ├── deploy_to_vps.py       # Safe deployment tool
-│   └── update_version.py      # Version management helper
-├── 📁 docs/                    # Documentation files
-│   ├── DEV_SETUP.md           # Development setup guide
-│   ├── DEVELOPMENT_WORKFLOW.md # Complete workflow guide
-│   └── STYLE_GUIDE.md         # Coding standards & style
+│   ├── bot/main.py            # Main Discord bot implementation
+│   ├── utils/tree_log.py      # Logging system
+│   └── config/                # Configuration modules
 ├── 📁 config/                  # Configuration files
-│   ├── .env                   # Environment variables
+│   ├── .env.example           # Environment variables template
 │   └── pyproject.toml         # Python project configuration
-├── 📁 scripts/                 # Executable scripts
-│   └── run_dev.sh             # Development startup script
 ├── 📁 audio/                   # Quran audio files
-│   └── Saad Al Ghamdi/        # Default reciter (114 MP3 files)
+│   └── Saad Al Ghamdi/        # Default reciter (place 114 MP3 files here)
 ├── 📁 images/                  # Visual assets
-│   ├── BANNER (ANIMATED).gif  # Animated banner
-│   └── PFP (Cropped - Animated).gif # Logo
-├── main.py                    # 🚀 Main entry point
-├── bot_manager.py             # 🛠️ Bot instance management
-├── run_dev.sh                 # 🚀 Quick development startup
-└── requirements.txt           # 📦 Dependencies
+├── main.py                    # 🚀 Main entry point - START HERE
+├── bot_manager.py             # 🛠️ Bot instance management utility
+├── requirements.txt           # 📦 Python dependencies
+└── CHANGELOG.md               # 📝 Version history
 ```
 
-## 🔧 Configuration
+## ⚙️ Configuration
 
-### Environment Variables
+### Discord Bot Setup
 
-Copy `env_template.txt` to `.env` and configure the following:
+1. **Create Discord Application**
 
-```env
-# Discord Bot Configuration
-DISCORD_TOKEN=your_discord_bot_token_here
+   - Go to https://discord.com/developers/applications
+   - Create new application
+   - Go to "Bot" section and create bot
+   - Copy the bot token
 
-# Discord Channel IDs
-TARGET_CHANNEL_ID=your_voice_channel_id_here
-PANEL_CHANNEL_ID=your_control_panel_channel_id_here
-LOGS_CHANNEL_ID=your_logs_channel_id_here
-DAILY_VERSE_CHANNEL_ID=your_daily_verse_channel_id_here
+2. **Get Required IDs**
 
-# Admin Configuration
-ADMIN_USER_ID=your_discord_user_id_here
-GUILD_ID=your_discord_server_id_here
-DEVELOPER_ID=your_discord_user_id_here
+   - Enable Developer Mode in Discord (Settings > Advanced > Developer Mode)
+   - Right-click your server → Copy ID (GUILD_ID)
+   - Right-click voice channel → Copy ID (TARGET_CHANNEL_ID)
+   - Right-click your user → Copy ID (ADMIN_USER_ID)
 
-# Audio Configuration
-AUDIO_FOLDER=audio
-DEFAULT_RECITER=Saad Al Ghamdi
-AUDIO_QUALITY=128k
+3. **Configure Environment**
 
-# FFmpeg Configuration (Optional - auto-detects if not specified)
-FFMPEG_PATH=auto-detect
-```
+   Edit `config/.env` with your Discord credentials:
 
-### Getting Discord IDs
+   ```env
+   # Required Settings
+   DISCORD_TOKEN=your_discord_bot_token_here
+   GUILD_ID=your_discord_server_id_here
+   TARGET_CHANNEL_ID=your_voice_channel_id_here
+   ADMIN_USER_ID=your_discord_user_id_here
 
-1. Enable Developer Mode in Discord Settings > Advanced > Developer Mode
-2. Right-click on channels/servers/users and select "Copy ID"
-3. For bot token: Discord Developer Portal > Your App > Bot > Token
+   # Optional Settings
+   AUDIO_FOLDER=audio
+   DEFAULT_RECITER=Saad Al Ghamdi
+   FFMPEG_PATH=auto-detect
+   ```
+
+4. **Bot Permissions**
+
+   Your bot needs these permissions:
+
+   - Connect to voice channels
+   - Speak in voice channels
+   - Send messages
+   - Read message history
 
 ## 🎵 Audio Setup
 
@@ -184,51 +193,19 @@ audio/
     └── ...
 ```
 
-## 🛠️ Development Tools
+## 🛠️ Bot Management
 
-QuranBot includes comprehensive development tools for a professional workflow:
-
-### Bot Management
+Basic bot management using the included utility:
 
 ```bash
-# Check bot status
+# Check if bot is running
 python bot_manager.py status
 
 # Stop the bot
 python bot_manager.py stop
 
-# Restart the bot
-python bot_manager.py restart
-
 # Start the bot
-python bot_manager.py start
-```
-
-### Testing & Quality Assurance
-
-```bash
-# Run comprehensive test suite (41 tests)
-python tools/test_bot.py
-
-# Format all code consistently
-python tools/format_code.py
-
-# Generate safe deployment guide
-python tools/deploy_to_vps.py
-```
-
-### Version Management
-
-```bash
-# Update version and changelog
-python tools/update_version.py
-```
-
-### Quick Development Startup
-
-```bash
-# One command to activate environment, run tests, and start bot
-./run_dev.sh
+python main.py
 ```
 
 ## 📊 Logging System
@@ -257,19 +234,12 @@ All logs are automatically saved to:
 - `logs/YYYY-MM-DD/YYYY-MM-DD.json` - Structured JSON logs
 - `logs/YYYY-MM-DD/YYYY-MM-DD-errors.log` - Error-only logs
 
-## 🔄 Version Management
+## 🚨 Important Notes
 
-Update the bot version using:
-
-```bash
-python update_version.py
-```
-
-This tool will:
-
-- Update version numbers in the code
-- Add entries to CHANGELOG.md
-- Guide you through documenting changes
+- **Single Guild Only:** This bot is designed for use in ONE Discord server only
+- **Audio Files:** You must provide your own Quran MP3 files (114 files, numbered 001.mp3 to 114.mp3)
+- **No Support:** This is provided as-is with no support, updates, or bug fixes
+- **Security:** Keep your bot token secure and never share it publicly
 
 ## 📚 Dependencies
 
@@ -287,13 +257,17 @@ This tool will:
 - ✅ Instance management prevents conflicts
 - ✅ Secure token handling
 
-## 📝 Contributing
+## ⚠️ No Support Policy
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+**This project is provided "AS-IS" with absolutely no support:**
+
+- ❌ No bug reports will be addressed
+- ❌ No feature requests will be considered
+- ❌ No setup assistance will be provided
+- ❌ No pull requests will be reviewed
+- ❌ No issues will be responded to
+
+**Use at your own risk and responsibility.**
 
 ## 📄 License
 

@@ -245,7 +245,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # =============================================================================
 # Bot Version & Configuration
 # =============================================================================
-BOT_VERSION = "1.2.0"
+BOT_VERSION = "1.3.0"
 BOT_NAME = "QuranBot"
 
 # Configuration from Environment Variables
