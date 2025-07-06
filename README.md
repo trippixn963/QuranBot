@@ -9,8 +9,9 @@
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://python.org)
 [![Discord.py](https://img.shields.io/badge/discord.py-2.3.0%2B-blue.svg)](https://github.com/Rapptz/discord.py)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](#)
-[![No Support](https://img.shields.io/badge/support-none-red.svg)](#)
+[![Version](https://img.shields.io/badge/version-1.6.1-blue.svg)](#)
+[![No Support](https://img.shields.io/badge/support-NONE-red.svg)](#)
+[![Take As Is](https://img.shields.io/badge/policy-take%20as%20is-red.svg)](#)
 
 _Built with ❤️ for the Muslim Ummah - Shared as-is for educational purposes_
 
@@ -18,19 +19,28 @@ _Built with ❤️ for the Muslim Ummah - Shared as-is for educational purposes_
 
 ---
 
-## 📋 No Support Policy
+## ⚠️ No Support Policy
 
-> **⚠️ Important Notice**
+> **🚨 CRITICAL NOTICE: "TAKE AS IT IS" PROJECT**
 >
-> This project is provided **"AS-IS"** with absolutely no support. It is shared for educational purposes only.
+> This repository is provided **AS-IS** with **ZERO SUPPORT**. It is shared for educational and reference purposes only.
 
 **What this means:**
 
-- No bug reports will be addressed
-- No feature requests will be considered
-- No setup assistance will be provided
-- No pull requests will be reviewed
-- No issues will be responded to
+- ❌ **No bug reports** will be addressed
+- ❌ **No feature requests** will be considered
+- ❌ **No setup assistance** will be provided
+- ❌ **No pull requests** will be reviewed
+- ❌ **No issues** will be responded to
+- ❌ **No documentation updates** will be made
+- ❌ **No security patches** will be released
+
+**✅ What you CAN do:**
+
+- Fork the repository and modify it yourself
+- Study the code for educational purposes
+- Use it as a reference for your own projects
+- Learn Discord bot development patterns
 
 **Use at your own risk and responsibility.**
 
@@ -398,16 +408,56 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Developed with modern Python best practices
 - Enhanced with interactive Discord features
 
+## 📋 Repository Information
+
+### 📁 **Important Files**
+
+- 📖 [**Contributing Guidelines**](CONTRIBUTING.md) - How to contribute (educational purposes)
+- 🔒 [**Security Policy**](SECURITY.md) - Security information and disclaimers
+- 📋 [**Issue Templates**](.github/ISSUE_TEMPLATE/) - Bug reports and feature requests
+- 🔍 [**CodeQL Analysis**](.github/workflows/codeql.yml) - Automated security scanning
+- 🚫 [**Gitignore**](.gitignore) - Comprehensive Python/Discord bot gitignore
+
+### 🏷️ **Repository Stats**
+
+- **Language**: Python 3.11+
+- **Framework**: Discord.py 2.3+
+- **Audio Engine**: FFmpeg
+- **Architecture**: Modular, object-oriented
+- **Logging**: Custom tree-structured system
+- **UI System**: Discord embeds and components
+
+### 🎓 **Educational Value**
+
+This repository demonstrates professional Discord bot development:
+
+- ✅ **Clean Architecture** - Modular design with separation of concerns
+- ✅ **Error Handling** - Comprehensive exception management
+- ✅ **Logging Systems** - Professional logging patterns
+- ✅ **State Management** - Persistent application state
+- ✅ **UI/UX Design** - Modern Discord interface components
+- ✅ **Audio Processing** - Real-time streaming implementation
+- ✅ **Security Practices** - Environment-based configuration
+
 ---
 
 <div align="center">
+
+### 🔗 **Quick Links**
+
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-black?logo=github)](https://github.com/johnhamwi/QuranBot)
+[![License](https://img.shields.io/badge/License-MIT-green?logo=opensourceinitiative)](LICENSE)
+[![Contributing](https://img.shields.io/badge/Contributing-Guidelines-blue?logo=github)](CONTRIBUTING.md)
+[![Security](https://img.shields.io/badge/Security-Policy-red?logo=security)](SECURITY.md)
 
 **May Allah bless this project and all who use it** 🤲
 
 _"And it is He who sends down rain from the sky, and We produce thereby the vegetation of every kind"_ - Quran 6:99
 
-<br><br>
+<br>
 
 ![QuranBot Logo](<images/PFP%20(Cropped%20-%20Animated).gif>)
+
+**🚨 Remember: This is a "TAKE AS IS" project with NO SUPPORT**
 
 </div>
