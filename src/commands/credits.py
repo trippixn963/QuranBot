@@ -10,7 +10,7 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from src.utils.tree_log import log_user_interaction, tree_log
+from src.utils.tree_log import log_tree_branch, log_tree_final, log_user_interaction
 
 from ..utils.tree_log import (
     log_error_with_traceback,
@@ -257,15 +257,13 @@ async def setup_credits_command(bot):
                 # Fetch channel information (Discord API call)
                 channel_info = await bot.fetch_channel(interaction.channel_id)
 
-                tree_log(
-                    "⚙️ Credits Command",
+                log_tree_branch(
                     "api_calls_completed",
                     f"✅ API calls successful for user {user_info.name}",
                 )
 
             except Exception as e:
-                tree_log(
-                    "⚙️ Credits Command",
+                log_tree_branch(
                     "api_calls_warning",
                     f"⚠️ Some API calls failed: {str(e)}",
                 )
@@ -324,14 +322,13 @@ async def setup_credits_command(bot):
 
             await interaction.response.send_message(embed=embed, ephemeral=False)
 
-            tree_log(
-                "⚙️ Credits Command",
+            log_tree_branch(
                 "command_completed",
                 f"✅ Credits displayed for {interaction.user.display_name}",
             )
 
         except Exception as e:
-            tree_log("⚙️ Credits Command", "command_error", f"❌ Error: {str(e)}")
+            log_tree_branch("command_error", f"❌ Error: {str(e)}")
             await interaction.response.send_message(
                 "❌ An error occurred while displaying credits. Please try again.",
                 ephemeral=True,
@@ -386,15 +383,13 @@ async def setup_credits_command(bot):
                 app_info = await bot.application_info()
                 api_calls_made += 1
 
-                tree_log(
-                    "🔧 DevPing Command",
+                log_tree_branch(
                     "api_tracking",
                     f"✅ Made {api_calls_made} API calls for Discord tracking",
                 )
 
             except Exception as e:
-                tree_log(
-                    "🔧 DevPing Command",
+                log_tree_branch(
                     "api_error",
                     f"⚠️ Some API calls failed: {str(e)}",
                 )
@@ -414,29 +409,25 @@ async def setup_credits_command(bot):
             await interaction.response.send_message(embed=embed, ephemeral=True)
 
         except Exception as e:
-            tree_log("🔧 DevPing Command", "command_error", f"❌ Error: {str(e)}")
+            log_tree_branch("command_error", f"❌ Error: {str(e)}")
             await interaction.response.send_message(
                 "❌ DevPing failed. Please try again.", ephemeral=True
             )
 
-    tree_log(
-        "⚙️ Credits Command Setup",
+    log_tree_branch(
         "command_registered",
         "✅ /credits command registered with bot tree",
     )
-    tree_log(
-        "⚙️ Credits Command Setup",
+    log_tree_branch(
         "devping_registered",
         "✅ /devping command registered with bot tree",
     )
-    tree_log("⚙️ Credits Command Setup", "command_name", "credits")
-    tree_log(
-        "⚙️ Credits Command Setup",
+    log_tree_branch("command_name", "credits")
+    log_tree_branch(
         "command_description",
         "Show bot information, credits, and GitHub repository",
     )
-    tree_log(
-        "⚙️ Credits Command Setup",
+    log_tree_final(
         "setup_completed",
         "✅ Credits command setup completed successfully",
     )
