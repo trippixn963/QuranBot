@@ -996,64 +996,107 @@ async def on_voice_state_update(member, before, after):
         # User Voice State Handling (Logging & Role Management)
         # =============================================================================
 
-        # User joined a voice channel (wasn't in VC, now is)
-        if not before.channel and after.channel:
-            log_user_interaction(
-                f"🎤 **{member.display_name}** joined voice channel `{after.channel.name}`",
-                "voice_channel_join",
-            )
-            log_tree_branch(
-                "voice_join", f"👤 {member.display_name} → {after.channel.name}"
-            )
+        # Check if this voice state change involves the Quran voice channel
+        quran_channel_involved = (
+            before.channel and before.channel.id == TARGET_CHANNEL_ID
+        ) or (after.channel and after.channel.id == TARGET_CHANNEL_ID)
 
-        # User left all voice channels (was in VC, now isn't)
-        elif before.channel and not after.channel:
-            log_user_interaction(
-                f"👋 **{member.display_name}** left voice channel `{before.channel.name}`",
-                "voice_channel_leave",
-            )
-            log_tree_branch(
-                "voice_leave", f"👤 {member.display_name} ← {before.channel.name}"
-            )
-
-        # User moved between voice channels
-        elif before.channel and after.channel and before.channel != after.channel:
-            log_user_interaction(
-                f"👥 **{member.display_name}** moved from `{before.channel.name}` to `{after.channel.name}`",
-                "voice_channel_move",
-            )
-            log_tree_branch(
-                "voice_move",
-                f"👤 {member.display_name}: {before.channel.name} → {after.channel.name}",
-            )
-
-        # User muted/unmuted or deafened/undeafened (staying in same channel)
-        elif before.channel and after.channel and before.channel == after.channel:
-            status_changes = []
-
-            if before.self_mute != after.self_mute:
-                status_changes.append(
-                    f"{'🔇 Muted' if after.self_mute else '🔊 Unmuted'}"
+        # Only log and process role changes if the Quran voice channel is involved
+        if quran_channel_involved:
+            # User joined the Quran voice channel (from no VC or different VC)
+            if (
+                not before.channel
+                and after.channel
+                and after.channel.id == TARGET_CHANNEL_ID
+            ):
+                log_user_interaction(
+                    f"🎤 **{member.display_name}** joined Quran voice channel",
+                    "quran_voice_join",
                 )
-            if before.self_deaf != after.self_deaf:
-                status_changes.append(
-                    f"{'🔇 Deafened' if after.self_deaf else '🔊 Undeafened'}"
-                )
-            if before.mute != after.mute:
-                status_changes.append(
-                    f"{'🔇 Server Muted' if after.mute else '🔊 Server Unmuted'}"
-                )
-            if before.deaf != after.deaf:
-                status_changes.append(
-                    f"{'🔇 Server Deafened' if after.deaf else '🔊 Server Undeafened'}"
-                )
-
-            if status_changes:
-                status_text = " & ".join(status_changes)
                 log_tree_branch(
-                    "voice_status",
-                    f"👤 {member.display_name} in {after.channel.name}: {status_text}",
+                    "quran_voice_join",
+                    f"👤 {member.display_name} → {after.channel.name}",
                 )
+
+            # User joined Quran VC from a different voice channel
+            elif (
+                before.channel
+                and before.channel.id != TARGET_CHANNEL_ID
+                and after.channel
+                and after.channel.id == TARGET_CHANNEL_ID
+            ):
+                log_user_interaction(
+                    f"🎤 **{member.display_name}** joined Quran voice channel from `{before.channel.name}`",
+                    "quran_voice_join_from_other",
+                )
+                log_tree_branch(
+                    "quran_voice_join",
+                    f"👤 {member.display_name}: {before.channel.name} → {after.channel.name}",
+                )
+
+            # User left the Quran voice channel (to no VC or different VC)
+            elif (
+                before.channel
+                and before.channel.id == TARGET_CHANNEL_ID
+                and not after.channel
+            ):
+                log_user_interaction(
+                    f"👋 **{member.display_name}** left Quran voice channel",
+                    "quran_voice_leave",
+                )
+                log_tree_branch(
+                    "quran_voice_leave",
+                    f"👤 {member.display_name} ← {before.channel.name}",
+                )
+
+            # User left Quran VC to a different voice channel
+            elif (
+                before.channel
+                and before.channel.id == TARGET_CHANNEL_ID
+                and after.channel
+                and after.channel.id != TARGET_CHANNEL_ID
+            ):
+                log_user_interaction(
+                    f"👋 **{member.display_name}** left Quran voice channel for `{after.channel.name}`",
+                    "quran_voice_leave_to_other",
+                )
+                log_tree_branch(
+                    "quran_voice_leave",
+                    f"👤 {member.display_name}: {before.channel.name} → {after.channel.name}",
+                )
+
+            # User muted/unmuted or deafened/undeafened in the Quran voice channel
+            elif (
+                before.channel
+                and after.channel
+                and before.channel.id == TARGET_CHANNEL_ID
+                and after.channel.id == TARGET_CHANNEL_ID
+            ):
+                status_changes = []
+
+                if before.self_mute != after.self_mute:
+                    status_changes.append(
+                        f"{'🔇 Muted' if after.self_mute else '🔊 Unmuted'}"
+                    )
+                if before.self_deaf != after.self_deaf:
+                    status_changes.append(
+                        f"{'🔇 Deafened' if after.self_deaf else '🔊 Undeafened'}"
+                    )
+                if before.mute != after.mute:
+                    status_changes.append(
+                        f"{'🔇 Server Muted' if after.mute else '🔊 Server Unmuted'}"
+                    )
+                if before.deaf != after.deaf:
+                    status_changes.append(
+                        f"{'🔇 Server Deafened' if after.deaf else '🔊 Server Undeafened'}"
+                    )
+
+                if status_changes:
+                    status_text = " & ".join(status_changes)
+                    log_tree_branch(
+                        "quran_voice_status",
+                        f"👤 {member.display_name} in {after.channel.name}: {status_text}",
+                    )
 
         # =============================================================================
         # Panel Access Role Management
