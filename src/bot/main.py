@@ -706,7 +706,7 @@ async def on_ready():
                 try:
                     from src.commands import setup_credits_command
 
-                    setup_credits_command(bot)
+                    await setup_credits_command(bot)
 
                     # Sync commands to Discord
                     await bot.tree.sync()

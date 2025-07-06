@@ -10,6 +10,8 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
+from src.utils.tree_log import log_user_interaction, tree_log
+
 from ..utils.tree_log import (
     log_error_with_traceback,
     log_section_start,
@@ -208,42 +210,236 @@ async def credits_command(interaction: discord.Interaction):
 # =============================================================================
 
 
-def setup_credits_command(bot):
+async def setup_credits_command(bot):
     """
     Set up the /credits slash command with comprehensive logging
 
     Args:
         bot: The Discord bot instance
     """
-    try:
-        log_section_start("Credits Command Setup", "⚙️")
-        log_tree_branch("setup_initiated", "Registering /credits slash command")
-        log_tree_branch(
-            "bot_instance", f"Bot user: {bot.user.name if bot.user else 'Unknown'}"
-        )
+    tree_log(
+        "⚙️ Credits Command Setup",
+        "setup_initiated",
+        "Registering /credits slash command",
+    )
+    tree_log("⚙️ Credits Command Setup", "bot_instance", f"Bot user: {bot.user.name}")
 
-        @bot.tree.command(
-            name="credits",
-            description="Show bot information, credits, and GitHub repository",
-        )
-        async def credits_slash_command(interaction: discord.Interaction):
-            await credits_command(interaction)
+    @bot.tree.command(
+        name="credits",
+        description="Show bot information, credits, and GitHub repository",
+    )
+    async def credits(interaction: discord.Interaction):
+        """Shows bot credits, information, and GitHub repository"""
+        try:
+            # Log user interaction in dedicated section
+            log_user_interaction(
+                interaction_type="slash_command",
+                user_name=interaction.user.display_name,
+                user_id=interaction.user.id,
+                action_description="Used /credits command",
+                details={
+                    "command": "credits",
+                    "guild_id": interaction.guild_id if interaction.guild else None,
+                    "channel_id": interaction.channel_id,
+                },
+            )
 
-        log_tree_branch(
-            "command_registered", "✅ /credits command registered with bot tree"
-        )
-        log_tree_branch("command_name", "credits")
-        log_tree_branch(
-            "command_description",
-            "Show bot information, credits, and GitHub repository",
-        )
-        log_tree_final(
-            "setup_completed", "✅ Credits command setup completed successfully"
-        )
+            # API calls that Discord tracks for Active Developer Badge
+            try:
+                # Fetch user information (Discord API call)
+                user_info = await bot.fetch_user(interaction.user.id)
 
-    except Exception as e:
-        log_error_with_traceback("Error setting up credits command", e)
-        log_tree_final("setup_failed", "❌ Credits command setup failed")
+                # Fetch guild information if in a guild (Discord API call)
+                guild_info = None
+                if interaction.guild:
+                    guild_info = await bot.fetch_guild(interaction.guild.id)
+
+                # Fetch channel information (Discord API call)
+                channel_info = await bot.fetch_channel(interaction.channel_id)
+
+                tree_log(
+                    "⚙️ Credits Command",
+                    "api_calls_completed",
+                    f"✅ API calls successful for user {user_info.name}",
+                )
+
+            except Exception as e:
+                tree_log(
+                    "⚙️ Credits Command",
+                    "api_calls_warning",
+                    f"⚠️ Some API calls failed: {str(e)}",
+                )
+
+            embed = discord.Embed(
+                title="🕋 QuranBot Credits",
+                description="*A Discord bot for streaming Quran audio with interactive controls*",
+                color=0x00D4AA,
+                timestamp=interaction.created_at,
+            )
+
+            # Bot Information
+            embed.add_field(
+                name="📊 Bot Information",
+                value=f"• **Version:** 1.6.2\n• **Language:** Python 3.11+\n• **Framework:** Discord.py 2.3+\n• **Audio Engine:** FFmpeg",
+                inline=False,
+            )
+
+            # Features
+            embed.add_field(
+                name="✨ Features",
+                value="• 🎵 **Audio Streaming** - High-quality Quran recitation\n• 🎛️ **Interactive Controls** - Dropdown menus and buttons\n• 📱 **Rich Presence** - Real-time Discord activity\n• 🔄 **State Management** - Resume playback across sessions\n• 📊 **Comprehensive Logging** - Professional tree-structured logs",
+                inline=False,
+            )
+
+            # Technical Details
+            embed.add_field(
+                name="🔧 Technical Stack",
+                value="• **6 Reciters** available with 114+ Surahs each\n• **Slash Commands** - Modern Discord interaction system\n• **Voice Integration** - Seamless audio streaming\n• **Professional Architecture** - Modular, scalable design",
+                inline=False,
+            )
+
+            # Repository & Support
+            embed.add_field(
+                name="📋 Repository & Policy",
+                value='• **GitHub:** [QuranBot Repository](https://github.com/johnhamwi/QuranBot)\n• **License:** MIT License\n• **Support Policy:** ⚠️ **"Take as it is" - No support provided**\n• **Purpose:** Educational and reference use only',
+                inline=False,
+            )
+
+            # Developer Information
+            embed.add_field(
+                name="👨‍💻 Developer",
+                value="• **Created by:** John Hamwi\n• **Project Type:** Open Source Educational Resource\n• **Development Status:** Complete - No ongoing development",
+                inline=False,
+            )
+
+            # Set bot avatar as thumbnail
+            if bot.user.avatar:
+                embed.set_thumbnail(url=bot.user.avatar.url)
+
+            # Footer with additional info
+            embed.set_footer(
+                text=f"QuranBot v1.6.2 • Requested by {interaction.user.display_name}",
+                icon_url=interaction.user.display_avatar.url,
+            )
+
+            await interaction.response.send_message(embed=embed, ephemeral=False)
+
+            tree_log(
+                "⚙️ Credits Command",
+                "command_completed",
+                f"✅ Credits displayed for {interaction.user.display_name}",
+            )
+
+        except Exception as e:
+            tree_log("⚙️ Credits Command", "command_error", f"❌ Error: {str(e)}")
+            await interaction.response.send_message(
+                "❌ An error occurred while displaying credits. Please try again.",
+                ephemeral=True,
+            )
+
+    @bot.tree.command(
+        name="devping", description="Developer ping command for API tracking"
+    )
+    async def devping(interaction: discord.Interaction):
+        """Hidden developer command that makes multiple API calls for Discord tracking"""
+        try:
+            # Log user interaction
+            log_user_interaction(
+                interaction_type="slash_command",
+                user_name=interaction.user.display_name,
+                user_id=interaction.user.id,
+                action_description="Used /devping command",
+                details={
+                    "command": "devping",
+                    "purpose": "API tracking for Active Developer Badge",
+                },
+            )
+
+            # Multiple API calls that Discord tracks
+            api_calls_made = 0
+
+            try:
+                # 1. Fetch bot user info
+                bot_user = await bot.fetch_user(bot.user.id)
+                api_calls_made += 1
+
+                # 2. Fetch command user info
+                user_info = await bot.fetch_user(interaction.user.id)
+                api_calls_made += 1
+
+                # 3. Fetch guild info if available
+                if interaction.guild:
+                    guild_info = await bot.fetch_guild(interaction.guild.id)
+                    api_calls_made += 1
+
+                    # 4. Fetch guild members (limited)
+                    members = []
+                    async for member in interaction.guild.fetch_members(limit=5):
+                        members.append(member)
+                    api_calls_made += len(members)
+
+                # 5. Fetch channel info
+                channel_info = await bot.fetch_channel(interaction.channel_id)
+                api_calls_made += 1
+
+                # 6. Get bot application info
+                app_info = await bot.application_info()
+                api_calls_made += 1
+
+                tree_log(
+                    "🔧 DevPing Command",
+                    "api_tracking",
+                    f"✅ Made {api_calls_made} API calls for Discord tracking",
+                )
+
+            except Exception as e:
+                tree_log(
+                    "🔧 DevPing Command",
+                    "api_error",
+                    f"⚠️ Some API calls failed: {str(e)}",
+                )
+
+            embed = discord.Embed(
+                title="🔧 Developer Ping",
+                description=f"API tracking ping completed!\n\n**API Calls Made:** {api_calls_made}\n**Bot Status:** ✅ Active\n**Purpose:** Discord Active Developer Badge tracking",
+                color=0x00FF00,
+                timestamp=interaction.created_at,
+            )
+
+            embed.set_footer(
+                text=f"DevPing • {interaction.user.display_name}",
+                icon_url=interaction.user.display_avatar.url,
+            )
+
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+
+        except Exception as e:
+            tree_log("🔧 DevPing Command", "command_error", f"❌ Error: {str(e)}")
+            await interaction.response.send_message(
+                "❌ DevPing failed. Please try again.", ephemeral=True
+            )
+
+    tree_log(
+        "⚙️ Credits Command Setup",
+        "command_registered",
+        "✅ /credits command registered with bot tree",
+    )
+    tree_log(
+        "⚙️ Credits Command Setup",
+        "devping_registered",
+        "✅ /devping command registered with bot tree",
+    )
+    tree_log("⚙️ Credits Command Setup", "command_name", "credits")
+    tree_log(
+        "⚙️ Credits Command Setup",
+        "command_description",
+        "Show bot information, credits, and GitHub repository",
+    )
+    tree_log(
+        "⚙️ Credits Command Setup",
+        "setup_completed",
+        "✅ Credits command setup completed successfully",
+    )
 
 
 # =============================================================================

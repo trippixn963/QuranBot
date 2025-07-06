@@ -1071,33 +1071,49 @@ class SimpleControlPanelView(View):
             log_error_with_traceback("Error skipping to previous", e)
             await interaction.response.defer()
 
-    @discord.ui.button(label="⏭️ Next", style=discord.ButtonStyle.success, row=3)
-    async def next_surah(self, interaction: discord.Interaction, button: Button):
-        """Go to next surah"""
+    @discord.ui.button(label="🔀 Shuffle", style=discord.ButtonStyle.secondary, row=3)
+    async def toggle_shuffle(self, interaction: discord.Interaction, button: Button):
+        """Toggle shuffle mode"""
         try:
+            # Toggle audio manager's shuffle state
+            old_state = self.shuffle_enabled
+            if self.audio_manager:
+                self.audio_manager.toggle_shuffle()
+                self.shuffle_enabled = self.audio_manager.is_shuffle_enabled
+            else:
+                self.shuffle_enabled = not self.shuffle_enabled
+
             # Log user interaction in dedicated section
             log_user_interaction(
-                interaction_type="button_skip",
+                interaction_type="button_toggle",
                 user_name=interaction.user.display_name,
                 user_id=interaction.user.id,
-                action_description="Skipped to next surah",
+                action_description=f"Toggled shuffle mode: {old_state} → {self.shuffle_enabled}",
                 details={
-                    "direction": "next",
+                    "feature": "shuffle",
+                    "old_state": old_state,
+                    "new_state": self.shuffle_enabled,
                     "audio_manager_available": self.audio_manager is not None,
                 },
             )
 
-            self._update_last_activity(interaction.user, "skipped to next surah")
+            # Update button style
+            button.style = (
+                discord.ButtonStyle.success
+                if self.shuffle_enabled
+                else discord.ButtonStyle.secondary
+            )
 
-            if self.audio_manager:
-                await self.audio_manager.skip_to_next()
+            # Only show activity message when enabled
+            if self.shuffle_enabled:
+                self._update_last_activity(interaction.user, "enabled shuffle mode")
 
-            await interaction.response.defer()
+            await interaction.response.edit_message(view=self)
         except Exception as e:
-            log_error_with_traceback("Error skipping to next", e)
+            log_error_with_traceback("Error toggling shuffle", e)
             await interaction.response.defer()
 
-    @discord.ui.button(label="🔁 Loop", style=discord.ButtonStyle.secondary, row=4)
+    @discord.ui.button(label="🔁 Loop", style=discord.ButtonStyle.secondary, row=3)
     async def toggle_loop(self, interaction: discord.Interaction, button: Button):
         """Toggle loop mode"""
         try:
@@ -1139,46 +1155,30 @@ class SimpleControlPanelView(View):
             log_error_with_traceback("Error toggling loop", e)
             await interaction.response.defer()
 
-    @discord.ui.button(label="🔀 Shuffle", style=discord.ButtonStyle.secondary, row=4)
-    async def toggle_shuffle(self, interaction: discord.Interaction, button: Button):
-        """Toggle shuffle mode"""
+    @discord.ui.button(label="⏭️ Next", style=discord.ButtonStyle.success, row=3)
+    async def next_surah(self, interaction: discord.Interaction, button: Button):
+        """Go to next surah"""
         try:
-            # Toggle audio manager's shuffle state
-            old_state = self.shuffle_enabled
-            if self.audio_manager:
-                self.audio_manager.toggle_shuffle()
-                self.shuffle_enabled = self.audio_manager.is_shuffle_enabled
-            else:
-                self.shuffle_enabled = not self.shuffle_enabled
-
             # Log user interaction in dedicated section
             log_user_interaction(
-                interaction_type="button_toggle",
+                interaction_type="button_skip",
                 user_name=interaction.user.display_name,
                 user_id=interaction.user.id,
-                action_description=f"Toggled shuffle mode: {old_state} → {self.shuffle_enabled}",
+                action_description="Skipped to next surah",
                 details={
-                    "feature": "shuffle",
-                    "old_state": old_state,
-                    "new_state": self.shuffle_enabled,
+                    "direction": "next",
                     "audio_manager_available": self.audio_manager is not None,
                 },
             )
 
-            # Update button style
-            button.style = (
-                discord.ButtonStyle.success
-                if self.shuffle_enabled
-                else discord.ButtonStyle.secondary
-            )
+            self._update_last_activity(interaction.user, "skipped to next surah")
 
-            # Only show activity message when enabled
-            if self.shuffle_enabled:
-                self._update_last_activity(interaction.user, "enabled shuffle mode")
+            if self.audio_manager:
+                await self.audio_manager.skip_to_next()
 
-            await interaction.response.edit_message(view=self)
+            await interaction.response.defer()
         except Exception as e:
-            log_error_with_traceback("Error toggling shuffle", e)
+            log_error_with_traceback("Error skipping to next", e)
             await interaction.response.defer()
 
     def set_panel_message(self, message: discord.Message):
