@@ -84,9 +84,7 @@ class StateManager:
             with open(self.playback_state_file, "w", encoding="utf-8") as f:
                 json.dump(state, f, indent=2, ensure_ascii=False)
 
-            log_tree_branch(
-                "state_saved", f"Surah {current_surah} at {current_position:.1f}s"
-            )
+            # State saved silently - no logging to avoid spam
             return True
 
         except Exception as e:
