@@ -339,7 +339,7 @@ bot = commands.Bot(command_prefix=commands.when_mentioned, intents=intents)
 # =============================================================================
 # Bot Version & Configuration
 # =============================================================================
-BOT_VERSION = "1.7.4"
+BOT_VERSION = "1.7.5"
 BOT_NAME = "QuranBot"
 
 # Configuration from Environment Variables

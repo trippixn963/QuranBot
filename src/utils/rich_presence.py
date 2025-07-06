@@ -12,6 +12,7 @@ import time
 import traceback
 
 import discord
+from aiohttp.client_exceptions import ClientConnectionResetError
 
 from .surah_mapper import get_surah_info
 from .tree_log import (
@@ -273,14 +274,48 @@ class RichPresenceManager:
             self.track_duration = None
             self.update_task = None
 
-            # Clear rich presence
-            await self.bot.change_presence(activity=None)
-            log_tree_final("rich_presence", "✅ Stopped playback and cleared presence")
+            # Clear rich presence (only if bot is still connected)
+            if self.bot and not self.bot.is_closed():
+                try:
+                    await self.bot.change_presence(activity=None)
+                    log_tree_final(
+                        "rich_presence", "✅ Stopped playback and cleared presence"
+                    )
+                except (
+                    discord.ConnectionClosed,
+                    discord.HTTPException,
+                    ConnectionResetError,
+                    Exception,
+                ) as e:
+                    # Bot is disconnecting/closed, can't update presence - this is normal
+                    if "closing transport" in str(e) or "ConnectionReset" in str(
+                        type(e).__name__
+                    ):
+                        log_tree_final(
+                            "rich_presence", "✅ Stopped playback (bot disconnecting)"
+                        )
+                    else:
+                        log_tree_final(
+                            "rich_presence",
+                            f"✅ Stopped playback (presence clear failed: {type(e).__name__})",
+                        )
+            else:
+                log_tree_final(
+                    "rich_presence", "✅ Stopped playback (bot already closed)"
+                )
 
         except discord.HTTPException as e:
             log_error_with_traceback("Discord API error stopping Rich Presence", e)
         except Exception as e:
-            log_error_with_traceback("Error stopping track in Rich Presence", e)
+            # Check if it's a connection-related error during shutdown
+            if "closing transport" in str(e) or "ConnectionReset" in str(
+                type(e).__name__
+            ):
+                log_tree_final(
+                    "rich_presence", "✅ Stopped playback (connection closing)"
+                )
+            else:
+                log_error_with_traceback("Error stopping track in Rich Presence", e)
 
     async def update_progress(self):
         """
@@ -341,7 +376,26 @@ class RichPresenceManager:
                         name=f"{surah_info.emoji} {surah_info.name_transliteration} • {time_display}",
                     )
 
-                    await self.bot.change_presence(activity=activity)
+                    # Only update presence if bot is still connected
+                    if self.bot and not self.bot.is_closed():
+                        try:
+                            await self.bot.change_presence(activity=activity)
+                        except (
+                            ClientConnectionResetError,
+                            discord.ConnectionClosed,
+                        ) as e:
+                            # Connection is closing, stop updates gracefully
+                            log_tree_branch(
+                                "progress_updates",
+                                "🛑 Bot disconnecting, stopping updates",
+                            )
+                            break
+                        except discord.HTTPException as e:
+                            log_error_with_traceback(
+                                "Discord API error during progress update", e
+                            )
+                            await asyncio.sleep(10)  # Wait longer on Discord errors
+                            continue
 
                     update_count += 1
                     if update_count % 12 == 0:  # Log every minute (12 * 5 seconds)
@@ -350,6 +404,12 @@ class RichPresenceManager:
                     # Update every 5 seconds to avoid rate limiting
                     await asyncio.sleep(5)
 
+                except (ClientConnectionResetError, discord.ConnectionClosed):
+                    # Connection is closing, stop updates gracefully
+                    log_tree_branch(
+                        "progress_updates", "🛑 Bot disconnecting, stopping updates"
+                    )
+                    break
                 except discord.HTTPException as e:
                     log_error_with_traceback(
                         "Discord API error during progress update", e
