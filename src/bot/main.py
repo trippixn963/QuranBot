@@ -67,10 +67,12 @@ from utils.surah_mapper import (
     validate_surah_number,
 )
 from utils.tree_log import (
+    get_timestamp,
     log_async_error,
     log_critical_error,
     log_discord_error,
     log_error_with_traceback,
+    log_perfect_tree_section,
     log_progress,
     log_section_start,
     log_spacing,
@@ -80,6 +82,7 @@ from utils.tree_log import (
     log_tree_end,
     log_tree_final,
     log_user_interaction,
+    log_voice_activity_tree,
     log_warning_with_context,
 )
 
@@ -336,7 +339,7 @@ bot = commands.Bot(command_prefix=commands.when_mentioned, intents=intents)
 # =============================================================================
 # Bot Version & Configuration
 # =============================================================================
-BOT_VERSION = "1.6.1"
+BOT_VERSION = "1.7.4"
 BOT_NAME = "QuranBot"
 
 # Configuration from Environment Variables
@@ -575,11 +578,17 @@ async def on_ready():
         # Mark startup in state manager for session tracking
         state_manager.mark_startup()
 
-        log_section_start(f"{BOT_NAME} v{BOT_VERSION} Started")
-        log_tree_branch("bot_user", f"{bot.user}")
-        log_tree_branch("version", BOT_VERSION)
-        log_tree_branch("guild_id", GUILD_ID)
-        log_tree_final("target_channel_id", TARGET_CHANNEL_ID)
+        log_perfect_tree_section(
+            f"{BOT_NAME} v{BOT_VERSION} Started",
+            [
+                ("bot_user", f"{bot.user}"),
+                ("version", BOT_VERSION),
+                ("guild_id", str(GUILD_ID)),
+                ("target_channel_id", str(TARGET_CHANNEL_ID)),
+                ("startup_time", f"{get_timestamp().strip('[]')}"),
+            ],
+            "🎯",
+        )
 
         # =============================================================================
         # Manager Initialization
@@ -1009,13 +1018,16 @@ async def on_voice_state_update(member, before, after):
                 and after.channel
                 and after.channel.id == TARGET_CHANNEL_ID
             ):
-                log_user_interaction(
-                    f"🎤 **{member.display_name}** joined Quran voice channel",
-                    "quran_voice_join",
-                )
-                log_tree_branch(
-                    "quran_voice_join",
-                    f"👤 {member.display_name} → {after.channel.name}",
+                log_voice_activity_tree(
+                    member.display_name,
+                    "join",
+                    {
+                        "channel_name": after.channel.name,
+                        "channel_id": after.channel.id,
+                        "previous_channel": "None",
+                        "activity": "Joined Quran voice channel",
+                        "timestamp": f"{get_timestamp().strip('[]')}",
+                    },
                 )
 
             # User joined Quran VC from a different voice channel
@@ -1025,13 +1037,16 @@ async def on_voice_state_update(member, before, after):
                 and after.channel
                 and after.channel.id == TARGET_CHANNEL_ID
             ):
-                log_user_interaction(
-                    f"🎤 **{member.display_name}** joined Quran voice channel from `{before.channel.name}`",
-                    "quran_voice_join_from_other",
-                )
-                log_tree_branch(
-                    "quran_voice_join",
-                    f"👤 {member.display_name}: {before.channel.name} → {after.channel.name}",
+                log_voice_activity_tree(
+                    member.display_name,
+                    "move",
+                    {
+                        "channel_name": after.channel.name,
+                        "channel_id": after.channel.id,
+                        "previous_channel": before.channel.name,
+                        "activity": "Moved to Quran voice channel",
+                        "timestamp": f"{get_timestamp().strip('[]')}",
+                    },
                 )
 
             # User left the Quran voice channel (to no VC or different VC)
@@ -1040,13 +1055,16 @@ async def on_voice_state_update(member, before, after):
                 and before.channel.id == TARGET_CHANNEL_ID
                 and not after.channel
             ):
-                log_user_interaction(
-                    f"👋 **{member.display_name}** left Quran voice channel",
-                    "quran_voice_leave",
-                )
-                log_tree_branch(
-                    "quran_voice_leave",
-                    f"👤 {member.display_name} ← {before.channel.name}",
+                log_voice_activity_tree(
+                    member.display_name,
+                    "leave",
+                    {
+                        "channel_name": before.channel.name,
+                        "channel_id": before.channel.id,
+                        "new_channel": "None",
+                        "activity": "Left Quran voice channel",
+                        "timestamp": f"{get_timestamp().strip('[]')}",
+                    },
                 )
 
             # User left Quran VC to a different voice channel
@@ -1056,13 +1074,16 @@ async def on_voice_state_update(member, before, after):
                 and after.channel
                 and after.channel.id != TARGET_CHANNEL_ID
             ):
-                log_user_interaction(
-                    f"👋 **{member.display_name}** left Quran voice channel for `{after.channel.name}`",
-                    "quran_voice_leave_to_other",
-                )
-                log_tree_branch(
-                    "quran_voice_leave",
-                    f"👤 {member.display_name}: {before.channel.name} → {after.channel.name}",
+                log_voice_activity_tree(
+                    member.display_name,
+                    "move",
+                    {
+                        "previous_channel": before.channel.name,
+                        "channel_name": after.channel.name,
+                        "channel_id": after.channel.id,
+                        "activity": "Left Quran voice channel for another channel",
+                        "timestamp": f"{get_timestamp().strip('[]')}",
+                    },
                 )
 
             # User muted/unmuted or deafened/undeafened in the Quran voice channel
@@ -1075,27 +1096,56 @@ async def on_voice_state_update(member, before, after):
                 status_changes = []
 
                 if before.self_mute != after.self_mute:
-                    status_changes.append(
-                        f"{'🔇 Muted' if after.self_mute else '🔊 Unmuted'}"
-                    )
-                if before.self_deaf != after.self_deaf:
-                    status_changes.append(
-                        f"{'🔇 Deafened' if after.self_deaf else '🔊 Undeafened'}"
-                    )
-                if before.mute != after.mute:
-                    status_changes.append(
-                        f"{'🔇 Server Muted' if after.mute else '🔊 Server Unmuted'}"
-                    )
-                if before.deaf != after.deaf:
-                    status_changes.append(
-                        f"{'🔇 Server Deafened' if after.deaf else '🔊 Server Undeafened'}"
+                    activity_type = "mute" if after.self_mute else "unmute"
+                    log_voice_activity_tree(
+                        member.display_name,
+                        activity_type,
+                        {
+                            "channel_name": after.channel.name,
+                            "channel_id": after.channel.id,
+                            "status_change": f"{'Muted' if after.self_mute else 'Unmuted'}",
+                            "timestamp": f"{get_timestamp().strip('[]')}",
+                        },
                     )
 
-                if status_changes:
-                    status_text = " & ".join(status_changes)
-                    log_tree_branch(
-                        "quran_voice_status",
-                        f"👤 {member.display_name} in {after.channel.name}: {status_text}",
+                if before.self_deaf != after.self_deaf:
+                    activity_type = "deafen" if after.self_deaf else "undeafen"
+                    log_voice_activity_tree(
+                        member.display_name,
+                        activity_type,
+                        {
+                            "channel_name": after.channel.name,
+                            "channel_id": after.channel.id,
+                            "status_change": f"{'Deafened' if after.self_deaf else 'Undeafened'}",
+                            "timestamp": f"{get_timestamp().strip('[]')}",
+                        },
+                    )
+
+                # Log server-side mute/deafen changes
+                if before.mute != after.mute:
+                    log_voice_activity_tree(
+                        member.display_name,
+                        "mute" if after.mute else "unmute",
+                        {
+                            "channel_name": after.channel.name,
+                            "channel_id": after.channel.id,
+                            "status_change": f"Server {'Muted' if after.mute else 'Unmuted'}",
+                            "initiated_by": "Server",
+                            "timestamp": f"{get_timestamp().strip('[]')}",
+                        },
+                    )
+
+                if before.deaf != after.deaf:
+                    log_voice_activity_tree(
+                        member.display_name,
+                        "deafen" if after.deaf else "undeafen",
+                        {
+                            "channel_name": after.channel.name,
+                            "channel_id": after.channel.id,
+                            "status_change": f"Server {'Deafened' if after.deaf else 'Undeafened'}",
+                            "initiated_by": "Server",
+                            "timestamp": f"{get_timestamp().strip('[]')}",
+                        },
                     )
 
         # =============================================================================
@@ -1150,14 +1200,21 @@ async def _assign_panel_access_role(member, panel_role, channel):
             panel_role, reason="Joined voice channel for panel access"
         )
 
-        # Log the role assignment with user interaction formatting
-        log_user_interaction(
-            f"🎤 **{member.display_name}** joined `{channel.name}` - Panel access **GRANTED**",
-            "voice_join_role_assigned",
-        )
-
-        log_tree_branch(
-            "role_assigned", f"✅ Panel access role assigned to {member.display_name}"
+        # Log the role assignment with perfect tree structure
+        log_perfect_tree_section(
+            f"Panel Access Role Assignment - {member.display_name}",
+            [
+                ("user", member.display_name),
+                ("user_id", str(member.id)),
+                ("channel", channel.name),
+                ("channel_id", str(channel.id)),
+                ("role", panel_role.name),
+                ("role_id", str(panel_role.id)),
+                ("action", "GRANTED"),
+                ("reason", "Joined voice channel"),
+                ("status", "✅ SUCCESS"),
+            ],
+            "🎤",
         )
 
     except discord.Forbidden:
@@ -1197,14 +1254,21 @@ async def _remove_panel_access_role(member, panel_role, channel):
             panel_role, reason="Left voice channel, removing panel access"
         )
 
-        # Log the role removal with user interaction formatting
-        log_user_interaction(
-            f"👋 **{member.display_name}** left `{channel.name}` - Panel access **REVOKED**",
-            "voice_leave_role_removed",
-        )
-
-        log_tree_branch(
-            "role_removed", f"✅ Panel access role removed from {member.display_name}"
+        # Log the role removal with perfect tree structure
+        log_perfect_tree_section(
+            f"Panel Access Role Removal - {member.display_name}",
+            [
+                ("user", member.display_name),
+                ("user_id", str(member.id)),
+                ("channel", channel.name),
+                ("channel_id", str(channel.id)),
+                ("role", panel_role.name),
+                ("role_id", str(panel_role.id)),
+                ("action", "REVOKED"),
+                ("reason", "Left voice channel"),
+                ("status", "✅ SUCCESS"),
+            ],
+            "👋",
         )
 
     except discord.Forbidden:

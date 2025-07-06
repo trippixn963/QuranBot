@@ -11,12 +11,118 @@ import secrets
 import traceback
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import pytz
 
 # Global variable to track sections for spacing
 _is_first_section = True
+
+# Tree structure tracking
+_tree_stack: List[bool] = []  # Track which levels have more siblings
+_current_depth = 0
+
+# Tree symbols for perfect tree structure
+TREE_SYMBOLS = {
+    "branch": "├─",  # Has siblings below
+    "last": "└─",  # Last item in branch
+    "pipe": "│ ",  # Continuation line
+    "space": "  ",  # Empty space for alignment
+    "nested_branch": "├─",
+    "nested_last": "└─",
+}
+
+
+def reset_tree_structure():
+    """Reset the tree structure tracking"""
+    global _tree_stack, _current_depth
+    _tree_stack = []
+    _current_depth = 0
+
+
+def get_tree_prefix(is_last_item=False, depth_override=None):
+    """Generate the proper tree prefix based on current depth and structure"""
+    global _tree_stack, _current_depth
+
+    depth = depth_override if depth_override is not None else _current_depth
+
+    if depth == 0:
+        return TREE_SYMBOLS["branch"] if not is_last_item else TREE_SYMBOLS["last"]
+
+    prefix = ""
+    for i in range(depth):
+        if i < len(_tree_stack):
+            if _tree_stack[i]:  # This level has more siblings
+                prefix += TREE_SYMBOLS["pipe"]
+            else:  # This level is the last item
+                prefix += TREE_SYMBOLS["space"]
+        else:
+            prefix += TREE_SYMBOLS["space"]
+
+    # Add the current level symbol
+    prefix += TREE_SYMBOLS["branch"] if not is_last_item else TREE_SYMBOLS["last"]
+
+    return prefix
+
+
+def start_tree_section(has_more_siblings=True):
+    """Start a new tree section with proper nesting"""
+    global _tree_stack, _current_depth
+
+    if _current_depth < len(_tree_stack):
+        _tree_stack[_current_depth] = has_more_siblings
+    else:
+        _tree_stack.append(has_more_siblings)
+
+    _current_depth += 1
+
+
+def end_tree_section():
+    """End the current tree section"""
+    global _current_depth
+    if _current_depth > 0:
+        _current_depth -= 1
+
+
+def log_tree_item(key, value, is_last=False, depth_override=None):
+    """Log a single tree item with proper tree structure"""
+    prefix = get_tree_prefix(is_last, depth_override)
+    message = f"{prefix} {key}: {value}"
+
+    timestamp = get_timestamp()
+    print(f"{timestamp} {message}")
+    write_to_log_files(message, "INFO", "tree_item")
+
+
+def log_tree_group(title, items, emoji="🎯"):
+    """Log a group of related items with perfect tree structure"""
+    timestamp = get_timestamp()
+
+    # Log the group header
+    group_header = f"{emoji} {title}"
+    print(f"{timestamp} {group_header}")
+    write_to_log_files(group_header, "INFO", "tree_group")
+
+    # Log each item in the group
+    for i, (key, value) in enumerate(items):
+        is_last = i == len(items) - 1
+        log_tree_item(key, value, is_last, depth_override=0)
+
+
+def log_nested_tree_group(title, items, emoji="🎯", parent_depth=0):
+    """Log a nested group with proper indentation"""
+    # Calculate prefix for the group title
+    prefix = get_tree_prefix(is_last_item=False, depth_override=parent_depth)
+
+    timestamp = get_timestamp()
+    group_header = f"{prefix} {emoji} {title}"
+    print(f"{timestamp} {group_header}")
+    write_to_log_files(group_header, "INFO", "nested_tree_group")
+
+    # Log items with increased depth
+    for i, (key, value) in enumerate(items):
+        is_last = i == len(items) - 1
+        log_tree_item(key, value, is_last, depth_override=parent_depth + 1)
 
 
 def get_timestamp():
@@ -462,3 +568,152 @@ def log_discord_error(event_name, exception, guild_id=None, channel_id=None):
 
     # Log the full traceback
     log_error_with_traceback(f"Discord event error in {event_name}", exception, "ERROR")
+
+
+def log_perfect_tree_section(title, items, emoji="🎯", nested_groups=None):
+    """
+    Create a perfect tree structure with proper nesting and visual hierarchy.
+
+    Args:
+        title: Section title
+        items: List of (key, value) tuples for main items
+        emoji: Emoji for the section header
+        nested_groups: Dict of nested groups {group_name: [(key, value), ...]}
+    """
+    timestamp = get_timestamp()
+
+    # Reset tree structure for this section
+    reset_tree_structure()
+
+    # Log section header
+    section_header = f"{emoji} {title}"
+    print(f"{timestamp} {section_header}")
+    write_to_log_files(section_header, "INFO", "perfect_tree_section")
+
+    # Calculate total items to determine which is last
+    total_main_items = len(items) if items else 0
+    total_nested_groups = len(nested_groups) if nested_groups else 0
+    has_nested = total_nested_groups > 0
+
+    # Log main items
+    if items:
+        for i, (key, value) in enumerate(items):
+            is_last_main = (i == total_main_items - 1) and not has_nested
+            log_tree_item(key, value, is_last_main, depth_override=0)
+
+    # Log nested groups
+    if nested_groups:
+        nested_group_keys = list(nested_groups.keys())
+        for i, (group_name, group_items) in enumerate(nested_groups.items()):
+            is_last_group = i == len(nested_group_keys) - 1
+
+            # Log group header
+            group_prefix = get_tree_prefix(is_last_group, depth_override=0)
+            group_header = f"{group_prefix} 📁 {group_name}"
+            print(f"{timestamp} {group_header}")
+            write_to_log_files(group_header, "INFO", "perfect_tree_nested_group")
+
+            # Log group items with proper nesting
+            if group_items:
+                for j, (key, value) in enumerate(group_items):
+                    is_last_item = j == len(group_items) - 1
+
+                    # Create nested prefix
+                    nested_prefix = ""
+                    if not is_last_group:
+                        nested_prefix += TREE_SYMBOLS["pipe"]
+                    else:
+                        nested_prefix += TREE_SYMBOLS["space"]
+
+                    nested_prefix += (
+                        TREE_SYMBOLS["last"] if is_last_item else TREE_SYMBOLS["branch"]
+                    )
+
+                    nested_message = f"{nested_prefix} {key}: {value}"
+                    print(f"{timestamp} {nested_message}")
+                    write_to_log_files(
+                        nested_message, "INFO", "perfect_tree_nested_item"
+                    )
+
+
+def log_voice_activity_tree(user_name, activity_type, details):
+    """
+    Log voice activity with perfect tree structure for voice channel events.
+
+    Args:
+        user_name: Name of the user
+        activity_type: Type of voice activity (join, leave, move, etc.)
+        details: Dictionary of activity details
+    """
+    timestamp = get_timestamp()
+
+    # Add line breaker for visual separation
+    print("")
+    write_to_log_files("", "INFO", "voice_activity")
+
+    # Create activity header with proper emoji
+    activity_emojis = {
+        "join": "🎤",
+        "leave": "🚪",
+        "move": "🔄",
+        "mute": "🔇",
+        "unmute": "🔊",
+        "deafen": "🔇",
+        "undeafen": "🔊",
+    }
+
+    emoji = activity_emojis.get(activity_type, "🎵")
+    activity_header = f"{emoji} Voice Activity - {activity_type.title()}"
+    print(f"{timestamp} {activity_header}")
+    write_to_log_files(activity_header, "INFO", "voice_activity")
+
+    # Log user information
+    user_info = f"├─ user: {user_name}"
+    print(f"{timestamp} {user_info}")
+    write_to_log_files(user_info, "INFO", "voice_activity")
+
+    # Log activity details with perfect tree structure
+    if details:
+        detail_keys = list(details.keys())
+        for i, (key, value) in enumerate(details.items()):
+            is_last = i == len(detail_keys) - 1
+            prefix = "└─" if is_last else "├─"
+            detail_line = f"{prefix} {key}: {value}"
+            print(f"{timestamp} {detail_line}")
+            write_to_log_files(detail_line, "INFO", "voice_activity")
+
+    # Add line breaker after activity
+    print("")
+    write_to_log_files("", "INFO", "voice_activity")
+
+
+def log_initialization_tree(component_name, steps, emoji="🚀"):
+    """
+    Log initialization process with perfect tree structure.
+
+    Args:
+        component_name: Name of the component being initialized
+        steps: List of (step_name, status, details) tuples
+        emoji: Emoji for the section header
+    """
+    timestamp = get_timestamp()
+
+    # Log initialization header
+    init_header = f"{emoji} {component_name} Initialization"
+    print(f"{timestamp} {init_header}")
+    write_to_log_files(init_header, "INFO", "initialization_tree")
+
+    # Log each step with perfect tree structure
+    for i, (step_name, status, details) in enumerate(steps):
+        is_last = i == len(steps) - 1
+
+        # Determine status emoji
+        status_emoji = (
+            "✅" if status == "success" else "❌" if status == "error" else "🔄"
+        )
+
+        # Log step with status
+        prefix = "└─" if is_last else "├─"
+        step_line = f"{prefix} {step_name}: {status_emoji} {details}"
+        print(f"{timestamp} {step_line}")
+        write_to_log_files(step_line, "INFO", "initialization_tree")
