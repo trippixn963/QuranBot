@@ -18,15 +18,20 @@ _Built with ❤️ for the Muslim Ummah - Shared as-is for educational purposes_
 
 ---
 
-## ⚠️ No Support Policy
+## 📋 No Support Policy
 
-**This project is provided "AS-IS" with absolutely no support:**
+> **⚠️ Important Notice**
+>
+> This project is provided **"AS-IS"** with absolutely no support. It is shared for educational purposes only.
 
-- ❌ No bug reports will be addressed
-- ❌ No feature requests will be considered
-- ❌ No setup assistance will be provided
-- ❌ No pull requests will be reviewed
-- ❌ No issues will be responded to
+
+**What this means:**
+
+- No bug reports will be addressed
+- No feature requests will be considered
+- No setup assistance will be provided
+- No pull requests will be reviewed
+- No issues will be responded to
 
 **Use at your own risk and responsibility.**
 

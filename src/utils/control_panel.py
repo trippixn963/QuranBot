@@ -1,20 +1,19 @@
 # =============================================================================
-# QuranBot - Simple Control Panel
+# QuranBot - Interactive Control Panel
 # =============================================================================
-# Clean, simple Discord control panel for 24/7 QuranBot
-# Updates every 5 seconds with current time display
+# Discord control panel with buttons, dropdowns, and real-time updates
+# Features surah selection, reciter switching, and playback controls
 # =============================================================================
 
 import asyncio
 import os
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Optional
 
 import discord
-from discord.ext import commands
-from discord.ui import Button, Select, View
+from discord.ui import Button, Modal, Select, TextInput, View
 
-from .surah_mapper import get_surah_info
+from .surah_mapper import get_surah_info, search_surahs
 from .tree_log import log_error_with_traceback, log_tree_branch, log_tree_final
 
 # =============================================================================
@@ -22,7 +21,334 @@ from .tree_log import log_error_with_traceback, log_tree_branch, log_tree_final
 # =============================================================================
 
 SURAHS_PER_PAGE = 10
-UPDATE_INTERVAL = 5  # seconds - for time display updates
+UPDATE_INTERVAL = 15  # Increased from 5 to 15 seconds to prevent rate limiting
+
+
+# =============================================================================
+# Search Modal
+# =============================================================================
+
+
+class SurahSearchModal(Modal):
+    """Modal for searching surahs by name or number"""
+
+    def __init__(self, audio_manager=None, control_panel_view=None):
+        super().__init__(title="🔍 Search for a Surah")
+        self.audio_manager = audio_manager
+        self.control_panel_view = control_panel_view
+
+        # Add search input
+        self.search_input = TextInput(
+            label="Search by name or number",
+            placeholder="e.g., 'Fatiha', 'البقرة', 'Light', '36', 'Ya-Sin'",
+            style=discord.TextStyle.short,
+            max_length=100,
+            required=True,
+        )
+        self.add_item(self.search_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        """Handle search submission"""
+        try:
+            query = self.search_input.value.strip()
+
+            if not query:
+                await interaction.response.send_message(
+                    "❌ Please enter a search term!", ephemeral=True
+                )
+                return
+
+            # Search for surahs
+            results = search_surahs(query)
+
+            if not results:
+                await interaction.response.send_message(
+                    f"❌ No surahs found for '{query}'. Try searching by:\n"
+                    f"• **Number**: 1-114 (e.g., '36')\n"
+                    f"• **English name**: 'Light', 'Cave', 'Elephant'\n"
+                    f"• **Transliterated name**: 'Al-Fatiha', 'Ya-Sin', 'An-Nur'\n"
+                    f"• **Arabic name**: 'الفاتحة', 'يس', 'النور'",
+                    ephemeral=True,
+                )
+                return
+
+                # If only one result, show confirmation
+            if len(results) == 1:
+                surah = results[0]
+
+                # Show confirmation embed with options
+                confirmation_view = SurahConfirmationView(
+                    surah=surah,
+                    query=query,
+                    audio_manager=self.audio_manager,
+                    control_panel_view=self.control_panel_view,
+                )
+
+                embed = discord.Embed(
+                    title="🔍 Surah Found!",
+                    description=f"Found the perfect match for your search '{query}':",
+                    color=0x2ECC71,
+                )
+
+                embed.add_field(
+                    name=f"{surah.emoji} {surah.name_transliteration}",
+                    value=f"*{surah.name_arabic}*\n📖 Surah {surah.number:03d} • {surah.verses} verses\n🏛️ {surah.revelation_type.value}",
+                    inline=False,
+                )
+
+                if surah.meaning:
+                    embed.add_field(name="💫 Meaning", value=surah.meaning, inline=True)
+
+                embed.set_footer(text="Choose an action below:")
+
+                await interaction.response.send_message(
+                    embed=embed, view=confirmation_view, ephemeral=True
+                )
+                return
+
+            # Multiple results - show selection view
+            search_results_view = SearchResultsView(
+                results=results,
+                query=query,
+                audio_manager=self.audio_manager,
+                control_panel_view=self.control_panel_view,
+            )
+
+            embed = discord.Embed(
+                title=f"🔍 Search Results for '{query}'",
+                description=f"Found {len(results)} surah(s). Select one below:",
+                color=0x3498DB,
+            )
+
+            # Add results to embed
+            for i, surah in enumerate(results[:5], 1):  # Show max 5 in embed
+                embed.add_field(
+                    name=f"{i}. {surah.emoji} {surah.name_transliteration}",
+                    value=f"*{surah.name_arabic}* • Surah {surah.number:03d} • {surah.verses} verses",
+                    inline=False,
+                )
+
+            if len(results) > 5:
+                embed.add_field(
+                    name="",
+                    value=f"*... and {len(results) - 5} more results*",
+                    inline=False,
+                )
+
+            await interaction.response.send_message(
+                embed=embed, view=search_results_view, ephemeral=True
+            )
+
+        except Exception as e:
+            log_error_with_traceback("Error in search modal submission", e)
+            await interaction.response.send_message(
+                "❌ An error occurred while searching. Please try again.",
+                ephemeral=True,
+            )
+
+
+# =============================================================================
+# Search Results View
+# =============================================================================
+
+
+class SearchResultsView(View):
+    """View for displaying search results with selection"""
+
+    def __init__(self, results, query, audio_manager=None, control_panel_view=None):
+        super().__init__(timeout=60)
+        self.results = results
+        self.query = query
+        self.audio_manager = audio_manager
+        self.control_panel_view = control_panel_view
+
+        # Add select dropdown for results
+        self.add_item(
+            SearchResultsSelect(results, query, audio_manager, control_panel_view)
+        )
+
+    async def on_timeout(self):
+        """Handle timeout"""
+        for item in self.children:
+            item.disabled = True
+
+
+class SearchResultsSelect(Select):
+    """Select dropdown for search results"""
+
+    def __init__(self, results, query, audio_manager=None, control_panel_view=None):
+        self.results = results
+        self.query = query
+        self.audio_manager = audio_manager
+        self.control_panel_view = control_panel_view
+
+        options = []
+        for surah in results[:25]:  # Discord limit is 25 options
+            options.append(
+                discord.SelectOption(
+                    label=f"{surah.emoji} {surah.name_transliteration}",
+                    description=f"{surah.name_arabic} • Surah {surah.number:03d} • {surah.verses} verses",
+                    value=str(surah.number),
+                )
+            )
+
+        super().__init__(
+            placeholder="Select a surah from the search results...",
+            options=options,
+            min_values=1,
+            max_values=1,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        """Handle surah selection from search results"""
+        try:
+            selected_surah_number = int(self.values[0])
+            surah = get_surah_info(selected_surah_number)
+
+            if not surah:
+                await interaction.response.send_message(
+                    "❌ Error loading surah information.", ephemeral=True
+                )
+                return
+
+                # Show confirmation embed with options
+            confirmation_view = SurahConfirmationView(
+                surah=surah,
+                query=self.query,
+                audio_manager=self.audio_manager,
+                control_panel_view=self.control_panel_view,
+            )
+
+            embed = discord.Embed(
+                title="✅ Surah Selected!",
+                description=f"You selected from your search results for '{self.query}':",
+                color=0x2ECC71,
+            )
+
+            embed.add_field(
+                name=f"{surah.emoji} {surah.name_transliteration}",
+                value=f"*{surah.name_arabic}*\n📖 Surah {surah.number:03d} • {surah.verses} verses\n🏛️ {surah.revelation_type.value}",
+                inline=False,
+            )
+
+            if surah.meaning:
+                embed.add_field(name="💫 Meaning", value=surah.meaning, inline=True)
+
+            embed.set_footer(text="Choose an action below:")
+
+            await interaction.response.send_message(
+                embed=embed, view=confirmation_view, ephemeral=True
+            )
+
+        except Exception as e:
+            log_error_with_traceback("Error in search results selection", e)
+            await interaction.response.send_message(
+                "❌ An error occurred while selecting the surah.", ephemeral=True
+            )
+
+
+# =============================================================================
+# Surah Confirmation View
+# =============================================================================
+
+
+class SurahConfirmationView(View):
+    """View for confirming surah selection with play/search again options"""
+
+    def __init__(self, surah, query, audio_manager=None, control_panel_view=None):
+        super().__init__(timeout=60)
+        self.surah = surah
+        self.query = query
+        self.audio_manager = audio_manager
+        self.control_panel_view = control_panel_view
+
+    async def on_timeout(self):
+        """Handle timeout"""
+        for item in self.children:
+            item.disabled = True
+
+    @discord.ui.button(
+        label="🎵 Play This Surah", style=discord.ButtonStyle.primary, row=0
+    )
+    async def play_surah(self, interaction: discord.Interaction, button: Button):
+        """Play the selected surah"""
+        try:
+            # Update last activity in control panel
+            if self.control_panel_view:
+                self.control_panel_view._update_last_activity(
+                    interaction.user,
+                    f"searched for '{self.query}' → {self.surah.name_transliteration}",
+                )
+
+            # Switch to the surah
+            if self.audio_manager:
+                await self.audio_manager.jump_to_surah(self.surah.number)
+
+            # Disable all buttons
+            for item in self.children:
+                item.disabled = True
+
+            embed = discord.Embed(
+                title="🎵 Now Playing!",
+                description=f"Started playing your selected surah:",
+                color=0x00D4AA,
+            )
+
+            embed.add_field(
+                name=f"{self.surah.emoji} {self.surah.name_transliteration}",
+                value=f"*{self.surah.name_arabic}*\n📖 Surah {self.surah.number:03d} • {self.surah.verses} verses",
+                inline=False,
+            )
+
+            embed.set_footer(text="Enjoy listening! 🎧")
+
+            await interaction.response.edit_message(embed=embed, view=self)
+
+        except Exception as e:
+            log_error_with_traceback("Error playing surah from confirmation", e)
+            await interaction.response.send_message(
+                "❌ An error occurred while starting playback.", ephemeral=True
+            )
+
+    @discord.ui.button(
+        label="🔍 Search Again", style=discord.ButtonStyle.secondary, row=0
+    )
+    async def search_again(self, interaction: discord.Interaction, button: Button):
+        """Open search modal again"""
+        try:
+            search_modal = SurahSearchModal(
+                audio_manager=self.audio_manager,
+                control_panel_view=self.control_panel_view,
+            )
+            await interaction.response.send_modal(search_modal)
+
+        except Exception as e:
+            log_error_with_traceback("Error opening search modal again", e)
+            await interaction.response.send_message(
+                "❌ An error occurred while opening search.", ephemeral=True
+            )
+
+    @discord.ui.button(label="❌ Cancel", style=discord.ButtonStyle.danger, row=0)
+    async def cancel_selection(self, interaction: discord.Interaction, button: Button):
+        """Cancel the selection"""
+        try:
+            # Disable all buttons
+            for item in self.children:
+                item.disabled = True
+
+            embed = discord.Embed(
+                title="❌ Selection Cancelled",
+                description="Your search selection has been cancelled.",
+                color=0x95A5A6,
+            )
+
+            embed.set_footer(text="Use the search button again anytime!")
+
+            await interaction.response.edit_message(embed=embed, view=self)
+
+        except Exception as e:
+            log_error_with_traceback("Error cancelling selection", e)
+            await interaction.response.defer()
 
 
 # =============================================================================
@@ -259,12 +585,12 @@ class SimpleControlPanelView(View):
             return "just now"
 
     def start_updates(self):
-        """Start the 5-second update task"""
+        """Start the 15-second update task"""
         if not self.update_task or self.update_task.done():
             self.update_task = asyncio.create_task(self._update_loop())
 
     async def _update_loop(self):
-        """Update the panel every 5 seconds"""
+        """Update the panel every 15 seconds"""
         while True:
             try:
                 await asyncio.sleep(UPDATE_INTERVAL)
@@ -278,6 +604,26 @@ class SimpleControlPanelView(View):
     async def update_panel(self):
         """Update the control panel embed"""
         try:
+            # Check if message still exists before trying to update it
+            if not self.panel_message:
+                return
+
+            # Try to fetch the message to see if it still exists
+            try:
+                await self.panel_message.channel.fetch_message(self.panel_message.id)
+            except discord.NotFound:
+                # Message was deleted, stop trying to update it
+                log_tree_branch(
+                    "panel_message_deleted",
+                    "Control panel message was deleted, stopping updates",
+                )
+                if self.update_task and not self.update_task.done():
+                    self.update_task.cancel()
+                return
+            except discord.HTTPException:
+                # Other HTTP errors, wait and try again later
+                return
+
             # Get current status
             current_surah = 1
             current_reciter = "Unknown"
@@ -387,9 +733,27 @@ class SimpleControlPanelView(View):
                     inline=False,
                 )
 
-            # Update the message
-            if self.panel_message:
+            # Update the message with additional error handling
+            try:
                 await self.panel_message.edit(embed=embed, view=self)
+            except discord.NotFound:
+                # Message was deleted during our update
+                log_tree_branch(
+                    "panel_message_deleted",
+                    "Control panel message was deleted during update",
+                )
+                if self.update_task and not self.update_task.done():
+                    self.update_task.cancel()
+                return
+            except discord.HTTPException as e:
+                if e.status == 429:  # Rate limited
+                    log_tree_branch(
+                        "panel_rate_limited",
+                        "Control panel update rate limited, skipping",
+                    )
+                    return
+                else:
+                    raise
 
         except Exception as e:
             log_error_with_traceback("Error updating panel", e)
@@ -475,6 +839,18 @@ class SimpleControlPanelView(View):
                 await interaction.response.defer()
         except Exception as e:
             log_error_with_traceback("Error in next page", e)
+            await interaction.response.defer()
+
+    @discord.ui.button(label="🔍 Search", style=discord.ButtonStyle.primary, row=2)
+    async def search_surah(self, interaction: discord.Interaction, button: Button):
+        """Open search modal for finding surahs"""
+        try:
+            search_modal = SurahSearchModal(
+                audio_manager=self.audio_manager, control_panel_view=self
+            )
+            await interaction.response.send_modal(search_modal)
+        except Exception as e:
+            log_error_with_traceback("Error opening search modal", e)
             await interaction.response.defer()
 
     @discord.ui.button(label="⏮️ Previous", style=discord.ButtonStyle.danger, row=3)
@@ -566,6 +942,32 @@ class SimpleControlPanelView(View):
         """Clean up the view"""
         if self.update_task and not self.update_task.done():
             self.update_task.cancel()
+            log_tree_branch("panel_cleanup", "Control panel update task cancelled")
+
+
+# =============================================================================
+# Global Control Panel Management
+# =============================================================================
+
+# Keep track of active control panels
+_active_panels = []
+
+
+def register_control_panel(panel_view):
+    """Register a control panel for cleanup"""
+    _active_panels.append(panel_view)
+
+
+def cleanup_all_control_panels():
+    """Clean up all active control panels"""
+    try:
+        for panel in _active_panels:
+            if panel:
+                panel.cleanup()
+        _active_panels.clear()
+        log_tree_final("all_panels_cleaned", "All control panels cleaned up")
+    except Exception as e:
+        log_error_with_traceback("Error cleaning up control panels", e)
 
 
 # =============================================================================
@@ -584,13 +986,34 @@ async def create_control_panel(
         try:
             log_tree_branch("clearing_channel", "Deleting existing messages...")
             deleted_count = 0
-            async for message in channel.history(limit=None):
+
+            # Use a more robust approach to delete messages
+            async for message in channel.history(
+                limit=100
+            ):  # Limit to prevent excessive API calls
                 try:
                     await message.delete()
                     deleted_count += 1
-                except Exception as e:
-                    # Skip messages that can't be deleted (too old, no permissions, etc.)
+                    # Small delay to prevent rate limiting
+                    await asyncio.sleep(0.1)
+                except discord.NotFound:
+                    # Message already deleted
                     pass
+                except discord.Forbidden:
+                    # No permission to delete
+                    log_tree_branch(
+                        "delete_permission", "No permission to delete some messages"
+                    )
+                    pass
+                except discord.HTTPException as e:
+                    if e.status == 429:  # Rate limited
+                        log_tree_branch(
+                            "delete_rate_limited",
+                            "Rate limited while deleting messages",
+                        )
+                        await asyncio.sleep(1)
+                    else:
+                        pass  # Skip other HTTP errors
 
             if deleted_count > 0:
                 log_tree_branch(
@@ -598,11 +1021,18 @@ async def create_control_panel(
                 )
             else:
                 log_tree_branch("channel_status", "Channel was already empty")
+
+            # Wait a moment after cleanup to avoid rate limiting
+            await asyncio.sleep(1)
+
         except Exception as e:
             log_error_with_traceback("Error clearing channel", e)
 
         # Create the view
         view = SimpleControlPanelView(bot, audio_manager)
+
+        # Register for cleanup
+        register_control_panel(view)
 
         # Create initial embed
         embed = discord.Embed(
@@ -617,15 +1047,32 @@ async def create_control_panel(
             # Fallback to default avatar if no custom avatar
             embed.set_thumbnail(url=bot.user.default_avatar.url)
 
-        # Send the message
-        message = await channel.send(embed=embed, view=view)
-        view.set_panel_message(message)
+        # Send the message with error handling
+        try:
+            message = await channel.send(embed=embed, view=view)
+            view.set_panel_message(message)
 
-        # Initial update
-        await view.update_panel()
+            # Initial update with delay to prevent rate limiting
+            await asyncio.sleep(2)
+            await view.update_panel()
 
-        log_tree_final("panel_created", "✅ Simple control panel created")
-        return message
+            log_tree_final("panel_created", "✅ Simple control panel created")
+            return message
+
+        except discord.HTTPException as e:
+            if e.status == 429:  # Rate limited
+                log_tree_branch(
+                    "panel_rate_limited", "Rate limited while creating panel"
+                )
+                await asyncio.sleep(5)
+                # Try again after rate limit
+                message = await channel.send(embed=embed, view=view)
+                view.set_panel_message(message)
+                await asyncio.sleep(2)
+                await view.update_panel()
+                return message
+            else:
+                raise
 
     except Exception as e:
         log_error_with_traceback("Error creating control panel", e)

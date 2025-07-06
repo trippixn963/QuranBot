@@ -1,8 +1,8 @@
 # =============================================================================
 # QuranBot - Main Entry Point
 # =============================================================================
-# Entry point for the QuranBot application with proper project structure
-# Includes instance detection to prevent multiple bot instances
+# Primary entry point for the QuranBot Discord application
+# Handles instance management, bot initialization, and graceful shutdown
 # =============================================================================
 
 import os
@@ -15,7 +15,7 @@ import psutil
 # Add src directory to Python path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
-# Import and run the bot
+# Import bot components
 from bot.main import BOT_NAME, BOT_VERSION, DISCORD_TOKEN, bot
 from utils.tree_log import (
     log_critical_error,
@@ -24,16 +24,26 @@ from utils.tree_log import (
     log_run_header,
     log_run_separator,
     log_section_start,
+    log_spacing,
     log_tree_branch,
     log_tree_final,
     log_warning_with_context,
 )
 
+# =============================================================================
+# Instance Detection and Management
+# =============================================================================
+
 
 def check_existing_instances():
     """
-    Check for existing bot instances and automatically stop them.
-    Returns True if we should continue, False if we should exit.
+    Detect and automatically terminate existing bot instances.
+
+    Scans running processes to find other QuranBot instances and stops them
+    to prevent conflicts. Uses PID matching and working directory verification.
+
+    Returns:
+        bool: True if safe to proceed, False if critical error occurred
     """
     log_section_start("Instance Detection", "🔍")
 
@@ -41,177 +51,263 @@ def check_existing_instances():
     bot_processes = []
 
     try:
-        # Look for other Python processes running this bot
+        # Scan all running processes for QuranBot instances
         for proc in psutil.process_iter(["pid", "name", "cmdline"]):
             try:
-                # Skip our own process
+                # Skip current process
                 if proc.info["pid"] == current_pid:
                     continue
 
-                # Check if it's a Python process (including virtual environments)
+                # Check for Python processes that might be running QuranBot
                 if proc.info["name"] and "python" in proc.info["name"].lower():
                     cmdline = proc.info["cmdline"]
                     if cmdline:
                         cmdline_str = " ".join(cmdline)
-                        # Check if it's running main.py and verify it's in QuranBot directory
+
+                        # Look for main.py in command line
                         if "main.py" in cmdline_str:
-                            # Additional verification: check working directory
                             try:
+                                # Verify it's actually QuranBot by checking working directory
                                 proc_cwd = proc.cwd()
+                                current_cwd = os.getcwd()
+
                                 if "QuranBot" in proc_cwd:
-                                    # Extra verification for virtual environments
-                                    # Check if it's running from the same project directory
-                                    current_cwd = os.getcwd()
+                                    # Check if it's the same project directory
                                     if os.path.normpath(proc_cwd) == os.path.normpath(
                                         current_cwd
                                     ):
                                         log_tree_branch(
-                                            "venv_detected",
-                                            f"Virtual environment process detected",
+                                            "instance_found",
+                                            f"PID {proc.info['pid']} (same directory)",
                                         )
                                         bot_processes.append(proc)
                                     elif "QuranBot" in proc_cwd:
-                                        # Regular QuranBot process
+                                        log_tree_branch(
+                                            "instance_found",
+                                            f"PID {proc.info['pid']} (different QuranBot)",
+                                        )
                                         bot_processes.append(proc)
+
                             except (psutil.NoSuchProcess, psutil.AccessDenied):
-                                # If we can't get cwd, skip this process for safety
-                                pass
+                                # Process ended or access denied - skip for safety
+                                continue
 
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                # Process might have ended or we don't have access
+                # Process might have ended or we don't have access - continue scanning
                 continue
 
     except Exception as e:
-        log_error_with_traceback(
-            "Failed to check processes during instance detection", e
+        log_error_with_traceback("Process scanning failed during instance detection", e)
+        log_tree_final(
+            "detection_result", "⚠️ Proceeding without complete instance check"
         )
-        log_tree_final("status", "Proceeding without instance check")
         return True
 
+    # Process detection results
     if not bot_processes:
-        log_tree_branch("existing_instances", "None found")
-        log_tree_final("status", "✅ Safe to proceed")
+        log_tree_branch("existing_instances", "None detected")
+        log_tree_final("detection_result", "✅ Safe to proceed")
         return True
 
-    # Found existing instances - automatically stop them
-    log_tree_branch("existing_instances", f"Found {len(bot_processes)} instance(s)")
+    # Found existing instances - prepare to stop them
+    log_tree_branch("existing_instances", f"{len(bot_processes)} found")
 
     for i, proc in enumerate(bot_processes, 1):
         try:
-            log_tree_branch(
-                f"instance_{i}", f"PID {proc.pid} - {' '.join(proc.cmdline())}"
+            cmdline_display = (
+                " ".join(proc.cmdline()[:3]) + "..."
+                if len(proc.cmdline()) > 3
+                else " ".join(proc.cmdline())
             )
+            log_tree_branch(f"instance_{i}", f"PID {proc.pid} - {cmdline_display}")
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             log_tree_branch(f"instance_{i}", f"PID {proc.pid} - (process ended)")
 
-    log_tree_final("action", "🤖 Automatically stopping existing instances...")
+    log_tree_final("detection_result", "🤖 Automatically stopping existing instances")
+    log_spacing()
 
-    # Automatically stop existing instances
+    # Automatically terminate existing instances
     return stop_existing_instances(bot_processes)
 
 
 def stop_existing_instances(bot_processes):
     """
-    Stop existing bot instances.
-    Returns True if successful, False otherwise.
+    Terminate existing bot instances gracefully with fallback to force kill.
+
+    Attempts graceful shutdown first, then force kills if necessary.
+    Tracks success/failure rates and provides detailed logging.
+
+    Args:
+        bot_processes: List of psutil.Process objects to terminate
+
+    Returns:
+        bool: True if termination completed (regardless of individual failures)
     """
-    log_section_start("Stopping Bot", "🛑")
+    log_section_start("Instance Termination", "🛑")
 
     stopped_count = 0
     failed_count = 0
 
-    for proc in bot_processes:
+    for i, proc in enumerate(bot_processes, 1):
         try:
-            log_tree_branch("stopping", f"PID {proc.pid}")
+            log_tree_branch(f"terminating_{i}", f"PID {proc.pid}")
 
-            # First try graceful termination
+            # Attempt graceful termination first
             proc.terminate()
 
-            # Wait up to 5 seconds for graceful shutdown
+            # Wait for graceful shutdown with timeout
             try:
                 proc.wait(timeout=5)
-                log_tree_branch("result", f"PID {proc.pid} - Gracefully stopped")
+                log_tree_branch(f"result_{i}", f"PID {proc.pid} - Graceful shutdown")
                 stopped_count += 1
+
             except psutil.TimeoutExpired:
-                # Force kill if graceful shutdown failed
-                log_tree_branch("forcing", f"PID {proc.pid} - Graceful shutdown failed")
+                # Graceful shutdown failed - force kill
+                log_tree_branch(
+                    f"forcing_{i}", f"PID {proc.pid} - Timeout, force killing"
+                )
                 proc.kill()
                 proc.wait(timeout=3)
-                log_tree_branch("result", f"PID {proc.pid} - Force killed")
+                log_tree_branch(f"result_{i}", f"PID {proc.pid} - Force killed")
                 stopped_count += 1
 
         except psutil.NoSuchProcess:
-            log_tree_branch("result", f"PID {proc.pid} - Already stopped")
+            log_tree_branch(f"result_{i}", f"PID {proc.pid} - Already terminated")
             stopped_count += 1
+
         except psutil.AccessDenied:
-            log_tree_branch("result", f"PID {proc.pid} - Access denied")
+            log_tree_branch(f"result_{i}", f"PID {proc.pid} - Access denied")
             failed_count += 1
+
         except Exception as e:
-            log_error_with_traceback(f"Error stopping process PID {proc.pid}", e)
+            log_error_with_traceback(f"Failed to terminate process PID {proc.pid}", e)
             failed_count += 1
 
-    # Wait a moment for processes to fully stop
-    time.sleep(2)
+    # Allow time for processes to fully terminate
+    if bot_processes:
+        log_tree_branch("cleanup_wait", "Waiting for processes to terminate...")
+        time.sleep(2)
 
+    # Report final termination results
     if failed_count == 0:
-        log_tree_final("status", f"✅ All {stopped_count} instances stopped")
-        return True
+        log_tree_final(
+            "termination_result", f"✅ All {stopped_count} instances terminated"
+        )
     else:
         log_tree_final(
-            "status",
-            f"⚠️ {stopped_count} stopped, {failed_count} failed - continuing anyway",
+            "termination_result", f"⚠️ {stopped_count} stopped, {failed_count} failed"
         )
-        return True  # Continue anyway since this is automated
+
+    return True  # Continue execution regardless of individual failures
+
+
+# =============================================================================
+# Bot Initialization and Startup
+# =============================================================================
+
+
+def initialize_bot():
+    """
+    Initialize and start the Discord bot with proper error handling.
+
+    Handles bot startup, runtime errors, and graceful shutdown.
+    Manages state persistence and logging throughout the bot lifecycle.
+
+    Returns:
+        int: Exit code (0 for success, 1 for error)
+    """
+    log_section_start(f"Bot Initialization", "🚀")
+
+    try:
+        # Log startup information
+        log_tree_branch("bot_name", BOT_NAME)
+        log_tree_branch("version", BOT_VERSION)
+        log_tree_branch("discord_token", "***CONFIGURED***")
+        log_tree_branch("project_structure", "Organized in src/ directory")
+        log_tree_branch("instance_management", "✅ Completed")
+        log_tree_final("entry_point", "main.py")
+
+        log_spacing()
+        log_section_start("Discord Bot Runtime", "🤖")
+
+        # Start the Discord bot
+        bot.run(DISCORD_TOKEN)
+
+        # Normal shutdown (this line is rarely reached)
+        log_tree_final("bot_status", "✅ Bot terminated normally")
+        return 0
+
+    except KeyboardInterrupt:
+        # User interrupted with Ctrl+C
+        log_spacing()
+        log_section_start("User Shutdown", "👋")
+        log_tree_branch("shutdown_reason", "User interrupt (Ctrl+C)")
+
+        # Mark shutdown in state manager
+        try:
+            from src.utils.state_manager import state_manager
+
+            state_manager.mark_shutdown()
+            log_tree_branch("state_saved", "✅ Shutdown time recorded")
+        except Exception as e:
+            log_error_with_traceback("Failed to save shutdown state", e)
+
+        log_tree_final("shutdown_status", "✅ Graceful shutdown completed")
+        return 0
+
+    except Exception as e:
+        # Bot crashed with unhandled exception
+        log_spacing()
+        log_section_start("Bot Error", "❌")
+        log_error_with_traceback("Bot crashed with unhandled exception", e)
+
+        # Mark shutdown in state manager
+        try:
+            from src.utils.state_manager import state_manager
+
+            state_manager.mark_shutdown()
+            log_tree_branch("state_saved", "✅ Crash time recorded")
+        except Exception as state_error:
+            log_error_with_traceback("Failed to save crash state", state_error)
+
+        log_tree_final("error_status", f"❌ Bot crashed: {str(e)}")
+        return 1
+
+
+# =============================================================================
+# Main Entry Point
+# =============================================================================
 
 
 if __name__ == "__main__":
-    # Add run separator to distinguish between different runs
+    # Initialize logging session
     log_run_separator()
-
-    # Log run header with unique run ID
     run_id = log_run_header(BOT_NAME, BOT_VERSION)
 
     try:
-        # Check for existing instances first
+        # Phase 1: Instance Detection and Management
         if not check_existing_instances():
-            log_run_end(run_id, "Instance check failed")
-            print("\nExiting...")
-            sys.exit(0)
+            log_critical_error("Instance detection failed", "Cannot proceed safely")
+            log_run_end(run_id, "Instance detection failure")
+            sys.exit(1)
 
-        # Start the bot
-        log_section_start(f"Starting {BOT_NAME} v{BOT_VERSION}...", "🚀")
-        log_tree_branch("version", BOT_VERSION)
-        log_tree_branch("discord_token", "***HIDDEN***")
-        log_tree_branch("structure", "Organized in src/ directory")
-        log_tree_branch("instance_check", "✅ Passed (automated)")
-        log_tree_final("entry_point", "main.py")
+        # Phase 2: Bot Initialization and Runtime
+        exit_code = initialize_bot()
 
-        try:
-            bot.run(DISCORD_TOKEN)
-        except KeyboardInterrupt:
-            log_section_start("Shutdown", "👋")
-            log_tree_final("status", "Bot stopped by user")
+        # Phase 3: Clean Exit
+        if exit_code == 0:
+            log_run_end(run_id, "Normal shutdown")
+        else:
+            log_run_end(run_id, "Error shutdown")
 
-            # Import state manager for shutdown marking
-            from src.utils.state_manager import state_manager
-
-            state_manager.mark_shutdown()
-
-            log_run_end(run_id, "User interrupt (Ctrl+C)")
-        except Exception as e:
-            log_section_start("Error", "❌")
-            log_error_with_traceback("Bot crashed with unhandled exception", e)
-            log_tree_final("status", "Bot crashed")
-
-            # Import state manager for shutdown marking
-            from src.utils.state_manager import state_manager
-
-            state_manager.mark_shutdown()
-
-            log_run_end(run_id, f"Crashed: {str(e)}")
-            raise
+        sys.exit(exit_code)
 
     except Exception as e:
+        # Critical error in main entry point
+        log_spacing()
+        log_section_start("Critical Error", "💥")
         log_critical_error("Fatal error in main entry point", e)
-        log_run_end(run_id, f"Fatal error: {str(e)}")
-        raise
+        log_tree_final("critical_status", "💥 Application failed to start")
+
+        log_run_end(run_id, f"Critical failure: {str(e)}")
+        sys.exit(1)
