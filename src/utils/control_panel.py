@@ -521,10 +521,9 @@ class SimpleControlPanelView(View):
                 else discord.ButtonStyle.secondary
             )
 
-            status = "enabled" if self.loop_enabled else "disabled"
-            self._update_last_activity(
-                interaction.user, f"toggled loop mode ({status})"
-            )
+            # Only show activity message when enabled (not when disabled since that's default)
+            if self.loop_enabled:
+                self._update_last_activity(interaction.user, "enabled loop mode")
 
             await interaction.response.edit_message(view=self)
         except Exception as e:
@@ -549,10 +548,9 @@ class SimpleControlPanelView(View):
                 else discord.ButtonStyle.secondary
             )
 
-            status = "enabled" if self.shuffle_enabled else "disabled"
-            self._update_last_activity(
-                interaction.user, f"toggled shuffle mode ({status})"
-            )
+            # Only show activity message when enabled (not when disabled since that's default)
+            if self.shuffle_enabled:
+                self._update_last_activity(interaction.user, "enabled shuffle mode")
 
             await interaction.response.edit_message(view=self)
         except Exception as e:

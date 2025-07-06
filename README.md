@@ -4,11 +4,12 @@
 
 # 🕌 QuranBot
 
-**A Discord Bot for 24/7 Quran Audio Streaming**
+**A Discord Bot for 24/7 Quran Audio Streaming with Interactive Control Panel**
 
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://python.org)
 [![Discord.py](https://img.shields.io/badge/discord.py-2.3.0%2B-blue.svg)](https://github.com/Rapptz/discord.py)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](#)
 [![No Support](https://img.shields.io/badge/support-none-red.svg)](#)
 
 _Built with ❤️ for the Muslim Ummah - Shared as-is for educational purposes_
@@ -33,15 +34,38 @@ _Built with ❤️ for the Muslim Ummah - Shared as-is for educational purposes_
 
 ## 🌟 Features
 
+### 🎵 **Audio Streaming**
+
 - 🎵 **24/7 Audio Streaming** - Continuous Quran recitation in voice channels
-- 🎯 **Multiple Reciters** - Support for various renowned Qaris
+- 🎯 **Multiple Reciters** - Support for 6 renowned Qaris with Arabic names
 - 🔄 **Auto-Reconnection** - Automatic reconnection on voice disconnects
-- 📊 **Beautiful Logging** - Tree-style structured logging with timestamps
+- 📖 **Beautiful Surah Names** - Displays chapters with emojis and Arabic transliterations
+
+### 🎛️ **Interactive Control Panel**
+
+- 📱 **Discord Control Panel** - Interactive control panel with buttons and dropdowns
+- 🎮 **Surah Selection** - Browse and select from all 114 Surahs with pagination
+- 🎤 **Reciter Selection** - Switch between different Qaris on-demand
+- ⏭️ **Playback Controls** - Previous/Next track navigation
+- 🔁 **Loop & Shuffle** - Toggle loop and shuffle modes with visual feedback
+- 📊 **Real-time Progress** - Live progress tracking with time display and percentage
+- 👤 **Last Activity Tracking** - Shows who last interacted with the bot and when
+
+### 🔧 **Advanced Features**
+
+- 💾 **State Management** - Automatically saves and resumes playback position
+- 🔄 **Smart Resume** - Intelligently resumes from where you left off
+- 📊 **Session Statistics** - Tracks bot usage and session information
 - 🛡️ **Instance Management** - Prevents multiple bot instances running simultaneously
-- 📝 **Comprehensive Logging** - File-based logging with date organization
-- ⚡ **Optimized Performance** - Efficient audio streaming and memory management
+- 📝 **Comprehensive Logging** - Tree-style structured logging with timestamps
+- 🗂️ **File-based Logging** - Organized logs by date with JSON and text formats
+
+### ⚡ **Performance & Reliability**
+
+- 🚀 **Optimized Performance** - Efficient audio streaming and memory management
 - 🔧 **Easy Configuration** - Environment-based configuration management
-- 📖 **Beautiful Surah Names** - Displays Quran chapters with emojis and metadata
+- 🛡️ **Error Handling** - Comprehensive error handling with recovery mechanisms
+- 📈 **Resource Monitoring** - Built-in resource usage monitoring
 
 ## 🚀 Quick Start
 
@@ -118,15 +142,26 @@ _Built with ❤️ for the Muslim Ummah - Shared as-is for educational purposes_
 QuranBot/
 ├── 📁 src/                     # Core application code
 │   ├── bot/main.py            # Main Discord bot implementation
-│   ├── utils/tree_log.py      # Logging system
-│   ├── utils/surah_mapper.py  # Surah name mapping with emojis
+│   ├── utils/
+│   │   ├── tree_log.py        # Advanced logging system
+│   │   ├── surah_mapper.py    # Surah name mapping with emojis
+│   │   ├── control_panel.py   # Interactive Discord control panel
+│   │   ├── state_manager.py   # Playback state persistence
+│   │   ├── audio_manager.py   # Audio streaming management
+│   │   └── rich_presence.py   # Discord rich presence
 │   └── config/                # Configuration modules
 ├── 📁 config/                  # Configuration files
 │   ├── .env.example           # Environment variables template
 │   └── pyproject.toml         # Python project configuration
+├── 📁 data/                    # Persistent data storage
+│   ├── playback_state.json    # Current playback position
+│   └── bot_stats.json         # Bot usage statistics
 ├── 📁 audio/                   # Quran audio files
-│   └── Saad Al Ghamdi/        # Default reciter (place 114 MP3 files here)
+│   ├── Saad Al Ghamdi/        # Default reciter
+│   ├── Rashid Al Afasy/       # Alternative reciter
+│   └── ... (other reciters)
 ├── 📁 images/                  # Visual assets
+├── 📁 logs/                    # Organized log files by date
 ├── main.py                    # 🚀 Main entry point - START HERE
 ├── bot_manager.py             # 🛠️ Bot instance management utility
 ├── requirements.txt           # 📦 Python dependencies
@@ -149,6 +184,7 @@ QuranBot/
    - Enable Developer Mode in Discord (Settings > Advanced > Developer Mode)
    - Right-click your server → Copy ID (GUILD_ID)
    - Right-click voice channel → Copy ID (TARGET_CHANNEL_ID)
+   - Right-click control panel channel → Copy ID (CONTROL_PANEL_CHANNEL_ID)
    - Right-click your user → Copy ID (ADMIN_USER_ID)
 
 3. **Configure Environment**
@@ -160,6 +196,7 @@ QuranBot/
    DISCORD_TOKEN=your_discord_bot_token_here
    GUILD_ID=your_discord_server_id_here
    TARGET_CHANNEL_ID=your_voice_channel_id_here
+   CONTROL_PANEL_CHANNEL_ID=your_control_panel_channel_id_here
    ADMIN_USER_ID=your_discord_user_id_here
 
    # Optional Settings
@@ -176,6 +213,8 @@ QuranBot/
    - Speak in voice channels
    - Send messages
    - Read message history
+   - Manage messages (for control panel)
+   - Use external emojis
 
 ## 🎵 Audio Setup
 
@@ -183,26 +222,71 @@ Place your Quran audio files in the `audio/` directory organized by reciter:
 
 ```
 audio/
-├── Saad Al Ghamdi/
+├── Saad Al Ghamdi/            # سعد الغامدي
 │   ├── 001.mp3  # 🕌 Al-Fatiha (The Opening)
 │   ├── 002.mp3  # 🐄 Al-Baqarah (The Cow)
 │   ├── 036.mp3  # 💚 Ya-Sin (Ya-Sin)
 │   └── ...
-├── Abdul Basit Abdul Samad/
+├── Rashid Al Afasy/           # راشد العفاسي
+│   ├── 001.mp3
+│   └── ...
+├── Abdul Basit Abdul Samad/   # عبد الباسط عبد الصمد
 │   ├── 001.mp3
 │   └── ...
 └── Other Reciters/
     └── ...
 ```
 
-The bot will automatically display beautiful Surah names with emojis:
+### Supported Reciters
 
-```
-🎵 **Now Playing**
-💚 **Ya-Sin** (Ya-Sin)
-📖 Surah 36 • 83 verses • Meccan
-🎤 Recited by **Saad Al Ghamdi**
-```
+The bot supports these renowned Qaris with Arabic names:
+
+- **Saad Al Ghamdi** / سعد الغامدي
+- **Rashid Al Afasy** / راشد العفاسي
+- **Maher Al Muaiqly** / ماهر المعيقلي
+- **Muhammad Al Luhaidan** / محمد اللحيدان
+- **Abdul Basit Abdul Samad** / عبد الباسط عبد الصمد
+- **Yasser Al Dosari** / ياسر الدوسري
+
+## 🎛️ Control Panel Features
+
+The interactive Discord control panel provides:
+
+### 📱 **Real-time Display**
+
+- **Current Surah:** Shows both English and Arabic names
+- **Current Reciter:** Displays reciter with Arabic name
+- **Progress Tracking:** Live time display and progress bar
+- **Bot Thumbnail:** Shows bot's profile picture
+
+### 🎮 **Interactive Controls**
+
+- **⬅️ Prev Page / ➡️ Next Page:** Navigate surah selection pages
+- **⏮️ Previous / ⏭️ Next:** Skip to previous/next surah
+- **🔁 Loop / 🔀 Shuffle:** Toggle playback modes with visual feedback
+- **🕌 Surah Dropdown:** Select from all 114 surahs with emojis
+- **🎤 Reciter Dropdown:** Switch between available reciters
+
+### 📊 **Smart Features**
+
+- **Last Activity Tracking:** Shows who last used the bot and when
+- **State Persistence:** Remembers position across restarts
+- **Progress Clamping:** Prevents impossible time values
+- **Dynamic Updates:** Real-time updates every 5 seconds
+
+## 💾 State Management
+
+The bot automatically saves and restores:
+
+- **Current Surah Position:** Exact playback position
+- **Selected Reciter:** Currently active reciter
+- **Playback Settings:** Loop and shuffle preferences
+- **Session Statistics:** Usage tracking and session data
+
+State files are stored in the `data/` directory:
+
+- `playback_state.json` - Current playback position
+- `bot_stats.json` - Bot usage statistics
 
 ## 🛠️ Bot Management
 
@@ -224,16 +308,21 @@ python main.py
 The bot features a beautiful tree-style logging system:
 
 ```
-🚀 Starting QuranBot v1.3.0...
-├─ version: 1.3.0
-├─ discord_token: ***HIDDEN***
-├─ structure: Organized in src/ directory
-└─ entry_point: main.py
+================================================================================
+🚀 NEW BOT RUN STARTED
+================================================================================
+🎯 QuranBot v1.5.0 - Run ID: B331F430
+├─ started_at: [07/05 10:28 PM EST]
+├─ version: 1.5.0
+├─ run_id: B331F430
+└─ log_session: 2025-07-05
 
-🎵 **Now Playing**
-💚 **Ya-Sin** (Ya-Sin)
-📖 Surah 36 • 83 verses • Meccan
-🎤 Recited by **Saad Al Ghamdi**
+🎵 Rich Presence Manager Initialization
+├─ ffmpeg_path: /opt/homebrew/bin/ffmpeg
+└─ initialization: ✅ Rich Presence Manager ready
+
+🎶 Progress (11/114)
+├─ surah: 011. 🏘️ Hud (هود) - 123 verses
 ```
 
 ### Log Files
@@ -249,6 +338,8 @@ All logs are automatically saved to:
 - **Single Guild Only:** This bot is designed for use in ONE Discord server only
 - **Audio Files:** You must provide your own Quran MP3 files (114 files, numbered 001.mp3 to 114.mp3)
 - **Security:** Keep your bot token secure and never share it publicly
+- **Control Panel:** Set up a dedicated channel for the control panel
+- **Permissions:** Ensure the bot has proper permissions in all required channels
 
 ## 📚 Dependencies
 
@@ -265,6 +356,32 @@ All logs are automatically saved to:
 - ✅ Comprehensive .gitignore for security
 - ✅ Instance management prevents conflicts
 - ✅ Secure token handling
+- ✅ State file encryption ready
+
+## 📈 Version History
+
+### v1.5.0 (Latest)
+
+- 🎛️ **Interactive Control Panel** - Full Discord control panel with buttons and dropdowns
+- 💾 **State Management** - Automatic save/resume functionality
+- 🔄 **Smart Resume** - Intelligent playback position restoration
+- 📊 **Session Statistics** - Usage tracking and analytics
+- 👤 **Last Activity Tracking** - User interaction monitoring
+- 🎮 **Enhanced Controls** - Loop, shuffle, and navigation controls
+- 🎨 **Visual Improvements** - Progress bars, emojis, and better formatting
+
+### v1.4.0
+
+- 🎤 **Multiple Reciters** - Support for 6 renowned Qaris
+- 🌍 **Arabic Names** - Transliterated Arabic names for reciters
+- 🎵 **Rich Presence** - Enhanced Discord rich presence
+- 🔧 **Bug Fixes** - Various stability improvements
+
+### v1.3.0
+
+- 📖 **Surah Mapping** - Beautiful surah names with emojis
+- 🌳 **Tree Logging** - Structured logging system
+- 🛡️ **Instance Management** - Prevent multiple instances
 
 ## 📄 License
 
@@ -275,6 +392,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Built for the Muslim community
 - Inspired by the beauty of Quran recitation
 - Developed with modern Python best practices
+- Enhanced with interactive Discord features
 
 ---
 
