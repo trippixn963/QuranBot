@@ -30,7 +30,7 @@ load_dotenv(env_path)
 # Admin/Developer Information (loaded from environment)
 ADMIN_USER_ID = int(os.getenv("ADMIN_USER_ID", "0"))
 GITHUB_REPO_URL = "https://github.com/JohnHamwi/QuranBot"
-BOT_VERSION = "1.6.0"
+BOT_VERSION = "1.6.1"
 
 
 # =============================================================================

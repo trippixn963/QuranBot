@@ -11,6 +11,7 @@ import secrets
 import traceback
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, Optional
 
 import pytz
 
@@ -198,8 +199,85 @@ def log_run_end(run_id, reason="Normal shutdown"):
         write_to_log_files(line, "INFO", "run_end")
 
     # Add spacing after run end
-    print()
-    write_to_log_files("", "INFO", "run_end")
+    log_spacing()
+
+
+def log_user_interaction(
+    interaction_type: str,
+    user_name: str,
+    user_id: int,
+    action_description: str,
+    details: Optional[Dict[str, Any]] = None,
+):
+    """
+    Log user interactions in a dedicated tree section for easy identification.
+
+    Args:
+        interaction_type: Type of interaction (e.g., "dropdown_surah", "button_navigation")
+        user_name: Display name of the user
+        user_id: Discord user ID
+        action_description: Description of what the user did
+        details: Additional details about the interaction
+    """
+    try:
+        timestamp = get_timestamp()
+
+        # Add line breaker for visual separation
+        print("")
+        write_to_log_files("", "INFO", "user_interaction")
+
+        # Create interaction header
+        interaction_header = (
+            f"👤 User Interaction - {interaction_type.title().replace('_', ' ')}"
+        )
+        print(f"{timestamp} {interaction_header}")
+        write_to_log_files(interaction_header, "INFO", "user_interaction")
+
+        # Log user information
+        user_info = f"├─ user: {user_name} ({user_id})"
+        print(f"{timestamp} {user_info}")
+        write_to_log_files(user_info, "INFO", "user_interaction")
+
+        action_info = f"├─ action: {action_description}"
+        print(f"{timestamp} {action_info}")
+        write_to_log_files(action_info, "INFO", "user_interaction")
+
+        # Log additional details if provided
+        if details:
+            detail_keys = list(details.keys())
+            for i, (key, value) in enumerate(details.items()):
+                detail_line = f"├─ {key}: {value}"
+                print(f"{timestamp} {detail_line}")
+                write_to_log_files(detail_line, "INFO", "user_interaction")
+
+        # End interaction log
+        completion_line = f"└─ interaction_completed: ✅ {interaction_type} processed"
+        print(f"{timestamp} {completion_line}")
+        write_to_log_files(completion_line, "INFO", "user_interaction")
+
+        # Add line breaker after interaction
+        print("")
+        write_to_log_files("", "INFO", "user_interaction")
+
+    except Exception as e:
+        timestamp = get_timestamp()
+        error_line = (
+            f"├─ user_interaction_log_error: Failed to log interaction: {str(e)}"
+        )
+        print(f"{timestamp} {error_line}")
+        write_to_log_files(error_line, "ERROR", "user_interaction")
+
+        type_line = f"├─ interaction_type: {interaction_type}"
+        print(f"{timestamp} {type_line}")
+        write_to_log_files(type_line, "ERROR", "user_interaction")
+
+        user_line = f"├─ user: {user_name} ({user_id})"
+        print(f"{timestamp} {user_line}")
+        write_to_log_files(user_line, "ERROR", "user_interaction")
+
+        action_line = f"└─ action: {action_description}"
+        print(f"{timestamp} {action_line}")
+        write_to_log_files(action_line, "ERROR", "user_interaction")
 
 
 def log_tree(message, level="INFO"):

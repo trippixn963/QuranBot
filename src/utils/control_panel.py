@@ -14,7 +14,12 @@ import discord
 from discord.ui import Button, Modal, Select, TextInput, View
 
 from .surah_mapper import get_surah_info, search_surahs
-from .tree_log import log_error_with_traceback, log_tree_branch, log_tree_final
+from .tree_log import (
+    log_error_with_traceback,
+    log_tree_branch,
+    log_tree_final,
+    log_user_interaction,
+)
 
 # =============================================================================
 # Configuration
@@ -122,6 +127,10 @@ class SurahSearchModal(Modal):
                     description=f"Found the perfect match for your search '{query}':",
                     color=0x2ECC71,
                 )
+
+                # Add bot's profile picture as thumbnail
+                if interaction.client.user and interaction.client.user.avatar:
+                    embed.set_thumbnail(url=interaction.client.user.avatar.url)
 
                 embed.add_field(
                     name=f"{surah.emoji} {surah.name_transliteration}",
@@ -340,41 +349,30 @@ class SurahConfirmationView(View):
     async def play_surah(self, interaction: discord.Interaction, button: Button):
         """Play the selected surah"""
         try:
-            # Log play button interaction
-            log_tree_branch(
-                "search_play_initiated",
-                f"User: {interaction.user.display_name} playing surah from search",
+            # Log user interaction in dedicated section
+            log_user_interaction(
+                interaction_type="search_confirm",
+                user_name=interaction.user.display_name,
+                user_id=interaction.user.id,
+                action_description=f"Confirmed search result: {self.surah.name_transliteration}",
+                details={
+                    "surah_number": self.surah.number,
+                    "surah_name": self.surah.name_transliteration,
+                    "original_query": self.query,
+                    "action": "play",
+                },
             )
-            log_tree_branch(
-                "search_play_surah",
-                f"Playing: {self.surah.name_transliteration} (#{self.surah.number})",
-            )
-            log_tree_branch("search_play_query", f"Original query: '{self.query}'")
 
             # Update last activity in control panel
             if self.control_panel_view:
                 self.control_panel_view._update_last_activity(
                     interaction.user,
-                    f"searched for '{self.query}' → {self.surah.name_transliteration}",
-                )
-                log_tree_branch(
-                    "search_activity_updated", "Control panel activity tracking updated"
+                    f"searched for '{self.query}' → `{self.surah.name_transliteration}`",
                 )
 
             # Switch to the surah
             if self.audio_manager:
-                log_tree_branch(
-                    "search_audio_switching",
-                    f"Switching audio to surah {self.surah.number}",
-                )
                 await self.audio_manager.jump_to_surah(self.surah.number)
-                log_tree_branch(
-                    "search_audio_switched", "Audio manager switched to selected surah"
-                )
-            else:
-                log_tree_branch(
-                    "search_no_audio_manager", "No audio manager available for playback"
-                )
 
             # Disable all buttons
             for item in self.children:
@@ -388,13 +386,10 @@ class SurahConfirmationView(View):
 
             embed.add_field(
                 name=f"{self.surah.emoji} {self.surah.name_transliteration}",
-                value=f"*{self.surah.name_arabic}*\n📖 Surah {self.surah.number:03d} • {self.surah.verses} verses",
+                value=f"`{self.surah.name_arabic}` - {self.surah.verses} verses",
                 inline=False,
             )
 
-            embed.set_footer(text="Enjoy listening! 🎧")
-
-            log_tree_branch("search_play_confirmed", "Now playing embed sent to user")
             await interaction.response.edit_message(embed=embed, view=self)
 
         except Exception as e:
@@ -409,25 +404,24 @@ class SurahConfirmationView(View):
     async def search_again(self, interaction: discord.Interaction, button: Button):
         """Open search modal again"""
         try:
-            # Log search again interaction
-            log_tree_branch(
-                "search_again_initiated",
-                f"User: {interaction.user.display_name} searching again",
-            )
-            log_tree_branch(
-                "search_again_previous",
-                f"Previous query: '{self.query}' → {self.surah.name_transliteration}",
+            # Log user interaction in dedicated section
+            log_user_interaction(
+                interaction_type="search_retry",
+                user_name=interaction.user.display_name,
+                user_id=interaction.user.id,
+                action_description="Requested new search from confirmation",
+                details={
+                    "rejected_surah": self.surah.name_transliteration,
+                    "original_query": self.query,
+                },
             )
 
-            search_modal = SurahSearchModal(
+            modal = SurahSearchModal(
                 audio_manager=self.audio_manager,
                 control_panel_view=self.control_panel_view,
             )
 
-            log_tree_branch(
-                "search_again_modal_opened", "New search modal opened for user"
-            )
-            await interaction.response.send_modal(search_modal)
+            await interaction.response.send_modal(modal)
 
         except Exception as e:
             log_error_with_traceback("Error opening search modal again", e)
@@ -456,7 +450,7 @@ class SurahConfirmationView(View):
             embed = discord.Embed(
                 title="❌ Selection Cancelled",
                 description="Your search selection has been cancelled.",
-                color=0x95A5A6,
+                color=0xE74C3C,
             )
 
             embed.set_footer(text="Use the search button again anytime!")
@@ -529,16 +523,31 @@ class SurahSelect(Select):
         try:
             selected_surah = int(self.values[0])
 
+            # Get surah info for logging
+            surah_info = get_surah_info(selected_surah)
+            surah_name = (
+                surah_info.name_transliteration
+                if surah_info
+                else f"Surah {selected_surah}"
+            )
+
+            # Log user interaction in dedicated section
+            log_user_interaction(
+                interaction_type="dropdown_surah",
+                user_name=interaction.user.display_name,
+                user_id=interaction.user.id,
+                action_description=f"Selected {surah_name} from dropdown",
+                details={
+                    "surah_number": selected_surah,
+                    "surah_name": surah_name,
+                    "page": self.page + 1,
+                },
+            )
+
             # Update last activity in parent view
             if hasattr(self.view, "_update_last_activity"):
-                surah_info = get_surah_info(selected_surah)
-                surah_name = (
-                    surah_info.name_transliteration
-                    if surah_info
-                    else f"Surah {selected_surah}"
-                )
                 self.view._update_last_activity(
-                    interaction.user, f"selected {surah_name}"
+                    interaction.user, f"selected `{surah_name}`"
                 )
 
             # Get audio manager from parent view
@@ -625,11 +634,28 @@ class ReciterSelect(Select):
         try:
             selected_reciter = self.values[0]
 
+            # Clean up reciter name for logging
+            reciter_display = selected_reciter.replace("_", " ").title()
+
+            # Log user interaction in dedicated section
+            log_user_interaction(
+                interaction_type="dropdown_reciter",
+                user_name=interaction.user.display_name,
+                user_id=interaction.user.id,
+                action_description=f"Selected reciter: {reciter_display}",
+                details={
+                    "selected_reciter": selected_reciter,
+                    "reciter_display": reciter_display,
+                    "previous_reciter": getattr(
+                        self.view, "current_reciter", "Unknown"
+                    ),
+                },
+            )
+
             # Update last activity in parent view
             if hasattr(self.view, "_update_last_activity"):
-                reciter_display = selected_reciter.replace("_", " ").title()
                 self.view._update_last_activity(
-                    interaction.user, f"switched to {reciter_display}"
+                    interaction.user, f"switched to `{reciter_display}`"
                 )
 
             # Get audio manager from parent view
@@ -790,7 +816,7 @@ class SimpleControlPanelView(View):
 
             embed.add_field(
                 name="",
-                value=f"**Surah:** {surah_name} - {surah_arabic}",
+                value=f"**Surah:** `{surah_name} - {surah_arabic}`",
                 inline=True,
             )
 
@@ -813,7 +839,7 @@ class SimpleControlPanelView(View):
 
             embed.add_field(
                 name="",
-                value=f"**Reciter:** {reciter_text}",
+                value=f"**Reciter:** `{reciter_text}`",
                 inline=True,
             )
 
@@ -849,7 +875,7 @@ class SimpleControlPanelView(View):
                 time_elapsed = self._format_time_elapsed(self.last_activity_time)
                 embed.add_field(
                     name="",
-                    value=f"**Last Activity:** <@{self.last_activity_user.id}> {self.last_activity_action} • {time_elapsed}",
+                    value=f"**Last Activity:** <@{self.last_activity_user.id}> {self.last_activity_action} • `{time_elapsed}`",
                     inline=False,
                 )
 
@@ -922,10 +948,27 @@ class SimpleControlPanelView(View):
     async def prev_page(self, interaction: discord.Interaction, button: Button):
         """Go to previous page"""
         try:
-            self._update_last_activity(interaction.user, "switched to previous page")
-
             if self.current_page > 0:
+                old_page = self.current_page
                 self.current_page -= 1
+
+                # Log user interaction in dedicated section
+                log_user_interaction(
+                    interaction_type="button_navigation",
+                    user_name=interaction.user.display_name,
+                    user_id=interaction.user.id,
+                    action_description="Navigated to previous surah page",
+                    details={
+                        "old_page": old_page + 1,
+                        "new_page": self.current_page + 1,
+                        "direction": "previous",
+                    },
+                )
+
+                self._update_last_activity(
+                    interaction.user, "switched to previous page"
+                )
+
                 # Update the surah select to new page
                 for item in self.children:
                     if isinstance(item, SurahSelect):
@@ -943,11 +986,27 @@ class SimpleControlPanelView(View):
     async def next_page(self, interaction: discord.Interaction, button: Button):
         """Go to next page"""
         try:
-            self._update_last_activity(interaction.user, "switched to next page")
-
             max_pages = (114 + SURAHS_PER_PAGE - 1) // SURAHS_PER_PAGE
             if self.current_page < max_pages - 1:
+                old_page = self.current_page
                 self.current_page += 1
+
+                # Log user interaction in dedicated section
+                log_user_interaction(
+                    interaction_type="button_navigation",
+                    user_name=interaction.user.display_name,
+                    user_id=interaction.user.id,
+                    action_description="Navigated to next surah page",
+                    details={
+                        "old_page": old_page + 1,
+                        "new_page": self.current_page + 1,
+                        "direction": "next",
+                        "max_pages": max_pages,
+                    },
+                )
+
+                self._update_last_activity(interaction.user, "switched to next page")
+
                 # Update the surah select to new page
                 for item in self.children:
                     if isinstance(item, SurahSelect):
@@ -965,18 +1024,21 @@ class SimpleControlPanelView(View):
     async def search_surah(self, interaction: discord.Interaction, button: Button):
         """Open search modal for finding surahs"""
         try:
-            # Log search button interaction
-            log_tree_branch(
-                "search_button_clicked",
-                f"User: {interaction.user.display_name} ({interaction.user.id})",
+            # Log user interaction in dedicated section
+            log_user_interaction(
+                interaction_type="button_search",
+                user_name=interaction.user.display_name,
+                user_id=interaction.user.id,
+                action_description="Opened surah search modal",
+                details={"modal_type": "surah_search"},
             )
+
             self._update_last_activity(interaction.user, "opened search modal")
 
             search_modal = SurahSearchModal(
                 audio_manager=self.audio_manager, control_panel_view=self
             )
 
-            log_tree_branch("search_modal_opened", "Search modal opened for user")
             await interaction.response.send_modal(search_modal)
 
         except Exception as e:
@@ -987,10 +1049,23 @@ class SimpleControlPanelView(View):
     async def previous_surah(self, interaction: discord.Interaction, button: Button):
         """Go to previous surah"""
         try:
+            # Log user interaction in dedicated section
+            log_user_interaction(
+                interaction_type="button_skip",
+                user_name=interaction.user.display_name,
+                user_id=interaction.user.id,
+                action_description="Skipped to previous surah",
+                details={
+                    "direction": "previous",
+                    "audio_manager_available": self.audio_manager is not None,
+                },
+            )
+
             self._update_last_activity(interaction.user, "skipped to previous surah")
 
             if self.audio_manager:
                 await self.audio_manager.skip_to_previous()
+
             await interaction.response.defer()
         except Exception as e:
             log_error_with_traceback("Error skipping to previous", e)
@@ -1000,10 +1075,23 @@ class SimpleControlPanelView(View):
     async def next_surah(self, interaction: discord.Interaction, button: Button):
         """Go to next surah"""
         try:
+            # Log user interaction in dedicated section
+            log_user_interaction(
+                interaction_type="button_skip",
+                user_name=interaction.user.display_name,
+                user_id=interaction.user.id,
+                action_description="Skipped to next surah",
+                details={
+                    "direction": "next",
+                    "audio_manager_available": self.audio_manager is not None,
+                },
+            )
+
             self._update_last_activity(interaction.user, "skipped to next surah")
 
             if self.audio_manager:
                 await self.audio_manager.skip_to_next()
+
             await interaction.response.defer()
         except Exception as e:
             log_error_with_traceback("Error skipping to next", e)
@@ -1014,11 +1102,26 @@ class SimpleControlPanelView(View):
         """Toggle loop mode"""
         try:
             # Toggle audio manager's loop state
+            old_state = self.loop_enabled
             if self.audio_manager:
                 self.audio_manager.toggle_loop()
                 self.loop_enabled = self.audio_manager.is_loop_enabled
             else:
                 self.loop_enabled = not self.loop_enabled
+
+            # Log user interaction in dedicated section
+            log_user_interaction(
+                interaction_type="button_toggle",
+                user_name=interaction.user.display_name,
+                user_id=interaction.user.id,
+                action_description=f"Toggled loop mode: {old_state} → {self.loop_enabled}",
+                details={
+                    "feature": "loop",
+                    "old_state": old_state,
+                    "new_state": self.loop_enabled,
+                    "audio_manager_available": self.audio_manager is not None,
+                },
+            )
 
             # Update button style
             button.style = (
@@ -1041,11 +1144,26 @@ class SimpleControlPanelView(View):
         """Toggle shuffle mode"""
         try:
             # Toggle audio manager's shuffle state
+            old_state = self.shuffle_enabled
             if self.audio_manager:
                 self.audio_manager.toggle_shuffle()
                 self.shuffle_enabled = self.audio_manager.is_shuffle_enabled
             else:
                 self.shuffle_enabled = not self.shuffle_enabled
+
+            # Log user interaction in dedicated section
+            log_user_interaction(
+                interaction_type="button_toggle",
+                user_name=interaction.user.display_name,
+                user_id=interaction.user.id,
+                action_description=f"Toggled shuffle mode: {old_state} → {self.shuffle_enabled}",
+                details={
+                    "feature": "shuffle",
+                    "old_state": old_state,
+                    "new_state": self.shuffle_enabled,
+                    "audio_manager_available": self.audio_manager is not None,
+                },
+            )
 
             # Update button style
             button.style = (
@@ -1054,7 +1172,7 @@ class SimpleControlPanelView(View):
                 else discord.ButtonStyle.secondary
             )
 
-            # Only show activity message when enabled (not when disabled since that's default)
+            # Only show activity message when enabled
             if self.shuffle_enabled:
                 self._update_last_activity(interaction.user, "enabled shuffle mode")
 

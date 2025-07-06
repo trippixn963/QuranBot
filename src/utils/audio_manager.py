@@ -63,6 +63,9 @@ class AudioManager:
         self.current_audio_files: List[str] = []
         self.current_file_index = 0
 
+        # Jump operation flag to prevent automatic index increment
+        self._jump_occurred = False
+
         # Control panel reference
         self.control_panel_view = None
 
@@ -524,9 +527,15 @@ class AudioManager:
             target_filename = f"{surah_number:03d}.mp3"
             target_index = None
 
+            # Debug: Log the search process
+            log_tree_branch("jump_search_target", f"Looking for: {target_filename}")
+
             for i, audio_file in enumerate(self.current_audio_files):
-                if os.path.basename(audio_file) == target_filename:
+                filename = os.path.basename(audio_file)
+                log_tree_branch("jump_search_check", f"Index {i}: {filename}")
+                if filename == target_filename:
                     target_index = i
+                    log_tree_branch("jump_search_found", f"Found at index: {i}")
                     break
 
             if target_index is None:
@@ -543,6 +552,20 @@ class AudioManager:
             # Jump to the target Surah
             self.current_file_index = target_index
             self.current_surah = surah_number
+
+            # Reset position to start from beginning of jumped surah
+            self.current_position = 0.0
+
+            # Set jump flag to prevent automatic increment
+            self._jump_occurred = True
+
+            # Debug logging
+            log_tree_branch("jump_debug_index", f"Set file index to: {target_index}")
+            log_tree_branch(
+                "jump_debug_file",
+                f"Target file: {os.path.basename(self.current_audio_files[target_index])}",
+            )
+            log_tree_branch("jump_flag_set", "Jump flag set to prevent auto-increment")
 
             log_tree_branch(
                 "jumped_to_surah",
@@ -617,6 +640,12 @@ class AudioManager:
 
             current_file = self.current_audio_files[self.current_file_index]
             filename = os.path.basename(current_file)
+
+            # Debug logging
+            log_tree_branch(
+                "update_debug_index", f"Using file index: {self.current_file_index}"
+            )
+            log_tree_branch("update_debug_file", f"Reading file: {filename}")
 
             try:
                 surah_number = int(filename.split(".")[0])
@@ -766,8 +795,14 @@ class AudioManager:
                     # Reset position for next track
                     self.current_position = 0.0
 
-                    # Move to next track
-                    if self.is_shuffle_enabled:
+                    # Move to next track (unless a jump occurred)
+                    if self._jump_occurred:
+                        # Jump occurred, don't increment - just clear the flag
+                        self._jump_occurred = False
+                        log_tree_branch(
+                            "jump_handled", "Jump detected, skipping auto-increment"
+                        )
+                    elif self.is_shuffle_enabled:
                         import random
 
                         self.current_file_index = random.randint(
