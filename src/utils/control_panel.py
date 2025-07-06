@@ -1,17 +1,16 @@
 # =============================================================================
-# QuranBot - Simple Control Panel
+# QuranBot - Interactive Control Panel
 # =============================================================================
-# Clean, simple Discord control panel for 24/7 QuranBot
-# Updates every 5 seconds with current time display
+# Discord control panel with buttons, dropdowns, and real-time updates
+# Features surah selection, reciter switching, and playback controls
 # =============================================================================
 
 import asyncio
 import os
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Optional
 
 import discord
-from discord.ext import commands
 from discord.ui import Button, Select, View
 
 from .surah_mapper import get_surah_info
