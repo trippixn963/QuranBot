@@ -79,6 +79,7 @@ from utils.tree_log import (
     log_tree_branch,
     log_tree_end,
     log_tree_final,
+    log_user_interaction,
     log_warning_with_context,
 )
 
