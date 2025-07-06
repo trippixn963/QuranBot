@@ -217,12 +217,11 @@ async def setup_credits_command(bot):
     Args:
         bot: The Discord bot instance
     """
-    tree_log(
-        "⚙️ Credits Command Setup",
+    log_tree_branch(
         "setup_initiated",
         "Registering /credits slash command",
     )
-    tree_log("⚙️ Credits Command Setup", "bot_instance", f"Bot user: {bot.user.name}")
+    log_tree_branch("bot_instance", f"Bot user: {bot.user.name}")
 
     @bot.tree.command(
         name="credits",
