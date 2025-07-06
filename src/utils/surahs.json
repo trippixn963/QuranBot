@@ -694,6 +694,28 @@
   },
   "64": {
     "number": 64,
+    "name_arabic": "التغابن",
+    "name_english": "The Mutual Disillusion",
+    "name_transliteration": "At-Taghabun",
+    "emoji": "🔄",
+    "verses": 18,
+    "revelation_type": "Medinan",
+    "meaning": "The Mutual Disillusion",
+    "description": "The mutual loss and gain"
+  },
+  "65": {
+    "number": 65,
+    "name_arabic": "الطلاق",
+    "name_english": "The Divorce",
+    "name_transliteration": "At-Talaq",
+    "emoji": "💔",
+    "verses": 12,
+    "revelation_type": "Medinan",
+    "meaning": "The Divorce",
+    "description": "Laws regarding divorce"
+  },
+  "66": {
+    "number": 66,
     "name_arabic": "التحريم",
     "name_english": "The Prohibition",
     "name_transliteration": "At-Tahrim",
@@ -703,8 +725,8 @@
     "meaning": "The Prohibition",
     "description": "About the Prophet's household"
   },
-  "65": {
-    "number": 65,
+  "67": {
+    "number": 67,
     "name_arabic": "الملك",
     "name_english": "The Sovereignty",
     "name_transliteration": "Al-Mulk",
@@ -714,8 +736,8 @@
     "meaning": "The Sovereignty",
     "description": "Allah's absolute sovereignty"
   },
-  "66": {
-    "number": 66,
+  "68": {
+    "number": 68,
     "name_arabic": "القلم",
     "name_english": "The Pen",
     "name_transliteration": "Al-Qalam",
@@ -725,30 +747,30 @@
     "meaning": "The Pen",
     "description": "The pen and what it writes"
   },
-  "67": {
-    "number": 67,
+  "69": {
+    "number": 69,
     "name_arabic": "الحاقة",
-    "name_english": "The Inevitable Reality",
+    "name_english": "The Reality",
     "name_transliteration": "Al-Haqqah",
-    "emoji": "⚡",
+    "emoji": "⚖️",
     "verses": 52,
     "revelation_type": "Meccan",
-    "meaning": "The Inevitable Reality",
-    "description": "The certain reality of the Hereafter"
+    "meaning": "The Reality",
+    "description": "The inevitable reality of the Day of Judgment"
   },
-  "68": {
-    "number": 68,
+  "70": {
+    "number": 70,
     "name_arabic": "المعارج",
-    "name_english": "The Ways of Ascent",
+    "name_english": "The Ascending Stairways",
     "name_transliteration": "Al-Ma'arij",
     "emoji": "🪜",
     "verses": 44,
     "revelation_type": "Meccan",
-    "meaning": "The Ways of Ascent",
-    "description": "The ascending stairways to Allah"
+    "meaning": "The Ascending Stairways",
+    "description": "The ways of ascent to Allah"
   },
-  "69": {
-    "number": 69,
+  "71": {
+    "number": 71,
     "name_arabic": "نوح",
     "name_english": "Noah",
     "name_transliteration": "Nuh",
@@ -758,8 +780,8 @@
     "meaning": "Noah",
     "description": "The story of Prophet Noah and the flood"
   },
-  "70": {
-    "number": 70,
+  "72": {
+    "number": 72,
     "name_arabic": "الجن",
     "name_english": "The Jinn",
     "name_transliteration": "Al-Jinn",
@@ -769,8 +791,8 @@
     "meaning": "The Jinn",
     "description": "The jinn who listened to the Quran"
   },
-  "71": {
-    "number": 71,
+  "73": {
+    "number": 73,
     "name_arabic": "المزمل",
     "name_english": "The Enshrouded One",
     "name_transliteration": "Al-Muzzammil",
@@ -780,8 +802,8 @@
     "meaning": "The Enshrouded One",
     "description": "The Prophet wrapped in garments"
   },
-  "72": {
-    "number": 72,
+  "74": {
+    "number": 74,
     "name_arabic": "المدثر",
     "name_english": "The Cloaked One",
     "name_transliteration": "Al-Muddaththir",
@@ -791,8 +813,8 @@
     "meaning": "The Cloaked One",
     "description": "The Prophet covered in a cloak"
   },
-  "73": {
-    "number": 73,
+  "75": {
+    "number": 75,
     "name_arabic": "القيامة",
     "name_english": "The Resurrection",
     "name_transliteration": "Al-Qiyamah",
@@ -802,8 +824,8 @@
     "meaning": "The Resurrection",
     "description": "The Day of Resurrection"
   },
-  "74": {
-    "number": 74,
+  "76": {
+    "number": 76,
     "name_arabic": "الإنسان",
     "name_english": "The Human",
     "name_transliteration": "Al-Insan",
@@ -813,8 +835,8 @@
     "meaning": "The Human",
     "description": "The creation and purpose of humanity"
   },
-  "75": {
-    "number": 75,
+  "77": {
+    "number": 77,
     "name_arabic": "المرسلات",
     "name_english": "Those Sent Forth",
     "name_transliteration": "Al-Mursalat",
@@ -823,28 +845,6 @@
     "revelation_type": "Meccan",
     "meaning": "Those Sent Forth",
     "description": "Winds sent forth by Allah"
-  },
-  "76": {
-    "number": 76,
-    "name_arabic": "النبأ",
-    "name_english": "The Great News",
-    "name_transliteration": "An-Naba",
-    "emoji": "📰",
-    "verses": 40,
-    "revelation_type": "Meccan",
-    "meaning": "The Great News",
-    "description": "The great news of the Hereafter"
-  },
-  "77": {
-    "number": 77,
-    "name_arabic": "النازعات",
-    "name_english": "Those Who Drag Forth",
-    "name_transliteration": "An-Nazi'at",
-    "emoji": "⚡",
-    "verses": 46,
-    "revelation_type": "Meccan",
-    "meaning": "Those Who Drag Forth",
-    "description": "Angels who drag forth souls"
   },
   "78": {
     "number": 78,
