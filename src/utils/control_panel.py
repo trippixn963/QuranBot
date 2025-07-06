@@ -72,26 +72,37 @@ class SurahSearchModal(Modal):
                 )
                 return
 
-            # If only one result, select it directly
+                # If only one result, show confirmation
             if len(results) == 1:
                 surah = results[0]
 
-                # Update last activity in control panel
-                if self.control_panel_view:
-                    self.control_panel_view._update_last_activity(
-                        interaction.user,
-                        f"searched for '{query}' → {surah.name_transliteration}",
-                    )
+                # Show confirmation embed with options
+                confirmation_view = SurahConfirmationView(
+                    surah=surah,
+                    query=query,
+                    audio_manager=self.audio_manager,
+                    control_panel_view=self.control_panel_view,
+                )
 
-                    # Switch to the surah
-            if self.audio_manager:
-                await self.audio_manager.jump_to_surah(surah.number)
+                embed = discord.Embed(
+                    title="🔍 Surah Found!",
+                    description=f"Found the perfect match for your search '{query}':",
+                    color=0x2ECC71,
+                )
+
+                embed.add_field(
+                    name=f"{surah.emoji} {surah.name_transliteration}",
+                    value=f"*{surah.name_arabic}*\n📖 Surah {surah.number:03d} • {surah.verses} verses\n🏛️ {surah.revelation_type.value}",
+                    inline=False,
+                )
+
+                if surah.meaning:
+                    embed.add_field(name="💫 Meaning", value=surah.meaning, inline=True)
+
+                embed.set_footer(text="Choose an action below:")
 
                 await interaction.response.send_message(
-                    f"✅ **Found and selected:**\n"
-                    f"{surah.emoji} **{surah.name_transliteration}** ({surah.name_arabic})\n"
-                    f"📖 *Surah {surah.number:03d} • {surah.verses} verses*",
-                    ephemeral=True,
+                    embed=embed, view=confirmation_view, ephemeral=True
                 )
                 return
 
@@ -200,22 +211,33 @@ class SearchResultsSelect(Select):
                 )
                 return
 
-            # Update last activity in control panel
-            if self.control_panel_view:
-                self.control_panel_view._update_last_activity(
-                    interaction.user,
-                    f"searched for '{self.query}' → {surah.name_transliteration}",
-                )
+                # Show confirmation embed with options
+            confirmation_view = SurahConfirmationView(
+                surah=surah,
+                query=self.query,
+                audio_manager=self.audio_manager,
+                control_panel_view=self.control_panel_view,
+            )
 
-                # Switch to the surah
-                if self.audio_manager:
-                    await self.audio_manager.jump_to_surah(surah.number)
+            embed = discord.Embed(
+                title="✅ Surah Selected!",
+                description=f"You selected from your search results for '{self.query}':",
+                color=0x2ECC71,
+            )
+
+            embed.add_field(
+                name=f"{surah.emoji} {surah.name_transliteration}",
+                value=f"*{surah.name_arabic}*\n📖 Surah {surah.number:03d} • {surah.verses} verses\n🏛️ {surah.revelation_type.value}",
+                inline=False,
+            )
+
+            if surah.meaning:
+                embed.add_field(name="💫 Meaning", value=surah.meaning, inline=True)
+
+            embed.set_footer(text="Choose an action below:")
 
             await interaction.response.send_message(
-                f"✅ **Selected from search:**\n"
-                f"{surah.emoji} **{surah.name_transliteration}** ({surah.name_arabic})\n"
-                f"📖 *Surah {surah.number:03d} • {surah.verses} verses*",
-                ephemeral=True,
+                embed=embed, view=confirmation_view, ephemeral=True
             )
 
         except Exception as e:
@@ -223,6 +245,110 @@ class SearchResultsSelect(Select):
             await interaction.response.send_message(
                 "❌ An error occurred while selecting the surah.", ephemeral=True
             )
+
+
+# =============================================================================
+# Surah Confirmation View
+# =============================================================================
+
+
+class SurahConfirmationView(View):
+    """View for confirming surah selection with play/search again options"""
+
+    def __init__(self, surah, query, audio_manager=None, control_panel_view=None):
+        super().__init__(timeout=60)
+        self.surah = surah
+        self.query = query
+        self.audio_manager = audio_manager
+        self.control_panel_view = control_panel_view
+
+    async def on_timeout(self):
+        """Handle timeout"""
+        for item in self.children:
+            item.disabled = True
+
+    @discord.ui.button(
+        label="🎵 Play This Surah", style=discord.ButtonStyle.primary, row=0
+    )
+    async def play_surah(self, interaction: discord.Interaction, button: Button):
+        """Play the selected surah"""
+        try:
+            # Update last activity in control panel
+            if self.control_panel_view:
+                self.control_panel_view._update_last_activity(
+                    interaction.user,
+                    f"searched for '{self.query}' → {self.surah.name_transliteration}",
+                )
+
+            # Switch to the surah
+            if self.audio_manager:
+                await self.audio_manager.jump_to_surah(self.surah.number)
+
+            # Disable all buttons
+            for item in self.children:
+                item.disabled = True
+
+            embed = discord.Embed(
+                title="🎵 Now Playing!",
+                description=f"Started playing your selected surah:",
+                color=0x00D4AA,
+            )
+
+            embed.add_field(
+                name=f"{self.surah.emoji} {self.surah.name_transliteration}",
+                value=f"*{self.surah.name_arabic}*\n📖 Surah {self.surah.number:03d} • {self.surah.verses} verses",
+                inline=False,
+            )
+
+            embed.set_footer(text="Enjoy listening! 🎧")
+
+            await interaction.response.edit_message(embed=embed, view=self)
+
+        except Exception as e:
+            log_error_with_traceback("Error playing surah from confirmation", e)
+            await interaction.response.send_message(
+                "❌ An error occurred while starting playback.", ephemeral=True
+            )
+
+    @discord.ui.button(
+        label="🔍 Search Again", style=discord.ButtonStyle.secondary, row=0
+    )
+    async def search_again(self, interaction: discord.Interaction, button: Button):
+        """Open search modal again"""
+        try:
+            search_modal = SurahSearchModal(
+                audio_manager=self.audio_manager,
+                control_panel_view=self.control_panel_view,
+            )
+            await interaction.response.send_modal(search_modal)
+
+        except Exception as e:
+            log_error_with_traceback("Error opening search modal again", e)
+            await interaction.response.send_message(
+                "❌ An error occurred while opening search.", ephemeral=True
+            )
+
+    @discord.ui.button(label="❌ Cancel", style=discord.ButtonStyle.danger, row=0)
+    async def cancel_selection(self, interaction: discord.Interaction, button: Button):
+        """Cancel the selection"""
+        try:
+            # Disable all buttons
+            for item in self.children:
+                item.disabled = True
+
+            embed = discord.Embed(
+                title="❌ Selection Cancelled",
+                description="Your search selection has been cancelled.",
+                color=0x95A5A6,
+            )
+
+            embed.set_footer(text="Use the search button again anytime!")
+
+            await interaction.response.edit_message(embed=embed, view=self)
+
+        except Exception as e:
+            log_error_with_traceback("Error cancelling selection", e)
+            await interaction.response.defer()
 
 
 # =============================================================================
