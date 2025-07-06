@@ -343,6 +343,7 @@ DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 TARGET_CHANNEL_ID = int(os.getenv("TARGET_CHANNEL_ID") or "0")
 PANEL_CHANNEL_ID = int(os.getenv("PANEL_CHANNEL_ID") or "0")
 GUILD_ID = int(os.getenv("GUILD_ID") or "0")
+PANEL_ACCESS_ROLE_ID = int(os.getenv("PANEL_ACCESS_ROLE_ID") or "1391500136366211243")
 FFMPEG_PATH = os.getenv("FFMPEG_PATH", "ffmpeg")
 AUDIO_FOLDER = "audio/Saad Al Ghamdi"
 
@@ -417,6 +418,13 @@ def validate_configuration():
             )
         elif not isinstance(PANEL_CHANNEL_ID, int) or PANEL_CHANNEL_ID < 0:
             warnings.append("PANEL_CHANNEL_ID must be a positive integer")
+
+        if PANEL_ACCESS_ROLE_ID == 0:
+            warnings.append(
+                "PANEL_ACCESS_ROLE_ID is missing - voice channel role management disabled"
+            )
+        elif not isinstance(PANEL_ACCESS_ROLE_ID, int) or PANEL_ACCESS_ROLE_ID < 0:
+            warnings.append("PANEL_ACCESS_ROLE_ID must be a positive integer")
 
         # =============================================================================
         # File System Validation
@@ -884,16 +892,17 @@ async def play_audio(voice_client):
 @bot.event
 async def on_voice_state_update(member, before, after):
     """
-    Handle voice state changes with intelligent reconnection logic.
+    Handle voice state changes with intelligent reconnection logic and role management.
 
     Monitors voice state changes and implements smart reconnection when the bot
-    is disconnected from voice channels. Includes loop prevention and graceful
-    error handling to maintain stable voice connections.
+    is disconnected from voice channels. Also manages panel access roles for users
+    joining/leaving voice channels.
 
     Features:
     - Detects bot disconnection from voice channels
     - Implements delay to prevent rapid reconnection loops
     - Automatically restarts audio playback after reconnection
+    - Manages panel access roles for voice channel members
     - Comprehensive logging for troubleshooting connection issues
 
     Args:
@@ -904,8 +913,11 @@ async def on_voice_state_update(member, before, after):
     global rich_presence, audio_manager
 
     try:
-        # Only handle bot's own voice state changes
+        # =============================================================================
+        # User Role Management for Panel Access
+        # =============================================================================
         if member != bot.user:
+            await _handle_user_voice_role_management(member, before, after)
             return
 
         # Detect disconnection (was in channel, now not in channel)
@@ -979,6 +991,158 @@ async def on_voice_state_update(member, before, after):
 
     except Exception as e:
         log_discord_error("on_voice_state_update", e, GUILD_ID)
+
+
+# =============================================================================
+# Voice Channel Role Management
+# =============================================================================
+async def _handle_user_voice_role_management(member, before, after):
+    """
+    Manage panel access roles for users joining/leaving voice channels.
+
+    Automatically assigns the panel access role when users join any voice channel
+    and removes it when they leave all voice channels. This ensures only users
+    currently in voice channels can see and interact with the control panel.
+
+    Features:
+    - Assigns panel access role when joining voice channels
+    - Removes panel access role when leaving voice channels
+    - Comprehensive error handling and logging
+    - Prevents duplicate role assignments
+
+    Args:
+        member: Discord member whose voice state changed
+        before: Previous voice state
+        after: New voice state
+    """
+    try:
+        # Skip if panel access role management is disabled
+        if PANEL_ACCESS_ROLE_ID == 0:
+            return
+
+        # Get the panel access role
+        guild = member.guild
+        panel_role = guild.get_role(PANEL_ACCESS_ROLE_ID)
+
+        if not panel_role:
+            log_tree_branch(
+                "role_error", f"Panel access role {PANEL_ACCESS_ROLE_ID} not found"
+            )
+            return
+
+        # Check if user joined a voice channel (wasn't in VC, now is)
+        if not before.channel and after.channel:
+            await _assign_panel_access_role(member, panel_role, after.channel)
+
+        # Check if user left all voice channels (was in VC, now isn't)
+        elif before.channel and not after.channel:
+            await _remove_panel_access_role(member, panel_role, before.channel)
+
+        # User moved between voice channels - role should already be assigned
+        elif before.channel and after.channel and before.channel != after.channel:
+            log_user_interaction(
+                f"👥 **{member.display_name}** moved from `{before.channel.name}` to `{after.channel.name}`",
+                "voice_channel_move",
+            )
+
+    except Exception as e:
+        log_error_with_traceback(
+            f"Error managing voice role for {member.display_name}", e
+        )
+
+
+async def _assign_panel_access_role(member, panel_role, channel):
+    """
+    Assign the panel access role to a user who joined a voice channel.
+
+    Args:
+        member: Discord member to assign role to
+        panel_role: The panel access role object
+        channel: Voice channel the user joined
+    """
+    try:
+        # Check if user already has the role
+        if panel_role in member.roles:
+            log_tree_branch(
+                "role_skip", f"{member.display_name} already has panel access role"
+            )
+            return
+
+        # Assign the role
+        await member.add_roles(
+            panel_role, reason="Joined voice channel for panel access"
+        )
+
+        # Log the role assignment with user interaction formatting
+        log_user_interaction(
+            f"🎤 **{member.display_name}** joined `{channel.name}` - Panel access **GRANTED**",
+            "voice_join_role_assigned",
+        )
+
+        log_tree_branch(
+            "role_assigned", f"✅ Panel access role assigned to {member.display_name}"
+        )
+
+    except discord.Forbidden:
+        log_tree_branch(
+            "role_error",
+            f"❌ No permission to assign panel access role to {member.display_name}",
+        )
+    except discord.HTTPException as e:
+        log_error_with_traceback(
+            f"HTTP error assigning panel access role to {member.display_name}", e
+        )
+    except Exception as e:
+        log_error_with_traceback(
+            f"Unexpected error assigning panel access role to {member.display_name}", e
+        )
+
+
+async def _remove_panel_access_role(member, panel_role, channel):
+    """
+    Remove the panel access role from a user who left all voice channels.
+
+    Args:
+        member: Discord member to remove role from
+        panel_role: The panel access role object
+        channel: Voice channel the user left
+    """
+    try:
+        # Check if user has the role
+        if panel_role not in member.roles:
+            log_tree_branch(
+                "role_skip", f"{member.display_name} doesn't have panel access role"
+            )
+            return
+
+        # Remove the role
+        await member.remove_roles(
+            panel_role, reason="Left voice channel, removing panel access"
+        )
+
+        # Log the role removal with user interaction formatting
+        log_user_interaction(
+            f"👋 **{member.display_name}** left `{channel.name}` - Panel access **REVOKED**",
+            "voice_leave_role_removed",
+        )
+
+        log_tree_branch(
+            "role_removed", f"✅ Panel access role removed from {member.display_name}"
+        )
+
+    except discord.Forbidden:
+        log_tree_branch(
+            "role_error",
+            f"❌ No permission to remove panel access role from {member.display_name}",
+        )
+    except discord.HTTPException as e:
+        log_error_with_traceback(
+            f"HTTP error removing panel access role from {member.display_name}", e
+        )
+    except Exception as e:
+        log_error_with_traceback(
+            f"Unexpected error removing panel access role from {member.display_name}", e
+        )
 
 
 # =============================================================================
