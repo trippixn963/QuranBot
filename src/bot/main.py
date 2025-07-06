@@ -330,12 +330,12 @@ intents.message_content = True
 intents.guilds = True
 intents.voice_states = True
 
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix=commands.when_mentioned, intents=intents)
 
 # =============================================================================
 # Bot Version & Configuration
 # =============================================================================
-BOT_VERSION = "1.5.0"
+BOT_VERSION = "1.6.0"
 BOT_NAME = "QuranBot"
 
 # Configuration from Environment Variables
@@ -687,6 +687,37 @@ async def on_ready():
                     except Exception as e:
                         log_error_with_traceback("Error setting up control panel", e)
                         # Control panel failure is not critical, continue without it
+
+                # =============================================================================
+                # Commands Setup (Slash Commands Only)
+                # =============================================================================
+                # Set up slash commands - prefix commands are disabled
+                log_spacing()
+                log_tree_branch(
+                    "command_system",
+                    "Setting up slash commands (prefix commands disabled)",
+                )
+                log_tree_branch(
+                    "prefix_status",
+                    "⚠️ Prefix commands only work when bot is mentioned (@bot)",
+                )
+                log_tree_branch("slash_status", "✅ Slash commands enabled")
+
+                try:
+                    from src.commands import setup_credits_command
+
+                    setup_credits_command(bot)
+
+                    # Sync commands to Discord
+                    await bot.tree.sync()
+                    log_tree_branch(
+                        "slash_commands", "✅ Slash commands synced successfully"
+                    )
+                    log_tree_branch("available_commands", "/credits")
+
+                except Exception as e:
+                    log_error_with_traceback("Error setting up slash commands", e)
+                    # Command setup failure is not critical, continue without them
 
                 # =============================================================================
                 # Audio Playback Initialization
@@ -1167,16 +1198,20 @@ async def on_resumed():
 @bot.event
 async def on_command_error(ctx, error):
     """
-    Handle command errors with detailed logging and user feedback.
+    Handle command errors with detailed logging (slash commands only).
 
-    Provides comprehensive error handling for Discord commands with
-    appropriate logging and optional user feedback for debugging.
+    Since prefix commands are disabled, this handler primarily deals with
+    slash command errors and provides appropriate logging.
 
     Args:
         ctx: Command context
         error: Command error that occurred
     """
     try:
+        # Skip logging for CommandNotFound since we don't use prefix commands
+        if isinstance(error, commands.CommandNotFound):
+            return
+
         # Log the error with context information
         log_discord_error(
             "command_error",
@@ -1188,6 +1223,10 @@ async def on_command_error(ctx, error):
         # Add command-specific context
         log_tree_branch("command", ctx.command.name if ctx.command else "Unknown")
         log_tree_branch("user", str(ctx.author))
+        log_tree_branch(
+            "command_type",
+            "slash_command" if hasattr(ctx, "interaction") else "legacy_command",
+        )
         log_tree_final("error_type", type(error).__name__)
 
     except Exception as e:
