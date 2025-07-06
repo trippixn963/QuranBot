@@ -50,18 +50,45 @@ class SurahSearchModal(Modal):
     async def on_submit(self, interaction: discord.Interaction):
         """Handle search submission"""
         try:
+            # Log search initiation with user details
+            log_tree_branch(
+                "search_initiated",
+                f"User: {interaction.user.display_name} ({interaction.user.id})",
+            )
+
             query = self.search_input.value.strip()
 
             if not query:
+                log_tree_branch(
+                    "search_empty_query", "User submitted empty search query"
+                )
                 await interaction.response.send_message(
                     "❌ Please enter a search term!", ephemeral=True
                 )
                 return
 
+            # Log search query details
+            log_tree_branch("search_query", f"'{query}' (length: {len(query)} chars)")
+
             # Search for surahs
             results = search_surahs(query)
 
+            # Log search results count
+            log_tree_branch("search_results_count", f"{len(results)} surah(s) found")
+
+            if results:
+                # Log found surahs for debugging (first 3)
+                result_names = [
+                    f"{s.name_transliteration} ({s.number})" for s in results[:3]
+                ]
+                if len(results) > 3:
+                    result_names.append(f"... and {len(results) - 3} more")
+                log_tree_branch("search_results_preview", ", ".join(result_names))
+
             if not results:
+                log_tree_branch(
+                    "search_no_results", f"No matches found for query '{query}'"
+                )
                 await interaction.response.send_message(
                     f"❌ No surahs found for '{query}'. Try searching by:\n"
                     f"• **Number**: 1-114 (e.g., '36')\n"
@@ -75,6 +102,12 @@ class SurahSearchModal(Modal):
                 # If only one result, show confirmation
             if len(results) == 1:
                 surah = results[0]
+
+                # Log single result found
+                log_tree_branch(
+                    "search_single_result",
+                    f"Exact match: {surah.name_transliteration} (#{surah.number})",
+                )
 
                 # Show confirmation embed with options
                 confirmation_view = SurahConfirmationView(
@@ -101,12 +134,21 @@ class SurahSearchModal(Modal):
 
                 embed.set_footer(text="Choose an action below:")
 
+                log_tree_branch(
+                    "search_confirmation_sent",
+                    "Single result confirmation embed sent to user",
+                )
                 await interaction.response.send_message(
                     embed=embed, view=confirmation_view, ephemeral=True
                 )
                 return
 
             # Multiple results - show selection view
+            log_tree_branch(
+                "search_multiple_results",
+                f"Showing selection dropdown for {len(results)} results",
+            )
+
             search_results_view = SearchResultsView(
                 results=results,
                 query=query,
@@ -135,6 +177,10 @@ class SurahSearchModal(Modal):
                     inline=False,
                 )
 
+            log_tree_branch(
+                "search_results_sent",
+                f"Multiple results embed sent with {min(5, len(results))} visible results",
+            )
             await interaction.response.send_message(
                 embed=embed, view=search_results_view, ephemeral=True
             )
@@ -202,16 +248,37 @@ class SearchResultsSelect(Select):
     async def callback(self, interaction: discord.Interaction):
         """Handle surah selection from search results"""
         try:
+            # Log selection from multiple results
+            log_tree_branch(
+                "search_selection_initiated",
+                f"User: {interaction.user.display_name} selecting from results",
+            )
+
             selected_surah_number = int(self.values[0])
+            log_tree_branch(
+                "search_selected_number",
+                f"Selected surah number: {selected_surah_number}",
+            )
+
             surah = get_surah_info(selected_surah_number)
 
             if not surah:
+                log_tree_branch(
+                    "search_selection_error",
+                    f"Failed to load surah info for number {selected_surah_number}",
+                )
                 await interaction.response.send_message(
                     "❌ Error loading surah information.", ephemeral=True
                 )
                 return
 
-                # Show confirmation embed with options
+            # Log successful selection
+            log_tree_branch(
+                "search_selection_success",
+                f"Selected: {surah.name_transliteration} (#{surah.number})",
+            )
+
+            # Show confirmation embed with options
             confirmation_view = SurahConfirmationView(
                 surah=surah,
                 query=self.query,
@@ -273,16 +340,41 @@ class SurahConfirmationView(View):
     async def play_surah(self, interaction: discord.Interaction, button: Button):
         """Play the selected surah"""
         try:
+            # Log play button interaction
+            log_tree_branch(
+                "search_play_initiated",
+                f"User: {interaction.user.display_name} playing surah from search",
+            )
+            log_tree_branch(
+                "search_play_surah",
+                f"Playing: {self.surah.name_transliteration} (#{self.surah.number})",
+            )
+            log_tree_branch("search_play_query", f"Original query: '{self.query}'")
+
             # Update last activity in control panel
             if self.control_panel_view:
                 self.control_panel_view._update_last_activity(
                     interaction.user,
                     f"searched for '{self.query}' → {self.surah.name_transliteration}",
                 )
+                log_tree_branch(
+                    "search_activity_updated", "Control panel activity tracking updated"
+                )
 
             # Switch to the surah
             if self.audio_manager:
+                log_tree_branch(
+                    "search_audio_switching",
+                    f"Switching audio to surah {self.surah.number}",
+                )
                 await self.audio_manager.jump_to_surah(self.surah.number)
+                log_tree_branch(
+                    "search_audio_switched", "Audio manager switched to selected surah"
+                )
+            else:
+                log_tree_branch(
+                    "search_no_audio_manager", "No audio manager available for playback"
+                )
 
             # Disable all buttons
             for item in self.children:
@@ -302,6 +394,7 @@ class SurahConfirmationView(View):
 
             embed.set_footer(text="Enjoy listening! 🎧")
 
+            log_tree_branch("search_play_confirmed", "Now playing embed sent to user")
             await interaction.response.edit_message(embed=embed, view=self)
 
         except Exception as e:
@@ -316,9 +409,23 @@ class SurahConfirmationView(View):
     async def search_again(self, interaction: discord.Interaction, button: Button):
         """Open search modal again"""
         try:
+            # Log search again interaction
+            log_tree_branch(
+                "search_again_initiated",
+                f"User: {interaction.user.display_name} searching again",
+            )
+            log_tree_branch(
+                "search_again_previous",
+                f"Previous query: '{self.query}' → {self.surah.name_transliteration}",
+            )
+
             search_modal = SurahSearchModal(
                 audio_manager=self.audio_manager,
                 control_panel_view=self.control_panel_view,
+            )
+
+            log_tree_branch(
+                "search_again_modal_opened", "New search modal opened for user"
             )
             await interaction.response.send_modal(search_modal)
 
@@ -332,6 +439,16 @@ class SurahConfirmationView(View):
     async def cancel_selection(self, interaction: discord.Interaction, button: Button):
         """Cancel the selection"""
         try:
+            # Log cancellation interaction
+            log_tree_branch(
+                "search_cancel_initiated",
+                f"User: {interaction.user.display_name} cancelling selection",
+            )
+            log_tree_branch(
+                "search_cancel_details",
+                f"Cancelled: '{self.query}' → {self.surah.name_transliteration}",
+            )
+
             # Disable all buttons
             for item in self.children:
                 item.disabled = True
@@ -344,6 +461,9 @@ class SurahConfirmationView(View):
 
             embed.set_footer(text="Use the search button again anytime!")
 
+            log_tree_branch(
+                "search_cancel_confirmed", "Selection cancelled embed sent to user"
+            )
             await interaction.response.edit_message(embed=embed, view=self)
 
         except Exception as e:
@@ -845,10 +965,20 @@ class SimpleControlPanelView(View):
     async def search_surah(self, interaction: discord.Interaction, button: Button):
         """Open search modal for finding surahs"""
         try:
+            # Log search button interaction
+            log_tree_branch(
+                "search_button_clicked",
+                f"User: {interaction.user.display_name} ({interaction.user.id})",
+            )
+            self._update_last_activity(interaction.user, "opened search modal")
+
             search_modal = SurahSearchModal(
                 audio_manager=self.audio_manager, control_panel_view=self
             )
+
+            log_tree_branch("search_modal_opened", "Search modal opened for user")
             await interaction.response.send_modal(search_modal)
+
         except Exception as e:
             log_error_with_traceback("Error opening search modal", e)
             await interaction.response.defer()
