@@ -24,6 +24,7 @@ _Built with ❤️ for the Muslim Ummah - Shared as-is for educational purposes_
 >
 > This project is provided **"AS-IS"** with absolutely no support. It is shared for educational purposes only.
 
+
 **What this means:**
 
 - No bug reports will be addressed
