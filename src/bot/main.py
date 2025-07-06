@@ -915,108 +915,150 @@ async def on_voice_state_update(member, before, after):
 
     try:
         # =============================================================================
-        # User Role Management for Panel Access
+        # Bot Voice State Handling (Reconnection Logic)
         # =============================================================================
-        if member != bot.user:
-            await _handle_user_voice_role_management(member, before, after)
+        if member == bot.user:
+            # Detect disconnection (was in channel, now not in channel)
+            if before.channel and not after.channel:
+                log_section_start("Bot Disconnected", "⚠️")
+                log_tree_branch("member", member.display_name)
+                log_tree_branch(
+                    "before_channel", before.channel.name if before.channel else "None"
+                )
+                log_tree_final(
+                    "after_channel", after.channel.name if after.channel else "None"
+                )
+
+                # Stop AudioManager when disconnected to prevent resource leaks
+                if audio_manager:
+                    try:
+                        await audio_manager.stop_playback()
+                        log_tree_branch("audio_cleanup", "✅ Audio playback stopped")
+                    except Exception as e:
+                        log_error_with_traceback("Error stopping audio playback", e)
+
+                # Smart reconnection with delay to prevent loops
+                guild = before.channel.guild
+                channel = before.channel
+
+                # Add delay to prevent rapid reconnection attempts
+                log_tree_branch("reconnection", "Waiting 5 seconds before reconnection")
+                await asyncio.sleep(5)
+
+                try:
+                    log_tree_branch(
+                        "reconnection", "Attempting reconnect after disconnect"
+                    )
+                    voice_client = await channel.connect(reconnect=False, timeout=60)
+
+                    if audio_manager:
+                        audio_manager.set_voice_client(voice_client)
+                        await audio_manager.start_playback()
+
+                    log_tree_final("reconnect", f"✅ Reconnected to {channel.name}")
+
+                except discord.errors.ClientException as e:
+                    if "already connected" in str(e).lower():
+                        log_tree_branch("reconnect_info", "Already connected to voice")
+                    else:
+                        log_error_with_traceback(
+                            "Discord client error during reconnection", e
+                        )
+                        log_tree_final("reconnect_status", "❌ Reconnection failed")
+
+                except asyncio.TimeoutError:
+                    log_error_with_traceback(
+                        "Reconnection timeout", TimeoutError("Connection timeout")
+                    )
+                    log_tree_final("reconnect_status", "❌ Reconnection timed out")
+
+                except Exception as e:
+                    log_error_with_traceback("Reconnection failed", e)
+                    log_tree_final(
+                        "reconnect_status", "❌ Will retry on next disconnect"
+                    )
+
+            # Handle channel switches (moved from one channel to another)
+            elif before.channel and after.channel and before.channel != after.channel:
+                log_tree_branch(
+                    "channel_switch",
+                    f"Moved from {before.channel.name} to {after.channel.name}",
+                )
+
+                # Update audio manager with new voice client if needed
+                if audio_manager and hasattr(after.channel.guild, "voice_client"):
+                    voice_client = after.channel.guild.voice_client
+                    if voice_client:
+                        audio_manager.set_voice_client(voice_client)
             return
 
-        # Detect disconnection (was in channel, now not in channel)
-        if before.channel and not after.channel:
-            log_section_start("Bot Disconnected", "⚠️")
-            log_tree_branch("member", member.display_name)
+        # =============================================================================
+        # User Voice State Handling (Logging & Role Management)
+        # =============================================================================
+
+        # User joined a voice channel (wasn't in VC, now is)
+        if not before.channel and after.channel:
+            log_user_interaction(
+                f"🎤 **{member.display_name}** joined voice channel `{after.channel.name}`",
+                "voice_channel_join",
+            )
             log_tree_branch(
-                "before_channel", before.channel.name if before.channel else "None"
-            )
-            log_tree_final(
-                "after_channel", after.channel.name if after.channel else "None"
+                "voice_join", f"👤 {member.display_name} → {after.channel.name}"
             )
 
-            # Stop AudioManager when disconnected to prevent resource leaks
-            if audio_manager:
-                try:
-                    await audio_manager.stop_playback()
-                    log_tree_branch("audio_cleanup", "✅ Audio playback stopped")
-                except Exception as e:
-                    log_error_with_traceback("Error stopping audio playback", e)
+        # User left all voice channels (was in VC, now isn't)
+        elif before.channel and not after.channel:
+            log_user_interaction(
+                f"👋 **{member.display_name}** left voice channel `{before.channel.name}`",
+                "voice_channel_leave",
+            )
+            log_tree_branch(
+                "voice_leave", f"👤 {member.display_name} ← {before.channel.name}"
+            )
 
-            # Smart reconnection with delay to prevent loops
-            guild = before.channel.guild
-            channel = before.channel
-
-            # Add delay to prevent rapid reconnection attempts
-            log_tree_branch("reconnection", "Waiting 5 seconds before reconnection")
-            await asyncio.sleep(5)
-
-            try:
-                log_tree_branch("reconnection", "Attempting reconnect after disconnect")
-                voice_client = await channel.connect(reconnect=False, timeout=60)
-
-                if audio_manager:
-                    audio_manager.set_voice_client(voice_client)
-                    await audio_manager.start_playback()
-
-                log_tree_final("reconnect", f"✅ Reconnected to {channel.name}")
-
-            except discord.errors.ClientException as e:
-                if "already connected" in str(e).lower():
-                    log_tree_branch("reconnect_info", "Already connected to voice")
-                else:
-                    log_error_with_traceback(
-                        "Discord client error during reconnection", e
-                    )
-                    log_tree_final("reconnect_status", "❌ Reconnection failed")
-
-            except asyncio.TimeoutError:
-                log_error_with_traceback(
-                    "Reconnection timeout", TimeoutError("Connection timeout")
-                )
-                log_tree_final("reconnect_status", "❌ Reconnection timed out")
-
-            except Exception as e:
-                log_error_with_traceback("Reconnection failed", e)
-                log_tree_final("reconnect_status", "❌ Will retry on next disconnect")
-
-        # Handle channel switches (moved from one channel to another)
+        # User moved between voice channels
         elif before.channel and after.channel and before.channel != after.channel:
+            log_user_interaction(
+                f"👥 **{member.display_name}** moved from `{before.channel.name}` to `{after.channel.name}`",
+                "voice_channel_move",
+            )
             log_tree_branch(
-                "channel_switch",
-                f"Moved from {before.channel.name} to {after.channel.name}",
+                "voice_move",
+                f"👤 {member.display_name}: {before.channel.name} → {after.channel.name}",
             )
 
-            # Update audio manager with new voice client if needed
-            if audio_manager and hasattr(after.channel.guild, "voice_client"):
-                voice_client = after.channel.guild.voice_client
-                if voice_client:
-                    audio_manager.set_voice_client(voice_client)
+        # User muted/unmuted or deafened/undeafened (staying in same channel)
+        elif before.channel and after.channel and before.channel == after.channel:
+            status_changes = []
 
-    except Exception as e:
-        log_discord_error("on_voice_state_update", e, GUILD_ID)
+            if before.self_mute != after.self_mute:
+                status_changes.append(
+                    f"{'🔇 Muted' if after.self_mute else '🔊 Unmuted'}"
+                )
+            if before.self_deaf != after.self_deaf:
+                status_changes.append(
+                    f"{'🔇 Deafened' if after.self_deaf else '🔊 Undeafened'}"
+                )
+            if before.mute != after.mute:
+                status_changes.append(
+                    f"{'🔇 Server Muted' if after.mute else '🔊 Server Unmuted'}"
+                )
+            if before.deaf != after.deaf:
+                status_changes.append(
+                    f"{'🔇 Server Deafened' if after.deaf else '🔊 Server Undeafened'}"
+                )
 
+            if status_changes:
+                status_text = " & ".join(status_changes)
+                log_tree_branch(
+                    "voice_status",
+                    f"👤 {member.display_name} in {after.channel.name}: {status_text}",
+                )
 
-# =============================================================================
-# Voice Channel Role Management
-# =============================================================================
-async def _handle_user_voice_role_management(member, before, after):
-    """
-    Manage panel access roles for users joining/leaving voice channels.
+        # =============================================================================
+        # Panel Access Role Management
+        # =============================================================================
 
-    Automatically assigns the panel access role when users join any voice channel
-    and removes it when they leave all voice channels. This ensures only users
-    currently in voice channels can see and interact with the control panel.
-
-    Features:
-    - Assigns panel access role when joining voice channels
-    - Removes panel access role when leaving voice channels
-    - Comprehensive error handling and logging
-    - Prevents duplicate role assignments
-
-    Args:
-        member: Discord member whose voice state changed
-        before: Previous voice state
-        after: New voice state
-    """
-    try:
         # Skip if panel access role management is disabled
         if PANEL_ACCESS_ROLE_ID == 0:
             return
@@ -1039,17 +1081,8 @@ async def _handle_user_voice_role_management(member, before, after):
         elif before.channel and not after.channel:
             await _remove_panel_access_role(member, panel_role, before.channel)
 
-        # User moved between voice channels - role should already be assigned
-        elif before.channel and after.channel and before.channel != after.channel:
-            log_user_interaction(
-                f"👥 **{member.display_name}** moved from `{before.channel.name}` to `{after.channel.name}`",
-                "voice_channel_move",
-            )
-
     except Exception as e:
-        log_error_with_traceback(
-            f"Error managing voice role for {member.display_name}", e
-        )
+        log_discord_error("on_voice_state_update", e, GUILD_ID)
 
 
 async def _assign_panel_access_role(member, panel_role, channel):
