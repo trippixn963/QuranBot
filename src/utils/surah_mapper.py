@@ -15,6 +15,14 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 try:
+    import discord
+
+    DISCORD_AVAILABLE = True
+except ImportError:
+    discord = None
+    DISCORD_AVAILABLE = False
+
+try:
     from .tree_log import (
         log_critical_error,
         log_error_with_traceback,
@@ -198,29 +206,17 @@ def get_surah_info(surah_number: int) -> Optional[SurahInfo]:
         return None
 
 
-def get_surah_name(
-    surah_number: int, include_emoji: bool = True, language: str = "english"
-) -> str:
-    """Get formatted Surah name"""
+def get_surah_name(surah_number: int) -> str:
+    """Get the transliterated name of a Surah"""
     try:
         surah = get_surah_info(surah_number)
-        if not surah:
+        if surah:
+            return surah.name_transliteration
+        else:
             log_tree(f"⚠️ Surah {surah_number} not found, using fallback")
             return f"Surah {surah_number}"
-
-        if language == "arabic":
-            name = surah.name_arabic
-        elif language == "transliteration":
-            name = surah.name_transliteration
-        else:  # english
-            name = surah.name_english
-
-        if include_emoji:
-            return f"{surah.emoji} {name}"
-        return name
-
     except Exception as e:
-        log_error_with_traceback(f"Error formatting Surah name for {surah_number}", e)
+        log_error_with_traceback(f"Error getting Surah name for {surah_number}", e)
         return f"Surah {surah_number}"
 
 
@@ -233,18 +229,18 @@ def get_surah_display(surah_number: int, format_type: str = "full") -> str:
             return f"Surah {surah_number}"
 
         if format_type == "short":
-            return f"{surah.emoji} {surah.name_english}"
+            return f"{surah.emoji} {surah.name_transliteration}"
         elif format_type == "number":
-            return f"{surah_number:03d}. {surah.emoji} {surah.name_english}"
+            return f"{surah_number:03d}. {surah.emoji} {surah.name_transliteration}"
         elif format_type == "detailed":
             return (
-                f"{surah_number:03d}. {surah.emoji} {surah.name_english} "
-                f"({surah.name_transliteration}) - {surah.verses} verses"
+                f"{surah_number:03d}. {surah.emoji} {surah.name_transliteration} "
+                f"({surah.name_arabic}) - {surah.verses} verses"
             )
         else:  # full
             return (
-                f"{surah_number:03d}. {surah.emoji} {surah.name_english} "
-                f"({surah.name_transliteration})"
+                f"{surah_number:03d}. {surah.emoji} {surah.name_transliteration} "
+                f"({surah.name_arabic})"
             )
 
     except Exception as e:
@@ -254,51 +250,55 @@ def get_surah_display(surah_number: int, format_type: str = "full") -> str:
         return f"Surah {surah_number}"
 
 
-def get_random_surah() -> Optional[SurahInfo]:
+def get_random_surah() -> SurahInfo:
     """Get a random Surah"""
     try:
-        if not SURAH_DATABASE:
-            log_critical_error("Cannot get random Surah", "Database not loaded")
-            return None
-
-        surah = random.choice(list(SURAH_DATABASE.values()))
-        log_tree(f"🎲 Selected random Surah: {surah.name_english}")
-        return surah
-
+        surah_number = random.randint(1, 114)
+        surah = get_surah_info(surah_number)
+        if surah:
+            log_tree(f"🎲 Selected random Surah: {surah.name_transliteration}")
+            return surah
+        else:
+            # Fallback to Al-Fatiha if random selection fails
+            return get_surah_info(1)
     except Exception as e:
         log_error_with_traceback("Error getting random Surah", e)
-        return None
+        return get_surah_info(1)
 
 
 def search_surahs(query: str) -> List[SurahInfo]:
-    """Search for Surahs by name (English, Arabic, or transliteration)"""
+    """Search for Surahs by name or number"""
     try:
-        if not query or not query.strip():
-            log_warning_with_context(
-                "Empty search query provided", "Returning empty results"
-            )
-            return []
-
-        if not SURAH_DATABASE:
-            log_critical_error("Cannot search Surahs", "Database not loaded")
-            return []
-
-        query = query.lower().strip()
         results = []
+        query_lower = query.lower().strip()
 
-        for surah in SURAH_DATABASE.values():
+        # Try exact number match first
+        if query_lower.isdigit():
+            surah_number = int(query_lower)
+            if validate_surah_number(surah_number):
+                surah = get_surah_info(surah_number)
+                if surah:
+                    results.append(surah)
+                    return results
+
+        # Search by name (prioritize transliteration)
+        for i in range(1, 115):
+            surah = get_surah_info(i)
+            if not surah:
+                continue
+
+            # Check transliteration first
             if (
-                query in surah.name_english.lower()
-                or query in surah.name_transliteration.lower()
-                or query in surah.name_arabic
+                query_lower in surah.name_transliteration.lower()
+                or query_lower in surah.name_arabic
+                or query_lower in surah.name_english.lower()
             ):
                 results.append(surah)
 
-        log_tree(f"🔍 Search '{query}' found {len(results)} Surahs")
-        return results
+        return results[:10]  # Limit to 10 results
 
     except Exception as e:
-        log_error_with_traceback(f"Error searching Surahs with query '{query}'", e)
+        log_error_with_traceback("Error searching Surahs", e)
         return []
 
 
@@ -428,67 +428,78 @@ def get_surah_stats() -> Dict[str, int]:
 # =============================================================================
 
 
-def format_now_playing(surah_number: int, reciter: str = "Saad Al Ghamdi") -> str:
-    """Format 'now playing' message for Discord"""
+def format_now_playing(surah_info: SurahInfo, reciter: str = "Unknown") -> str:
+    """Format a 'now playing' message for Discord"""
     try:
-        surah = get_surah_info(surah_number)
-        if not surah:
-            log_tree(f"⚠️ Using fallback format for Surah {surah_number}")
-            return f"🎵 Now Playing: Surah {surah_number} by {reciter}"
+        if not surah_info:
+            log_tree("⚠️ No Surah info provided for now playing message")
+            return "🎵 **Now Playing** • *Unknown*"
 
-        formatted = (
-            f"🎵 **Now Playing**\n"
-            f"{surah.emoji} **{surah.name_english}** ({surah.name_transliteration})\n"
-            f"📖 Surah {surah_number} • {surah.verses} verses • {surah.revelation_type.value}\n"
-            f"🎤 Recited by **{reciter}**"
+        # Create beautiful now playing message with transliterated name
+        message = (
+            f"🎵 **Now Playing**\n\n"
+            f"{surah_info.emoji} **{surah_info.name_transliteration}** ({surah_info.name_arabic})\n"
+            f"📖 *Surah {surah_info.number:03d} • {surah_info.verses} verses*\n"
+            f"🎤 *Reciter: {reciter}*"
         )
 
-        log_tree(f"🎵 Formatted Discord message for {surah.name_english}")
-        return formatted
+        log_tree(f"🎵 Formatted Discord message for {surah_info.name_transliteration}")
+        return message
 
     except Exception as e:
-        log_error_with_traceback(
-            f"Error formatting 'now playing' for Surah {surah_number}", e
-        )
-        return f"🎵 Now Playing: Surah {surah_number} by {reciter}"
+        log_error_with_traceback("Error formatting now playing message", e)
+        return "🎵 **Now Playing** • *Error loading Surah info*"
 
 
-def format_surah_info_embed(surah_number: int) -> Dict[str, str]:
-    """Format Surah information for Discord embed"""
+def format_surah_embed(
+    surah_info: SurahInfo, reciter: str = "Unknown", color: int = 0x00D4AA
+):
+    """Format a Discord embed for Surah information"""
     try:
-        surah = get_surah_info(surah_number)
-        if not surah:
-            log_tree(f"⚠️ Using fallback embed for Surah {surah_number}")
-            return {
-                "title": f"Surah {surah_number}",
-                "description": "Information not available",
-            }
+        if not DISCORD_AVAILABLE or not discord:
+            log_tree("⚠️ Discord not available for embed formatting")
+            return None
 
-        embed_data = {
-            "title": f"{surah.emoji} {surah.name_english} ({surah.name_transliteration})",
-            "description": surah.description,
-            "fields": [
-                {"name": "Arabic Name", "value": surah.name_arabic, "inline": True},
-                {"name": "Number", "value": str(surah.number), "inline": True},
-                {"name": "Verses", "value": str(surah.verses), "inline": True},
-                {
-                    "name": "Revelation",
-                    "value": surah.revelation_type.value,
-                    "inline": True,
-                },
-                {"name": "Meaning", "value": surah.meaning, "inline": True},
-            ],
-        }
+        if not surah_info:
+            log_tree("⚠️ No Surah info provided for embed")
+            return discord.Embed(
+                title="❌ Error",
+                description="*Surah information not available*",
+                color=0xFF0000,
+            )
 
-        log_tree(f"📋 Formatted Discord embed for {surah.name_english}")
-        return embed_data
+        # Create beautiful embed with transliterated name
+        embed = discord.Embed(
+            title=f"{surah_info.emoji} {surah_info.name_transliteration} ({surah_info.name_arabic})",
+            color=color,
+        )
+
+        embed.add_field(
+            name="📖 Surah Number", value=f"{surah_info.number:03d}", inline=True
+        )
+        embed.add_field(name="📜 Verses", value=f"{surah_info.verses}", inline=True)
+        embed.add_field(
+            name="🏛️ Type", value=f"{surah_info.revelation_type}", inline=True
+        )
+        embed.add_field(name="🎤 Reciter", value=f"{reciter}", inline=False)
+
+        if surah_info.description:
+            embed.add_field(
+                name="📝 Description", value=surah_info.description, inline=False
+            )
+
+        log_tree(f"📋 Formatted Discord embed for {surah_info.name_transliteration}")
+        return embed
 
     except Exception as e:
-        log_error_with_traceback(f"Error formatting embed for Surah {surah_number}", e)
-        return {
-            "title": f"Surah {surah_number}",
-            "description": "Error loading information",
-        }
+        log_error_with_traceback("Error formatting Surah embed", e)
+        if discord:
+            return discord.Embed(
+                title="❌ Error",
+                description="*Error loading Surah information*",
+                color=0xFF0000,
+            )
+        return None
 
 
 # =============================================================================
@@ -531,6 +542,6 @@ if __name__ == "__main__":
 
     # Test formatting
     print(f"\n\nNow Playing Format:")
-    print(format_now_playing(36, "Saad Al Ghamdi"))
+    print(format_now_playing(get_surah_info(36), "Saad Al Ghamdi"))
 
     log_tree(f"✅ All tests completed successfully")
