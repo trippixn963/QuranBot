@@ -11,13 +11,14 @@ from typing import Any, Dict, List, Optional
 
 import discord
 
-from utils.surah_mapper import (
+from .state_manager import state_manager
+from .surah_mapper import (
     format_now_playing,
     get_surah_display,
     get_surah_name,
     validate_surah_number,
 )
-from utils.tree_log import (
+from .tree_log import (
     log_async_error,
     log_error_with_traceback,
     log_progress,
@@ -31,20 +32,34 @@ from utils.tree_log import (
 class AudioManager:
     """Manages audio playback state and controls"""
 
-    def __init__(self, bot, ffmpeg_path: str, audio_base_folder: str = "audio"):
+    def __init__(
+        self,
+        bot,
+        ffmpeg_path: str,
+        audio_base_folder: str = "audio",
+        default_reciter: str = "Saad Al Ghamdi",
+        default_shuffle: bool = False,
+        default_loop: bool = False,
+    ):
         self.bot = bot
         self.ffmpeg_path = ffmpeg_path
         self.audio_base_folder = audio_base_folder
         self.voice_client: Optional[discord.VoiceClient] = None
         self.rich_presence = None
 
-        # Playback state
+        # Store default values from environment
+        self.default_reciter = default_reciter
+        self.default_shuffle = default_shuffle
+        self.default_loop = default_loop
+
+        # Playback state - will be restored from saved state
         self.current_surah = 1
-        self.current_reciter = "Saad Al Ghamdi"
+        self.current_reciter = default_reciter
+        self.current_position = 0.0  # Position in seconds within current track
         self.is_playing = False
         self.is_paused = False
-        self.is_loop_enabled = False
-        self.is_shuffle_enabled = False
+        self.is_loop_enabled = default_loop
+        self.is_shuffle_enabled = default_shuffle
         self.current_audio_files: List[str] = []
         self.current_file_index = 0
 
@@ -53,9 +68,97 @@ class AudioManager:
 
         # Playback task
         self.playback_task: Optional[asyncio.Task] = None
+        self.position_save_task: Optional[asyncio.Task] = None
 
         # Available reciters (based on audio folder structure)
         self.available_reciters = self._discover_reciters()
+
+        # Load previous state
+        self._load_saved_state()
+
+    def _load_saved_state(self):
+        """Load previous playback state from state manager"""
+        try:
+            log_tree_branch("loading_state", "Restoring previous session...")
+
+            state = state_manager.load_playback_state()
+            resume_info = state_manager.get_resume_info()
+
+            # Restore state (but reset reciter, loop, shuffle to environment defaults on restart)
+            self.current_surah = state["current_surah"]
+
+            # Always reset to default reciter on restart
+            self.current_reciter = self.default_reciter
+
+            self.current_position = state["current_position"]
+
+            # Always reset loop and shuffle to environment defaults on restart
+            self.is_loop_enabled = self.default_loop
+            self.is_shuffle_enabled = self.default_shuffle
+
+            if resume_info["should_resume"]:
+                log_tree_branch(
+                    "state_resume",
+                    f"Will resume Surah {resume_info['surah']} at {resume_info['position']:.1f}s",
+                )
+            else:
+                log_tree_branch("state_fresh", "Starting fresh session")
+
+            # Log default values being applied
+            log_tree_branch("default_reciter", f"Using: {self.current_reciter}")
+            log_tree_branch(
+                "default_loop", f"{'ON' if self.is_loop_enabled else 'OFF'}"
+            )
+            log_tree_branch(
+                "default_shuffle", f"{'ON' if self.is_shuffle_enabled else 'OFF'}"
+            )
+
+        except Exception as e:
+            log_error_with_traceback("Error loading saved state", e)
+
+    def _start_position_saving(self):
+        """Start the periodic position saving task"""
+        try:
+            if self.position_save_task and not self.position_save_task.done():
+                self.position_save_task.cancel()
+
+            self.position_save_task = asyncio.create_task(self._position_save_loop())
+            log_tree_branch("position_saving", "Started periodic state saving")
+
+        except Exception as e:
+            log_error_with_traceback("Error starting position saving", e)
+
+    async def _position_save_loop(self):
+        """Periodically save playback position"""
+        try:
+            while True:
+                await asyncio.sleep(5)  # Save every 5 seconds
+
+                if self.is_playing and self.rich_presence:
+                    try:
+                        # Get current position from rich presence
+                        track_info = self.rich_presence.get_current_track_info()
+                        if track_info:
+                            current_time = track_info.get("current_time", 0)
+                            total_time = track_info.get("duration", 0)
+
+                            # Save state
+                            state_manager.save_playback_state(
+                                current_surah=self.current_surah,
+                                current_position=current_time,
+                                current_reciter=self.current_reciter,
+                                total_duration=total_time,
+                                is_playing=self.is_playing,
+                                loop_enabled=self.is_loop_enabled,
+                                shuffle_enabled=self.is_shuffle_enabled,
+                            )
+                    except Exception as e:
+                        log_error_with_traceback("Error in position save loop", e)
+
+        except asyncio.CancelledError:
+            log_tree_branch("position_saving", "Position saving stopped")
+        except Exception as e:
+            log_error_with_traceback("Critical error in position save loop", e)
 
     def _discover_reciters(self) -> List[str]:
         """Discover available reciters from audio folder structure"""
@@ -66,18 +169,24 @@ class AudioManager:
             reciters = []
 
             if os.path.exists(self.audio_base_folder):
-                for item in os.listdir(self.audio_base_folder):
+                # First pass: collect all valid reciters
+                items = sorted(os.listdir(self.audio_base_folder))
+                for item in items:
                     folder_path = os.path.join(self.audio_base_folder, item)
                     if os.path.isdir(folder_path):
                         # Check if folder contains mp3 files
                         mp3_files = glob.glob(os.path.join(folder_path, "*.mp3"))
                         if mp3_files:
-                            reciters.append(item)
-                            log_tree_branch(
-                                "reciter_found", f"{item} ({len(mp3_files)} files)"
-                            )
+                            reciters.append((item, len(mp3_files)))
 
-            result = sorted(reciters) if reciters else ["Saad Al Ghamdi"]
+                # Second pass: log with proper tree symbols
+                for i, (reciter, file_count) in enumerate(reciters):
+                    # All reciters get branch symbol since summary comes after
+                    log_tree_branch("reciter_found", f"{reciter} ({file_count} files)")
+
+            result = (
+                sorted([r[0] for r in reciters]) if reciters else ["Saad Al Ghamdi"]
+            )
             log_tree_final("reciters_discovered", f"{len(result)} reciters available")
             return result
 
@@ -97,9 +206,46 @@ class AudioManager:
         """Set the control panel view for updates"""
         try:
             self.control_panel_view = control_panel_view
+
+            # Sync toggle states with control panel
+            if hasattr(control_panel_view, "loop_enabled"):
+                control_panel_view.loop_enabled = self.is_loop_enabled
+            if hasattr(control_panel_view, "shuffle_enabled"):
+                control_panel_view.shuffle_enabled = self.is_shuffle_enabled
+
+            # Update button styles to match current state
+            self._sync_control_panel_buttons()
+
             log_tree_branch("control_panel_set", "✅ Control panel view connected")
         except Exception as e:
             log_error_with_traceback("Error setting control panel view", e)
+
+    def _sync_control_panel_buttons(self):
+        """Sync control panel button styles with current toggle states"""
+        try:
+            if not self.control_panel_view:
+                return
+
+            # Find and update loop button
+            for item in self.control_panel_view.children:
+                if hasattr(item, "custom_id"):
+                    if "loop" in str(item.custom_id).lower() or "🔁" in str(item.label):
+                        item.style = (
+                            discord.ButtonStyle.success
+                            if self.is_loop_enabled
+                            else discord.ButtonStyle.secondary
+                        )
+                    elif "shuffle" in str(item.custom_id).lower() or "🔀" in str(
+                        item.label
+                    ):
+                        item.style = (
+                            discord.ButtonStyle.success
+                            if self.is_shuffle_enabled
+                            else discord.ButtonStyle.secondary
+                        )
+
+        except Exception as e:
+            log_error_with_traceback("Error syncing control panel buttons", e)
 
     def set_voice_client(self, voice_client: discord.VoiceClient):
         """Set the voice client for audio playback"""
@@ -137,6 +283,9 @@ class AudioManager:
                 )
                 return False
 
+            # Update file index to match current surah
+            self._update_file_index_for_surah()
+
             log_tree_branch(
                 "audio_files_loaded", f"{len(self.current_audio_files)} files"
             )
@@ -146,7 +295,18 @@ class AudioManager:
             log_error_with_traceback("Error loading audio files", e)
             return False
 
-    async def start_playback(self):
+    def _update_file_index_for_surah(self):
+        """Update file index to match current surah"""
+        try:
+            target_filename = f"{self.current_surah:03d}.mp3"
+            for i, audio_file in enumerate(self.current_audio_files):
+                if os.path.basename(audio_file) == target_filename:
+                    self.current_file_index = i
+                    break
+        except Exception as e:
+            log_error_with_traceback("Error updating file index for surah", e)
+
+    async def start_playback(self, resume_position: bool = True):
         """Start the audio playback loop"""
         try:
             log_tree_branch("starting_playback", "Initializing audio playback")
@@ -166,9 +326,14 @@ class AudioManager:
             # Stop any existing playback
             await self.stop_playback()
 
+            # Start position saving
+            self._start_position_saving()
+
             # Start new playback task
-            self.playback_task = asyncio.create_task(self._playback_loop())
-            log_tree_branch("playback_started", "✅ Audio playback started")
+            self.playback_task = asyncio.create_task(
+                self._playback_loop(resume_position=resume_position)
+            )
+            log_tree_final("playback_started", "✅ Audio playback started")
 
         except Exception as e:
             log_async_error("start_playback", e, f"Reciter: {self.current_reciter}")
@@ -177,6 +342,31 @@ class AudioManager:
         """Stop the audio playback"""
         try:
             log_tree_branch("stopping_playback", "Cleaning up audio playback")
+
+            # Save final state before stopping
+            if self.is_playing:
+                try:
+                    if self.rich_presence:
+                        track_info = self.rich_presence.get_current_track_info()
+                        if track_info:
+                            current_time = track_info.get("current_time", 0)
+                            total_time = track_info.get("duration", 0)
+
+                            state_manager.save_playback_state(
+                                current_surah=self.current_surah,
+                                current_position=current_time,
+                                current_reciter=self.current_reciter,
+                                total_duration=total_time,
+                                is_playing=False,
+                                loop_enabled=self.is_loop_enabled,
+                                shuffle_enabled=self.is_shuffle_enabled,
+                            )
+                except Exception as e:
+                    log_error_with_traceback("Error saving final state", e)
+
+            # Stop position saving task
+            if self.position_save_task and not self.position_save_task.done():
+                self.position_save_task.cancel()
 
             if self.playback_task and not self.playback_task.done():
                 self.playback_task.cancel()
@@ -200,7 +390,7 @@ class AudioManager:
             # Update control panel
             if self.control_panel_view:
                 try:
-                    await self.control_panel_view.update_display()
+                    await self.control_panel_view.update_panel()
                 except Exception as e:
                     log_error_with_traceback("Error updating control panel", e)
 
@@ -220,7 +410,7 @@ class AudioManager:
                 # Update control panel
                 if self.control_panel_view:
                     try:
-                        await self.control_panel_view.update_display()
+                        await self.control_panel_view.update_panel()
                     except Exception as e:
                         log_error_with_traceback(
                             "Error updating control panel after pause", e
@@ -240,7 +430,7 @@ class AudioManager:
                 # Update control panel
                 if self.control_panel_view:
                     try:
-                        await self.control_panel_view.update_display()
+                        await self.control_panel_view.update_panel()
                     except Exception as e:
                         log_error_with_traceback(
                             "Error updating control panel after resume", e
@@ -442,10 +632,17 @@ class AudioManager:
         except Exception as e:
             log_error_with_traceback("Error updating current Surah", e)
 
-    async def _playback_loop(self):
-        """Main playback loop"""
+    async def _playback_loop(self, resume_position: bool = True):
+        """Main playback loop with resume capability"""
         try:
-            log_tree_branch("playback_loop_started", "Beginning audio playback loop")
+            log_tree_final("playback_loop_started", "Beginning audio playback loop")
+
+            # Check if we should resume from saved position
+            should_resume = resume_position and self.current_position > 0
+            if should_resume:
+                log_tree_branch(
+                    "resuming_playback", f"Resuming from {self.current_position:.1f}s"
+                )
 
             while True:
                 try:
@@ -494,16 +691,38 @@ class AudioManager:
                                     current_file,
                                     self.current_reciter,
                                 )
+
+                                # If resuming, seek to saved position
+                                if should_resume:
+                                    await self.rich_presence.seek_to_position(
+                                        self.current_position
+                                    )
+                                    should_resume = False  # Only resume once
+
                             except Exception as e:
                                 log_error_with_traceback(
                                     "Error starting rich presence track", e
                                 )
 
-                    # Create and play audio source
+                    # Create and play audio source with resume capability
                     try:
-                        source = discord.FFmpegPCMAudio(
-                            current_file, executable=self.ffmpeg_path, options="-vn"
-                        )
+                        if should_resume and self.current_position > 0:
+                            # Use FFmpeg to start from specific position
+                            seek_options = f"-ss {self.current_position}"
+                            source = discord.FFmpegPCMAudio(
+                                current_file,
+                                executable=self.ffmpeg_path,
+                                before_options=seek_options,
+                                options="-vn",
+                            )
+                            should_resume = False  # Only resume once
+                            log_tree_branch(
+                                "resumed_from", f"{self.current_position:.1f}s"
+                            )
+                        else:
+                            source = discord.FFmpegPCMAudio(
+                                current_file, executable=self.ffmpeg_path, options="-vn"
+                            )
 
                         self.voice_client.play(source)
                         self.is_playing = True
@@ -512,7 +731,7 @@ class AudioManager:
                         # Update control panel
                         if self.control_panel_view:
                             try:
-                                await self.control_panel_view.update_display()
+                                await self.control_panel_view.update_panel()
                             except Exception as e:
                                 log_error_with_traceback(
                                     "Error updating control panel during playback", e
@@ -524,6 +743,9 @@ class AudioManager:
                             or self.voice_client.is_paused()
                         ):
                             await asyncio.sleep(1)
+
+                        # Mark surah as completed
+                        state_manager.mark_surah_completed()
 
                     except Exception as e:
                         log_error_with_traceback(
@@ -540,6 +762,9 @@ class AudioManager:
                                 log_error_with_traceback(
                                     "Error stopping rich presence track", e
                                 )
+
+                    # Reset position for next track
+                    self.current_position = 0.0
 
                     # Move to next track
                     if self.is_shuffle_enabled:
@@ -575,7 +800,7 @@ class AudioManager:
                 # Update control panel
                 if self.control_panel_view:
                     try:
-                        await self.control_panel_view.update_display()
+                        await self.control_panel_view.update_panel()
                     except Exception as e:
                         log_error_with_traceback(
                             "Error updating control panel in finally block", e
@@ -589,7 +814,8 @@ class AudioManager:
     def get_playback_status(self) -> Dict[str, Any]:
         """Get current playback status for control panel"""
         try:
-            return {
+            # Get basic status
+            status = {
                 "is_playing": self.is_playing,
                 "is_paused": self.is_paused,
                 "current_surah": self.current_surah,
@@ -601,7 +827,22 @@ class AudioManager:
                 ),
                 "total_tracks": len(self.current_audio_files),
                 "available_reciters": self.available_reciters,
+                "current_time": 0,
+                "total_time": 0,
             }
+
+            # Get time information from rich presence if available
+            if self.rich_presence:
+                try:
+                    track_info = self.rich_presence.get_current_track_info()
+                    if track_info:
+                        status["current_time"] = track_info.get("current_time", 0)
+                        status["total_time"] = track_info.get("duration", 0)
+                except Exception as e:
+                    log_error_with_traceback("Error getting time from rich presence", e)
+
+            return status
+
         except Exception as e:
             log_error_with_traceback("Error getting playback status", e)
             # Return safe defaults
@@ -615,4 +856,6 @@ class AudioManager:
                 "current_track": 0,
                 "total_tracks": 0,
                 "available_reciters": ["Saad Al Ghamdi"],
+                "current_time": 0,
+                "total_time": 0,
             }

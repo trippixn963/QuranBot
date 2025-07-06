@@ -19,7 +19,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 # Load environment variables from the correct path
-env_path = os.path.join(os.path.dirname(__file__), "..", "config", ".env")
+env_path = os.path.join(os.path.dirname(__file__), "..", "..", "config", ".env")
 load_dotenv(env_path)
 
 import os
@@ -53,6 +53,11 @@ from utils.control_panel import setup_control_panel
 from utils.rich_presence import RichPresenceManager, validate_rich_presence_dependencies
 
 # =============================================================================
+# Import State Manager
+# =============================================================================
+from utils.state_manager import state_manager
+
+# =============================================================================
 # Import Surah Mapping Functions
 # =============================================================================
 from utils.surah_mapper import (
@@ -68,6 +73,7 @@ from utils.tree_log import (
     log_error_with_traceback,
     log_progress,
     log_section_start,
+    log_spacing,
     log_status,
     log_tree,
     log_tree_branch,
@@ -277,7 +283,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # =============================================================================
 # Bot Version & Configuration
 # =============================================================================
-BOT_VERSION = "1.4.0"
+BOT_VERSION = "1.5.0"
 BOT_NAME = "QuranBot"
 
 # Configuration from Environment Variables
@@ -287,6 +293,11 @@ PANEL_CHANNEL_ID = int(os.getenv("PANEL_CHANNEL_ID") or "0")
 GUILD_ID = int(os.getenv("GUILD_ID") or "0")
 FFMPEG_PATH = os.getenv("FFMPEG_PATH", "ffmpeg")
 AUDIO_FOLDER = "audio/Saad Al Ghamdi"
+
+# Default Audio Settings from Environment
+DEFAULT_RECITER = os.getenv("DEFAULT_RECITER", "Saad Al Ghamdi")
+DEFAULT_SHUFFLE = os.getenv("DEFAULT_SHUFFLE", "false").lower() == "true"
+DEFAULT_LOOP = os.getenv("DEFAULT_LOOP", "false").lower() == "true"
 
 
 # =============================================================================
@@ -365,6 +376,9 @@ async def on_ready():
     global rich_presence, audio_manager
 
     try:
+        # Mark startup in state manager
+        state_manager.mark_startup()
+
         log_section_start(f"{BOT_NAME} v{BOT_VERSION} Started")
         log_tree_branch("bot_user", f"{bot.user}")
         log_tree_branch("version", BOT_VERSION)
@@ -372,15 +386,23 @@ async def on_ready():
         log_tree_final("target_channel_id", TARGET_CHANNEL_ID)
 
         # Initialize Rich Presence Manager
+        log_spacing()
         rich_presence = RichPresenceManager(bot, FFMPEG_PATH)
         log_tree_branch("rich_presence", "✅ Rich Presence Manager initialized")
 
-        # Initialize Audio Manager
-        audio_manager = AudioManager(bot, FFMPEG_PATH)
+        # Initialize Audio Manager with environment defaults
+        audio_manager = AudioManager(
+            bot,
+            FFMPEG_PATH,
+            default_reciter=DEFAULT_RECITER,
+            default_shuffle=DEFAULT_SHUFFLE,
+            default_loop=DEFAULT_LOOP,
+        )
         audio_manager.set_rich_presence(rich_presence)
         log_tree_branch("audio_manager", "✅ Audio Manager initialized")
 
         # Validate configuration before proceeding
+        log_spacing()
         if not validate_configuration():
             log_critical_error("Bot configuration validation failed")
             await bot.close()
@@ -397,32 +419,67 @@ async def on_ready():
             log_critical_error(f"Channel with ID {TARGET_CHANNEL_ID} not found")
             return
 
+        log_spacing()
         log_tree("Attempting voice connection")
         log_tree_branch("channel_name", channel.name)
         log_tree_final("channel_id", channel.id)
 
-        # Connect to voice channel
-        try:
-            voice_client = await channel.connect()
-            log_tree("Voice connection successful", "SUCCESS")
-            log_tree_final("connected_to", channel.name)
+        # Connect to voice channel with retry logic
+        max_retries = 3
+        retry_delay = 10  # Longer delay to prevent rapid connection attempts
 
-            # Set up AudioManager with voice client
-            audio_manager.set_voice_client(voice_client)
+        for attempt in range(max_retries):
+            try:
+                # Check if already connected to avoid conflicts
+                existing_voice_client = guild.voice_client
+                if existing_voice_client and existing_voice_client.is_connected():
+                    log_tree_branch(
+                        "voice_status", "Already connected, using existing connection"
+                    )
+                    voice_client = existing_voice_client
+                else:
+                    log_tree_branch(
+                        "voice_connection", f"Attempt {attempt + 1}/{max_retries}"
+                    )
+                    voice_client = await channel.connect(reconnect=False, timeout=60)
+                    log_tree_branch("voice_connection", "✅ New connection established")
 
-            # Set up control panel with AudioManager
-            if PANEL_CHANNEL_ID != 0:
-                try:
-                    await setup_control_panel(bot, PANEL_CHANNEL_ID, audio_manager)
-                    log_tree("Control panel setup", "SUCCESS")
-                except Exception as e:
-                    log_error_with_traceback("Error setting up control panel", e)
+                log_tree_branch("connected_to", channel.name)
 
-            # Start playing audio using AudioManager
-            await audio_manager.start_playback()
+                # Set up AudioManager with voice client
+                audio_manager.set_voice_client(voice_client)
 
-        except Exception as e:
-            log_discord_error("on_ready", e, GUILD_ID, TARGET_CHANNEL_ID)
+                # Set up control panel with AudioManager
+                if PANEL_CHANNEL_ID != 0:
+                    try:
+                        await setup_control_panel(bot, PANEL_CHANNEL_ID, audio_manager)
+                        log_tree_branch(
+                            "control_panel", "✅ Control panel setup successful"
+                        )
+                    except Exception as e:
+                        log_error_with_traceback("Error setting up control panel", e)
+
+                # Start playing audio using AudioManager
+                await audio_manager.start_playback()
+                break  # Success, exit retry loop
+
+            except Exception as e:
+                log_tree_branch(
+                    "connection_error",
+                    f"Attempt {attempt + 1} failed: {type(e).__name__}",
+                )
+                if attempt < max_retries - 1:
+                    log_tree_branch(
+                        "retry", f"Waiting {retry_delay} seconds before retry"
+                    )
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                else:
+                    log_discord_error("on_ready", e, GUILD_ID, TARGET_CHANNEL_ID)
+                    log_tree_final(
+                        "connection_status", "❌ All connection attempts failed"
+                    )
+                    return
 
     except Exception as e:
         log_critical_error("Fatal error in on_ready event", e)
@@ -535,13 +592,13 @@ async def play_audio(voice_client):
 # =============================================================================
 @bot.event
 async def on_voice_state_update(member, before, after):
-    """Handle voice state changes"""
+    """Handle voice state changes - Smart reconnection with loop prevention"""
     global rich_presence, audio_manager
 
     try:
-        # If bot gets disconnected, try to reconnect
+        # Attempt reconnection when disconnected
         if member == bot.user and before.channel and not after.channel:
-            log_section_start("Bot Disconnected - Attempting Reconnection", "🔄")
+            log_section_start("Bot Disconnected", "⚠️")
             log_tree_branch("member", member.display_name)
             log_tree_branch(
                 "before_channel", before.channel.name if before.channel else "None"
@@ -554,22 +611,24 @@ async def on_voice_state_update(member, before, after):
             if audio_manager:
                 await audio_manager.stop_playback()
 
-            guild = bot.get_guild(GUILD_ID)
-            channel = guild.get_channel(TARGET_CHANNEL_ID)
-            if channel:
-                try:
-                    log_tree("Attempting reconnection", "RETRY")
-                    voice_client = await channel.connect()
-                    log_tree("Reconnection successful", "SUCCESS")
+            # Smart reconnection with delay to prevent loops
+            guild = before.channel.guild
+            channel = before.channel
 
-                    # Reconnect AudioManager
-                    if audio_manager:
-                        audio_manager.set_voice_client(voice_client)
-                        await audio_manager.start_playback()
-                except Exception as e:
-                    log_discord_error(
-                        "voice_reconnection", e, GUILD_ID, TARGET_CHANNEL_ID
-                    )
+            # Add delay to prevent rapid reconnection attempts
+            log_tree_branch("reconnection", "Waiting 5 seconds before reconnection")
+            await asyncio.sleep(5)
+
+            try:
+                log_tree_branch("reconnection", "Attempting reconnect after disconnect")
+                voice_client = await channel.connect(reconnect=False, timeout=60)
+                audio_manager.set_voice_client(voice_client)
+                await audio_manager.start_playback()
+                log_tree_final("reconnect", f"✅ Reconnected to {channel.name}")
+            except Exception as e:
+                log_error_with_traceback("Reconnection failed", e)
+                log_tree_final("reconnect_status", "❌ Will retry on next disconnect")
+
     except Exception as e:
         log_discord_error("on_voice_state_update", e, GUILD_ID)
 
@@ -585,6 +644,29 @@ async def on_error(event, *args, **kwargs):
         exc_type, exc_value, exc_traceback = sys.exc_info()
 
         if exc_value:
+            # Specific handling for voice connection error 4006
+            if isinstance(exc_value, discord.errors.ConnectionClosed):
+                if exc_value.code == 4006:
+                    log_critical_error(
+                        "Voice server not responding (4006). Attempting reconnect."
+                    )
+                    try:
+                        guild = bot.get_guild(GUILD_ID)
+                        if guild:
+                            channel = guild.get_channel(TARGET_CHANNEL_ID)
+                            if channel:
+                                voice_client = await channel.connect(
+                                    reconnect=False, timeout=30
+                                )
+                                audio_manager.set_voice_client(voice_client)
+                                await audio_manager.start_playback()
+                                log_tree_final(
+                                    "reconnect", f"✅ Reconnected to {channel.name}"
+                                )
+                    except Exception as reconnect_error:
+                        log_error_with_traceback(
+                            "Reconnection after 4006 failed", reconnect_error
+                        )
             log_discord_error(
                 f"discord_event_{event}",
                 exc_value,
@@ -611,6 +693,9 @@ async def on_disconnect():
         # Stop AudioManager when disconnected
         if audio_manager:
             await audio_manager.stop_playback()
+
+        # Mark shutdown in state manager
+        state_manager.mark_shutdown()
 
     except Exception as e:
         log_error_with_traceback("Error handling disconnect event", e)

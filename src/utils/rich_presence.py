@@ -19,6 +19,7 @@ from .tree_log import (
     log_critical_error,
     log_error_with_traceback,
     log_section_start,
+    log_spacing,
     log_tree,
     log_tree_branch,
     log_tree_end,
@@ -42,8 +43,6 @@ class RichPresenceManager:
             ffmpeg_path: Path to FFmpeg executable (for FFprobe)
         """
         try:
-            log_section_start("Rich Presence Manager Initialization", "🎵")
-
             self.bot = bot
             self.ffmpeg_path = ffmpeg_path
             self.current_track = None
@@ -52,6 +51,7 @@ class RichPresenceManager:
             self.is_playing = False
             self.update_task = None
 
+            log_section_start("Rich Presence Manager Initialization", "🎵")
             log_tree_branch("ffmpeg_path", ffmpeg_path)
             log_tree_final("initialization", "✅ Rich Presence Manager ready")
 
@@ -120,13 +120,13 @@ class RichPresenceManager:
 
     def format_time(self, seconds):
         """
-        Format seconds to MM:SS format
+        Format seconds to MM:SS or H:MM:SS format
 
         Args:
             seconds: Time in seconds
 
         Returns:
-            str: Formatted time string (MM:SS)
+            str: Formatted time string (MM:SS or H:MM:SS)
         """
         try:
             if seconds is None:
@@ -139,9 +139,15 @@ class RichPresenceManager:
                 )
                 return "00:00"
 
-            minutes = int(seconds // 60)
-            seconds = int(seconds % 60)
-            return f"{minutes:02d}:{seconds:02d}"
+            total_seconds = int(seconds)
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            secs = total_seconds % 60
+
+            if hours > 0:
+                return f"{hours}:{minutes:02d}:{secs:02d}"  # H:MM:SS (no leading zero for hours)
+            else:
+                return f"{minutes:02d}:{secs:02d}"  # MM:SS
 
         except Exception as e:
             log_error_with_traceback("Error formatting time", e)
@@ -216,15 +222,15 @@ class RichPresenceManager:
             surah_info = get_surah_info(surah_number)
 
             if surah_info:
-                # Set initial rich presence - emoji and Arabic name with starting message
+                # Set initial rich presence - emoji and transliterated Arabic name with starting message
                 activity = discord.Activity(
                     type=discord.ActivityType.listening,
-                    name=f"{surah_info.emoji} {surah_info.name_arabic} • 🎵 Starting...",
+                    name=f"{surah_info.emoji} {surah_info.name_transliteration} • 🎵 Starting...",
                 )
 
                 await self.bot.change_presence(activity=activity)
                 log_tree_branch(
-                    "rich_presence", f"✅ Started: {surah_info.name_english}"
+                    "rich_presence", f"✅ Started: {surah_info.name_transliteration}"
                 )
 
                 # Start the progress update task
@@ -294,6 +300,10 @@ class RichPresenceManager:
                     # Calculate current position
                     current_time = time.time() - self.track_start_time
 
+                    # Clamp current time to not exceed total duration
+                    if self.track_duration and current_time > self.track_duration:
+                        current_time = self.track_duration
+
                     # Check if track should be finished
                     if self.track_duration and current_time >= self.track_duration:
                         log_tree_branch(
@@ -325,10 +335,10 @@ class RichPresenceManager:
                         current_time, self.track_duration
                     )
 
-                    # Create rich presence activity - emoji and Arabic name with timer
+                    # Create rich presence activity - emoji and transliterated Arabic name with timer
                     activity = discord.Activity(
                         type=discord.ActivityType.listening,
-                        name=f"{surah_info.emoji} {surah_info.name_arabic} • {time_display}",
+                        name=f"{surah_info.emoji} {surah_info.name_transliteration} • {time_display}",
                     )
 
                     await self.bot.change_presence(activity=activity)
@@ -377,12 +387,12 @@ class RichPresenceManager:
                 except asyncio.CancelledError:
                     pass
 
-            # Update rich presence to show paused state - emoji and Arabic name
+            # Update rich presence to show paused state - emoji and transliterated Arabic name
             surah_info = get_surah_info(self.current_track["surah_number"])
             if surah_info:
                 activity = discord.Activity(
                     type=discord.ActivityType.listening,
-                    name=f"{surah_info.emoji} {surah_info.name_arabic} • ⏸️ Paused",
+                    name=f"{surah_info.emoji} {surah_info.name_transliteration} • ⏸️ Paused",
                 )
                 await self.bot.change_presence(activity=activity)
                 log_tree_final("rich_presence", "✅ Paused playback")
@@ -450,6 +460,11 @@ class RichPresenceManager:
                 current_time = (
                     time.time() - self.track_start_time if self.track_start_time else 0
                 )
+
+                # Clamp current time to not exceed total duration
+                if self.track_duration and current_time > self.track_duration:
+                    current_time = self.track_duration
+
                 return {
                     "surah_number": self.current_track["surah_number"],
                     "reciter": self.current_track["reciter"],
@@ -461,6 +476,36 @@ class RichPresenceManager:
         except Exception as e:
             log_error_with_traceback("Error getting current track info", e)
             return None
+
+    async def seek_to_position(self, position_seconds: float):
+        """
+        Seek to a specific position in the current track
+
+        Args:
+            position_seconds: Position to seek to in seconds
+        """
+        try:
+            if not self.current_track or not self.is_playing:
+                log_warning_with_context(
+                    "Cannot seek - no active track",
+                    f"Position: {position_seconds:.1f}s",
+                )
+                return
+
+            # Validate position
+            if self.track_duration and position_seconds > self.track_duration:
+                position_seconds = self.track_duration
+
+            if position_seconds < 0:
+                position_seconds = 0
+
+            # Adjust the start time to simulate seeking
+            self.track_start_time = time.time() - position_seconds
+
+            log_tree_branch("rich_presence_seek", f"Seeked to {position_seconds:.1f}s")
+
+        except Exception as e:
+            log_error_with_traceback("Error seeking to position in Rich Presence", e)
 
 
 # =============================================================================

@@ -1,92 +1,47 @@
 # =============================================================================
-# QuranBot - Control Panel Module
+# QuranBot - Simple Control Panel
 # =============================================================================
-# Discord UI control panel for managing playback, reciters, and Surah selection
-# Features persistent view with buttons and select menus for user interaction
+# Clean, simple Discord control panel for 24/7 QuranBot
+# Updates every 5 seconds with current time display
 # =============================================================================
 
 import asyncio
 import os
-import traceback
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 import discord
 from discord.ext import commands
-from discord.ui import Button, Modal, Select, TextInput, View
+from discord.ui import Button, Select, View
 
-from .rich_presence import RichPresenceManager
-from .surah_mapper import get_surah_info, get_surah_name, validate_surah_number
-from .tree_log import (
-    log_async_error,
-    log_error_with_traceback,
-    log_section_start,
-    log_tree_branch,
-    log_tree_final,
-    log_warning_with_context,
-)
+from .surah_mapper import get_surah_info
+from .tree_log import log_error_with_traceback, log_tree_branch, log_tree_final
 
 # =============================================================================
-# Control Panel Configuration
+# Configuration
 # =============================================================================
 
-PANEL_UPDATE_INTERVAL = 5  # seconds - more frequent updates for dynamic feel
 SURAHS_PER_PAGE = 10
-PANEL_TIMEOUT = None  # Persistent view
+UPDATE_INTERVAL = 5  # seconds - for time display updates
 
 
 # =============================================================================
-# Utility Functions
-# =============================================================================
-
-
-def is_user_in_voice_channel(interaction: discord.Interaction) -> bool:
-    """Check if user is in the correct voice channel"""
-    try:
-        if not interaction.guild:
-            return False
-
-        # Check if user is in a voice channel
-        if not interaction.user.voice or not interaction.user.voice.channel:
-            return False
-
-        # Check if bot is in a voice channel
-        if not interaction.guild.voice_client:
-            return True  # Allow if bot not connected yet
-
-        # Check if user is in the same voice channel as bot
-        return interaction.user.voice.channel == interaction.guild.voice_client.channel
-
-    except Exception as e:
-        log_error_with_traceback("Error checking voice channel access", e)
-        return False
-
-
-def create_response_embed(
-    title: str, description: str, color: discord.Color = discord.Color.blue()
-) -> discord.Embed:
-    """Create a standardized response embed"""
-    return discord.Embed(
-        title=title,
-        description=description,
-        color=color,
-        timestamp=discord.utils.utcnow(),
-    )
-
-
-# =============================================================================
-# Surah Selection Components
+# Simple Surah Select
 # =============================================================================
 
 
 class SurahSelect(Select):
-    """Select menu for choosing Surahs with pagination"""
+    """Simple surah selection dropdown"""
 
     def __init__(self, bot, page: int = 0):
         self.bot = bot
         self.page = page
 
+        # Calculate total pages
+        total_pages = (114 + SURAHS_PER_PAGE - 1) // SURAHS_PER_PAGE
+
         super().__init__(
-            placeholder="🕌 Select a Surah...",
+            placeholder=f"Select a Surah... ({page + 1}/{total_pages})",
             min_values=1,
             max_values=1,
             custom_id=f"surah_select_{page}",
@@ -96,263 +51,74 @@ class SurahSelect(Select):
         self._update_options()
 
     def _update_options(self):
-        """Update select options based on current page"""
+        """Update select options for current page"""
         try:
-            log_tree_branch("surah_select", f"Updating options for page {self.page}")
-
-            # Get all surah names
-            surah_names = []
-            for i in range(1, 115):
-                surah_info = get_surah_info(i)
-                if surah_info:
-                    surah_names.append(
-                        {
-                            "number": i,
-                            "name": surah_info.name_english,
-                            "arabic": surah_info.name_arabic,
-                            "emoji": surah_info.emoji,
-                        }
-                    )
-
-            if not surah_names:
-                log_warning_with_context(
-                    "No Surah names available", "Using fallback options"
-                )
-                self._add_fallback_options()
-                return
-
-            # Calculate page boundaries
             start_idx = self.page * SURAHS_PER_PAGE
-            end_idx = min(start_idx + SURAHS_PER_PAGE, len(surah_names))
+            end_idx = min(start_idx + SURAHS_PER_PAGE, 114)
 
-            # Clear existing options
+            # Update placeholder text
+            total_pages = (114 + SURAHS_PER_PAGE - 1) // SURAHS_PER_PAGE
+            self.placeholder = f"Select a Surah... ({self.page + 1}/{total_pages})"
+
             self.options.clear()
 
-            # Add options for current page - number and name format
             for i in range(start_idx, end_idx):
-                surah_data = surah_names[i]
-                surah_number = surah_data["number"]
+                surah_number = i + 1
                 surah_info = get_surah_info(surah_number)
 
                 if surah_info:
-                    # Format option label - number and English name (no emoji in label)
-                    label = f"{surah_number}. {surah_info.name_english}"
-                    if len(label) > 100:  # Discord limit
-                        label = f"{surah_number}. {surah_info.name_english[:80]}..."
-
-                    # Format description - Arabic name only
-                    description = surah_info.name_arabic
-                    if len(description) > 100:
-                        description = description[:97] + "..."
-
                     self.options.append(
                         discord.SelectOption(
-                            label=label,
-                            description=description,
+                            label=f"{surah_info.emoji} {surah_number:03d}. {surah_info.name_transliteration}",
+                            description=surah_info.name_arabic,
                             value=str(surah_number),
-                            emoji=surah_info.emoji,
                         )
                     )
 
-            log_tree_final("surah_options", f"Added {len(self.options)} options")
-
         except Exception as e:
-            log_error_with_traceback("Error updating Surah select options", e)
-            self._add_fallback_options()
-
-    def _add_fallback_options(self):
-        """Add fallback options if dynamic loading fails"""
-        self.options.clear()
-        fallback_surahs = [
-            ("🕋", "Al-Fatiha", "الفاتحة", 1),
-            ("🐄", "Al-Baqarah", "البقرة", 2),
-            ("👨‍👩‍👧‍👦", "Aal-Imran", "آل عمران", 3),
-            ("👩", "An-Nisa", "النساء", 4),
-            ("🍽️", "Al-Ma'idah", "المائدة", 5),
-        ]
-
-        for emoji, english, arabic, number in fallback_surahs:
-            self.options.append(
-                discord.SelectOption(
-                    label=f"{number:03d}. {english}",
-                    value=str(number),
-                    description=f"{arabic} • Surah {number}",
-                    emoji=emoji,
-                )
-            )
+            log_error_with_traceback("Error updating surah options", e)
 
     async def callback(self, interaction: discord.Interaction):
-        """Handle Surah selection"""
+        """Handle surah selection"""
         try:
-            log_section_start("Surah Selection", "🕌")
-            log_tree_branch(
-                "user", f"{interaction.user.display_name} ({interaction.user.id})"
-            )
-
-            # Check voice channel access
-            if not is_user_in_voice_channel(interaction):
-                embed = create_response_embed(
-                    "🚫 Access Denied",
-                    "You must be in the same voice channel as the bot to use this control!",
-                    discord.Color.red(),
-                )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-                return
-
-            # Get selected Surah number
             selected_surah = int(self.values[0])
-            log_tree_branch("selected_surah", f"Surah {selected_surah}")
 
-            # Use AudioManager if available (get from parent view)
-            parent_view = self.view
-            if hasattr(parent_view, "audio_manager") and parent_view.audio_manager:
-                # Use AudioManager to jump to Surah
-                await parent_view.audio_manager.jump_to_surah(selected_surah)
-
-                # Track activity in bot
+            # Update last activity in parent view
+            if hasattr(self.view, "_update_last_activity"):
                 surah_info = get_surah_info(selected_surah)
-                if surah_info:
-                    self._track_activity(
-                        interaction, f"Switched to {surah_info.name_english}"
-                    )
-
-                    # Send confirmation
-                    embed = create_response_embed(
-                        "✅ Surah Selected",
-                        f"Now playing: **{surah_info.emoji} {surah_info.name_english}**\n"
-                        f"*{surah_info.name_arabic}*",
-                        discord.Color.green(),
-                    )
-                else:
-                    embed = create_response_embed(
-                        "✅ Surah Selected",
-                        f"Now playing: **Surah {selected_surah}**",
-                        discord.Color.green(),
-                    )
-            else:
-                # Fallback to old method
-                if hasattr(self.bot, "state_manager"):
-                    self.bot.state_manager.set_current_song_index(selected_surah - 1)
-
-                # Track activity in bot
-                surah_info = get_surah_info(selected_surah)
-                if surah_info:
-                    self._track_activity(
-                        interaction, f"Switched to {surah_info.name_english}"
-                    )
-
-                # Restart playback
-                await self._restart_playback(interaction, selected_surah)
-
-                # Send confirmation
-                if surah_info:
-                    embed = create_response_embed(
-                        "✅ Surah Selected",
-                        f"Now playing: **{surah_info.emoji} {surah_info.name_english}**\n"
-                        f"*{surah_info.name_arabic}*",
-                        discord.Color.green(),
-                    )
-                else:
-                    embed = create_response_embed(
-                        "✅ Surah Selected",
-                        f"Now playing: **Surah {selected_surah}**",
-                        discord.Color.green(),
-                    )
-
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            log_tree_final("surah_selection", "✅ Completed successfully")
-
-        except Exception as e:
-            log_async_error("surah_select_callback", e)
-            embed = create_response_embed(
-                "❌ Error", f"Failed to select Surah: {str(e)}", discord.Color.red()
-            )
-
-            if not interaction.response.is_done():
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-            else:
-                await interaction.followup.send(embed=embed, ephemeral=True)
-
-    async def _restart_playback(
-        self, interaction: discord.Interaction, surah_number: int
-    ):
-        """Restart playback with selected Surah"""
-        try:
-            log_tree_branch("playback_restart", "Stopping current playback")
-
-            # Stop current playback
-            if hasattr(self.bot, "is_streaming"):
-                self.bot.is_streaming = False
-
-            # Wait for current playback to stop
-            await asyncio.sleep(2)
-
-            # Find voice client
-            voice_client = None
-            for guild in self.bot.guilds:
-                if guild.voice_client:
-                    voice_client = guild.voice_client
-                    break
-
-            if not voice_client or not voice_client.is_connected():
-                log_warning_with_context(
-                    "No voice client available", "Playback restart cancelled"
+                surah_name = (
+                    surah_info.name_transliteration
+                    if surah_info
+                    else f"Surah {selected_surah}"
                 )
-                return
-
-            # Restart playback
-            if hasattr(self.bot, "is_streaming"):
-                self.bot.is_streaming = True
-
-            if hasattr(self.bot, "play_quran_files"):
-                log_tree_branch("playback_restart", "Starting new playback")
-                asyncio.create_task(
-                    self.bot.play_quran_files(voice_client, voice_client.channel)
+                self.view._update_last_activity(
+                    interaction.user, f"selected {surah_name}"
                 )
 
-            log_tree_final("playback_restart", "✅ Completed")
+            # Get audio manager from parent view
+            if hasattr(self.view, "audio_manager") and self.view.audio_manager:
+                await self.view.audio_manager.jump_to_surah(selected_surah)
+
+            await interaction.response.defer()
 
         except Exception as e:
-            log_async_error("restart_playback", e)
-            raise
-
-    def _track_activity(self, interaction: discord.Interaction, action: str):
-        """Track user activity for display in panel"""
-        try:
-            import time
-
-            # Store activity in bot
-            if not hasattr(self.bot, "last_activity"):
-                self.bot.last_activity = {}
-
-            self.bot.last_activity = {
-                "action": action,
-                "user_id": interaction.user.id,
-                "user_name": interaction.user.display_name,
-                "timestamp": time.time(),
-            }
-
-            log_tree_branch(
-                "user_activity", f"{interaction.user.display_name}: {action}"
-            )
-
-        except Exception as e:
-            log_error_with_traceback("Error tracking user activity", e)
+            log_error_with_traceback("Error in surah selection", e)
+            await interaction.response.defer()
 
 
 # =============================================================================
-# Reciter Selection Components
+# Simple Reciter Select
 # =============================================================================
 
 
 class ReciterSelect(Select):
-    """Select menu for choosing reciters"""
+    """Simple reciter selection dropdown"""
 
     def __init__(self, bot):
         self.bot = bot
 
         super().__init__(
-            placeholder="🎤 Select a Reciter...",
+            placeholder="Select a Reciter...",
             min_values=1,
             max_values=1,
             custom_id="reciter_select",
@@ -362,1274 +128,506 @@ class ReciterSelect(Select):
         self._update_options()
 
     def _update_options(self):
-        """Update select options with available reciters"""
+        """Update reciter options"""
         try:
-            log_tree_branch("reciter_select", "Updating reciter options")
+            # Get available reciters from audio folder
+            reciters = []
+            audio_folder = "audio"
 
-            # Get available reciters
-            reciters = self._get_available_reciters()
+            if os.path.exists(audio_folder):
+                for item in os.listdir(audio_folder):
+                    folder_path = os.path.join(audio_folder, item)
+                    if os.path.isdir(folder_path):
+                        reciters.append(item)
 
-            # Clear existing options
+            # Arabic names mapping
+            arabic_names = {
+                "Abdul Basit Abdul Samad": "عبد الباسط عبد الصمد",
+                "Maher Al Muaiqly": "ماهر المعيقلي",
+                "Muhammad Al Luhaidan": "محمد اللحيدان",
+                "Rashid Al Afasy": "راشد العفاسي",
+                "Saad Al Ghamdi": "سعد الغامدي",
+                "Yasser Al Dosari": "ياسر الدوسري",
+            }
+
             self.options.clear()
 
-            # Add reciter options
-            for reciter in reciters:
+            for reciter in sorted(reciters):
+                # Clean up reciter name for display
+                display_name = reciter.replace("_", " ").title()
+
+                # Get Arabic name
+                arabic_name = arabic_names.get(display_name, "")
+
+                # Create label with English name and Arabic as description
+                label = f"🎤 {display_name}"
+                description = arabic_name if arabic_name else None
+
                 self.options.append(
                     discord.SelectOption(
-                        label=reciter["name"],
-                        value=reciter["folder"],
-                        description=reciter["description"],
-                        emoji="🎤",
+                        label=label,
+                        description=description,
+                        value=reciter,
                     )
                 )
 
-            log_tree_final("reciter_options", f"Added {len(self.options)} reciters")
-
         except Exception as e:
             log_error_with_traceback("Error updating reciter options", e)
-            self._add_fallback_reciters()
-
-    def _get_available_reciters(self) -> List[Dict]:
-        """Get list of available reciters"""
-        # Default reciters with Arabic names
-        return [
-            {
-                "name": "Saad Al Ghamdi",
-                "folder": "Saad_Al_Ghamdi",
-                "description": "سعد الغامدي",
-            },
-            {
-                "name": "Maher Al Muaiqly",
-                "folder": "Maher_Al_Muaiqly",
-                "description": "ماهر المعيقلي",
-            },
-            {
-                "name": "Abdul Basit Abdul Samad",
-                "folder": "Abdul_Basit_Abdul_Samad",
-                "description": "عبد الباسط عبد الصمد",
-            },
-            {
-                "name": "Mishary Rashid Alafasy",
-                "folder": "Mishary_Rashid_Alafasy",
-                "description": "مشاري راشد العفاسي",
-            },
-            {
-                "name": "Yasser Al Dosari",
-                "folder": "Yasser_Al_Dosari",
-                "description": "ياسر الدوسري",
-            },
-        ]
-
-    def _add_fallback_reciters(self):
-        """Add fallback reciters if dynamic loading fails"""
-        self.options.clear()
-        self.options.append(
-            discord.SelectOption(
-                label="Saad Al Ghamdi",
-                value="Saad_Al_Ghamdi",
-                description="سعد الغامدي",
-                emoji="🎤",
-            )
-        )
 
     async def callback(self, interaction: discord.Interaction):
         """Handle reciter selection"""
         try:
-            log_section_start("Reciter Selection", "🎤")
-            log_tree_branch(
-                "user", f"{interaction.user.display_name} ({interaction.user.id})"
-            )
-
-            # Check voice channel access
-            if not is_user_in_voice_channel(interaction):
-                embed = create_response_embed(
-                    "🚫 Access Denied",
-                    "You must be in the same voice channel as the bot to use this control!",
-                    discord.Color.red(),
-                )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-                return
-
-            # Get selected reciter
             selected_reciter = self.values[0]
-            log_tree_branch("selected_reciter", selected_reciter)
 
-            # Use AudioManager if available (get from parent view)
-            parent_view = self.view
-            if hasattr(parent_view, "audio_manager") and parent_view.audio_manager:
-                # Get display name for the reciter
-                reciter_name = self._get_reciter_display_name(selected_reciter)
-
-                # Use AudioManager to switch reciter
-                await parent_view.audio_manager.switch_reciter(reciter_name)
-
-                # Track activity in bot
-                self._track_activity(interaction, f"Switched to {reciter_name}")
-
-                # Send confirmation
-                embed = create_response_embed(
-                    "✅ Reciter Changed",
-                    f"Now using reciter: **🎤 {reciter_name}**",
-                    discord.Color.green(),
-                )
-            else:
-                # Fallback to old method
-                if hasattr(self.bot, "current_reciter"):
-                    self.bot.current_reciter = selected_reciter
-                    log_tree_branch(
-                        "state_updated", f"Reciter set to {selected_reciter}"
-                    )
-
-                # Track activity in bot
-                reciter_name = self._get_reciter_display_name(selected_reciter)
-                self._track_activity(interaction, f"Switched to {reciter_name}")
-
-                # Restart playback with new reciter
-                await self._restart_playback(interaction, selected_reciter)
-
-                # Send confirmation
-                embed = create_response_embed(
-                    "✅ Reciter Changed",
-                    f"Now using reciter: **🎤 {reciter_name}**",
-                    discord.Color.green(),
+            # Update last activity in parent view
+            if hasattr(self.view, "_update_last_activity"):
+                reciter_display = selected_reciter.replace("_", " ").title()
+                self.view._update_last_activity(
+                    interaction.user, f"switched to {reciter_display}"
                 )
 
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            log_tree_final("reciter_selection", "✅ Completed successfully")
+            # Get audio manager from parent view
+            if hasattr(self.view, "audio_manager") and self.view.audio_manager:
+                await self.view.audio_manager.switch_reciter(selected_reciter)
+
+            await interaction.response.defer()
 
         except Exception as e:
-            log_async_error("reciter_select_callback", e)
-            embed = create_response_embed(
-                "❌ Error", f"Failed to change reciter: {str(e)}", discord.Color.red()
-            )
-
-            if not interaction.response.is_done():
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-            else:
-                await interaction.followup.send(embed=embed, ephemeral=True)
-
-    def _get_reciter_display_name(self, folder_name: str) -> str:
-        """Get display name for reciter folder"""
-        name_map = {
-            "Saad_Al_Ghamdi": "Saad Al Ghamdi",
-            "Maher_Al_Muaiqly": "Maher Al Muaiqly",
-            "Abdul_Basit_Abdul_Samad": "Abdul Basit Abdul Samad",
-            "Mishary_Rashid_Alafasy": "Mishary Rashid Alafasy",
-            "Yasser_Al_Dosari": "Yasser Al Dosari",
-        }
-        return name_map.get(folder_name, folder_name.replace("_", " "))
-
-    async def _restart_playback(
-        self, interaction: discord.Interaction, reciter_folder: str
-    ):
-        """Restart playback with selected reciter"""
-        try:
-            log_tree_branch("playback_restart", "Stopping current playback")
-
-            # Stop current playback
-            if hasattr(self.bot, "is_streaming"):
-                self.bot.is_streaming = False
-
-            # Wait for current playback to stop
-            await asyncio.sleep(2)
-
-            # Find voice client
-            voice_client = None
-            for guild in self.bot.guilds:
-                if guild.voice_client:
-                    voice_client = guild.voice_client
-                    break
-
-            if not voice_client or not voice_client.is_connected():
-                log_warning_with_context(
-                    "No voice client available", "Playback restart cancelled"
-                )
-                return
-
-            # Restart playback
-            if hasattr(self.bot, "is_streaming"):
-                self.bot.is_streaming = True
-
-            if hasattr(self.bot, "play_quran_files"):
-                log_tree_branch("playback_restart", "Starting new playback")
-                asyncio.create_task(
-                    self.bot.play_quran_files(voice_client, voice_client.channel)
-                )
-
-            log_tree_final("playback_restart", "✅ Completed")
-
-        except Exception as e:
-            log_async_error("restart_playback", e)
-            raise
-
-    def _track_activity(self, interaction: discord.Interaction, action: str):
-        """Track user activity for display in panel"""
-        try:
-            import time
-
-            # Store activity in bot
-            if not hasattr(self.bot, "last_activity"):
-                self.bot.last_activity = {}
-
-            self.bot.last_activity = {
-                "action": action,
-                "user_id": interaction.user.id,
-                "user_name": interaction.user.display_name,
-                "timestamp": time.time(),
-            }
-
-            log_tree_branch(
-                "user_activity", f"{interaction.user.display_name}: {action}"
-            )
-
-        except Exception as e:
-            log_error_with_traceback("Error tracking user activity", e)
+            log_error_with_traceback("Error in reciter selection", e)
+            await interaction.response.defer()
 
 
 # =============================================================================
-# Search Modal
+# Simple Control Panel View
 # =============================================================================
 
 
-class SurahSearchModal(Modal, title="🔍 Search Surah"):
-    """Modal for searching Surahs by name or number"""
-
-    def __init__(self, bot):
-        super().__init__()
-        self.bot = bot
-
-        self.search_input = TextInput(
-            label="Enter Surah name or number",
-            placeholder="e.g., 'Al-Fatiha', 'Fatiha', '1', or '001'",
-            min_length=1,
-            max_length=50,
-            required=True,
-        )
-        self.add_item(self.search_input)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        """Handle search submission"""
-        try:
-            log_section_start("Surah Search", "🔍")
-            log_tree_branch(
-                "user", f"{interaction.user.display_name} ({interaction.user.id})"
-            )
-
-            search_term = self.search_input.value.strip()
-            log_tree_branch("search_term", search_term)
-
-            # Search for Surah
-            found_surah = self._search_surah(search_term)
-
-            if found_surah:
-                # Create success embed with action buttons
-                embed = create_response_embed(
-                    "✅ Surah Found",
-                    f"**{found_surah.emoji} {found_surah.name_english}**\n"
-                    f"*{found_surah.name_arabic}*\n\n"
-                    f"**Number:** {found_surah.number:03d}\n"
-                    f"**Verses:** {found_surah.verses}\n"
-                    f"**Type:** {found_surah.revelation_type.value}",
-                    discord.Color.green(),
-                )
-
-                # Create view with action buttons
-                view = SurahSearchResultView(self.bot, found_surah.number)
-
-                await interaction.response.send_message(
-                    embed=embed, view=view, ephemeral=True
-                )
-
-                log_tree_final("search_result", f"Found Surah {found_surah['number']}")
-
-            else:
-                # Create error embed
-                embed = create_response_embed(
-                    "❌ Surah Not Found",
-                    f"No Surah found matching '{search_term}'\n\n"
-                    "**Search tips:**\n"
-                    "• Use Surah number (1-114)\n"
-                    "• Use English name (e.g., 'Al-Fatiha')\n"
-                    "• Use partial name (e.g., 'Fatiha')",
-                    discord.Color.red(),
-                )
-
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-                log_tree_final("search_result", "No match found")
-
-        except Exception as e:
-            log_async_error("surah_search_submit", e)
-            embed = create_response_embed(
-                "❌ Search Error",
-                f"An error occurred while searching: {str(e)}",
-                discord.Color.red(),
-            )
-
-            if not interaction.response.is_done():
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-            else:
-                await interaction.followup.send(embed=embed, ephemeral=True)
-
-    def _search_surah(self, search_term: str) -> Optional[Dict]:
-        """Search for Surah by name or number"""
-        try:
-            search_lower = search_term.lower().strip()
-
-            # Try to find by number first
-            if search_lower.isdigit():
-                surah_number = int(search_lower)
-                if validate_surah_number(surah_number):
-                    return get_surah_info(surah_number)
-
-            # Search by name
-            for i in range(1, 115):
-                surah_info = get_surah_info(i)
-                if not surah_info:
-                    continue
-
-                # Check English name
-                english_name = surah_info.name_english.lower()
-                if search_lower in english_name or english_name.startswith(
-                    search_lower
-                ):
-                    return surah_info
-
-                # Check transliteration
-                transliteration = surah_info.name_transliteration.lower()
-                if search_lower in transliteration or transliteration.startswith(
-                    search_lower
-                ):
-                    return surah_info
-
-            return None
-
-        except Exception as e:
-            log_error_with_traceback("Error searching Surah", e)
-            return None
-
-
-# =============================================================================
-# Search Result View
-# =============================================================================
-
-
-class SurahSearchResultView(View):
-    """View for search results with action buttons"""
-
-    def __init__(self, bot, surah_number: int):
-        super().__init__(timeout=300)  # 5 minutes timeout
-        self.bot = bot
-        self.surah_number = surah_number
-
-    @discord.ui.button(label="🎵 Play This Surah", style=discord.ButtonStyle.success)
-    async def play_surah(self, interaction: discord.Interaction, button: Button):
-        """Play the selected Surah"""
-        try:
-            # Check voice channel access
-            if not is_user_in_voice_channel(interaction):
-                embed = create_response_embed(
-                    "🚫 Access Denied",
-                    "You must be in the same voice channel as the bot to use this control!",
-                    discord.Color.red(),
-                )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-                return
-
-            # Update bot state
-            if hasattr(self.bot, "state_manager"):
-                self.bot.state_manager.set_current_song_index(self.surah_number - 1)
-
-            # Restart playback
-            await self._restart_playback(interaction)
-
-            # Send confirmation
-            surah_info = get_surah_info(self.surah_number)
-            embed = create_response_embed(
-                "✅ Now Playing",
-                f"**{surah_info.emoji} {surah_info.name_english}**\n"
-                f"*{surah_info.name_arabic}*",
-                discord.Color.green(),
-            )
-
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-
-        except Exception as e:
-            log_async_error("play_surah_from_search", e)
-            embed = create_response_embed(
-                "❌ Error", f"Failed to play Surah: {str(e)}", discord.Color.red()
-            )
-
-            if not interaction.response.is_done():
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-            else:
-                await interaction.followup.send(embed=embed, ephemeral=True)
-
-    async def _restart_playback(self, interaction: discord.Interaction):
-        """Restart playback with selected Surah"""
-        try:
-            # Stop current playback
-            if hasattr(self.bot, "is_streaming"):
-                self.bot.is_streaming = False
-
-            await asyncio.sleep(2)
-
-            # Find voice client
-            voice_client = None
-            for guild in self.bot.guilds:
-                if guild.voice_client:
-                    voice_client = guild.voice_client
-                    break
-
-            if not voice_client or not voice_client.is_connected():
-                return
-
-            # Restart playback
-            if hasattr(self.bot, "is_streaming"):
-                self.bot.is_streaming = True
-
-            if hasattr(self.bot, "play_quran_files"):
-                asyncio.create_task(
-                    self.bot.play_quran_files(voice_client, voice_client.channel)
-                )
-
-        except Exception as e:
-            log_async_error("restart_playback_from_search", e)
-            raise
-
-
-# =============================================================================
-# Main Control Panel View
-# =============================================================================
-
-
-class ControlPanelView(View):
-    """Main control panel view with all controls"""
+class SimpleControlPanelView(View):
+    """Simple, clean control panel for 24/7 bot"""
 
     def __init__(self, bot, audio_manager=None):
-        super().__init__(timeout=PANEL_TIMEOUT)
+        super().__init__(timeout=None)
         self.bot = bot
         self.audio_manager = audio_manager
-        self.current_page = 0
         self.panel_message = None
+        self.current_page = 0
 
-        # Add select menus
-        self.surah_select = SurahSelect(bot, self.current_page)
-        self.reciter_select = ReciterSelect(bot)
-        self.add_item(self.surah_select)
-        self.add_item(self.reciter_select)
+        # Last activity tracking
+        self.last_activity_user = None
+        self.last_activity_time = None
+        self.last_activity_action = None
 
-        # Start background update task
-        self._update_task = asyncio.create_task(self._periodic_update())
+        # Toggle states - will be synced with audio manager
+        self.loop_enabled = False
+        self.shuffle_enabled = False
 
-    def set_panel_message(self, message: discord.Message):
-        """Set reference to panel message for updates"""
-        self.panel_message = message
+        # Add components
+        self.add_item(SurahSelect(bot, self.current_page))
+        self.add_item(ReciterSelect(bot))
 
-    async def _periodic_update(self):
-        """Periodically update panel status"""
+        # Start update task
+        self.update_task = None
+
+    def _update_last_activity(self, user: discord.User, action: str):
+        """Update last activity tracking"""
+        self.last_activity_user = user
+        self.last_activity_time = datetime.now(timezone.utc)
+        self.last_activity_action = action
+
+    def _format_time_elapsed(self, activity_time: datetime) -> str:
+        """Format time elapsed since activity"""
         try:
-            while True:
-                await asyncio.sleep(PANEL_UPDATE_INTERVAL)
+            now = datetime.now(timezone.utc)
+            elapsed = now - activity_time
+
+            total_seconds = int(elapsed.total_seconds())
+
+            if total_seconds < 60:
+                return f"{total_seconds}s ago"
+            elif total_seconds < 3600:
+                minutes = total_seconds // 60
+                return f"{minutes}m ago"
+            elif total_seconds < 86400:
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                return f"{hours}h {minutes}m ago"
+            else:
+                days = total_seconds // 86400
+                hours = (total_seconds % 86400) // 3600
+                return f"{days}d {hours}h ago"
+        except Exception:
+            return "just now"
+
+    def start_updates(self):
+        """Start the 5-second update task"""
+        if not self.update_task or self.update_task.done():
+            self.update_task = asyncio.create_task(self._update_loop())
+
+    async def _update_loop(self):
+        """Update the panel every 5 seconds"""
+        while True:
+            try:
+                await asyncio.sleep(UPDATE_INTERVAL)
                 if self.panel_message:
-                    await self.update_panel_status()
-        except asyncio.CancelledError:
-            pass
-        except Exception as e:
-            log_async_error("periodic_panel_update", e)
+                    await self.update_panel()
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                log_error_with_traceback("Error in update loop", e)
 
-    async def update_panel_status(self):
-        """Update panel message with current status and dynamic elements"""
+    async def update_panel(self):
+        """Update the control panel embed"""
         try:
-            if not self.panel_message:
-                log_warning_with_context(
-                    "No panel message available", "Skipping update"
-                )
-                return
+            # Get current status
+            current_surah = 1
+            current_reciter = "Unknown"
+            time_display = "No time available"
 
-            log_tree_branch("panel_update", "Updating panel status")
-
-            # Get current state from AudioManager
+            # Get info from audio manager
             if self.audio_manager:
                 status = self.audio_manager.get_playback_status()
-                current_reciter = status["current_reciter"]
-                current_surah = status["current_surah"]
-                is_playing = status["is_playing"]
-                is_paused = status["is_paused"]
-                loop_enabled = status["is_loop_enabled"]
-                shuffle_enabled = status["is_shuffle_enabled"]
+                if status:
+                    current_surah = status.get("current_surah", 1)
+                    current_reciter = status.get("current_reciter", "Unknown")
+
+                    # Get time display
+                    current_time = status.get("current_time", 0)
+                    total_time = status.get("total_time", 0)
+
+                    if total_time > 0:
+                        current_str = self._format_time(current_time)
+                        total_str = self._format_time(total_time)
+                        time_display = f"{current_str} / {total_str}"
+
+            # Get surah info
+            surah_info = get_surah_info(current_surah)
+            if not surah_info:
+                surah_name = f"Surah {current_surah}"
+                surah_arabic = ""
+                surah_emoji = "📖"
             else:
-                # Fallback to old method if no AudioManager
-                current_reciter = getattr(self.bot, "current_reciter", "*Not selected*")
-                current_surah = 1
-                is_playing = False
-                is_paused = False
-                loop_enabled = False
-                shuffle_enabled = False
+                surah_name = surah_info.name_transliteration
+                surah_arabic = surah_info.name_arabic
+                surah_emoji = surah_info.emoji
 
-            # Get detailed surah info
-            surah_display = "*Not playing*"
-            surah_emoji = ""
-            timer_line = ""
-
-            if current_surah and validate_surah_number(current_surah):
-                surah_info = get_surah_info(current_surah)
-                if surah_info:
-                    surah_display = f"{surah_info.name_english}"
-                    surah_emoji = surah_info.emoji
-
-                    # Get progress bar and timer display from Rich Presence
-                    if (
-                        hasattr(self.bot, "rich_presence")
-                        and self.bot.rich_presence
-                        and self.bot.rich_presence.is_active()
-                    ):
-                        try:
-                            # Get current track info from Rich Presence
-                            track_info = self.bot.rich_presence.get_current_track_info()
-                            log_tree_branch(
-                                "progress_debug", f"Track info: {track_info}"
-                            )
-
-                            if track_info and track_info.get("duration"):
-                                current_time = track_info.get("current_time", 0)
-                                total_duration = track_info.get("duration", 0)
-
-                                log_tree_branch(
-                                    "progress_times",
-                                    f"{current_time:.1f}s / {total_duration:.1f}s",
-                                )
-
-                                if total_duration > 0:
-                                    # Create progress bar for control panel (longer than Rich Presence)
-                                    progress_bar = (
-                                        self.bot.rich_presence.get_progress_bar(
-                                            current_time, total_duration, length=20
-                                        )
-                                    )
-                                    time_display = (
-                                        self.bot.rich_presence.format_time(current_time)
-                                        + " / "
-                                        + self.bot.rich_presence.format_time(
-                                            total_duration
-                                        )
-                                    )
-                                    timer_line = f"`{progress_bar}` {time_display}"
-                                    log_tree_branch(
-                                        "progress_created", f"Timer line: {timer_line}"
-                                    )
-                        except Exception as e:
-                            log_error_with_traceback("Error getting progress bar", e)
-
-            loop_icon = "🔁"
-            shuffle_icon = "🔀"
-
-            # Get user attribution for Loop/Shuffle
-            loop_display = "OFF"
-            shuffle_display = "OFF"
-
-            if loop_enabled:
-                loop_user = getattr(self.bot, "loop_enabled_by", None)
-                if loop_user:
-                    loop_display = f"ON - <@{loop_user}>"
-                else:
-                    loop_display = "ON"
-
-            if shuffle_enabled:
-                shuffle_user = getattr(self.bot, "shuffle_enabled_by", None)
-                if shuffle_user:
-                    shuffle_display = f"ON - <@{shuffle_user}>"
-                else:
-                    shuffle_display = "ON"
-
-            # Build the beautiful status block with proper spacing
-            status_block = f"• **Now Playing:** {surah_emoji} {surah_display}  \n"
-            if timer_line:
-                status_block += f"{timer_line}\n"
-            status_block += (
-                f"\n"
-                f"• **Reciter:** 🎤 {current_reciter}  \n"
-                f"\n"
-                f"• **Loop:** {loop_icon} {loop_display}  \n"
-                f"\n"
-                f"• **Shuffle:** {shuffle_icon} {shuffle_display}  \n"
-            )
-
-            # Add last activity if available
-            last_activity_line = self._get_last_activity_display()
-            if last_activity_line:
-                status_block += f"\n{last_activity_line}"
-
-            # Create embed with green color (bot is always playing)
-            embed_color = discord.Color.green()
+            # Create embed
             embed = discord.Embed(
-                title="🕌 QuranBot Control Panel",
-                color=embed_color,
-                timestamp=discord.utils.utcnow(),
+                color=0x00D4AA,
             )
 
-            # Add bot thumbnail
+            # Add bot's profile picture as thumbnail
             if self.bot.user and self.bot.user.avatar:
                 embed.set_thumbnail(url=self.bot.user.avatar.url)
+            elif self.bot.user:
+                # Fallback to default avatar if no custom avatar
+                embed.set_thumbnail(url=self.bot.user.default_avatar.url)
 
-            # Add the status as a single field for better formatting
-            embed.add_field(name="\u200b", value=status_block, inline=False)
-
-            # Update button styles based on state
-            self._update_button_styles(loop_enabled, shuffle_enabled)
-
-            # Update message with error handling
-            try:
-                await self.panel_message.edit(embed=embed, view=self)
-                log_tree_final("panel_update", "✅ Status updated")
-            except discord.NotFound:
-                log_warning_with_context(
-                    "Control panel message not found", "Message may have been deleted"
-                )
-                # Clear the panel message reference so it gets recreated
-                self.panel_message = None
-            except discord.HTTPException as e:
-                log_error_with_traceback("HTTP error updating control panel", e)
-
-        except Exception as e:
-            log_async_error("update_panel_status", e)
-
-    async def _get_timer_display(self, current_surah_name: str) -> str:
-        """Get timer display with progress bar using Rich Presence functions"""
-        try:
-            if not hasattr(self.bot, "get_audio_duration"):
-                return ""
-
-            # Get audio file path
-            audio_path = None
-            if hasattr(self.bot, "current_reciter") and self.bot.current_reciter:
-                # Construct path based on your audio structure
-                audio_folder = "audio"  # Adjust this to match your structure
-                audio_path = (
-                    f"{audio_folder}/{self.bot.current_reciter}/{current_surah_name}"
-                )
-
-            if not audio_path or not os.path.exists(audio_path):
-                return ""
-
-            # Get duration
-            total_duration = await self.bot.get_audio_duration(audio_path)
-            if not total_duration:
-                return ""
-
-            # Get current playback time (if available)
-            current_time = 0
-            if hasattr(self.bot, "get_current_playback_time"):
-                current_time = self.bot.get_current_playback_time()
-
-            # Clamp current time
-            current_time = min(current_time, total_duration)
-
-            # Use Rich Presence functions for consistency
-            temp_rp_manager = RichPresenceManager(self.bot)
-            progress_bar = temp_rp_manager.get_progress_bar(
-                current_time, total_duration
-            )
-            time_display = (
-                temp_rp_manager.format_time(current_time)
-                + " / "
-                + temp_rp_manager.format_time(total_duration)
+            embed.add_field(
+                name="",
+                value=f"**Surah:** {surah_name} - {surah_arabic}",
+                inline=True,
             )
 
-            return f"`{progress_bar} {time_display}`"
-
-        except Exception as e:
-            log_error_with_traceback("Error getting timer display", e)
-            return ""
-
-    def _get_last_activity_display(self) -> str:
-        """Get last activity display with user tracking"""
-        try:
-            # Check if bot has activity tracking
-            if hasattr(self.bot, "last_activity"):
-                activity = self.bot.last_activity
-                if activity and "action" in activity:
-                    action = activity["action"]
-                    user_id = activity.get("user_id")
-                    timestamp = activity.get("timestamp")
-
-                    if user_id:
-                        user_mention = f"<@{user_id}>"
-                        if timestamp:
-                            # Format timestamp for Discord
-                            import time
-
-                            discord_timestamp = f"<t:{int(timestamp)}:R>"
-                            return f"\n**Last Activity:** {action} by {user_mention} {discord_timestamp}"
-                        else:
-                            return f"\n**Last Activity:** {action} by {user_mention}"
-
-            return ""
-        except Exception as e:
-            log_error_with_traceback("Error getting last activity", e)
-            return ""
-
-    def _update_button_styles(self, loop_enabled: bool, shuffle_enabled: bool):
-        """Update button styles based on current state"""
-        try:
-            # Update loop button style
-            for item in self.children:
-                if isinstance(item, Button):
-                    if "Loop" in item.label:
-                        item.style = (
-                            discord.ButtonStyle.success
-                            if loop_enabled
-                            else discord.ButtonStyle.secondary
-                        )
-                    elif "Shuffle" in item.label:
-                        item.style = (
-                            discord.ButtonStyle.success
-                            if shuffle_enabled
-                            else discord.ButtonStyle.secondary
-                        )
-        except Exception as e:
-            log_error_with_traceback("Error updating button styles", e)
-
-    def _track_user_activity(self, interaction: discord.Interaction, action: str):
-        """Track user activity for display in panel"""
-        try:
-            import time
-
-            # Store activity in bot
-            if not hasattr(self.bot, "last_activity"):
-                self.bot.last_activity = {}
-
-            self.bot.last_activity = {
-                "action": action,
-                "user_id": interaction.user.id,
-                "user_name": interaction.user.display_name,
-                "timestamp": time.time(),
+            # Get Arabic name for reciter
+            reciter_display = current_reciter.replace("_", " ").title()
+            arabic_names = {
+                "Abdul Basit Abdul Samad": "عبد الباسط عبد الصمد",
+                "Maher Al Muaiqly": "ماهر المعيقلي",
+                "Muhammad Al Luhaidan": "محمد اللحيدان",
+                "Rashid Al Afasy": "راشد العفاسي",
+                "Saad Al Ghamdi": "سعد الغامدي",
+                "Yasser Al Dosari": "ياسر الدوسري",
             }
+            reciter_arabic = arabic_names.get(reciter_display, "")
 
-            log_tree_branch(
-                "user_activity", f"{interaction.user.display_name}: {action}"
+            if reciter_arabic:
+                reciter_text = f"{reciter_display} - {reciter_arabic}"
+            else:
+                reciter_text = reciter_display
+
+            embed.add_field(
+                name="",
+                value=f"**Reciter:** {reciter_text}",
+                inline=True,
             )
 
-        except Exception as e:
-            log_error_with_traceback("Error tracking user activity", e)
+            # Clean up time display to remove emoji
+            clean_time_display = time_display.replace("🎵 ", "").replace("⏸️ ", "")
+            embed.add_field(
+                name="", value=f"**Progress:** `{clean_time_display}`", inline=True
+            )
 
-    def update_surah_select(self):
-        """Update Surah select menu with new page"""
+            # Add progress bar if we have time information
+            if self.audio_manager:
+                status = self.audio_manager.get_playback_status()
+                if status:
+                    current_time = status.get("current_time", 0)
+                    total_time = status.get("total_time", 0)
+
+                    if total_time > 0:
+                        progress_bar = self._create_progress_bar(
+                            current_time, total_time
+                        )
+                        embed.add_field(
+                            name="",
+                            value=f"```{progress_bar}```",
+                            inline=False,
+                        )
+
+            # Add last activity field
+            if (
+                self.last_activity_user
+                and self.last_activity_time
+                and self.last_activity_action
+            ):
+                time_elapsed = self._format_time_elapsed(self.last_activity_time)
+                embed.add_field(
+                    name="",
+                    value=f"**Last Activity:** <@{self.last_activity_user.id}> {self.last_activity_action} • {time_elapsed}",
+                    inline=False,
+                )
+
+            # Update the message
+            if self.panel_message:
+                await self.panel_message.edit(embed=embed, view=self)
+
+        except Exception as e:
+            log_error_with_traceback("Error updating panel", e)
+
+    def _format_time(self, seconds: float) -> str:
+        """Format seconds to MM:SS or H:MM:SS"""
         try:
-            # Remove old surah select
-            for item in self.children[:]:
-                if isinstance(item, SurahSelect):
-                    self.remove_item(item)
+            total_seconds = int(seconds)
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            secs = total_seconds % 60
 
-            # Add new surah select with current page
-            self.surah_select = SurahSelect(self.bot, self.current_page)
-            self.add_item(self.surah_select)
+            if hours > 0:
+                return f"{hours}:{minutes:02d}:{secs:02d}"  # H:MM:SS (no leading zero for hours)
+            else:
+                return f"{minutes:02d}:{secs:02d}"  # MM:SS
 
-        except Exception as e:
-            log_error_with_traceback("Error updating Surah select", e)
+        except Exception:
+            return "00:00"
 
-    # Navigation buttons
-    @discord.ui.button(
-        label="◀️ Previous Page", style=discord.ButtonStyle.secondary, row=2
-    )
+    def _create_progress_bar(
+        self, current_time: float, total_time: float, length: int = 20
+    ) -> str:
+        """Create a visual progress bar with percentage"""
+        try:
+            if total_time <= 0:
+                return "▱" * length + " 0%"
+
+            # Calculate progress percentage
+            progress = min(
+                current_time / total_time, 1.0
+            )  # Ensure it doesn't exceed 100%
+            filled_length = int(length * progress)
+
+            # Create the bar
+            filled_bar = "▰" * filled_length
+            empty_bar = "▱" * (length - filled_length)
+            percentage = int(progress * 100)
+
+            return f"{filled_bar}{empty_bar} {percentage}%"
+
+        except Exception:
+            return "▱" * length + " 0%"
+
+    @discord.ui.button(label="⬅️ Prev Page", style=discord.ButtonStyle.secondary, row=2)
     async def prev_page(self, interaction: discord.Interaction, button: Button):
-        """Go to previous page of Surahs"""
+        """Go to previous page"""
         try:
+            self._update_last_activity(interaction.user, "switched to previous page")
+
             if self.current_page > 0:
                 self.current_page -= 1
-                self.update_surah_select()
+                # Update the surah select to new page
+                for item in self.children:
+                    if isinstance(item, SurahSelect):
+                        item.page = self.current_page
+                        item._update_options()
+                        break
                 await interaction.response.edit_message(view=self)
             else:
                 await interaction.response.defer()
-
         except Exception as e:
-            log_async_error("prev_page_button", e)
+            log_error_with_traceback("Error in prev page", e)
             await interaction.response.defer()
 
-    @discord.ui.button(label="Next Page ▶️", style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(label="➡️ Next Page", style=discord.ButtonStyle.secondary, row=2)
     async def next_page(self, interaction: discord.Interaction, button: Button):
-        """Go to next page of Surahs"""
+        """Go to next page"""
         try:
+            self._update_last_activity(interaction.user, "switched to next page")
+
             max_pages = (114 + SURAHS_PER_PAGE - 1) // SURAHS_PER_PAGE
             if self.current_page < max_pages - 1:
                 self.current_page += 1
-                self.update_surah_select()
+                # Update the surah select to new page
+                for item in self.children:
+                    if isinstance(item, SurahSelect):
+                        item.page = self.current_page
+                        item._update_options()
+                        break
                 await interaction.response.edit_message(view=self)
             else:
                 await interaction.response.defer()
-
         except Exception as e:
-            log_async_error("next_page_button", e)
+            log_error_with_traceback("Error in next page", e)
             await interaction.response.defer()
 
-    @discord.ui.button(label="🔍 Search", style=discord.ButtonStyle.primary, row=2)
-    async def search_button(self, interaction: discord.Interaction, button: Button):
-        """Open search modal"""
-        try:
-            modal = SurahSearchModal(self.bot)
-            await interaction.response.send_modal(modal)
-
-        except Exception as e:
-            log_async_error("search_button", e)
-            embed = create_response_embed(
-                "❌ Error", f"Failed to open search: {str(e)}", discord.Color.red()
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-
-    # Playback control buttons
     @discord.ui.button(label="⏮️ Previous", style=discord.ButtonStyle.danger, row=3)
-    async def previous_button(self, interaction: discord.Interaction, button: Button):
-        """Play previous Surah"""
+    async def previous_surah(self, interaction: discord.Interaction, button: Button):
+        """Go to previous surah"""
         try:
-            if not is_user_in_voice_channel(interaction):
-                embed = create_response_embed(
-                    "🚫 Access Denied",
-                    "You must be in the same voice channel as the bot!",
-                    discord.Color.red(),
-                )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-                return
+            self._update_last_activity(interaction.user, "skipped to previous surah")
 
             if self.audio_manager:
-                # Use AudioManager to skip to previous
                 await self.audio_manager.skip_to_previous()
-
-                # Get the new current surah
-                status = self.audio_manager.get_playback_status()
-                current_surah = status["current_surah"]
-
-                # Track activity
-                self._track_user_activity(interaction, f"Went to Previous Surah")
-
-                # Send confirmation
-                surah_info = get_surah_info(current_surah)
-                embed = create_response_embed(
-                    "✅ Previous Surah",
-                    f"Now playing: **{surah_info.emoji} {surah_info.name_english}**",
-                    discord.Color.green(),
-                )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-            else:
-                # Fallback to old method
-                current_index = None
-                if hasattr(self.bot, "state_manager"):
-                    current_index = self.bot.state_manager.get_current_song_index()
-
-                if current_index is None or current_index <= 0:
-                    embed = create_response_embed(
-                        "⚠️ Cannot Go Back",
-                        "Already at the first Surah or no Surah selected!",
-                        discord.Color.orange(),
-                    )
-                    await interaction.response.send_message(embed=embed, ephemeral=True)
-                    return
-
-                # Update state and restart playback
-                new_index = current_index - 1
-                if hasattr(self.bot, "state_manager"):
-                    self.bot.state_manager.set_current_song_index(new_index)
-
-                # Track activity
-                self._track_user_activity(interaction, f"Went to Previous Surah")
-
-                await self._restart_playback()
-
-                # Send confirmation
-                surah_info = get_surah_info(new_index + 1)
-                embed = create_response_embed(
-                    "✅ Previous Surah",
-                    f"Now playing: **{surah_info.emoji} {surah_info.name_english}**",
-                    discord.Color.green(),
-                )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-
+            await interaction.response.defer()
         except Exception as e:
-            log_async_error("previous_button", e)
-            embed = create_response_embed(
-                "❌ Error",
-                f"Failed to go to previous Surah: {str(e)}",
-                discord.Color.red(),
-            )
-
-            if not interaction.response.is_done():
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-            else:
-                await interaction.followup.send(embed=embed, ephemeral=True)
+            log_error_with_traceback("Error skipping to previous", e)
+            await interaction.response.defer()
 
     @discord.ui.button(label="⏭️ Next", style=discord.ButtonStyle.success, row=3)
-    async def next_button(self, interaction: discord.Interaction, button: Button):
-        """Play next Surah"""
+    async def next_surah(self, interaction: discord.Interaction, button: Button):
+        """Go to next surah"""
         try:
-            if not is_user_in_voice_channel(interaction):
-                embed = create_response_embed(
-                    "🚫 Access Denied",
-                    "You must be in the same voice channel as the bot!",
-                    discord.Color.red(),
-                )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-                return
+            self._update_last_activity(interaction.user, "skipped to next surah")
 
             if self.audio_manager:
-                # Use AudioManager to skip to next
                 await self.audio_manager.skip_to_next()
-
-                # Get the new current surah
-                status = self.audio_manager.get_playback_status()
-                current_surah = status["current_surah"]
-
-                # Track activity
-                self._track_user_activity(interaction, f"Skipped to Next Surah")
-
-                # Send confirmation
-                surah_info = get_surah_info(current_surah)
-                embed = create_response_embed(
-                    "✅ Next Surah",
-                    f"Now playing: **{surah_info.emoji} {surah_info.name_english}**",
-                    discord.Color.green(),
-                )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-            else:
-                # Fallback to old method
-                current_index = None
-                if hasattr(self.bot, "state_manager"):
-                    current_index = self.bot.state_manager.get_current_song_index()
-
-                if current_index is None:
-                    embed = create_response_embed(
-                        "⚠️ No Surah Selected",
-                        "Please select a Surah first!",
-                        discord.Color.orange(),
-                    )
-                    await interaction.response.send_message(embed=embed, ephemeral=True)
-                    return
-
-                # Update state and restart playback
-                new_index = current_index + 1
-                if new_index >= 114:  # Loop back to first Surah
-                    new_index = 0
-
-                if hasattr(self.bot, "state_manager"):
-                    self.bot.state_manager.set_current_song_index(new_index)
-
-                # Track activity
-                self._track_user_activity(interaction, f"Skipped to Next Surah")
-
-                await self._restart_playback()
-
-                # Send confirmation
-                surah_info = get_surah_info(new_index + 1)
-                embed = create_response_embed(
-                    "✅ Next Surah",
-                    f"Now playing: **{surah_info.emoji} {surah_info.name_english}**",
-                    discord.Color.green(),
-                )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-
+            await interaction.response.defer()
         except Exception as e:
-            log_async_error("next_button", e)
-            embed = create_response_embed(
-                "❌ Error", f"Failed to go to next Surah: {str(e)}", discord.Color.red()
-            )
+            log_error_with_traceback("Error skipping to next", e)
+            await interaction.response.defer()
 
-            if not interaction.response.is_done():
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-            else:
-                await interaction.followup.send(embed=embed, ephemeral=True)
-
-    @discord.ui.button(label="🔁 Loop", style=discord.ButtonStyle.secondary, row=3)
-    async def loop_button(self, interaction: discord.Interaction, button: Button):
+    @discord.ui.button(label="🔁 Loop", style=discord.ButtonStyle.secondary, row=4)
+    async def toggle_loop(self, interaction: discord.Interaction, button: Button):
         """Toggle loop mode"""
         try:
-            if not is_user_in_voice_channel(interaction):
-                embed = create_response_embed(
-                    "🚫 Access Denied",
-                    "You must be in the same voice channel as the bot!",
-                    discord.Color.red(),
-                )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-                return
-
+            # Toggle audio manager's loop state
             if self.audio_manager:
-                # Use AudioManager to toggle loop
                 self.audio_manager.toggle_loop()
-
-                status = self.audio_manager.get_playback_status()
-                loop_enabled = status["is_loop_enabled"]
-
-                # Store user attribution for loop
-                if loop_enabled:
-                    self.bot.loop_enabled_by = interaction.user.id
-                else:
-                    self.bot.loop_enabled_by = None
-
-                # Track activity
-                action = "Enabled Loop" if loop_enabled else "Disabled Loop"
-                self._track_user_activity(interaction, action)
-
-                # Update button style
-                button.style = (
-                    discord.ButtonStyle.success
-                    if loop_enabled
-                    else discord.ButtonStyle.secondary
-                )
-
-                # Update control panel display
-                await self.update_panel_status()
-
-                # Send confirmation
-                status_text = "enabled" if loop_enabled else "disabled"
-                embed = create_response_embed(
-                    "✅ Loop Updated", f"Loop mode {status_text}", discord.Color.green()
-                )
-
-                await interaction.response.edit_message(view=self)
-                await interaction.followup.send(embed=embed, ephemeral=True)
+                self.loop_enabled = self.audio_manager.is_loop_enabled
             else:
-                # Fallback to old method
-                current_loop = getattr(self.bot, "loop_enabled", False)
-                self.bot.loop_enabled = not current_loop
+                self.loop_enabled = not self.loop_enabled
 
-                # Store user attribution for loop
-                if self.bot.loop_enabled:
-                    self.bot.loop_enabled_by = interaction.user.id
-                else:
-                    self.bot.loop_enabled_by = None
-
-                # Track activity
-                action = "Enabled Loop" if self.bot.loop_enabled else "Disabled Loop"
-                self._track_user_activity(interaction, action)
-
-                # Update button style
-                button.style = (
-                    discord.ButtonStyle.success
-                    if self.bot.loop_enabled
-                    else discord.ButtonStyle.secondary
-                )
-
-                # Update control panel display
-                await self.update_panel_status()
-
-                # Send confirmation
-                status = "enabled" if self.bot.loop_enabled else "disabled"
-                embed = create_response_embed(
-                    "✅ Loop Updated", f"Loop mode {status}", discord.Color.green()
-                )
-
-                await interaction.response.edit_message(view=self)
-                await interaction.followup.send(embed=embed, ephemeral=True)
-
-        except Exception as e:
-            log_async_error("loop_button", e)
-            embed = create_response_embed(
-                "❌ Error", f"Failed to toggle loop: {str(e)}", discord.Color.red()
+            # Update button style
+            button.style = (
+                discord.ButtonStyle.success
+                if self.loop_enabled
+                else discord.ButtonStyle.secondary
             )
 
-            if not interaction.response.is_done():
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-            else:
-                await interaction.followup.send(embed=embed, ephemeral=True)
+            status = "enabled" if self.loop_enabled else "disabled"
+            self._update_last_activity(
+                interaction.user, f"toggled loop mode ({status})"
+            )
 
-    @discord.ui.button(label="🔀 Shuffle", style=discord.ButtonStyle.secondary, row=3)
-    async def shuffle_button(self, interaction: discord.Interaction, button: Button):
+            await interaction.response.edit_message(view=self)
+        except Exception as e:
+            log_error_with_traceback("Error toggling loop", e)
+            await interaction.response.defer()
+
+    @discord.ui.button(label="🔀 Shuffle", style=discord.ButtonStyle.secondary, row=4)
+    async def toggle_shuffle(self, interaction: discord.Interaction, button: Button):
         """Toggle shuffle mode"""
         try:
-            if not is_user_in_voice_channel(interaction):
-                embed = create_response_embed(
-                    "🚫 Access Denied",
-                    "You must be in the same voice channel as the bot!",
-                    discord.Color.red(),
-                )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-                return
-
+            # Toggle audio manager's shuffle state
             if self.audio_manager:
-                # Use AudioManager to toggle shuffle
                 self.audio_manager.toggle_shuffle()
-
-                status = self.audio_manager.get_playback_status()
-                shuffle_enabled = status["is_shuffle_enabled"]
-
-                # Store user attribution for shuffle
-                if shuffle_enabled:
-                    self.bot.shuffle_enabled_by = interaction.user.id
-                else:
-                    self.bot.shuffle_enabled_by = None
-
-                # Track activity
-                action = "Enabled Shuffle" if shuffle_enabled else "Disabled Shuffle"
-                self._track_user_activity(interaction, action)
-
-                # Update button style
-                button.style = (
-                    discord.ButtonStyle.success
-                    if shuffle_enabled
-                    else discord.ButtonStyle.secondary
-                )
-
-                # Update control panel display
-                await self.update_panel_status()
-
-                # Send confirmation
-                status_text = "enabled" if shuffle_enabled else "disabled"
-                embed = create_response_embed(
-                    "✅ Shuffle Updated",
-                    f"Shuffle mode {status_text}",
-                    discord.Color.green(),
-                )
-
-                await interaction.response.edit_message(view=self)
-                await interaction.followup.send(embed=embed, ephemeral=True)
+                self.shuffle_enabled = self.audio_manager.is_shuffle_enabled
             else:
-                # Fallback to old method
-                current_shuffle = getattr(self.bot, "shuffle_enabled", False)
-                self.bot.shuffle_enabled = not current_shuffle
+                self.shuffle_enabled = not self.shuffle_enabled
 
-                # Store user attribution for shuffle
-                if self.bot.shuffle_enabled:
-                    self.bot.shuffle_enabled_by = interaction.user.id
-                else:
-                    self.bot.shuffle_enabled_by = None
-
-                # Track activity
-                action = (
-                    "Enabled Shuffle"
-                    if self.bot.shuffle_enabled
-                    else "Disabled Shuffle"
-                )
-                self._track_user_activity(interaction, action)
-
-                # Update button style
-                button.style = (
-                    discord.ButtonStyle.success
-                    if self.bot.shuffle_enabled
-                    else discord.ButtonStyle.secondary
-                )
-
-                # Update control panel display
-                await self.update_panel_status()
-
-                # Send confirmation
-                status = "enabled" if self.bot.shuffle_enabled else "disabled"
-                embed = create_response_embed(
-                    "✅ Shuffle Updated",
-                    f"Shuffle mode {status}",
-                    discord.Color.green(),
-                )
-
-                await interaction.response.edit_message(view=self)
-                await interaction.followup.send(embed=embed, ephemeral=True)
-
-        except Exception as e:
-            log_async_error("shuffle_button", e)
-            embed = create_response_embed(
-                "❌ Error", f"Failed to toggle shuffle: {str(e)}", discord.Color.red()
+            # Update button style
+            button.style = (
+                discord.ButtonStyle.success
+                if self.shuffle_enabled
+                else discord.ButtonStyle.secondary
             )
 
-            if not interaction.response.is_done():
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-            else:
-                await interaction.followup.send(embed=embed, ephemeral=True)
+            status = "enabled" if self.shuffle_enabled else "disabled"
+            self._update_last_activity(
+                interaction.user, f"toggled shuffle mode ({status})"
+            )
 
-    async def _restart_playback(self):
-        """Restart playback with current settings"""
-        try:
-            log_tree_branch("playback_restart", "Stopping current playback")
-
-            # Stop current playback
-            if hasattr(self.bot, "is_streaming"):
-                self.bot.is_streaming = False
-
-            await asyncio.sleep(2)
-
-            # Find voice client
-            voice_client = None
-            for guild in self.bot.guilds:
-                if guild.voice_client:
-                    voice_client = guild.voice_client
-                    break
-
-            if not voice_client or not voice_client.is_connected():
-                log_warning_with_context(
-                    "No voice client available", "Playback restart cancelled"
-                )
-                return
-
-            # Restart playback
-            if hasattr(self.bot, "is_streaming"):
-                self.bot.is_streaming = True
-
-            if hasattr(self.bot, "play_quran_files"):
-                log_tree_branch("playback_restart", "Starting new playback")
-                asyncio.create_task(
-                    self.bot.play_quran_files(voice_client, voice_client.channel)
-                )
-
-            log_tree_final("playback_restart", "✅ Completed")
-
+            await interaction.response.edit_message(view=self)
         except Exception as e:
-            log_async_error("restart_playback", e)
-            raise
+            log_error_with_traceback("Error toggling shuffle", e)
+            await interaction.response.defer()
+
+    def set_panel_message(self, message: discord.Message):
+        """Set the panel message for updates"""
+        self.panel_message = message
+        self.start_updates()
 
     def cleanup(self):
-        """Clean up resources"""
-        try:
-            if hasattr(self, "_update_task") and not self._update_task.done():
-                self._update_task.cancel()
-        except Exception as e:
-            log_error_with_traceback("Error cleaning up control panel", e)
+        """Clean up the view"""
+        if self.update_task and not self.update_task.done():
+            self.update_task.cancel()
 
 
 # =============================================================================
-# Panel Management Functions
+# Setup Functions
 # =============================================================================
 
 
 async def create_control_panel(
     bot, channel: discord.TextChannel, audio_manager=None
 ) -> Optional[discord.Message]:
-    """Create and send the control panel to specified channel"""
+    """Create a simple control panel"""
     try:
-        log_section_start("Control Panel Creation", "🎛️")
-        log_tree_branch("channel", f"{channel.name} ({channel.id})")
+        log_tree_branch("creating_panel", f"Channel: {channel.name}")
 
-        # Create initial embed with beautiful design
+        # Delete all existing messages in the channel first
+        try:
+            log_tree_branch("clearing_channel", "Deleting existing messages...")
+            deleted_count = 0
+            async for message in channel.history(limit=None):
+                try:
+                    await message.delete()
+                    deleted_count += 1
+                except Exception as e:
+                    # Skip messages that can't be deleted (too old, no permissions, etc.)
+                    pass
+
+            if deleted_count > 0:
+                log_tree_branch(
+                    "messages_deleted", f"Deleted {deleted_count} existing messages"
+                )
+            else:
+                log_tree_branch("channel_status", "Channel was already empty")
+        except Exception as e:
+            log_error_with_traceback("Error clearing channel", e)
+
+        # Create the view
+        view = SimpleControlPanelView(bot, audio_manager)
+
+        # Create initial embed
         embed = discord.Embed(
-            title="🕌 QuranBot Control Panel",
-            color=discord.Color.blue(),
-            timestamp=discord.utils.utcnow(),
+            description="Loading...",
+            color=0x00D4AA,
         )
 
-        # Add loading status in the same format as the dynamic updates
-        loading_status = (
-            "• **Now Playing:** *Loading...*  \n"
-            "\n"
-            "• **Reciter:** 🎤 *Loading...*  \n"
-            "\n"
-            "• **Status:** ⏸️ *Initializing...*  \n"
-            "\n"
-            "• **Loop:** 🔁 OFF  \n"
-            "\n"
-            "• **Shuffle:** 🔀 OFF  \n"
-        )
-        embed.add_field(name="\u200b", value=loading_status, inline=False)
-
-        # Add bot thumbnail
+        # Add bot's profile picture as thumbnail
         if bot.user and bot.user.avatar:
             embed.set_thumbnail(url=bot.user.avatar.url)
+        elif bot.user:
+            # Fallback to default avatar if no custom avatar
+            embed.set_thumbnail(url=bot.user.default_avatar.url)
 
-        # Create view with AudioManager
-        view = ControlPanelView(bot, audio_manager)
+        # Send the message
+        message = await channel.send(embed=embed, view=view)
+        view.set_panel_message(message)
 
-        # Send panel message
-        panel_message = await channel.send(embed=embed, view=view)
+        # Initial update
+        await view.update_panel()
 
-        # Set message reference
-        view.set_panel_message(panel_message)
-
-        # Update with current status
-        await view.update_panel_status()
-
-        log_tree_final("panel_created", f"Message ID: {panel_message.id}")
-        return panel_message
+        log_tree_final("panel_created", "✅ Simple control panel created")
+        return message
 
     except Exception as e:
         log_error_with_traceback("Error creating control panel", e)
@@ -1637,42 +635,15 @@ async def create_control_panel(
 
 
 async def setup_control_panel(bot, channel_id: int, audio_manager=None) -> bool:
-    """Set up control panel in specified channel"""
+    """Set up the control panel in specified channel"""
     try:
-        log_section_start("Control Panel Setup", "⚙️")
-        log_tree_branch("channel_id", channel_id)
-
-        # Find channel
-        channel = None
-        for guild in bot.guilds:
-            channel = guild.get_channel(channel_id)
-            if channel:
-                break
-
+        channel = bot.get_channel(channel_id)
         if not channel:
-            log_warning_with_context("Channel not found", f"ID: {channel_id}")
+            log_tree_branch("setup_error", f"Channel {channel_id} not found")
             return False
 
-        # Clear channel
-        try:
-            deleted_count = 0
-            async for message in channel.history(limit=100):
-                await message.delete()
-                deleted_count += 1
-
-            log_tree_branch("channel_cleared", f"Deleted {deleted_count} messages")
-        except Exception as e:
-            log_warning_with_context("Could not clear channel", str(e))
-
-        # Create panel with AudioManager
-        panel_message = await create_control_panel(bot, channel, audio_manager)
-
-        if panel_message:
-            log_tree_final("setup_complete", "✅ Control panel ready")
-            return True
-        else:
-            log_tree_final("setup_failed", "❌ Failed to create panel")
-            return False
+        message = await create_control_panel(bot, channel, audio_manager)
+        return message is not None
 
     except Exception as e:
         log_error_with_traceback("Error setting up control panel", e)

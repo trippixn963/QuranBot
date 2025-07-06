@@ -191,11 +191,23 @@ if __name__ == "__main__":
         except KeyboardInterrupt:
             log_section_start("Shutdown", "👋")
             log_tree_final("status", "Bot stopped by user")
+
+            # Import state manager for shutdown marking
+            from src.utils.state_manager import state_manager
+
+            state_manager.mark_shutdown()
+
             log_run_end(run_id, "User interrupt (Ctrl+C)")
         except Exception as e:
             log_section_start("Error", "❌")
             log_error_with_traceback("Bot crashed with unhandled exception", e)
             log_tree_final("status", "Bot crashed")
+
+            # Import state manager for shutdown marking
+            from src.utils.state_manager import state_manager
+
+            state_manager.mark_shutdown()
+
             log_run_end(run_id, f"Crashed: {str(e)}")
             raise
 

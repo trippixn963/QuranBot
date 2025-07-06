@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2025-07-05
+
+### Added
+
+- **Environment Default Settings**: Added configurable default settings for reciter, shuffle, and loop modes
+- **Startup Reset Behavior**: Bot now resets to default reciter (Saad Al Ghamdi) on every restart
+- **Toggle State Persistence**: Loop and shuffle modes reset to environment defaults on bot restart
+- **Enhanced Control Panel**: Added emojis to buttons and dropdown menus for better user experience
+- **Improved Dropdown Design**: Reciter dropdown now shows English names as labels with Arabic names as descriptions
+
+### Configuration
+
+- **New Environment Variables**:
+  - `DEFAULT_RECITER=Saad Al Ghamdi` - Sets default reciter on bot startup
+  - `DEFAULT_SHUFFLE=false` - Sets default shuffle mode state
+  - `DEFAULT_LOOP=false` - Sets default loop mode state
+
+### Enhanced
+
+- **State Manager**: Updated to use environment defaults for fresh state initialization
+- **Audio Manager**: Modified to accept and use environment default values
+- **Control Panel Design**:
+  - Added emojis to all buttons (⬅️ ➡️ ⏮️ ⏭️ 🔁 🔀)
+  - Enhanced dropdown options with appropriate emojis
+  - Improved reciter dropdown format with English/Arabic separation
+- **Startup Behavior**: Consistent default state regardless of previous session
+
+### Technical Improvements
+
+- **Environment Integration**: Proper loading and parsing of boolean environment variables
+- **Default Value Cascading**: Environment defaults flow through StateManager → AudioManager → Control Panel
+- **State Synchronization**: Control panel toggle states sync with audio manager on connection
+
 ## [1.4.0] - 2025-07-05
 
 ### Added
