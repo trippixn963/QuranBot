@@ -230,12 +230,38 @@ def initialize_bot():
         log_spacing()
         log_section_start("Discord Bot Runtime", "🤖")
 
-        # Start the Discord bot
-        bot.run(DISCORD_TOKEN)
+        # Start the Discord bot with connection error handling
+        try:
+            bot.run(DISCORD_TOKEN)
+            # Normal shutdown (this line is rarely reached)
+            log_tree_final("bot_status", "✅ Bot terminated normally")
+            return 0
 
-        # Normal shutdown (this line is rarely reached)
-        log_tree_final("bot_status", "✅ Bot terminated normally")
-        return 0
+        except Exception as bot_error:
+            # Handle specific Discord connection errors
+            error_type = type(bot_error).__name__
+            error_message = str(bot_error)
+
+            # Check for connection reset errors that are normal during shutdown
+            if (
+                "ClientConnectionResetError" in error_type
+                or "closing transport" in error_message
+            ):
+                log_tree_branch(
+                    "connection_status",
+                    "✅ Bot disconnected (connection reset during shutdown)",
+                )
+                log_tree_final("bot_status", "✅ Bot terminated normally")
+                return 0
+            elif "ConnectionClosed" in error_type:
+                log_tree_branch(
+                    "connection_status", "✅ Bot disconnected (connection closed)"
+                )
+                log_tree_final("bot_status", "✅ Bot terminated normally")
+                return 0
+            else:
+                # Re-raise other errors for normal error handling
+                raise bot_error
 
     except KeyboardInterrupt:
         # User interrupted with Ctrl+C

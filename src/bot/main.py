@@ -11,6 +11,7 @@ import traceback
 from pathlib import Path
 
 import discord
+from aiohttp.client_exceptions import ClientConnectionResetError
 from discord.ext import commands
 
 # =============================================================================
@@ -339,7 +340,7 @@ bot = commands.Bot(command_prefix=commands.when_mentioned, intents=intents)
 # =============================================================================
 # Bot Version & Configuration
 # =============================================================================
-BOT_VERSION = "1.7.5"
+BOT_VERSION = "1.7.6"
 BOT_NAME = "QuranBot"
 
 # Configuration from Environment Variables

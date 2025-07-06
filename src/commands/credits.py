@@ -32,7 +32,7 @@ load_dotenv(env_path)
 # Admin/Developer Information (loaded from environment)
 ADMIN_USER_ID = int(os.getenv("ADMIN_USER_ID", "0"))
 GITHUB_REPO_URL = "https://github.com/JohnHamwi/QuranBot"
-BOT_VERSION = "1.7.5"
+BOT_VERSION = "1.7.6"
 
 
 # =============================================================================
@@ -222,6 +222,12 @@ async def setup_credits_command(bot):
         "Registering /credits slash command",
     )
     log_tree_branch("bot_instance", f"Bot user: {bot.user.name}")
+
+    # Check if command is already registered to prevent duplicates
+    existing_commands = [cmd.name for cmd in bot.tree.get_commands()]
+    if "credits" in existing_commands:
+        log_tree_branch("command_status", "✅ /credits command already registered")
+        return
 
     @bot.tree.command(
         name="credits",
