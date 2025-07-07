@@ -11,7 +11,8 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from utils.tree_log import (
+# Import tree logging functions
+from src.utils.tree_log import (
     log_error_with_traceback,
     log_perfect_tree_section,
     log_user_interaction,
