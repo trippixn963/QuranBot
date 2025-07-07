@@ -26,6 +26,9 @@ EST = timezone(timedelta(hours=-5))
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 BACKUP_DIR = Path(__file__).parent.parent.parent / "backup"
 
+# Core data files to backup (only these files)
+CORE_DATA_FILES = ["playback_state.json", "bot_stats.json", "listening_stats.json"]
+
 # Backup configuration
 BACKUP_INTERVAL_HOURS = 1
 _last_backup_time = None
@@ -38,7 +41,16 @@ _backup_task = None
 
 
 class BackupManager:
-    """Centralized backup system for all QuranBot data files"""
+    """
+    Centralized backup system for QuranBot's core data files.
+
+    Only backs up the 3 essential data files:
+    - playback_state.json (current playback position and settings)
+    - bot_stats.json (bot statistics and session data)
+    - listening_stats.json (user listening statistics)
+
+    Excludes manual backup files and temporary files to prevent recursive backups.
+    """
 
     def __init__(self):
         self.data_dir = DATA_DIR
@@ -96,14 +108,20 @@ class BackupManager:
                 )
                 return False
 
-            # Get all files in data directory
-            data_files = [f for f in self.data_dir.glob("*") if f.is_file()]
+            # Get only the core data files that exist
+            data_files = []
+            for core_file in CORE_DATA_FILES:
+                file_path = self.data_dir / core_file
+                if file_path.exists() and file_path.is_file():
+                    data_files.append(file_path)
+
             if not data_files:
                 log_perfect_tree_section(
-                    "Backup Manager - No Data Files",
+                    "Backup Manager - No Core Data Files",
                     [
-                        ("status", "⚠️ No files in data directory to backup"),
+                        ("status", "⚠️ No core data files found to backup"),
                         ("data_dir", str(self.data_dir)),
+                        ("core_files", f"📋 Looking for: {', '.join(CORE_DATA_FILES)}"),
                     ],
                     "⚠️",
                 )
@@ -444,14 +462,20 @@ class BackupManager:
                 )
                 return False
 
-            # Get all files in data directory
-            data_files = [f for f in self.data_dir.glob("*") if f.is_file()]
+            # Get only the core data files that exist
+            data_files = []
+            for core_file in CORE_DATA_FILES:
+                file_path = self.data_dir / core_file
+                if file_path.exists() and file_path.is_file():
+                    data_files.append(file_path)
+
             if not data_files:
                 log_perfect_tree_section(
                     "Backup Manager - Manual Backup Failed",
                     [
-                        ("status", "⚠️ No files in data directory to backup"),
+                        ("status", "⚠️ No core data files found to backup"),
                         ("data_dir", str(self.data_dir)),
+                        ("core_files", f"📋 Looking for: {', '.join(CORE_DATA_FILES)}"),
                     ],
                     "⚠️",
                 )
