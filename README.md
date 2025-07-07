@@ -10,8 +10,39 @@
 [![Discord.py](https://img.shields.io/badge/discord.py-2.3.0%2B-blue.svg)](https://github.com/Rapptz/discord.py)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](#)
+
+<!-- Build and Quality Badges -->
+
+[![CI/CD Pipeline](https://github.com/trippixn963/QuranBot/actions/workflows/ci.yml/badge.svg)](https://github.com/trippixn963/QuranBot/actions/workflows/ci.yml)
+[![Code Coverage](https://codecov.io/gh/trippixn963/QuranBot/branch/master/graph/badge.svg)](https://codecov.io/gh/trippixn963/QuranBot)
+[![Code Quality](https://img.shields.io/badge/code%20quality-A-brightgreen.svg)](#)
+[![Security Rating](https://img.shields.io/badge/security-A-brightgreen.svg)](#)
+
+<!-- Project Stats -->
+
+[![GitHub Stars](https://img.shields.io/github/stars/trippixn963/QuranBot?style=social)](https://github.com/trippixn963/QuranBot/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/trippixn963/QuranBot?style=social)](https://github.com/trippixn963/QuranBot/network/members)
+[![GitHub Issues](https://img.shields.io/github/issues/trippixn963/QuranBot)](https://github.com/trippixn963/QuranBot/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/trippixn963/QuranBot)](https://github.com/trippixn963/QuranBot/pulls)
+
+<!-- Activity and Maintenance -->
+
+[![Last Commit](https://img.shields.io/github/last-commit/trippixn963/QuranBot)](https://github.com/trippixn963/QuranBot/commits/master)
+[![Release Date](https://img.shields.io/github/release-date/trippixn963/QuranBot)](https://github.com/trippixn963/QuranBot/releases)
+[![Downloads](https://img.shields.io/github/downloads/trippixn963/QuranBot/total)](https://github.com/trippixn963/QuranBot/releases)
+
+<!-- Technology Stack -->
+
+[![Made with Python](https://img.shields.io/badge/made%20with-Python-1f425f.svg)](https://www.python.org/)
+[![Discord Bot](https://img.shields.io/badge/discord-bot-7289da.svg)](https://discord.com/)
+[![FFmpeg](https://img.shields.io/badge/audio-FFmpeg-green.svg)](https://ffmpeg.org/)
+
+<!-- Support and Community -->
+
 [![No Support](https://img.shields.io/badge/support-NONE-red.svg)](#)
 [![Take As Is](https://img.shields.io/badge/policy-take%20as%20is-red.svg)](#)
+[![Educational Use](https://img.shields.io/badge/purpose-educational-blue.svg)](#)
+[![Muslim Ummah](https://img.shields.io/badge/built%20for-Muslim%20Ummah-green.svg)](#)
 
 _Built with ❤️ for the Muslim Ummah - Shared as-is for educational purposes_
 
@@ -390,6 +421,7 @@ All logs are automatically saved to:
 ## 📋 Version History
 
 ### v2.2.0 (Latest)
+
 🎯 **🛡️ Bulletproof Data Protection - Implemented 5-layer protection system for all data files
 🎯 **📦 Automated ZIP Backup System - EST-scheduled hourly backups with intuitive date/time naming (e.g., "7/6 - 10PM.zip")
 🎯 **🔍 Missing Surah Detection - Automatic detection and logging of incomplete reciter collections with range formatting
@@ -398,23 +430,26 @@ All logs are automatically saved to:
 🎯 **🔄 Smart Looping - Default looping enabled for continuous playback experience
 🎯 **📊 Audio File Indexing - Intelligent surah-to-file mapping with missing file detection
 🎯 **🚨 Emergency Backup System - Multiple fallback mechanisms for critical data protection
-🎯 **🔄 Atomic File Operations - Corruption-proof saves with automatic recovery mechanisms
+🎯 \*\*🔄 Atomic File Operations - Corruption-proof saves with automatic recovery mechanisms
 
 ### v2.1.0
+
 🎯 **Centralized Version Management - Single source of truth version system with src/version.py
 🎯 **🔄 Automated Version Updates - tools/update_version.py utility for consistent version management
 🎯 **👤 Centralized Author Management - Standardized author format "John (Discord: Trippixn)"
 🎯 **🗂️ Perfect Tree Logging - Enhanced logging system with comprehensive backup visibility
-🎯 **📊 Backup Status Reporting - Real-time backup status with file counts and next backup timing
+🎯 \*\*📊 Backup Status Reporting - Real-time backup status with file counts and next backup timing
 
 ### v1.5.0
+
 🎯 **Environment Default Settings - Added configurable default settings for reciter, shuffle, and loop modes
 🎯 **Startup Reset Behavior - Bot now resets to default reciter (Saad Al Ghamdi) on every restart
 🎯 **Toggle State Persistence - Loop and shuffle modes reset to environment defaults on bot restart
 🎯 **Enhanced Control Panel - Added emojis to buttons and dropdown menus for better user experience
-🎯 **Improved Dropdown Design - Reciter dropdown now shows English names as labels with Arabic names as descriptions
+🎯 \*\*Improved Dropdown Design - Reciter dropdown now shows English names as labels with Arabic names as descriptions
 
 ### v1.4.0
+
 🎯 **Interactive Control Panel - Complete Discord embed-based control panel with real-time status updates
 🎯 **Audio Manager System - Centralized audio playback management with comprehensive state tracking
 🎯 **Rich Presence Integration - Dynamic Discord Rich Presence showing current Surah with Arabic names and playback timer
@@ -423,9 +458,10 @@ All logs are automatically saved to:
 🎯 **Surah Selection Dropdown - Paginated dropdown menu with emoji indicators and Arabic descriptions
 🎯 **Reciter Selection - Dynamic reciter switching with automatic audio file discovery
 🎯 **Playback Controls - Previous/Next track buttons with seamless audio transitions
-🎯 **Loop & Shuffle Modes - Toggle controls with user attribution and real-time status updates
+🎯 \*\*Loop & Shuffle Modes - Toggle controls with user attribution and real-time status updates
 
 ### v1.2.0
+
 🎯 **Professional project structure - Reorganized entire project with tools/, docs/, config/, scripts/ directories
 🎯 **Enhanced development tools - Comprehensive testing suite, code formatting, and deployment safety tools
 🎯 **Complete error handling - Added traceback support throughout with enhanced tree_log functions
@@ -434,7 +470,7 @@ All logs are automatically saved to:
 🎯 **Automated instance detection - Fully automated prevention of multiple bot instances running simultaneously
 🎯 **Automatic instance termination - Seamlessly detects and stops existing instances without user interaction
 🎯 **Bot manager utility - Command-line tool for easy bot management (start, stop, restart, status)
-🎯 **Process monitoring - Detailed process information including uptime, memory usage, and command details
+🎯 \*\*Process monitoring - Detailed process information including uptime, memory usage, and command details
 
 ## 📄 License
 
