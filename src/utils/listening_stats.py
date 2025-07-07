@@ -4,12 +4,15 @@
 # Tracks user voice channel listening time and generates leaderboards
 # =============================================================================
 
+import asyncio
 import json
 import os
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+
+import discord
 
 from .tree_log import log_error_with_traceback, log_perfect_tree_section
 
@@ -23,6 +26,11 @@ STATS_FILE = DATA_DIR / "listening_stats.json"
 
 # Temp backup directory for .backup files (keeps data/ clean)
 TEMP_BACKUP_DIR = Path(__file__).parent.parent.parent / "backup" / "temp"
+
+# Leaderboard auto-update configuration
+LEADERBOARD_UPDATE_INTERVAL = 60  # Update every 60 seconds
+LEADERBOARD_CHANNEL_ID = None  # Will be set by bot
+LEADERBOARD_UPDATE_TASK = None  # Global task for auto-updates
 
 # =============================================================================
 # Data Structure Classes
@@ -97,6 +105,12 @@ class ListeningStatsManager:
         self.total_listening_time = 0.0
         self.total_sessions = 0
         self.last_updated = None
+
+        # Leaderboard auto-update system
+        self.bot = None
+        self.leaderboard_channel_id = None
+        self.leaderboard_update_task = None
+        self.last_leaderboard_message = None
 
         # Ensure data directory exists
         DATA_DIR.mkdir(exist_ok=True)
@@ -761,6 +775,182 @@ class ListeningStatsManager:
             "last_updated": self.last_updated,
         }
 
+    def set_leaderboard_channel(self, bot, channel_id: int):
+        """Set up the leaderboard auto-update system"""
+        try:
+            self.bot = bot
+            self.leaderboard_channel_id = channel_id
+
+            # Start the auto-update task
+            self.start_leaderboard_updates()
+
+            log_perfect_tree_section(
+                "Leaderboard Auto-Update - Setup",
+                [
+                    ("channel_id", str(channel_id)),
+                    ("update_interval", f"{LEADERBOARD_UPDATE_INTERVAL}s"),
+                    ("status", "✅ Auto-update system initialized"),
+                ],
+                "🏆",
+            )
+
+        except Exception as e:
+            log_error_with_traceback("Failed to set up leaderboard auto-update", e)
+
+    def start_leaderboard_updates(self):
+        """Start the automatic leaderboard update task"""
+        try:
+            # Cancel existing task if running
+            if self.leaderboard_update_task and not self.leaderboard_update_task.done():
+                self.leaderboard_update_task.cancel()
+
+            # Start new update task
+            self.leaderboard_update_task = asyncio.create_task(
+                self._leaderboard_update_loop()
+            )
+
+            log_perfect_tree_section(
+                "Leaderboard Auto-Update - Started",
+                [
+                    ("status", "✅ Auto-update task started"),
+                    ("interval", f"{LEADERBOARD_UPDATE_INTERVAL}s"),
+                    ("active_users", len(self.active_sessions)),
+                ],
+                "🏆",
+            )
+
+        except Exception as e:
+            log_error_with_traceback("Failed to start leaderboard updates", e)
+
+    async def _leaderboard_update_loop(self):
+        """Background task that updates the leaderboard periodically"""
+        while True:
+            try:
+                await asyncio.sleep(LEADERBOARD_UPDATE_INTERVAL)
+
+                # Only update if there are active users
+                if (
+                    len(self.active_sessions) > 0
+                    and self.bot
+                    and self.leaderboard_channel_id
+                ):
+                    await self._update_leaderboard()
+
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                log_error_with_traceback("Error in leaderboard update loop", e)
+
+    async def _update_leaderboard(self):
+        """Update the leaderboard message"""
+        try:
+            if not self.bot or not self.leaderboard_channel_id:
+                return
+
+            channel = self.bot.get_channel(self.leaderboard_channel_id)
+            if not channel:
+                return
+
+            # Get current leaderboard data
+            leaderboard_data = self.get_leaderboard_data()
+            top_users = leaderboard_data["top_users"]
+
+            if not top_users:
+                return
+
+            # Create embed
+            embed = discord.Embed(
+                title="🏆 Quran Listening Leaderboard",
+                description="*Top listeners in the Quran voice channel*",
+                color=0x00D4AA,
+                timestamp=datetime.now(timezone.utc),
+            )
+
+            # Medal emojis for top 3
+            medal_emojis = {1: "🥇", 2: "🥈", 3: "🥉"}
+
+            leaderboard_text = ""
+            for position, (user_id, total_time, sessions) in enumerate(top_users, 1):
+                # Get medal emoji or position number
+                position_display = medal_emojis.get(position, f"{position}.")
+
+                # Format time
+                time_formatted = self.format_time(total_time)
+
+                # Add active indicator if user is currently listening
+                active_indicator = " 🎧" if user_id in self.active_sessions else ""
+
+                # Create leaderboard entry
+                leaderboard_text += f"{position_display} <@{user_id}> - `{time_formatted}`{active_indicator}\n"
+
+                # Add space after each entry except the last one
+                if position < len(top_users):
+                    leaderboard_text += "\n"
+
+            embed.description = (
+                f"*Top listeners in the Quran voice channel*\n\n{leaderboard_text}"
+            )
+
+            # Add stats footer
+            embed.add_field(
+                name="📊 Server Statistics",
+                value=f"**Active Listeners:** {leaderboard_data['active_users']} 🎧\n"
+                f"**Total Users:** {leaderboard_data['total_users']} 👥\n"
+                f"**Total Sessions:** {leaderboard_data['total_sessions']} 🔢",
+                inline=False,
+            )
+
+            # Set bot avatar as thumbnail
+            if self.bot.user and self.bot.user.avatar:
+                embed.set_thumbnail(url=self.bot.user.avatar.url)
+
+            # Set footer
+            embed.set_footer(
+                text=f"Auto-updated every {LEADERBOARD_UPDATE_INTERVAL}s • {len(self.active_sessions)} active",
+                icon_url=self.bot.user.avatar.url if self.bot.user.avatar else None,
+            )
+
+            # Delete old message if exists
+            if self.last_leaderboard_message:
+                try:
+                    await self.last_leaderboard_message.delete()
+                except:
+                    pass  # Message might already be deleted
+
+            # Send new message
+            self.last_leaderboard_message = await channel.send(embed=embed)
+
+            log_perfect_tree_section(
+                "Leaderboard Auto-Update - Updated",
+                [
+                    ("users_shown", len(top_users)),
+                    ("active_users", len(self.active_sessions)),
+                    ("message_id", str(self.last_leaderboard_message.id)),
+                    ("channel", channel.name),
+                ],
+                "🏆",
+            )
+
+        except Exception as e:
+            log_error_with_traceback("Failed to update leaderboard", e)
+
+    def stop_leaderboard_updates(self):
+        """Stop the automatic leaderboard updates"""
+        try:
+            if self.leaderboard_update_task and not self.leaderboard_update_task.done():
+                self.leaderboard_update_task.cancel()
+
+            log_perfect_tree_section(
+                "Leaderboard Auto-Update - Stopped",
+                [
+                    ("status", "✅ Auto-update task stopped"),
+                ],
+                "🏆",
+            )
+
+        except Exception as e:
+            log_error_with_traceback("Failed to stop leaderboard updates", e)
+
 
 # =============================================================================
 # Global Instance
@@ -1021,6 +1211,21 @@ def get_data_protection_status() -> Dict:
         return {"error": str(e)}
 
 
+def set_leaderboard_channel(bot, channel_id: int):
+    """Set up the leaderboard auto-update system"""
+    listening_stats_manager.set_leaderboard_channel(bot, channel_id)
+
+
+def start_leaderboard_updates():
+    """Start the automatic leaderboard updates"""
+    listening_stats_manager.start_leaderboard_updates()
+
+
+def stop_leaderboard_updates():
+    """Stop the automatic leaderboard updates"""
+    listening_stats_manager.stop_leaderboard_updates()
+
+
 # =============================================================================
 # Export Functions
 # =============================================================================
@@ -1040,4 +1245,8 @@ __all__ = [
     "cleanup_old_backups",
     "verify_data_integrity",
     "get_data_protection_status",
+    # Leaderboard Auto-Update Functions
+    "set_leaderboard_channel",
+    "start_leaderboard_updates",
+    "stop_leaderboard_updates",
 ]

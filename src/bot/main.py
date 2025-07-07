@@ -1108,6 +1108,58 @@ async def on_ready():
                         )
                         # Continue with bot startup even if this fails
 
+                    # =============================================================================
+                    # Leaderboard Auto-Update System
+                    # =============================================================================
+                    # Set up automatic leaderboard updates if there's a leaderboard channel
+                    log_spacing()
+                    try:
+                        # Use the same channel as the control panel for leaderboard updates
+                        if PANEL_CHANNEL_ID != 0:
+                            from utils.listening_stats import set_leaderboard_channel
+
+                            set_leaderboard_channel(bot, PANEL_CHANNEL_ID)
+
+                            log_perfect_tree_section(
+                                "Leaderboard Auto-Update System",
+                                [
+                                    ("status", "✅ Auto-update system initialized"),
+                                    ("channel_id", str(PANEL_CHANNEL_ID)),
+                                    ("update_interval", "60 seconds"),
+                                    (
+                                        "trigger",
+                                        "Only when users are actively listening",
+                                    ),
+                                    ("features", "Real-time active session tracking"),
+                                    (
+                                        "active_indicator",
+                                        "🎧 Shows who's currently listening",
+                                    ),
+                                ],
+                                "🏆",
+                            )
+                        else:
+                            log_perfect_tree_section(
+                                "Leaderboard Auto-Update System",
+                                [
+                                    (
+                                        "status",
+                                        "⚠️ Disabled - No panel channel configured",
+                                    ),
+                                    ("manual_command", "/leaderboard still available"),
+                                ],
+                                "🏆",
+                            )
+                    except Exception as e:
+                        log_error_with_traceback(
+                            "Error setting up leaderboard auto-update", e
+                        )
+                        # Continue with bot startup even if this fails
+
+                    # =============================================================================
+                    # Bot Startup Complete
+                    # =============================================================================
+
                 except Exception as e:
                     log_error_with_traceback("Error starting audio playback", e)
                     raise  # Re-raise to trigger retry
@@ -2054,6 +2106,16 @@ async def on_disconnect():
             log_error_with_traceback("Error updating state manager", e)
             state_status = "❌ State update failed"
 
+        # Stop leaderboard auto-updates
+        try:
+            from utils.listening_stats import stop_leaderboard_updates
+
+            stop_leaderboard_updates()
+            leaderboard_status = "✅ Leaderboard updates stopped"
+        except Exception as e:
+            log_error_with_traceback("Error stopping leaderboard updates", e)
+            leaderboard_status = "❌ Leaderboard cleanup failed"
+
         log_perfect_tree_section(
             "Discord Disconnection",
             [
@@ -2061,6 +2123,7 @@ async def on_disconnect():
                 ("status", "Bot disconnected from Discord"),
                 ("audio_cleanup", audio_cleanup_status),
                 ("state_update", state_status),
+                ("leaderboard_cleanup", leaderboard_status),
             ],
             "⚠️",
         )
