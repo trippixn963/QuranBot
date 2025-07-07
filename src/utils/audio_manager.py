@@ -21,10 +21,8 @@ from .surah_mapper import (
 from .tree_log import (
     log_async_error,
     log_error_with_traceback,
+    log_perfect_tree_section,
     log_progress,
-    log_section_start,
-    log_tree_branch,
-    log_tree_final,
     log_warning_with_context,
 )
 
@@ -82,8 +80,6 @@ class AudioManager:
     def _load_saved_state(self):
         """Load previous playback state from state manager"""
         try:
-            log_tree_branch("loading_state", "Restoring previous session...")
-
             state = state_manager.load_playback_state()
             resume_info = state_manager.get_resume_info()
 
@@ -99,21 +95,30 @@ class AudioManager:
             self.is_loop_enabled = self.default_loop
             self.is_shuffle_enabled = self.default_shuffle
 
+            # Create session info
+            session_items = [
+                ("status", "🔄 Restoring previous session"),
+                ("current_surah", self.current_surah),
+                ("current_position", f"{self.current_position:.1f}s"),
+                ("default_reciter", self.current_reciter),
+                ("default_loop", "ON" if self.is_loop_enabled else "OFF"),
+                ("default_shuffle", "ON" if self.is_shuffle_enabled else "OFF"),
+            ]
+
             if resume_info["should_resume"]:
-                log_tree_branch(
-                    "state_resume",
-                    f"Will resume Surah {resume_info['surah']} at {resume_info['position']:.1f}s",
+                session_items.append(
+                    (
+                        "resume_action",
+                        f"Will resume Surah {resume_info['surah']} at {resume_info['position']:.1f}s",
+                    )
                 )
             else:
-                log_tree_branch("state_fresh", "Starting fresh session")
+                session_items.append(("resume_action", "Starting fresh session"))
 
-            # Log default values being applied
-            log_tree_branch("default_reciter", f"Using: {self.current_reciter}")
-            log_tree_branch(
-                "default_loop", f"{'ON' if self.is_loop_enabled else 'OFF'}"
-            )
-            log_tree_branch(
-                "default_shuffle", f"{'ON' if self.is_shuffle_enabled else 'OFF'}"
+            log_perfect_tree_section(
+                "Audio Manager - State Loading",
+                session_items,
+                "💾",
             )
 
         except Exception as e:
@@ -126,7 +131,14 @@ class AudioManager:
                 self.position_save_task.cancel()
 
             self.position_save_task = asyncio.create_task(self._position_save_loop())
-            log_tree_branch("position_saving", "Started periodic state saving")
+            log_perfect_tree_section(
+                "Audio Manager - Position Saving",
+                [
+                    ("status", "✅ Started periodic state saving"),
+                    ("interval", "5 seconds"),
+                ],
+                "💾",
+            )
 
         except Exception as e:
             log_error_with_traceback("Error starting position saving", e)
@@ -159,15 +171,27 @@ class AudioManager:
                         log_error_with_traceback("Error in position save loop", e)
 
         except asyncio.CancelledError:
-            log_tree_branch("position_saving", "Position saving stopped")
+            log_perfect_tree_section(
+                "Audio Manager - Position Saving Stopped",
+                [
+                    ("status", "🛑 Position saving stopped"),
+                    ("reason", "Task cancelled"),
+                ],
+                "💾",
+            )
         except Exception as e:
             log_error_with_traceback("Critical error in position save loop", e)
 
     def _discover_reciters(self) -> List[str]:
         """Discover available reciters from audio folder structure"""
         try:
-            log_tree_branch(
-                "discovering_reciters", f"Scanning: {self.audio_base_folder}"
+            log_perfect_tree_section(
+                "Audio Manager - Discovering Reciters",
+                [
+                    ("status", "🔍 Scanning audio folders"),
+                    ("base_folder", self.audio_base_folder),
+                ],
+                "🔍",
             )
             reciters = []
 
@@ -182,15 +206,32 @@ class AudioManager:
                         if mp3_files:
                             reciters.append((item, len(mp3_files)))
 
-                # Second pass: log with proper tree symbols
-                for i, (reciter, file_count) in enumerate(reciters):
-                    # All reciters get branch symbol since summary comes after
-                    log_tree_branch("reciter_found", f"{reciter} ({file_count} files)")
-
             result = (
                 sorted([r[0] for r in reciters]) if reciters else ["Saad Al Ghamdi"]
             )
-            log_tree_final("reciters_discovered", f"{len(result)} reciters available")
+
+            # Log discovery results
+            reciter_items = [
+                ("reciters_found", len(result)),
+                ("status", "✅ Reciter discovery complete"),
+            ]
+
+            # Add first few reciters as examples
+            for i, (reciter, file_count) in enumerate(reciters[:3]):
+                reciter_items.append(
+                    (f"reciter_{i+1}", f"{reciter} ({file_count} files)")
+                )
+
+            if len(reciters) > 3:
+                reciter_items.append(
+                    ("additional", f"... and {len(reciters) - 3} more")
+                )
+
+            log_perfect_tree_section(
+                "Audio Manager - Reciters Discovered",
+                reciter_items,
+                "🎙️",
+            )
             return result
 
         except Exception as e:
@@ -201,7 +242,14 @@ class AudioManager:
         """Set the rich presence manager"""
         try:
             self.rich_presence = rich_presence_manager
-            log_tree_branch("rich_presence_set", "✅ Rich presence manager connected")
+            log_perfect_tree_section(
+                "Audio Manager - Rich Presence Connected",
+                [
+                    ("status", "✅ Rich presence manager connected"),
+                    ("manager_type", type(rich_presence_manager).__name__),
+                ],
+                "🎵",
+            )
         except Exception as e:
             log_error_with_traceback("Error setting rich presence manager", e)
 
@@ -219,7 +267,15 @@ class AudioManager:
             # Update button styles to match current state
             self._sync_control_panel_buttons()
 
-            log_tree_branch("control_panel_set", "✅ Control panel view connected")
+            log_perfect_tree_section(
+                "Audio Manager - Control Panel Connected",
+                [
+                    ("status", "✅ Control panel view connected"),
+                    ("loop_state", "ON" if self.is_loop_enabled else "OFF"),
+                    ("shuffle_state", "ON" if self.is_shuffle_enabled else "OFF"),
+                ],
+                "🎛️",
+            )
         except Exception as e:
             log_error_with_traceback("Error setting control panel view", e)
 
@@ -254,7 +310,14 @@ class AudioManager:
         """Set the voice client for audio playback"""
         try:
             self.voice_client = voice_client
-            log_tree_branch("voice_client_set", "✅ Voice client connected")
+            log_perfect_tree_section(
+                "Audio Manager - Voice Client Connected",
+                [
+                    ("status", "✅ Voice client connected"),
+                    ("client_type", type(voice_client).__name__),
+                ],
+                "🎤",
+            )
         except Exception as e:
             log_error_with_traceback("Error setting voice client", e)
 
@@ -265,7 +328,14 @@ class AudioManager:
     def load_audio_files(self) -> bool:
         """Load audio files for current reciter"""
         try:
-            log_tree_branch("loading_audio_files", f"Reciter: {self.current_reciter}")
+            log_perfect_tree_section(
+                "Audio Manager - Loading Files",
+                [
+                    ("reciter", self.current_reciter),
+                    ("status", "🔄 Loading audio files"),
+                ],
+                "📁",
+            )
             audio_folder = self.get_current_audio_folder()
 
             if not os.path.exists(audio_folder):
@@ -289,8 +359,12 @@ class AudioManager:
             # Update file index to match current surah
             self._update_file_index_for_surah()
 
-            log_tree_branch(
-                "audio_files_loaded", f"{len(self.current_audio_files)} files"
+            log_perfect_tree_section(
+                "Audio Files - Loaded",
+                [
+                    ("audio_files_loaded", f"{len(self.current_audio_files)} files"),
+                ],
+                "✅",
             )
             return True
 
@@ -312,7 +386,14 @@ class AudioManager:
     async def start_playback(self, resume_position: bool = True):
         """Start the audio playback loop"""
         try:
-            log_tree_branch("starting_playback", "Initializing audio playback")
+            log_perfect_tree_section(
+                "Audio Manager - Starting Playback",
+                [
+                    ("status", "🎵 Initializing audio playback"),
+                    ("resume_position", resume_position),
+                ],
+                "▶️",
+            )
 
             if not self.voice_client or not self.voice_client.is_connected():
                 log_warning_with_context(
@@ -336,7 +417,15 @@ class AudioManager:
             self.playback_task = asyncio.create_task(
                 self._playback_loop(resume_position=resume_position)
             )
-            log_tree_final("playback_started", "✅ Audio playback started")
+            log_perfect_tree_section(
+                "Audio Manager - Playback Started",
+                [
+                    ("status", "✅ Audio playback started"),
+                    ("current_surah", self.current_surah),
+                    ("reciter", self.current_reciter),
+                ],
+                "✅",
+            )
 
         except Exception as e:
             log_async_error("start_playback", e, f"Reciter: {self.current_reciter}")
@@ -344,8 +433,6 @@ class AudioManager:
     async def stop_playback(self):
         """Stop the audio playback"""
         try:
-            log_tree_branch("stopping_playback", "Cleaning up audio playback")
-
             # Save final state before stopping
             if self.is_playing:
                 try:
@@ -397,7 +484,14 @@ class AudioManager:
                 except Exception as e:
                     log_error_with_traceback("Error updating control panel", e)
 
-            log_tree_branch("playback_stopped", "✅ Audio playback stopped")
+            log_perfect_tree_section(
+                "Audio Playback - Stopped",
+                [
+                    ("stopping_playback", "Cleaning up audio playback"),
+                    ("playback_stopped", "✅ Audio playback stopped"),
+                ],
+                "🛑",
+            )
 
         except Exception as e:
             log_async_error("stop_playback", e, "Failed to stop playback cleanly")
@@ -408,7 +502,6 @@ class AudioManager:
             if self.voice_client and self.voice_client.is_playing():
                 self.voice_client.pause()
                 self.is_paused = True
-                log_tree_branch("playback_paused", "⏸️ Audio paused")
 
                 # Update control panel
                 if self.control_panel_view:
@@ -419,6 +512,14 @@ class AudioManager:
                             "Error updating control panel after pause", e
                         )
 
+                log_perfect_tree_section(
+                    "Audio Playback - Paused",
+                    [
+                        ("playback_paused", "⏸️ Audio paused"),
+                    ],
+                    "⏸️",
+                )
+
         except Exception as e:
             log_async_error("pause_playback", e, "Failed to pause playback")
 
@@ -428,7 +529,6 @@ class AudioManager:
             if self.voice_client and self.voice_client.is_paused():
                 self.voice_client.resume()
                 self.is_paused = False
-                log_tree_branch("playback_resumed", "▶️ Audio resumed")
 
                 # Update control panel
                 if self.control_panel_view:
@@ -438,6 +538,14 @@ class AudioManager:
                         log_error_with_traceback(
                             "Error updating control panel after resume", e
                         )
+
+                log_perfect_tree_section(
+                    "Audio Playback - Resumed",
+                    [
+                        ("playback_resumed", "▶️ Audio resumed"),
+                    ],
+                    "▶️",
+                )
 
         except Exception as e:
             log_async_error("resume_playback", e, "Failed to resume playback")
@@ -469,7 +577,13 @@ class AudioManager:
             self._update_current_surah()
 
             # The playback loop will automatically play the next track
-            log_tree_branch("skipped_to_next", f"Track {self.current_file_index + 1}")
+            log_perfect_tree_section(
+                "Audio Playback - Skipped Next",
+                [
+                    ("skipped_to_next", f"Track {self.current_file_index + 1}"),
+                ],
+                "⏭️",
+            )
 
         except Exception as e:
             log_async_error(
@@ -505,8 +619,12 @@ class AudioManager:
             self._update_current_surah()
 
             # The playback loop will automatically play the previous track
-            log_tree_branch(
-                "skipped_to_previous", f"Track {self.current_file_index + 1}"
+            log_perfect_tree_section(
+                "Audio Playback - Skipped Previous",
+                [
+                    ("skipped_to_previous", f"Track {self.current_file_index + 1}"),
+                ],
+                "⏮️",
             )
 
         except Exception as e:
@@ -528,15 +646,21 @@ class AudioManager:
             target_index = None
 
             # Debug: Log the search process
-            log_tree_branch("jump_search_target", f"Looking for: {target_filename}")
+            search_items = [("jump_search_target", f"Looking for: {target_filename}")]
 
             for i, audio_file in enumerate(self.current_audio_files):
                 filename = os.path.basename(audio_file)
-                log_tree_branch("jump_search_check", f"Index {i}: {filename}")
+                search_items.append(("jump_search_check", f"Index {i}: {filename}"))
                 if filename == target_filename:
                     target_index = i
-                    log_tree_branch("jump_search_found", f"Found at index: {i}")
+                    search_items.append(("jump_search_found", f"Found at index: {i}"))
                     break
+
+            log_perfect_tree_section(
+                "Audio Jump - Search Process",
+                search_items,
+                "🔍",
+            )
 
             if target_index is None:
                 log_warning_with_context(
@@ -559,17 +683,22 @@ class AudioManager:
             # Set jump flag to prevent automatic increment
             self._jump_occurred = True
 
-            # Debug logging
-            log_tree_branch("jump_debug_index", f"Set file index to: {target_index}")
-            log_tree_branch(
-                "jump_debug_file",
-                f"Target file: {os.path.basename(self.current_audio_files[target_index])}",
-            )
-            log_tree_branch("jump_flag_set", "Jump flag set to prevent auto-increment")
-
-            log_tree_branch(
-                "jumped_to_surah",
-                f"Surah {surah_number}: {get_surah_name(surah_number)}",
+            # Log successful jump
+            log_perfect_tree_section(
+                "Audio Jump - Success",
+                [
+                    ("jump_debug_index", f"Set file index to: {target_index}"),
+                    (
+                        "jump_debug_file",
+                        f"Target file: {os.path.basename(self.current_audio_files[target_index])}",
+                    ),
+                    ("jump_flag_set", "Jump flag set to prevent auto-increment"),
+                    (
+                        "jumped_to_surah",
+                        f"Surah {surah_number}: {get_surah_name(surah_number)}",
+                    ),
+                ],
+                "✅",
             )
 
         except Exception as e:
@@ -578,10 +707,6 @@ class AudioManager:
     async def switch_reciter(self, reciter_name: str):
         """Switch to a different reciter"""
         try:
-            log_tree_branch(
-                "switching_reciter", f"From {self.current_reciter} to {reciter_name}"
-            )
-
             if reciter_name not in self.available_reciters:
                 log_warning_with_context(
                     "Reciter not available", f"Reciter: {reciter_name}"
@@ -597,7 +722,14 @@ class AudioManager:
 
             # Reload audio files
             if self.load_audio_files():
-                log_tree_branch("reciter_switched", f"{old_reciter} → {reciter_name}")
+                log_perfect_tree_section(
+                    "Reciter Switch - Success",
+                    [
+                        ("switching_reciter", f"From {old_reciter} to {reciter_name}"),
+                        ("reciter_switched", f"{old_reciter} → {reciter_name}"),
+                    ],
+                    "🎙️",
+                )
 
                 # Restart playback
                 await self.start_playback()
@@ -616,7 +748,13 @@ class AudioManager:
         """Toggle loop mode"""
         try:
             self.is_loop_enabled = not self.is_loop_enabled
-            log_tree_branch("loop_toggled", "ON" if self.is_loop_enabled else "OFF")
+            log_perfect_tree_section(
+                "Audio Settings - Loop Toggle",
+                [
+                    ("loop_toggled", "ON" if self.is_loop_enabled else "OFF"),
+                ],
+                "🔁",
+            )
         except Exception as e:
             log_error_with_traceback("Error toggling loop mode", e)
 
@@ -624,8 +762,12 @@ class AudioManager:
         """Toggle shuffle mode"""
         try:
             self.is_shuffle_enabled = not self.is_shuffle_enabled
-            log_tree_branch(
-                "shuffle_toggled", "ON" if self.is_shuffle_enabled else "OFF"
+            log_perfect_tree_section(
+                "Audio Settings - Shuffle Toggle",
+                [
+                    ("shuffle_toggled", "ON" if self.is_shuffle_enabled else "OFF"),
+                ],
+                "🔀",
             )
         except Exception as e:
             log_error_with_traceback("Error toggling shuffle mode", e)
@@ -641,17 +783,24 @@ class AudioManager:
             current_file = self.current_audio_files[self.current_file_index]
             filename = os.path.basename(current_file)
 
-            # Debug logging
-            log_tree_branch(
-                "update_debug_index", f"Using file index: {self.current_file_index}"
-            )
-            log_tree_branch("update_debug_file", f"Reading file: {filename}")
-
             try:
                 surah_number = int(filename.split(".")[0])
                 if validate_surah_number(surah_number):
                     self.current_surah = surah_number
-                    log_tree_branch("surah_updated", f"Current: {surah_number}")
+
+                    # Log successful update
+                    log_perfect_tree_section(
+                        "Audio Manager - Surah Update",
+                        [
+                            (
+                                "update_debug_index",
+                                f"Using file index: {self.current_file_index}",
+                            ),
+                            ("update_debug_file", f"Reading file: {filename}"),
+                            ("surah_updated", f"Current: {surah_number}"),
+                        ],
+                        "📖",
+                    )
             except (ValueError, IndexError):
                 log_warning_with_context(
                     "Could not parse Surah number from filename",
@@ -664,14 +813,20 @@ class AudioManager:
     async def _playback_loop(self, resume_position: bool = True):
         """Main playback loop with resume capability"""
         try:
-            log_tree_final("playback_loop_started", "Beginning audio playback loop")
-
             # Check if we should resume from saved position
             should_resume = resume_position and self.current_position > 0
+
+            resume_items = [("playback_loop_started", "Beginning audio playback loop")]
             if should_resume:
-                log_tree_branch(
-                    "resuming_playback", f"Resuming from {self.current_position:.1f}s"
+                resume_items.append(
+                    ("resuming_playback", f"Resuming from {self.current_position:.1f}s")
                 )
+
+            log_perfect_tree_section(
+                "Audio Playback Loop - Started",
+                resume_items,
+                "🎵",
+            )
 
             while True:
                 try:
@@ -692,7 +847,13 @@ class AudioManager:
                         if self.is_loop_enabled:
                             self.current_file_index = 0
                         else:
-                            log_tree_branch("playback_complete", "All tracks played")
+                            log_perfect_tree_section(
+                                "Audio Playback - Complete",
+                                [
+                                    ("playback_complete", "All tracks played"),
+                                ],
+                                "✅",
+                            )
                             break
 
                     current_file = self.current_audio_files[self.current_file_index]
@@ -710,7 +871,13 @@ class AudioManager:
                         surah_display = get_surah_display(
                             self.current_surah, "detailed"
                         )
-                        log_tree_branch("surah", surah_display)
+                        log_perfect_tree_section(
+                            "Now Playing",
+                            [
+                                ("surah", surah_display),
+                            ],
+                            "🎵",
+                        )
 
                         # Start Rich Presence tracking
                         if self.rich_presence:
@@ -745,8 +912,12 @@ class AudioManager:
                                 options="-vn",
                             )
                             should_resume = False  # Only resume once
-                            log_tree_branch(
-                                "resumed_from", f"{self.current_position:.1f}s"
+                            log_perfect_tree_section(
+                                "Audio Resume",
+                                [
+                                    ("resumed_from", f"{self.current_position:.1f}s"),
+                                ],
+                                "⏯️",
                             )
                         else:
                             source = discord.FFmpegPCMAudio(
@@ -799,8 +970,15 @@ class AudioManager:
                     if self._jump_occurred:
                         # Jump occurred, don't increment - just clear the flag
                         self._jump_occurred = False
-                        log_tree_branch(
-                            "jump_handled", "Jump detected, skipping auto-increment"
+                        log_perfect_tree_section(
+                            "Audio Jump - Handled",
+                            [
+                                (
+                                    "jump_handled",
+                                    "Jump detected, skipping auto-increment",
+                                ),
+                            ],
+                            "🔄",
                         )
                     elif self.is_shuffle_enabled:
                         import random
@@ -824,7 +1002,13 @@ class AudioManager:
                     await asyncio.sleep(2)
 
         except asyncio.CancelledError:
-            log_tree_branch("playback_cancelled", "Playback loop cancelled")
+            log_perfect_tree_section(
+                "Audio Playback Loop - Cancelled",
+                [
+                    ("playback_cancelled", "Playback loop cancelled"),
+                ],
+                "🛑",
+            )
         except Exception as e:
             log_error_with_traceback("Critical error in playback loop", e)
         finally:
@@ -841,7 +1025,13 @@ class AudioManager:
                             "Error updating control panel in finally block", e
                         )
 
-                log_tree_branch("playback_loop_ended", "Audio playback loop terminated")
+                log_perfect_tree_section(
+                    "Audio Playback Loop - Ended",
+                    [
+                        ("playback_loop_ended", "Audio playback loop terminated"),
+                    ],
+                    "🎵",
+                )
 
             except Exception as e:
                 log_error_with_traceback("Error in playback loop cleanup", e)

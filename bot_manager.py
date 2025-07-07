@@ -17,11 +17,12 @@ import psutil
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 # Import logging utilities
-from utils.tree_log import (
+from src.utils.tree_log import (
     log_error_with_traceback,
-    log_section_start,
-    log_tree_branch,
-    log_tree_final,
+    log_perfect_tree_section,
+    log_spacing,
+    log_status,
+    log_user_interaction,
     log_warning_with_context,
 )
 
@@ -91,16 +92,25 @@ def format_uptime(seconds):
 
 def status_command():
     """Check the status of bot instances."""
-    log_section_start("Bot Status Check", "📊")
 
     bot_processes = find_bot_processes()
 
     if not bot_processes:
-        log_tree_branch("status", "No bot instances running")
-        log_tree_final("result", "✅ Bot is offline")
+        log_perfect_tree_section(
+            "Bot Status Check",
+            [
+                ("status", "No bot instances running"),
+                ("result", "✅ Bot is offline"),
+            ],
+            "📊",
+        )
         return False
 
-    log_tree_branch("instances_found", f"{len(bot_processes)} instance(s)")
+    # Collect process information
+    process_items = [
+        ("instances_found", f"{len(bot_processes)} instance(s)"),
+        ("result", "🟢 Bot is online"),
+    ]
 
     for i, proc in enumerate(bot_processes, 1):
         try:
@@ -110,32 +120,45 @@ def status_command():
             memory_info = proc.memory_info()
             memory_mb = memory_info.rss / 1024 / 1024
 
-            log_tree_branch(f"instance_{i}", f"PID {proc.pid}")
-            log_tree_branch(f"  uptime", format_uptime(uptime))
-            log_tree_branch(f"  memory", f"{memory_mb:.1f} MB")
-            log_tree_branch(f"  command", " ".join(proc.cmdline()))
+            process_items.extend(
+                [
+                    (f"instance_{i}_pid", f"PID {proc.pid}"),
+                    (f"instance_{i}_uptime", format_uptime(uptime)),
+                    (f"instance_{i}_memory", f"{memory_mb:.1f} MB"),
+                    (f"instance_{i}_command", " ".join(proc.cmdline())),
+                ]
+            )
 
         except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
             log_warning_with_context(
                 f"Could not get process info for PID {proc.pid}", str(e)
             )
+            process_items.append(
+                (f"instance_{i}_error", f"PID {proc.pid} - Info unavailable")
+            )
 
-    log_tree_final("result", "🟢 Bot is online")
+    log_perfect_tree_section(
+        "Bot Status Check",
+        process_items,
+        "📊",
+    )
     return True
 
 
 def start_command():
     """Start the bot."""
-    log_section_start("Starting Bot", "🚀")
 
     # Check if already running
     if find_bot_processes():
-        log_tree_branch("error", "Bot is already running")
-        log_tree_final("status", "❌ Use 'restart' to restart or 'stop' to stop first")
+        log_perfect_tree_section(
+            "Starting Bot",
+            [
+                ("error", "Bot is already running"),
+                ("status", "❌ Use 'restart' to restart or 'stop' to stop first"),
+            ],
+            "🚀",
+        )
         return False
-
-    log_tree_branch("command", f"python {MAIN_SCRIPT}")
-    log_tree_branch("mode", "Background process")
 
     try:
         # Start the bot in the background
@@ -151,37 +174,70 @@ def start_command():
         time.sleep(3)
 
         if find_bot_processes():
-            log_tree_final("status", "✅ Bot started successfully")
+            log_perfect_tree_section(
+                "Starting Bot",
+                [
+                    ("command", f"python {MAIN_SCRIPT}"),
+                    ("mode", "Background process"),
+                    ("status", "✅ Bot started successfully"),
+                    ("verification", "Process confirmed running"),
+                ],
+                "🚀",
+            )
             return True
         else:
-            log_tree_final("status", "❌ Bot failed to start")
+            log_perfect_tree_section(
+                "Starting Bot",
+                [
+                    ("command", f"python {MAIN_SCRIPT}"),
+                    ("mode", "Background process"),
+                    ("status", "❌ Bot failed to start"),
+                    ("verification", "Process not found after launch"),
+                ],
+                "🚀",
+            )
             return False
 
     except Exception as e:
         log_error_with_traceback("Failed to start bot process", e)
-        log_tree_final("status", "❌ Failed to start bot")
+        log_perfect_tree_section(
+            "Starting Bot",
+            [
+                ("status", "❌ Failed to start bot"),
+                ("error_type", type(e).__name__),
+            ],
+            "🚀",
+        )
         return False
 
 
 def stop_command():
     """Stop all bot instances."""
-    log_section_start("Stopping Bot", "🛑")
 
     bot_processes = find_bot_processes()
 
     if not bot_processes:
-        log_tree_branch("status", "No bot instances running")
-        log_tree_final("result", "✅ Bot is already offline")
+        log_perfect_tree_section(
+            "Stopping Bot",
+            [
+                ("status", "No bot instances running"),
+                ("result", "✅ Bot is already offline"),
+            ],
+            "🛑",
+        )
         return True
 
-    log_tree_branch("instances_found", f"{len(bot_processes)} instance(s)")
+    # Collect stop results
+    stop_items = [
+        ("instances_found", f"{len(bot_processes)} instance(s)"),
+    ]
 
     stopped_count = 0
     failed_count = 0
 
     for proc in bot_processes:
         try:
-            log_tree_branch("stopping", f"PID {proc.pid}")
+            stop_items.append(("stopping", f"PID {proc.pid}"))
 
             # First try graceful termination
             proc.terminate()
@@ -189,54 +245,89 @@ def stop_command():
             # Wait up to 5 seconds for graceful shutdown
             try:
                 proc.wait(timeout=5)
-                log_tree_branch("result", f"PID {proc.pid} - Gracefully stopped")
+                stop_items.append(("result", f"PID {proc.pid} - Gracefully stopped"))
                 stopped_count += 1
             except psutil.TimeoutExpired:
                 # Force kill if graceful shutdown failed
-                log_tree_branch("forcing", f"PID {proc.pid} - Force killing")
+                stop_items.append(("forcing", f"PID {proc.pid} - Force killing"))
                 proc.kill()
                 proc.wait(timeout=3)
-                log_tree_branch("result", f"PID {proc.pid} - Force killed")
+                stop_items.append(("result", f"PID {proc.pid} - Force killed"))
                 stopped_count += 1
 
         except psutil.NoSuchProcess:
-            log_tree_branch("result", f"PID {proc.pid} - Already stopped")
+            stop_items.append(("result", f"PID {proc.pid} - Already stopped"))
             stopped_count += 1
         except psutil.AccessDenied:
-            log_tree_branch("result", f"PID {proc.pid} - Access denied")
+            stop_items.append(("result", f"PID {proc.pid} - Access denied"))
             failed_count += 1
         except Exception as e:
             log_error_with_traceback(f"Error stopping process PID {proc.pid}", e)
+            stop_items.append(("result", f"PID {proc.pid} - Error occurred"))
             failed_count += 1
 
     if failed_count == 0:
-        log_tree_final("status", f"✅ All {stopped_count} instances stopped")
+        stop_items.append(("status", f"✅ All {stopped_count} instances stopped"))
+        log_perfect_tree_section(
+            "Stopping Bot",
+            stop_items,
+            "🛑",
+        )
         return True
     else:
-        log_tree_final("status", f"⚠️ {stopped_count} stopped, {failed_count} failed")
+        stop_items.append(
+            ("status", f"⚠️ {stopped_count} stopped, {failed_count} failed")
+        )
+        log_perfect_tree_section(
+            "Stopping Bot",
+            stop_items,
+            "🛑",
+        )
         return False
 
 
 def restart_command():
     """Restart the bot."""
-    log_section_start("Restarting Bot", "🔄")
 
-    log_tree_branch("step_1", "Stopping existing instances")
     stop_success = stop_command()
 
     if stop_success:
-        log_tree_branch("step_2", "Starting new instance")
         time.sleep(2)  # Wait a moment between stop and start
         start_success = start_command()
 
         if start_success:
-            log_tree_final("status", "✅ Bot restarted successfully")
+            log_perfect_tree_section(
+                "Restarting Bot",
+                [
+                    ("status", "✅ Bot restarted successfully"),
+                    ("step_1", "✅ Stop completed"),
+                    ("step_2", "✅ Start completed"),
+                    ("wait_time", "2 seconds between steps"),
+                ],
+                "🔄",
+            )
             return True
         else:
-            log_tree_final("status", "❌ Failed to start after stop")
+            log_perfect_tree_section(
+                "Restarting Bot",
+                [
+                    ("status", "❌ Failed to start after stop"),
+                    ("step_1", "✅ Stop completed"),
+                    ("step_2", "❌ Start failed"),
+                ],
+                "🔄",
+            )
             return False
     else:
-        log_tree_final("status", "❌ Failed to stop existing instances")
+        log_perfect_tree_section(
+            "Restarting Bot",
+            [
+                ("status", "❌ Failed to stop existing instances"),
+                ("step_1", "❌ Stop failed"),
+                ("step_2", "⏸️ Start not attempted"),
+            ],
+            "🔄",
+        )
         return False
 
 

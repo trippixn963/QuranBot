@@ -12,8 +12,9 @@
 # - Surah mapping and metadata management
 # =============================================================================
 
-__version__ = "1.5.0"
-__author__ = "QuranBot Development Team"
+# Import version and author from centralized version module
+from .version import __author__, __version__
+
 __description__ = "Discord bot for playing Quran audio with tree-style logging"
 __license__ = "MIT"
 __url__ = "https://github.com/johnhamwi/QuranBot"

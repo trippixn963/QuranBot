@@ -9,26 +9,30 @@ import os
 import sys
 import time
 import traceback
+from pathlib import Path
 
 import psutil
 
 # Add src directory to Python path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+project_root = Path(__file__).parent
+sys.path.insert(0, str(project_root / "src"))
 
 # Import bot components
-from bot.main import BOT_NAME, BOT_VERSION, DISCORD_TOKEN, bot
-from utils.tree_log import (
+from bot.main import DISCORD_TOKEN, bot
+from src.utils.tree_log import (
     log_critical_error,
     log_error_with_traceback,
+    log_perfect_tree_section,
     log_run_end,
     log_run_header,
     log_run_separator,
-    log_section_start,
     log_spacing,
-    log_tree_branch,
-    log_tree_final,
-    log_warning_with_context,
+    log_status,
+    log_user_interaction,
 )
+
+# Import version from centralized version module
+from src.version import BOT_NAME, BOT_VERSION
 
 # =============================================================================
 # Instance Detection and Management
@@ -45,7 +49,6 @@ def check_existing_instances():
     Returns:
         bool: True if safe to proceed, False if critical error occurred
     """
-    log_section_start("Instance Detection", "🔍")
 
     current_pid = os.getpid()
     bot_processes = []
@@ -76,16 +79,8 @@ def check_existing_instances():
                                     if os.path.normpath(proc_cwd) == os.path.normpath(
                                         current_cwd
                                     ):
-                                        log_tree_branch(
-                                            "instance_found",
-                                            f"PID {proc.info['pid']} (same directory)",
-                                        )
                                         bot_processes.append(proc)
                                     elif "QuranBot" in proc_cwd:
-                                        log_tree_branch(
-                                            "instance_found",
-                                            f"PID {proc.info['pid']} (different QuranBot)",
-                                        )
                                         bot_processes.append(proc)
 
                             except (psutil.NoSuchProcess, psutil.AccessDenied):
@@ -98,19 +93,31 @@ def check_existing_instances():
 
     except Exception as e:
         log_error_with_traceback("Process scanning failed during instance detection", e)
-        log_tree_final(
-            "detection_result", "⚠️ Proceeding without complete instance check"
+        log_perfect_tree_section(
+            "Instance Detection - Warning",
+            [
+                ("detection_result", "⚠️ Proceeding without complete instance check"),
+            ],
+            "⚠️",
         )
         return True
 
     # Process detection results
     if not bot_processes:
-        log_tree_branch("existing_instances", "None detected")
-        log_tree_final("detection_result", "✅ Safe to proceed")
+        log_perfect_tree_section(
+            "Instance Detection",
+            [
+                ("existing_instances", "None detected"),
+                ("detection_result", "✅ Safe to proceed"),
+            ],
+            "🔍",
+        )
         return True
 
     # Found existing instances - prepare to stop them
-    log_tree_branch("existing_instances", f"{len(bot_processes)} found")
+    instance_items = [
+        ("existing_instances", f"{len(bot_processes)} found"),
+    ]
 
     for i, proc in enumerate(bot_processes, 1):
         try:
@@ -119,11 +126,23 @@ def check_existing_instances():
                 if len(proc.cmdline()) > 3
                 else " ".join(proc.cmdline())
             )
-            log_tree_branch(f"instance_{i}", f"PID {proc.pid} - {cmdline_display}")
+            instance_items.append(
+                (f"instance_{i}", f"PID {proc.pid} - {cmdline_display}")
+            )
         except (psutil.NoSuchProcess, psutil.AccessDenied):
-            log_tree_branch(f"instance_{i}", f"PID {proc.pid} - (process ended)")
+            instance_items.append(
+                (f"instance_{i}", f"PID {proc.pid} - (process ended)")
+            )
 
-    log_tree_final("detection_result", "🤖 Automatically stopping existing instances")
+    instance_items.append(
+        ("detection_result", "🤖 Automatically stopping existing instances")
+    )
+
+    log_perfect_tree_section(
+        "Instance Detection",
+        instance_items,
+        "🔍",
+    )
     log_spacing()
 
     # Automatically terminate existing instances
@@ -143,14 +162,14 @@ def stop_existing_instances(bot_processes):
     Returns:
         bool: True if termination completed (regardless of individual failures)
     """
-    log_section_start("Instance Termination", "🛑")
 
     stopped_count = 0
     failed_count = 0
+    termination_items = []
 
     for i, proc in enumerate(bot_processes, 1):
         try:
-            log_tree_branch(f"terminating_{i}", f"PID {proc.pid}")
+            termination_items.append((f"terminating_{i}", f"PID {proc.pid}"))
 
             # Attempt graceful termination first
             proc.terminate()
@@ -158,44 +177,65 @@ def stop_existing_instances(bot_processes):
             # Wait for graceful shutdown with timeout
             try:
                 proc.wait(timeout=5)
-                log_tree_branch(f"result_{i}", f"PID {proc.pid} - Graceful shutdown")
+                termination_items.append(
+                    (f"result_{i}", f"PID {proc.pid} - Graceful shutdown")
+                )
                 stopped_count += 1
 
             except psutil.TimeoutExpired:
                 # Graceful shutdown failed - force kill
-                log_tree_branch(
-                    f"forcing_{i}", f"PID {proc.pid} - Timeout, force killing"
+                termination_items.append(
+                    (f"forcing_{i}", f"PID {proc.pid} - Timeout, force killing")
                 )
                 proc.kill()
                 proc.wait(timeout=3)
-                log_tree_branch(f"result_{i}", f"PID {proc.pid} - Force killed")
+                termination_items.append(
+                    (f"result_{i}", f"PID {proc.pid} - Force killed")
+                )
                 stopped_count += 1
 
         except psutil.NoSuchProcess:
-            log_tree_branch(f"result_{i}", f"PID {proc.pid} - Already terminated")
+            termination_items.append(
+                (f"result_{i}", f"PID {proc.pid} - Already terminated")
+            )
             stopped_count += 1
 
         except psutil.AccessDenied:
-            log_tree_branch(f"result_{i}", f"PID {proc.pid} - Access denied")
+            termination_items.append((f"result_{i}", f"PID {proc.pid} - Access denied"))
             failed_count += 1
 
         except Exception as e:
             log_error_with_traceback(f"Failed to terminate process PID {proc.pid}", e)
+            termination_items.append(
+                (f"result_{i}", f"PID {proc.pid} - Error occurred")
+            )
             failed_count += 1
 
     # Allow time for processes to fully terminate
     if bot_processes:
-        log_tree_branch("cleanup_wait", "Waiting for processes to terminate...")
+        termination_items.append(
+            ("cleanup_wait", "Waiting for processes to terminate...")
+        )
         time.sleep(2)
 
     # Report final termination results
     if failed_count == 0:
-        log_tree_final(
-            "termination_result", f"✅ All {stopped_count} instances terminated"
+        termination_items.append(
+            ("termination_result", f"✅ All {stopped_count} instances terminated")
+        )
+        log_perfect_tree_section(
+            "Instance Termination",
+            termination_items,
+            "🛑",
         )
     else:
-        log_tree_final(
-            "termination_result", f"⚠️ {stopped_count} stopped, {failed_count} failed"
+        termination_items.append(
+            ("termination_result", f"⚠️ {stopped_count} stopped, {failed_count} failed")
+        )
+        log_perfect_tree_section(
+            "Instance Termination",
+            termination_items,
+            "🛑",
         )
 
     return True  # Continue execution regardless of individual failures
@@ -216,25 +256,33 @@ def initialize_bot():
     Returns:
         int: Exit code (0 for success, 1 for error)
     """
-    log_section_start(f"Bot Initialization", "🚀")
 
     try:
         # Log startup information
-        log_tree_branch("bot_name", BOT_NAME)
-        log_tree_branch("version", BOT_VERSION)
-        log_tree_branch("discord_token", "***CONFIGURED***")
-        log_tree_branch("project_structure", "Organized in src/ directory")
-        log_tree_branch("instance_management", "✅ Completed")
-        log_tree_final("entry_point", "main.py")
-
-        log_spacing()
-        log_section_start("Discord Bot Runtime", "🤖")
+        log_perfect_tree_section(
+            "Bot Initialization",
+            [
+                ("bot_name", BOT_NAME),
+                ("version", BOT_VERSION),
+                ("discord_token", "***CONFIGURED***"),
+                ("project_structure", "Organized in src/ directory"),
+                ("instance_management", "✅ Completed"),
+                ("entry_point", "main.py"),
+            ],
+            "🚀",
+        )
 
         # Start the Discord bot with connection error handling
         try:
             bot.run(DISCORD_TOKEN)
             # Normal shutdown (this line is rarely reached)
-            log_tree_final("bot_status", "✅ Bot terminated normally")
+            log_perfect_tree_section(
+                "Bot Shutdown - Normal",
+                [
+                    ("bot_status", "✅ Bot terminated normally"),
+                ],
+                "✅",
+            )
             return 0
 
         except Exception as bot_error:
@@ -247,17 +295,30 @@ def initialize_bot():
                 "ClientConnectionResetError" in error_type
                 or "closing transport" in error_message
             ):
-                log_tree_branch(
-                    "connection_status",
-                    "✅ Bot disconnected (connection reset during shutdown)",
+                log_perfect_tree_section(
+                    "Bot Shutdown - Connection Reset",
+                    [
+                        (
+                            "connection_status",
+                            "✅ Bot disconnected (connection reset during shutdown)",
+                        ),
+                        ("bot_status", "✅ Bot terminated normally"),
+                    ],
+                    "✅",
                 )
-                log_tree_final("bot_status", "✅ Bot terminated normally")
                 return 0
             elif "ConnectionClosed" in error_type:
-                log_tree_branch(
-                    "connection_status", "✅ Bot disconnected (connection closed)"
+                log_perfect_tree_section(
+                    "Bot Shutdown - Connection Closed",
+                    [
+                        (
+                            "connection_status",
+                            "✅ Bot disconnected (connection closed)",
+                        ),
+                        ("bot_status", "✅ Bot terminated normally"),
+                    ],
+                    "✅",
                 )
-                log_tree_final("bot_status", "✅ Bot terminated normally")
                 return 0
             else:
                 # Re-raise other errors for normal error handling
@@ -266,25 +327,39 @@ def initialize_bot():
     except KeyboardInterrupt:
         # User interrupted with Ctrl+C
         log_spacing()
-        log_section_start("User Shutdown", "👋")
-        log_tree_branch("shutdown_reason", "User interrupt (Ctrl+C)")
 
         # Mark shutdown in state manager
         try:
             from src.utils.state_manager import state_manager
 
             state_manager.mark_shutdown()
-            log_tree_branch("state_saved", "✅ Shutdown time recorded")
+
+            log_perfect_tree_section(
+                "User Shutdown",
+                [
+                    ("shutdown_reason", "User interrupt (Ctrl+C)"),
+                    ("state_saved", "✅ Shutdown time recorded"),
+                    ("shutdown_status", "✅ Graceful shutdown completed"),
+                ],
+                "👋",
+            )
         except Exception as e:
             log_error_with_traceback("Failed to save shutdown state", e)
+            log_perfect_tree_section(
+                "User Shutdown",
+                [
+                    ("shutdown_reason", "User interrupt (Ctrl+C)"),
+                    ("state_error", "❌ Failed to save shutdown state"),
+                    ("shutdown_status", "✅ Graceful shutdown completed"),
+                ],
+                "👋",
+            )
 
-        log_tree_final("shutdown_status", "✅ Graceful shutdown completed")
         return 0
 
     except Exception as e:
         # Bot crashed with unhandled exception
         log_spacing()
-        log_section_start("Bot Error", "❌")
         log_error_with_traceback("Bot crashed with unhandled exception", e)
 
         # Mark shutdown in state manager
@@ -292,11 +367,26 @@ def initialize_bot():
             from src.utils.state_manager import state_manager
 
             state_manager.mark_shutdown()
-            log_tree_branch("state_saved", "✅ Crash time recorded")
+
+            log_perfect_tree_section(
+                "Bot Error",
+                [
+                    ("state_saved", "✅ Crash time recorded"),
+                    ("error_status", f"❌ Bot crashed: {str(e)}"),
+                ],
+                "❌",
+            )
         except Exception as state_error:
             log_error_with_traceback("Failed to save crash state", state_error)
+            log_perfect_tree_section(
+                "Bot Error",
+                [
+                    ("state_error", "❌ Failed to save crash state"),
+                    ("error_status", f"❌ Bot crashed: {str(e)}"),
+                ],
+                "❌",
+            )
 
-        log_tree_final("error_status", f"❌ Bot crashed: {str(e)}")
         return 1
 
 
@@ -331,9 +421,14 @@ if __name__ == "__main__":
     except Exception as e:
         # Critical error in main entry point
         log_spacing()
-        log_section_start("Critical Error", "💥")
         log_critical_error("Fatal error in main entry point", e)
-        log_tree_final("critical_status", "💥 Application failed to start")
+        log_perfect_tree_section(
+            "Critical Error",
+            [
+                ("critical_status", "💥 Application failed to start"),
+            ],
+            "💥",
+        )
 
         log_run_end(run_id, f"Critical failure: {str(e)}")
         sys.exit(1)

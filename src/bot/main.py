@@ -75,17 +75,15 @@ from utils.tree_log import (
     log_error_with_traceback,
     log_perfect_tree_section,
     log_progress,
-    log_section_start,
-    log_spacing,
-    log_status,
-    log_tree,
-    log_tree_branch,
-    log_tree_end,
-    log_tree_final,
-    log_user_interaction,
     log_voice_activity_tree,
     log_warning_with_context,
+    write_to_log_files,
 )
+
+# =============================================================================
+# Import Version Information
+# =============================================================================
+from ..version import BOT_NAME, BOT_VERSION
 
 # =============================================================================
 # Global Managers
@@ -158,7 +156,13 @@ class DiscordTreeHandler(logging.Handler):
                 self._handle_client_log(message, level_name)
             else:
                 # Generic Discord log handling
-                log_tree_branch("discord_info", f"📡 {message}")
+                log_perfect_tree_section(
+                    "Discord - Generic",
+                    [
+                        ("discord_info", f"📡 {message}"),
+                    ],
+                    "📡",
+                )
                 write_to_log_files(f"Discord: {message}", level_name, "discord_generic")
 
         except Exception as e:
@@ -178,42 +182,83 @@ class DiscordTreeHandler(logging.Handler):
         from utils.tree_log import write_to_log_files
 
         if "connecting" in message.lower():
-            log_tree_branch("voice_status", "🔄 Connecting to voice...")
+            log_perfect_tree_section(
+                "Discord Voice State - Connecting",
+                [
+                    ("status", "🔄 Connecting to voice..."),
+                    ("message", message),
+                ],
+                "🎵",
+            )
             write_to_log_files(
                 f"Discord Voice: Connecting to voice - {message}",
                 level_name,
                 "discord_voice",
             )
         elif "handshake" in message.lower():
-            log_tree_branch("voice_handshake", "🤝 Voice handshake in progress")
+            log_perfect_tree_section(
+                "Discord Voice State - Handshake",
+                [
+                    ("status", "🤝 Voice handshake in progress"),
+                    ("message", message),
+                ],
+                "🎵",
+            )
             write_to_log_files(
                 f"Discord Voice: Handshake in progress - {message}",
                 level_name,
                 "discord_voice",
             )
         elif "connection complete" in message.lower():
-            log_tree_branch("voice_result", "✅ Voice connection established")
+            log_perfect_tree_section(
+                "Discord Voice State - Connected",
+                [
+                    ("status", "✅ Voice connection established"),
+                    ("message", message),
+                ],
+                "🎵",
+            )
             write_to_log_files(
                 f"Discord Voice: Connection established - {message}",
                 level_name,
                 "discord_voice",
             )
         elif "disconnected" in message.lower():
-            log_tree_branch("voice_status", "⚠️ Voice disconnected - reconnecting...")
+            log_perfect_tree_section(
+                "Discord Voice State - Disconnected",
+                [
+                    ("status", "⚠️ Voice disconnected - reconnecting..."),
+                    ("message", message),
+                ],
+                "🎵",
+            )
             write_to_log_files(
                 f"Discord Voice: Disconnected - {message}",
                 "WARNING",
                 "discord_voice",
             )
         elif "terminated" in message.lower():
-            log_tree_branch("voice_cleanup", "🧹 Voice connection terminated")
+            log_perfect_tree_section(
+                "Discord Voice State - Terminated",
+                [
+                    ("status", "🧹 Voice connection terminated"),
+                    ("message", message),
+                ],
+                "🎵",
+            )
             write_to_log_files(
                 f"Discord Voice: Connection terminated - {message}",
                 level_name,
                 "discord_voice",
             )
         else:
-            log_tree_branch("voice_info", f"🎵 {message}")
+            log_perfect_tree_section(
+                "Discord Voice State - General",
+                [
+                    ("status", f"🎵 {message}"),
+                ],
+                "🎵",
+            )
             write_to_log_files(f"Discord Voice: {message}", level_name, "discord_voice")
 
     def _handle_gateway_log(self, message, level_name):
@@ -227,21 +272,41 @@ class DiscordTreeHandler(logging.Handler):
         from utils.tree_log import write_to_log_files
 
         if "connected" in message.lower():
-            log_tree_branch("discord_gateway", "✅ Connected to Discord Gateway")
+            log_perfect_tree_section(
+                "Discord Gateway - Connected",
+                [
+                    ("status", "✅ Connected to Discord Gateway"),
+                    ("message", message),
+                ],
+                "📡",
+            )
             write_to_log_files(
                 f"Discord Gateway: Connected - {message}",
                 level_name,
                 "discord_gateway",
             )
         elif "session" in message.lower():
-            log_tree_branch("discord_session", "🔑 Discord session established")
+            log_perfect_tree_section(
+                "Discord Gateway - Session",
+                [
+                    ("status", "🔑 Discord session established"),
+                    ("message", message),
+                ],
+                "📡",
+            )
             write_to_log_files(
                 f"Discord Gateway: Session established - {message}",
                 level_name,
                 "discord_gateway",
             )
         else:
-            log_tree_branch("discord_info", f"📡 {message}")
+            log_perfect_tree_section(
+                "Discord Gateway - General",
+                [
+                    ("status", f"📡 {message}"),
+                ],
+                "📡",
+            )
             write_to_log_files(
                 f"Discord Gateway: {message}", level_name, "discord_gateway"
             )
@@ -257,14 +322,27 @@ class DiscordTreeHandler(logging.Handler):
         from utils.tree_log import write_to_log_files
 
         if "logging in" in message.lower():
-            log_tree_branch("discord_auth", "🔐 Authenticating with Discord...")
+            log_perfect_tree_section(
+                "Discord Client - Authentication",
+                [
+                    ("status", "🔐 Authenticating with Discord..."),
+                    ("message", message),
+                ],
+                "🤖",
+            )
             write_to_log_files(
                 f"Discord Client: Authenticating - {message}",
                 level_name,
                 "discord_client",
             )
         else:
-            log_tree_branch("discord_client", f"🤖 {message}")
+            log_perfect_tree_section(
+                "Discord Client - General",
+                [
+                    ("status", f"🤖 {message}"),
+                ],
+                "🤖",
+            )
             write_to_log_files(
                 f"Discord Client: {message}", level_name, "discord_client"
             )
@@ -318,7 +396,15 @@ def setup_discord_logging():
             # Prevent propagation to avoid duplicate logs
             logger.propagate = False
 
-        log_tree_branch("discord_logging", "✅ Tree-style Discord logging configured")
+        log_perfect_tree_section(
+            "Discord Logging Configuration",
+            [
+                ("status", "✅ Tree-style Discord logging configured"),
+                ("loggers_configured", len(discord_loggers)),
+                ("handler_level", "INFO"),
+            ],
+            "📡",
+        )
 
     except Exception as e:
         log_error_with_traceback("Error setting up Discord logging", e)
@@ -328,22 +414,21 @@ def setup_discord_logging():
 setup_discord_logging()
 
 # =============================================================================
-# Bot Setup & Configuration
+# Bot Configuration
 # =============================================================================
+
+# Create bot instance
 intents = discord.Intents.default()
 intents.message_content = True
-intents.guilds = True
 intents.voice_states = True
+intents.guilds = True
 
 bot = commands.Bot(command_prefix=commands.when_mentioned, intents=intents)
 
-# =============================================================================
-# Bot Version & Configuration
-# =============================================================================
-BOT_VERSION = "1.7.6"
-BOT_NAME = "QuranBot"
+# Bot metadata - imported from centralized version module
+# BOT_NAME and BOT_VERSION now imported from version module
 
-# Configuration from Environment Variables
+# Environment variables
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 TARGET_CHANNEL_ID = int(os.getenv("TARGET_CHANNEL_ID") or "0")
 PANEL_CHANNEL_ID = int(os.getenv("PANEL_CHANNEL_ID") or "0")
@@ -352,7 +437,7 @@ PANEL_ACCESS_ROLE_ID = int(os.getenv("PANEL_ACCESS_ROLE_ID") or "139150013636621
 FFMPEG_PATH = os.getenv("FFMPEG_PATH", "ffmpeg")
 AUDIO_FOLDER = "audio/Saad Al Ghamdi"
 
-# Default Audio Settings from Environment
+# Audio settings
 DEFAULT_RECITER = os.getenv("DEFAULT_RECITER", "Saad Al Ghamdi")
 DEFAULT_SHUFFLE = os.getenv("DEFAULT_SHUFFLE", "false").lower() == "true"
 DEFAULT_LOOP = os.getenv("DEFAULT_LOOP", "false").lower() == "true"
@@ -384,7 +469,6 @@ def validate_configuration():
         errors (missing Discord token, invalid IDs) cause startup failure.
     """
     try:
-        log_section_start("Configuration Validation", "🔧")
 
         errors = []
         warnings = []
@@ -447,8 +531,14 @@ def validate_configuration():
                 if not audio_files:
                     warnings.append(f"No MP3 files found in '{AUDIO_FOLDER}'")
                 else:
-                    log_tree_branch(
-                        "audio_files", f"Found {len(audio_files)} MP3 files"
+                    log_perfect_tree_section(
+                        "Audio Files Validation",
+                        [
+                            ("status", "✅ Audio files found"),
+                            ("count", len(audio_files)),
+                            ("folder", AUDIO_FOLDER),
+                        ],
+                        "🎵",
                     )
             except Exception as e:
                 warnings.append(f"Error scanning audio folder: {str(e)}")
@@ -468,13 +558,28 @@ def validate_configuration():
                     check=True,
                     timeout=10,
                 )
-                log_tree_branch("ffmpeg_check", "✅ FFmpeg is accessible")
-
                 # Check FFmpeg version for compatibility
                 version_output = result.stdout.decode("utf-8", errors="ignore")
                 if "ffmpeg version" in version_output.lower():
                     version_line = version_output.split("\n")[0]
-                    log_tree_branch("ffmpeg_version", version_line.strip())
+                    log_perfect_tree_section(
+                        "FFmpeg Validation",
+                        [
+                            ("status", "✅ FFmpeg is accessible"),
+                            ("version", version_line.strip()),
+                            ("path", FFMPEG_PATH),
+                        ],
+                        "🎬",
+                    )
+                else:
+                    log_perfect_tree_section(
+                        "FFmpeg Validation",
+                        [
+                            ("status", "✅ FFmpeg is accessible"),
+                            ("path", FFMPEG_PATH),
+                        ],
+                        "🎬",
+                    )
 
             except subprocess.TimeoutExpired:
                 warnings.append(f"FFmpeg at '{FFMPEG_PATH}' is not responding")
@@ -522,27 +627,45 @@ def validate_configuration():
         # Results Reporting
         # =============================================================================
         if errors:
-            log_tree_branch(
-                "validation_errors", f"Found {len(errors)} critical errors:"
+            error_items = [("error_count", f"Found {len(errors)} critical errors")]
+            for i, error in enumerate(errors, 1):
+                error_items.append((f"error_{i}", f"❌ {error}"))
+            error_items.append(("result", "❌ Configuration validation failed"))
+
+            log_perfect_tree_section(
+                "Configuration Validation",
+                error_items,
+                "🔧",
             )
-            for error in errors:
-                log_tree_branch("config_error", f"❌ {error}")
-            log_tree_final("validation_result", "❌ Configuration validation failed")
             return False
 
         if warnings:
-            log_tree_branch("validation_warnings", f"Found {len(warnings)} warnings:")
-            for warning in warnings:
-                log_tree_branch("config_warning", f"⚠️ {warning}")
+            warning_items = [("warning_count", f"Found {len(warnings)} warnings")]
+            for i, warning in enumerate(warnings, 1):
+                warning_items.append((f"warning_{i}", f"⚠️ {warning}"))
+            warning_items.append(
+                ("result", "✅ Configuration validation passed (with warnings)")
+            )
 
-        log_tree_final("validation_result", "✅ Configuration validation passed")
+            log_perfect_tree_section(
+                "Configuration Validation",
+                warning_items,
+                "🔧",
+            )
+        else:
+            log_perfect_tree_section(
+                "Configuration Validation",
+                [
+                    ("result", "✅ Configuration validation passed"),
+                    ("errors", "0"),
+                    ("warnings", "0"),
+                ],
+                "🔧",
+            )
         return True
 
     except Exception as e:
-        log_error_with_traceback("Critical error during configuration validation", e)
-        log_tree_final(
-            "validation_result", "❌ Configuration validation failed with error"
-        )
+        log_critical_error("Configuration validation failed with exception", e)
         return False
 
 
@@ -598,7 +721,15 @@ async def on_ready():
         log_spacing()
         try:
             rich_presence = RichPresenceManager(bot, FFMPEG_PATH)
-            log_tree_branch("rich_presence", "✅ Rich Presence Manager initialized")
+            log_perfect_tree_section(
+                "Rich Presence Manager Initialization",
+                [
+                    ("status", "✅ Rich Presence Manager initialized"),
+                    ("ffmpeg_path", FFMPEG_PATH),
+                    ("bot_user", str(bot.user)),
+                ],
+                "🎮",
+            )
         except Exception as e:
             log_error_with_traceback("Error initializing Rich Presence Manager", e)
             # Continue without Rich Presence if it fails
@@ -614,7 +745,21 @@ async def on_ready():
                 default_loop=DEFAULT_LOOP,
             )
             audio_manager.set_rich_presence(rich_presence)
-            log_tree_branch("audio_manager", "✅ Audio Manager initialized")
+            log_perfect_tree_section(
+                "Audio Manager Initialization",
+                [
+                    ("status", "✅ Audio Manager initialized"),
+                    ("ffmpeg_path", FFMPEG_PATH),
+                    ("default_reciter", DEFAULT_RECITER),
+                    ("default_shuffle", str(DEFAULT_SHUFFLE)),
+                    ("default_loop", str(DEFAULT_LOOP)),
+                    (
+                        "rich_presence",
+                        "✅ Connected" if rich_presence else "❌ Disabled",
+                    ),
+                ],
+                "🎵",
+            )
         except Exception as e:
             log_error_with_traceback("Error initializing Audio Manager", e)
             log_critical_error("Cannot continue without Audio Manager")
@@ -651,10 +796,18 @@ async def on_ready():
             return
 
         log_spacing()
-        log_tree("Attempting voice connection")
-        log_tree_branch("channel_name", channel.name)
-        log_tree_branch("channel_id", channel.id)
-        log_tree_final("channel_type", "Voice Channel")
+        log_perfect_tree_section(
+            "Voice Channel Connection Setup",
+            [
+                ("status", "🔄 Attempting voice connection"),
+                ("channel_name", channel.name),
+                ("channel_id", str(channel.id)),
+                ("channel_type", "Voice Channel"),
+                ("guild_name", guild.name),
+                ("guild_id", str(guild.id)),
+            ],
+            "🎤",
+        )
 
         # =============================================================================
         # Voice Connection with Retry Logic
@@ -669,18 +822,31 @@ async def on_ready():
                 # Check if already connected to avoid conflicts
                 existing_voice_client = guild.voice_client
                 if existing_voice_client and existing_voice_client.is_connected():
-                    log_tree_branch(
-                        "voice_status", "Already connected, using existing connection"
+                    log_perfect_tree_section(
+                        f"Voice Connection - Attempt {attempt + 1}",
+                        [
+                            (
+                                "status",
+                                "✅ Already connected, using existing connection",
+                            ),
+                            ("connection_type", "Existing"),
+                            ("channel", channel.name),
+                        ],
+                        "🎤",
                     )
                     voice_client = existing_voice_client
                 else:
-                    log_tree_branch(
-                        "voice_connection", f"Attempt {attempt + 1}/{max_retries}"
-                    )
                     voice_client = await channel.connect(reconnect=False, timeout=60)
-                    log_tree_branch("voice_connection", "✅ New connection established")
-
-                log_tree_branch("connected_to", channel.name)
+                    log_perfect_tree_section(
+                        f"Voice Connection - Attempt {attempt + 1}",
+                        [
+                            ("status", "✅ New connection established"),
+                            ("connection_type", "New"),
+                            ("channel", channel.name),
+                            ("timeout", "60s"),
+                        ],
+                        "🎤",
+                    )
 
                 # =============================================================================
                 # Audio System Setup
@@ -688,7 +854,15 @@ async def on_ready():
                 # Set up AudioManager with voice client
                 try:
                     audio_manager.set_voice_client(voice_client)
-                    log_tree_branch("audio_setup", "✅ Audio system configured")
+                    log_perfect_tree_section(
+                        "Audio System Setup",
+                        [
+                            ("status", "✅ Audio system configured"),
+                            ("voice_client", "Connected"),
+                            ("audio_manager", "Ready"),
+                        ],
+                        "🎵",
+                    )
                 except Exception as e:
                     log_error_with_traceback("Error setting up audio system", e)
                     raise  # Re-raise to trigger retry
@@ -700,8 +874,14 @@ async def on_ready():
                 if PANEL_CHANNEL_ID != 0:
                     try:
                         await setup_control_panel(bot, PANEL_CHANNEL_ID, audio_manager)
-                        log_tree_branch(
-                            "control_panel", "✅ Control panel setup successful"
+                        log_perfect_tree_section(
+                            "Control Panel Setup",
+                            [
+                                ("status", "✅ Control panel setup successful"),
+                                ("panel_channel_id", str(PANEL_CHANNEL_ID)),
+                                ("audio_manager", "Connected"),
+                            ],
+                            "🎛️",
                         )
                     except Exception as e:
                         log_error_with_traceback("Error setting up control panel", e)
@@ -712,15 +892,18 @@ async def on_ready():
                 # =============================================================================
                 # Set up slash commands - prefix commands are disabled
                 log_spacing()
-                log_tree_branch(
-                    "command_system",
-                    "Setting up slash commands (prefix commands disabled)",
+                log_perfect_tree_section(
+                    "Command System Setup",
+                    [
+                        ("status", "🔄 Setting up slash commands"),
+                        (
+                            "prefix_commands",
+                            "⚠️ Disabled (only work when bot is mentioned)",
+                        ),
+                        ("slash_commands", "✅ Enabled"),
+                    ],
+                    "⚡",
                 )
-                log_tree_branch(
-                    "prefix_status",
-                    "⚠️ Prefix commands only work when bot is mentioned (@bot)",
-                )
-                log_tree_branch("slash_status", "✅ Slash commands enabled")
 
                 try:
                     from src.commands import setup_credits_command
@@ -729,10 +912,15 @@ async def on_ready():
 
                     # Sync commands to Discord
                     await bot.tree.sync()
-                    log_tree_branch(
-                        "slash_commands", "✅ Slash commands synced successfully"
+                    log_perfect_tree_section(
+                        "Slash Commands Sync",
+                        [
+                            ("status", "✅ Slash commands synced successfully"),
+                            ("available_commands", "/credits"),
+                            ("sync_method", "Discord Tree API"),
+                        ],
+                        "⚡",
                     )
-                    log_tree_branch("available_commands", "/credits")
 
                 except Exception as e:
                     log_error_with_traceback("Error setting up slash commands", e)
@@ -744,8 +932,14 @@ async def on_ready():
                 # Start playing audio using AudioManager
                 try:
                     await audio_manager.start_playback()
-                    log_tree_final(
-                        "startup_complete", "✅ Bot initialization successful"
+                    log_perfect_tree_section(
+                        "Bot Initialization Complete",
+                        [
+                            ("status", "✅ Bot initialization successful"),
+                            ("audio_playback", "Started"),
+                            ("initialization_phase", "Complete"),
+                        ],
+                        "🎯",
                     )
                 except Exception as e:
                     log_error_with_traceback("Error starting audio playback", e)
@@ -754,9 +948,14 @@ async def on_ready():
                 break  # Success, exit retry loop
 
             except discord.errors.ClientException as e:
-                log_tree_branch(
-                    "connection_error",
-                    f"Discord client error on attempt {attempt + 1}: {str(e)}",
+                log_perfect_tree_section(
+                    f"Connection Error - Attempt {attempt + 1}",
+                    [
+                        ("error_type", "Discord Client Exception"),
+                        ("error_message", str(e)),
+                        ("attempt", f"{attempt + 1}/{max_retries}"),
+                    ],
+                    "❌",
                 )
                 if "already connected" in str(e).lower():
                     # Handle already connected case
@@ -765,25 +964,51 @@ async def on_ready():
                         break
 
             except asyncio.TimeoutError:
-                log_tree_branch(
-                    "connection_error",
-                    f"Connection timeout on attempt {attempt + 1}",
+                log_perfect_tree_section(
+                    f"Connection Error - Attempt {attempt + 1}",
+                    [
+                        ("error_type", "Connection Timeout"),
+                        ("timeout_duration", "60s"),
+                        ("attempt", f"{attempt + 1}/{max_retries}"),
+                    ],
+                    "❌",
                 )
 
             except Exception as e:
-                log_tree_branch(
-                    "connection_error",
-                    f"Attempt {attempt + 1} failed: {type(e).__name__}: {str(e)}",
+                log_perfect_tree_section(
+                    f"Connection Error - Attempt {attempt + 1}",
+                    [
+                        ("error_type", type(e).__name__),
+                        ("error_message", str(e)),
+                        ("attempt", f"{attempt + 1}/{max_retries}"),
+                    ],
+                    "❌",
                 )
 
             # Handle retry logic
             if attempt < max_retries - 1:
-                log_tree_branch("retry", f"Waiting {retry_delay} seconds before retry")
+                log_perfect_tree_section(
+                    "Connection Retry",
+                    [
+                        ("status", f"Waiting {retry_delay} seconds before retry"),
+                        ("next_attempt", f"{attempt + 2}/{max_retries}"),
+                        ("retry_delay", f"{retry_delay}s"),
+                    ],
+                    "🔄",
+                )
                 await asyncio.sleep(retry_delay)
                 retry_delay *= 2  # Exponential backoff
             else:
                 log_discord_error("on_ready", e, GUILD_ID, TARGET_CHANNEL_ID)
-                log_tree_final("connection_status", "❌ All connection attempts failed")
+                log_perfect_tree_section(
+                    "Connection Failed",
+                    [
+                        ("status", "❌ All connection attempts failed"),
+                        ("total_attempts", max_retries),
+                        ("final_result", "Bot startup failed"),
+                    ],
+                    "💥",
+                )
                 return
 
     except Exception as e:
@@ -802,21 +1027,32 @@ async def play_audio(voice_client):
     """Play audio files from the audio folder with Rich Presence"""
     global rich_presence
 
-    log_section_start("Audio Playback Started", "🎵")
-    log_tree_branch("audio_folder", AUDIO_FOLDER)
-    log_tree_final("ffmpeg_path", FFMPEG_PATH)
-
     try:
         # Get all mp3 files and sort them
         audio_files = sorted(glob.glob(os.path.join(AUDIO_FOLDER, "*.mp3")))
 
         if not audio_files:
-            log_tree_end("No audio files found!", "ERROR")
+            log_perfect_tree_section(
+                "Audio Playback Started",
+                [
+                    ("audio_folder", AUDIO_FOLDER),
+                    ("ffmpeg_path", FFMPEG_PATH),
+                    ("error", "No audio files found!"),
+                ],
+                "🎵",
+            )
             return
 
-        log_tree("Audio files discovered", "SUCCESS")
-        log_tree_branch("total_files", len(audio_files))
-        log_tree_final("first_file", os.path.basename(audio_files[0]))
+        log_perfect_tree_section(
+            "Audio Playback Started",
+            [
+                ("audio_folder", AUDIO_FOLDER),
+                ("ffmpeg_path", FFMPEG_PATH),
+                ("total_files", len(audio_files)),
+                ("first_file", os.path.basename(audio_files[0])),
+            ],
+            "🎵",
+        )
 
         # Play each file
         for i, audio_file in enumerate(audio_files, 1):
@@ -838,14 +1074,21 @@ async def play_audio(voice_client):
                         now_playing = format_now_playing(surah_number, "Saad Al Ghamdi")
 
                         log_progress(i, len(audio_files))
-                        log_tree_branch("surah", surah_display)
-                        log_tree_final("progress", f"{i}/{len(audio_files)}")
 
                         # Log the beautiful now playing format
-                        log_section_start("Now Playing", "🎵")
+                        now_playing_items = [
+                            ("surah", surah_display),
+                            ("progress", f"{i}/{len(audio_files)}"),
+                        ]
                         for line in now_playing.split("\n"):
                             if line.strip():
-                                log_tree_branch("info", line.strip())
+                                now_playing_items.append(("info", line.strip()))
+
+                        log_perfect_tree_section(
+                            "Now Playing",
+                            now_playing_items,
+                            "🎵",
+                        )
 
                         # Start Rich Presence tracking
                         if rich_presence:
@@ -856,14 +1099,26 @@ async def play_audio(voice_client):
                     else:
                         # Fallback to filename if not a valid Surah number
                         log_progress(i, len(audio_files))
-                        log_tree_branch("file", filename)
-                        log_tree_final("progress", f"{i}/{len(audio_files)}")
+                        log_perfect_tree_section(
+                            "Now Playing",
+                            [
+                                ("file", filename),
+                                ("progress", f"{i}/{len(audio_files)}"),
+                            ],
+                            "🎵",
+                        )
 
                 except (ValueError, IndexError):
                     # Fallback to filename if we can't extract Surah number
                     log_progress(i, len(audio_files))
-                    log_tree_branch("file", filename)
-                    log_tree_final("progress", f"{i}/{len(audio_files)}")
+                    log_perfect_tree_section(
+                        "Now Playing",
+                        [
+                            ("file", filename),
+                            ("progress", f"{i}/{len(audio_files)}"),
+                        ],
+                        "🎵",
+                    )
 
                 # Create FFmpeg audio source
                 source = discord.FFmpegPCMAudio(
@@ -888,7 +1143,13 @@ async def play_audio(voice_client):
                     await rich_presence.stop_track()
                 continue
 
-        log_tree_end("Finished playing all audio files", "SUCCESS")
+        log_perfect_tree_section(
+            "Audio Playback - Complete",
+            [
+                ("status", "Finished playing all audio files"),
+            ],
+            "✅",
+        )
 
     except Exception as e:
         log_async_error("play_audio", e, f"Audio folder: {AUDIO_FOLDER}")
@@ -930,69 +1191,124 @@ async def on_voice_state_update(member, before, after):
         if member == bot.user:
             # Detect disconnection (was in channel, now not in channel)
             if before.channel and not after.channel:
-                log_section_start("Bot Disconnected", "⚠️")
-                log_tree_branch("member", member.display_name)
-                log_tree_branch(
-                    "before_channel", before.channel.name if before.channel else "None"
-                )
-                log_tree_final(
-                    "after_channel", after.channel.name if after.channel else "None"
-                )
-
                 # Stop AudioManager when disconnected to prevent resource leaks
                 if audio_manager:
                     try:
                         await audio_manager.stop_playback()
-                        log_tree_branch("audio_cleanup", "✅ Audio playback stopped")
+                        audio_cleanup_status = "✅ Audio playback stopped"
                     except Exception as e:
-                        log_error_with_traceback("Error stopping audio playback", e)
+                        log_error_with_traceback(
+                            "Error stopping audio during disconnect", e
+                        )
+                        audio_cleanup_status = "❌ Audio cleanup failed"
+                else:
+                    audio_cleanup_status = "No audio manager active"
+
+                log_perfect_tree_section(
+                    "Bot Disconnected",
+                    [
+                        ("member", member.display_name),
+                        (
+                            "before_channel",
+                            before.channel.name if before.channel else "None",
+                        ),
+                        (
+                            "after_channel",
+                            after.channel.name if after.channel else "None",
+                        ),
+                        ("audio_cleanup", audio_cleanup_status),
+                        (
+                            "rich_presence",
+                            "✅ Stopped" if rich_presence else "Not active",
+                        ),
+                    ],
+                    "⚠️",
+                )
 
                 # Smart reconnection with delay to prevent loops
                 guild = before.channel.guild
                 channel = before.channel
 
                 # Add delay to prevent rapid reconnection attempts
-                log_tree_branch("reconnection", "Waiting 5 seconds before reconnection")
+                log_perfect_tree_section(
+                    "Reconnection Preparation",
+                    [
+                        ("reconnection", "Waiting 5 seconds before reconnection"),
+                    ],
+                    "🔄",
+                )
                 await asyncio.sleep(5)
 
                 try:
-                    log_tree_branch(
-                        "reconnection", "Attempting reconnect after disconnect"
-                    )
                     voice_client = await channel.connect(reconnect=False, timeout=60)
 
                     if audio_manager:
                         audio_manager.set_voice_client(voice_client)
                         await audio_manager.start_playback()
 
-                    log_tree_final("reconnect", f"✅ Reconnected to {channel.name}")
+                    log_perfect_tree_section(
+                        "Reconnection Success",
+                        [
+                            ("reconnect_attempt", f"Reconnecting due to: {reason}"),
+                            ("reconnect", f"✅ Reconnected to {channel.name}"),
+                        ],
+                        "✅",
+                    )
 
                 except discord.errors.ClientException as e:
                     if "already connected" in str(e).lower():
-                        log_tree_branch("reconnect_info", "Already connected to voice")
+                        log_perfect_tree_section(
+                            "Reconnection Info",
+                            [
+                                ("reconnect_info", "Already connected to voice"),
+                            ],
+                            "ℹ️",
+                        )
                     else:
                         log_error_with_traceback(
                             "Discord client error during reconnection", e
                         )
-                        log_tree_final("reconnect_status", "❌ Reconnection failed")
+                        log_perfect_tree_section(
+                            "Reconnection Failed",
+                            [
+                                ("reconnect_status", "❌ Reconnection failed"),
+                            ],
+                            "❌",
+                        )
 
                 except asyncio.TimeoutError:
                     log_error_with_traceback(
                         "Reconnection timeout", TimeoutError("Connection timeout")
                     )
-                    log_tree_final("reconnect_status", "❌ Reconnection timed out")
+                    log_perfect_tree_section(
+                        "Reconnection Timeout",
+                        [
+                            ("reconnect_status", "❌ Reconnection timed out"),
+                        ],
+                        "❌",
+                    )
 
                 except Exception as e:
                     log_error_with_traceback("Reconnection failed", e)
-                    log_tree_final(
-                        "reconnect_status", "❌ Will retry on next disconnect"
+                    log_perfect_tree_section(
+                        "Reconnection Error",
+                        [
+                            ("reconnect_status", "❌ Will retry on next disconnect"),
+                        ],
+                        "❌",
                     )
 
             # Handle channel switches (moved from one channel to another)
             elif before.channel and after.channel and before.channel != after.channel:
-                log_tree_branch(
-                    "channel_switch",
-                    f"Moved from {before.channel.name} to {after.channel.name}",
+                log_perfect_tree_section(
+                    "Bot Channel Switch",
+                    [
+                        (
+                            "channel_switch",
+                            f"Moved from {before.channel.name} to {after.channel.name}",
+                        ),
+                    ],
+                    "🔄",
                 )
 
                 # Update audio manager with new voice client if needed
@@ -1162,8 +1478,15 @@ async def on_voice_state_update(member, before, after):
         panel_role = guild.get_role(PANEL_ACCESS_ROLE_ID)
 
         if not panel_role:
-            log_tree_branch(
-                "role_error", f"Panel access role {PANEL_ACCESS_ROLE_ID} not found"
+            log_perfect_tree_section(
+                "Panel Access Role - Not Found",
+                [
+                    (
+                        "role_error",
+                        f"Panel access role {PANEL_ACCESS_ROLE_ID} not found",
+                    ),
+                ],
+                "❌",
             )
             return
 
@@ -1191,8 +1514,15 @@ async def _assign_panel_access_role(member, panel_role, channel):
     try:
         # Check if user already has the role
         if panel_role in member.roles:
-            log_tree_branch(
-                "role_skip", f"{member.display_name} already has panel access role"
+            log_perfect_tree_section(
+                "Panel Access Role - Already Assigned",
+                [
+                    (
+                        "role_skip",
+                        f"{member.display_name} already has panel access role",
+                    ),
+                ],
+                "ℹ️",
             )
             return
 
@@ -1219,9 +1549,15 @@ async def _assign_panel_access_role(member, panel_role, channel):
         )
 
     except discord.Forbidden:
-        log_tree_branch(
-            "role_error",
-            f"❌ No permission to assign panel access role to {member.display_name}",
+        log_perfect_tree_section(
+            "Panel Access Role - Permission Error",
+            [
+                (
+                    "role_error",
+                    f"❌ No permission to assign panel access role to {member.display_name}",
+                ),
+            ],
+            "❌",
         )
     except discord.HTTPException as e:
         log_error_with_traceback(
@@ -1245,8 +1581,15 @@ async def _remove_panel_access_role(member, panel_role, channel):
     try:
         # Check if user has the role
         if panel_role not in member.roles:
-            log_tree_branch(
-                "role_skip", f"{member.display_name} doesn't have panel access role"
+            log_perfect_tree_section(
+                "Panel Access Role - Not Assigned",
+                [
+                    (
+                        "role_skip",
+                        f"{member.display_name} doesn't have panel access role",
+                    ),
+                ],
+                "ℹ️",
             )
             return
 
@@ -1273,9 +1616,15 @@ async def _remove_panel_access_role(member, panel_role, channel):
         )
 
     except discord.Forbidden:
-        log_tree_branch(
-            "role_error",
-            f"❌ No permission to remove panel access role from {member.display_name}",
+        log_perfect_tree_section(
+            "Panel Access Role - Permission Error",
+            [
+                (
+                    "role_error",
+                    f"❌ No permission to remove panel access role from {member.display_name}",
+                ),
+            ],
+            "❌",
         )
     except discord.HTTPException as e:
         log_error_with_traceback(
@@ -1367,7 +1716,13 @@ async def _handle_voice_connection_error(exc_value, event, kwargs):
 
         elif error_code == 4014:
             # Disconnected from voice channel
-            log_tree_branch("voice_error", "Disconnected from voice channel (4014)")
+            log_perfect_tree_section(
+                "Voice Connection Error - Disconnected",
+                [
+                    ("voice_error", "Disconnected from voice channel (4014)"),
+                ],
+                "⚠️",
+            )
             await _attempt_voice_reconnection("Voice disconnection 4014")
 
         else:
@@ -1392,17 +1747,37 @@ async def _handle_http_error(exc_value, event, kwargs):
 
         if status_code == 429:
             # Rate limiting
-            log_tree_branch("rate_limit", "Discord API rate limit encountered")
-            retry_after = getattr(exc_value, "retry_after", 60)
-            log_tree_branch("rate_limit_wait", f"Waiting {retry_after} seconds")
+            log_perfect_tree_section(
+                "Discord API - Rate Limited",
+                [
+                    ("rate_limit", "Discord API rate limit encountered"),
+                    (
+                        "rate_limit_wait",
+                        f"Waiting {getattr(exc_value, 'retry_after', 60)} seconds",
+                    ),
+                ],
+                "⏳",
+            )
 
         elif status_code == 403:
             # Forbidden - permissions issue
-            log_tree_branch("permissions_error", "Bot lacks required permissions")
+            log_perfect_tree_section(
+                "Discord API - Permissions Error",
+                [
+                    ("permissions_error", "Bot lacks required permissions"),
+                ],
+                "❌",
+            )
 
         elif status_code == 404:
             # Not found - channel/guild may have been deleted
-            log_tree_branch("not_found", "Discord resource not found (deleted?)")
+            log_perfect_tree_section(
+                "Discord API - Not Found",
+                [
+                    ("not_found", "Discord resource not found (deleted?)"),
+                ],
+                "❓",
+            )
 
         else:
             # Other HTTP errors
@@ -1426,14 +1801,20 @@ async def _attempt_voice_reconnection(reason):
         if guild:
             channel = guild.get_channel(TARGET_CHANNEL_ID)
             if channel:
-                log_tree_branch("reconnect_attempt", f"Reconnecting due to: {reason}")
                 voice_client = await channel.connect(reconnect=False, timeout=30)
 
                 if audio_manager:
                     audio_manager.set_voice_client(voice_client)
                     await audio_manager.start_playback()
 
-                log_tree_final("reconnect", f"✅ Reconnected to {channel.name}")
+                log_perfect_tree_section(
+                    "Voice Reconnection - Success",
+                    [
+                        ("reconnect_attempt", f"Reconnecting due to: {reason}"),
+                        ("reconnect", f"✅ Reconnected to {channel.name}"),
+                    ],
+                    "✅",
+                )
 
     except Exception as reconnect_error:
         log_error_with_traceback(f"Reconnection failed after {reason}", reconnect_error)
@@ -1451,24 +1832,36 @@ async def on_disconnect():
     global rich_presence, audio_manager
 
     try:
-        log_section_start("Discord Disconnection", "⚠️")
-        log_tree_branch("event", "on_disconnect")
-        log_tree_final("status", "Bot disconnected from Discord")
 
         # Stop AudioManager when disconnected to prevent resource leaks
         if audio_manager:
             try:
                 await audio_manager.stop_playback()
-                log_tree_branch("audio_cleanup", "✅ Audio playback stopped")
+                audio_cleanup_status = "✅ Audio playback stopped"
             except Exception as e:
                 log_error_with_traceback("Error stopping audio during disconnect", e)
+                audio_cleanup_status = "❌ Audio cleanup failed"
+        else:
+            audio_cleanup_status = "No audio manager active"
 
         # Mark shutdown in state manager for session tracking
         try:
             state_manager.mark_shutdown()
-            log_tree_branch("state_update", "✅ Shutdown recorded in state manager")
+            state_status = "✅ Shutdown recorded in state manager"
         except Exception as e:
             log_error_with_traceback("Error updating state manager", e)
+            state_status = "❌ State update failed"
+
+        log_perfect_tree_section(
+            "Discord Disconnection",
+            [
+                ("event", "on_disconnect"),
+                ("status", "Bot disconnected from Discord"),
+                ("audio_cleanup", audio_cleanup_status),
+                ("state_update", state_status),
+            ],
+            "⚠️",
+        )
 
     except Exception as e:
         log_error_with_traceback("Error handling disconnect event", e)
@@ -1483,19 +1876,23 @@ async def on_resumed():
     of bot services after a temporary disconnection.
     """
     try:
-        log_section_start("Discord Reconnection", "🔄")
-        log_tree_branch("event", "on_resumed")
-        log_tree_final("status", "Bot reconnected to Discord")
 
         # Verify voice connection is still active
+        voice_status = "No active voice connections"
         if audio_manager and hasattr(bot, "voice_clients"):
             voice_clients = bot.voice_clients
             if voice_clients:
-                log_tree_branch(
-                    "voice_status", f"Voice connections: {len(voice_clients)}"
-                )
-            else:
-                log_tree_branch("voice_status", "No active voice connections")
+                voice_status = f"Voice connections: {len(voice_clients)}"
+
+        log_perfect_tree_section(
+            "Discord Reconnection",
+            [
+                ("event", "on_resumed"),
+                ("status", "Bot reconnected to Discord"),
+                ("voice_status", voice_status),
+            ],
+            "🔄",
+        )
 
     except Exception as e:
         log_error_with_traceback("Error handling resume event", e)
@@ -1527,13 +1924,23 @@ async def on_command_error(ctx, error):
         )
 
         # Add command-specific context
-        log_tree_branch("command", ctx.command.name if ctx.command else "Unknown")
-        log_tree_branch("user", str(ctx.author))
-        log_tree_branch(
-            "command_type",
-            "slash_command" if hasattr(ctx, "interaction") else "legacy_command",
+        log_perfect_tree_section(
+            "Command Error Context",
+            [
+                ("command", ctx.command.name if ctx.command else "Unknown"),
+                ("user", str(ctx.author)),
+                (
+                    "command_type",
+                    (
+                        "slash_command"
+                        if hasattr(ctx, "interaction")
+                        else "legacy_command"
+                    ),
+                ),
+                ("error_type", type(error).__name__),
+            ],
+            "❌",
         )
-        log_tree_final("error_type", type(error).__name__)
 
     except Exception as e:
         log_critical_error("Error in command error handler", e)
@@ -1551,14 +1958,22 @@ async def on_guild_unavailable(guild):
         guild: Guild that became unavailable
     """
     try:
-        log_section_start("Guild Unavailable", "⚠️")
-        log_tree_branch("guild_id", guild.id)
-        log_tree_branch("guild_name", guild.name)
-        log_tree_final("status", "Guild became unavailable")
 
         # Check if this is our target guild
+        target_guild_status = "Different guild"
         if guild.id == GUILD_ID:
-            log_tree_branch("target_guild", "⚠️ Target guild is unavailable")
+            target_guild_status = "⚠️ Target guild is unavailable"
+
+        log_perfect_tree_section(
+            "Guild Unavailable",
+            [
+                ("guild_id", guild.id),
+                ("guild_name", guild.name),
+                ("status", "Guild became unavailable"),
+                ("target_guild", target_guild_status),
+            ],
+            "⚠️",
+        )
 
     except Exception as e:
         log_error_with_traceback("Error handling guild unavailable event", e)
@@ -1576,24 +1991,34 @@ async def on_guild_available(guild):
         guild: Guild that became available
     """
     try:
-        log_section_start("Guild Available", "✅")
-        log_tree_branch("guild_id", guild.id)
-        log_tree_branch("guild_name", guild.name)
-        log_tree_final("status", "Guild became available")
 
         # Check if this is our target guild
+        target_guild_status = "Different guild"
+        target_channel_status = "Not applicable"
+
         if guild.id == GUILD_ID:
-            log_tree_branch("target_guild", "✅ Target guild is now available")
+            target_guild_status = "✅ Target guild is now available"
 
             # Verify voice channel is still accessible
             channel = guild.get_channel(TARGET_CHANNEL_ID)
             if channel:
-                log_tree_branch(
-                    "target_channel",
-                    f"✅ Target channel '{channel.name}' is accessible",
+                target_channel_status = (
+                    f"✅ Target channel '{channel.name}' is accessible"
                 )
             else:
-                log_tree_branch("target_channel", "⚠️ Target channel is not accessible")
+                target_channel_status = "⚠️ Target channel is not accessible"
+
+        log_perfect_tree_section(
+            "Guild Available",
+            [
+                ("guild_id", guild.id),
+                ("guild_name", guild.name),
+                ("status", "Guild became available"),
+                ("target_guild", target_guild_status),
+                ("target_channel", target_channel_status),
+            ],
+            "✅",
+        )
 
     except Exception as e:
         log_error_with_traceback("Error handling guild available event", e)

@@ -386,54 +386,6 @@ def log_user_interaction(
         write_to_log_files(action_line, "ERROR", "user_interaction")
 
 
-def log_tree(message, level="INFO"):
-    """Tree-style logging with symbols"""
-    timestamp = get_timestamp()
-    formatted_message = f"├─ {level}: {message}"
-    print(f"{timestamp} {formatted_message}")
-    write_to_log_files(formatted_message, level, "tree")
-
-
-def log_tree_end(message, level="INFO"):
-    """Tree-style logging with end symbol"""
-    timestamp = get_timestamp()
-    formatted_message = f"└─ {level}: {message}"
-    print(f"{timestamp} {formatted_message}")
-    write_to_log_files(formatted_message, level, "tree_end")
-
-
-def log_tree_branch(key, value):
-    """Tree-style logging for key-value pairs"""
-    timestamp = get_timestamp()
-    formatted_message = f"├─ {key}: {value}"
-    print(f"{timestamp} {formatted_message}")
-    write_to_log_files(formatted_message, "INFO", "tree_branch")
-
-
-def log_tree_final(key, value):
-    """Tree-style logging for final key-value pair"""
-    timestamp = get_timestamp()
-    formatted_message = f"└─ {key}: {value}"
-    print(f"{timestamp} {formatted_message}")
-    write_to_log_files(formatted_message, "INFO", "tree_final")
-
-
-def log_section_start(title, emoji="🎯"):
-    """Start a new section with emoji and title"""
-    global _is_first_section
-
-    # Add spacing before section (except for the very first one)
-    if not _is_first_section:
-        log_spacing()
-    else:
-        _is_first_section = False
-
-    timestamp = get_timestamp()
-    formatted_message = f"{emoji} {title}"
-    print(f"{timestamp} {formatted_message}")
-    write_to_log_files(formatted_message, "INFO", "section_start")
-
-
 def log_progress(current, total, emoji="🎶"):
     """Log progress with current/total format"""
     timestamp = get_timestamp()
@@ -444,24 +396,30 @@ def log_progress(current, total, emoji="🎶"):
 
 def log_status(message, status="INFO", emoji="📍"):
     """Log status with emoji and message"""
-    timestamp = get_timestamp()
-    formatted_message = f"{emoji} {message}"
-    print(f"{timestamp} {formatted_message}")
-    write_to_log_files(formatted_message, status, "status")
     if status != "INFO":
-        log_tree_end(f"Status: {status}", status)
+        log_perfect_tree_section(
+            f"Status Update", [("message", message), ("level", status)], emoji
+        )
+    else:
+        timestamp = get_timestamp()
+        formatted_message = f"{emoji} {message}"
+        print(f"{timestamp} {formatted_message}")
+        write_to_log_files(formatted_message, status, "status")
 
 
 def log_version_info(bot_name, version, additional_info=None):
     """Log version information in a structured format"""
-    log_section_start(f"{bot_name} Version Information", "📋")
-    log_tree_branch("name", bot_name)
-    log_tree_branch("version", version)
-    log_tree_branch("changelog", "See CHANGELOG.md for details")
+    items = [
+        ("name", bot_name),
+        ("version", version),
+        ("changelog", "See CHANGELOG.md for details"),
+    ]
+
     if additional_info:
         for key, value in additional_info.items():
-            log_tree_branch(key, value)
-    log_tree_end("Version info complete", "SUCCESS")
+            items.append((key, value))
+
+    log_perfect_tree_section(f"{bot_name} Version Information", items, "📋")
 
 
 def log_error_with_traceback(message, exception=None, level="ERROR"):

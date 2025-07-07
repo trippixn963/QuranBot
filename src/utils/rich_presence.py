@@ -19,12 +19,8 @@ from .tree_log import (
     log_async_error,
     log_critical_error,
     log_error_with_traceback,
-    log_section_start,
+    log_perfect_tree_section,
     log_spacing,
-    log_tree,
-    log_tree_branch,
-    log_tree_end,
-    log_tree_final,
     log_warning_with_context,
 )
 
@@ -52,9 +48,15 @@ class RichPresenceManager:
             self.is_playing = False
             self.update_task = None
 
-            log_section_start("Rich Presence Manager Initialization", "🎵")
-            log_tree_branch("ffmpeg_path", ffmpeg_path)
-            log_tree_final("initialization", "✅ Rich Presence Manager ready")
+            log_perfect_tree_section(
+                "Rich Presence Manager Initialization",
+                [
+                    ("ffmpeg_path", ffmpeg_path),
+                    ("status", "✅ Rich Presence Manager ready"),
+                    ("bot_user", str(bot.user) if bot.user else "Not connected"),
+                ],
+                "🎵",
+            )
 
         except Exception as e:
             log_critical_error("Failed to initialize Rich Presence Manager", e)
@@ -71,8 +73,14 @@ class RichPresenceManager:
             float: Duration in seconds, or None if detection fails
         """
         try:
-            log_tree_branch(
-                "duration_detection", f"Analyzing: {os.path.basename(audio_file)}"
+            log_perfect_tree_section(
+                "Audio Duration Detection",
+                [
+                    ("file", os.path.basename(audio_file)),
+                    ("status", "🔄 Analyzing audio file"),
+                    ("tool", "FFprobe"),
+                ],
+                "🎵",
             )
 
             # Use FFprobe to get duration
@@ -91,9 +99,14 @@ class RichPresenceManager:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
             if result.returncode == 0:
                 duration = float(result.stdout.strip())
-                log_tree_branch(
-                    "audio_duration",
-                    f"✅ {self.format_time(duration)} ({duration:.1f}s)",
+                log_perfect_tree_section(
+                    "Audio Duration - Success",
+                    [
+                        ("duration_formatted", self.format_time(duration)),
+                        ("duration_seconds", f"{duration:.1f}s"),
+                        ("status", "✅ Duration detected successfully"),
+                    ],
+                    "⏱️",
                 )
                 return duration
             else:
@@ -193,10 +206,15 @@ class RichPresenceManager:
             reciter: Name of reciter
         """
         try:
-            log_section_start("Starting Rich Presence Track", "🎵")
-            log_tree_branch("surah_number", surah_number)
-            log_tree_branch("audio_file", os.path.basename(audio_file))
-            log_tree_branch("reciter", reciter)
+            log_perfect_tree_section(
+                "🎵 Starting Rich Presence Track",
+                [
+                    ("surah_number", surah_number),
+                    ("audio_file", os.path.basename(audio_file)),
+                    ("reciter", reciter),
+                ],
+                "🎵",
+            )
 
             # Stop any existing track
             await self.stop_track()
@@ -230,13 +248,29 @@ class RichPresenceManager:
                 )
 
                 await self.bot.change_presence(activity=activity)
-                log_tree_branch(
-                    "rich_presence", f"✅ Started: {surah_info.name_transliteration}"
-                )
 
                 # Start the progress update task
                 self.update_task = self.bot.loop.create_task(self.update_progress())
-                log_tree_final("progress_task", "✅ Progress update task started")
+
+                log_perfect_tree_section(
+                    "Rich Presence - Track Started",
+                    [
+                        (
+                            "rich_presence",
+                            f"✅ Started: {surah_info.name_transliteration}",
+                        ),
+                        ("progress_task", "✅ Progress update task started"),
+                        (
+                            "duration",
+                            (
+                                self.format_time(self.track_duration)
+                                if self.track_duration
+                                else "Unknown"
+                            ),
+                        ),
+                    ],
+                    "🎵",
+                )
             else:
                 log_warning_with_context(
                     "Could not get Surah info for Rich Presence",
@@ -254,18 +288,15 @@ class RichPresenceManager:
             if not self.current_track and not self.update_task:
                 return  # Nothing to stop
 
-            log_tree_branch("rich_presence", "🛑 Stopping track")
-
             # Stop the update task
+            task_status = "No task running"
             if self.update_task and not self.update_task.done():
                 self.update_task.cancel()
                 try:
                     await self.update_task
-                    log_tree_branch("task_cleanup", "✅ Progress task cancelled")
+                    task_status = "✅ Progress task cancelled"
                 except asyncio.CancelledError:
-                    log_tree_branch(
-                        "task_cleanup", "✅ Progress task cancelled gracefully"
-                    )
+                    task_status = "✅ Progress task cancelled gracefully"
 
             # Reset state
             self.is_playing = False
@@ -275,12 +306,11 @@ class RichPresenceManager:
             self.update_task = None
 
             # Clear rich presence (only if bot is still connected)
+            presence_status = "Bot not connected"
             if self.bot and not self.bot.is_closed():
                 try:
                     await self.bot.change_presence(activity=None)
-                    log_tree_final(
-                        "rich_presence", "✅ Stopped playback and cleared presence"
-                    )
+                    presence_status = "✅ Stopped playback and cleared presence"
                 except (
                     discord.ConnectionClosed,
                     discord.HTTPException,
@@ -291,18 +321,21 @@ class RichPresenceManager:
                     if "closing transport" in str(e) or "ConnectionReset" in str(
                         type(e).__name__
                     ):
-                        log_tree_final(
-                            "rich_presence", "✅ Stopped playback (bot disconnecting)"
-                        )
+                        presence_status = "✅ Stopped playback (bot disconnecting)"
                     else:
-                        log_tree_final(
-                            "rich_presence",
-                            f"✅ Stopped playback (presence clear failed: {type(e).__name__})",
-                        )
+                        presence_status = f"✅ Stopped playback (presence clear failed: {type(e).__name__})"
             else:
-                log_tree_final(
-                    "rich_presence", "✅ Stopped playback (bot already closed)"
-                )
+                presence_status = "✅ Stopped playback (bot already closed)"
+
+            log_perfect_tree_section(
+                "Rich Presence - Track Stopped",
+                [
+                    ("status", "🛑 Stopping track"),
+                    ("task_cleanup", task_status),
+                    ("presence_status", presence_status),
+                ],
+                "🛑",
+            )
 
         except discord.HTTPException as e:
             log_error_with_traceback("Discord API error stopping Rich Presence", e)
@@ -311,8 +344,13 @@ class RichPresenceManager:
             if "closing transport" in str(e) or "ConnectionReset" in str(
                 type(e).__name__
             ):
-                log_tree_final(
-                    "rich_presence", "✅ Stopped playback (connection closing)"
+                log_perfect_tree_section(
+                    "Rich Presence - Track Stopped (Connection Closing)",
+                    [
+                        ("status", "✅ Stopped playback (connection closing)"),
+                        ("error_type", type(e).__name__),
+                    ],
+                    "🛑",
                 )
             else:
                 log_error_with_traceback("Error stopping track in Rich Presence", e)
@@ -323,7 +361,21 @@ class RichPresenceManager:
         Runs continuously while track is playing
         """
         try:
-            log_tree_branch("progress_updates", "🔄 Starting progress updates")
+            log_perfect_tree_section(
+                "Rich Presence - Progress Updates",
+                [
+                    ("status", "🔄 Starting progress updates"),
+                    (
+                        "track",
+                        (
+                            self.current_track["surah_number"]
+                            if self.current_track
+                            else "Unknown"
+                        ),
+                    ),
+                ],
+                "🔄",
+            )
             update_count = 0
 
             while self.is_playing and self.current_track:
@@ -341,8 +393,13 @@ class RichPresenceManager:
 
                     # Check if track should be finished
                     if self.track_duration and current_time >= self.track_duration:
-                        log_tree_branch(
-                            "progress_complete", "✅ Track duration reached"
+                        log_perfect_tree_section(
+                            "Rich Presence - Track Complete",
+                            [
+                                ("status", "✅ Track duration reached"),
+                                ("final_time", self.format_time(current_time)),
+                            ],
+                            "✅",
                         )
                         break
 
@@ -385,9 +442,16 @@ class RichPresenceManager:
                             discord.ConnectionClosed,
                         ) as e:
                             # Connection is closing, stop updates gracefully
-                            log_tree_branch(
-                                "progress_updates",
-                                "🛑 Bot disconnecting, stopping updates",
+                            log_perfect_tree_section(
+                                "Rich Presence - Disconnecting",
+                                [
+                                    (
+                                        "status",
+                                        "🛑 Bot disconnecting, stopping updates",
+                                    ),
+                                    ("error_type", type(e).__name__),
+                                ],
+                                "🛑",
                             )
                             break
                         except discord.HTTPException as e:
@@ -399,15 +463,27 @@ class RichPresenceManager:
 
                     update_count += 1
                     if update_count % 12 == 0:  # Log every minute (12 * 5 seconds)
-                        log_tree_branch("progress_update", f"🎵 {time_display}")
+                        log_perfect_tree_section(
+                            "Rich Presence - Progress Update",
+                            [
+                                ("time_display", f"🎵 {time_display}"),
+                                ("updates_count", update_count),
+                            ],
+                            "🎵",
+                        )
 
                     # Update every 5 seconds to avoid rate limiting
                     await asyncio.sleep(5)
 
                 except (ClientConnectionResetError, discord.ConnectionClosed):
                     # Connection is closing, stop updates gracefully
-                    log_tree_branch(
-                        "progress_updates", "🛑 Bot disconnecting, stopping updates"
+                    log_perfect_tree_section(
+                        "Rich Presence - Connection Lost",
+                        [
+                            ("status", "🛑 Bot disconnecting, stopping updates"),
+                            ("context", "Progress update loop"),
+                        ],
+                        "🛑",
                     )
                     break
                 except discord.HTTPException as e:
@@ -419,11 +495,25 @@ class RichPresenceManager:
                     log_error_with_traceback("Error in progress update loop", e)
                     await asyncio.sleep(5)
 
-            log_tree_final("progress_updates", "✅ Progress updates completed")
+            log_perfect_tree_section(
+                "Rich Presence - Updates Complete",
+                [
+                    ("status", "✅ Progress updates completed"),
+                    ("total_updates", update_count),
+                ],
+                "✅",
+            )
 
         except asyncio.CancelledError:
             # Task was cancelled, this is expected
-            log_tree_branch("progress_updates", "🛑 Progress updates cancelled")
+            log_perfect_tree_section(
+                "Rich Presence - Updates Cancelled",
+                [
+                    ("status", "🛑 Progress updates cancelled"),
+                    ("reason", "Task cancellation"),
+                ],
+                "🛑",
+            )
         except Exception as e:
             log_async_error("update_progress", e, "Rich Presence progress update")
 
@@ -436,7 +526,14 @@ class RichPresenceManager:
                 )
                 return
 
-            log_tree_branch("rich_presence", "⏸️ Pausing track")
+            log_perfect_tree_section(
+                "Rich Presence - Pause Track",
+                [
+                    ("status", "⏸️ Pausing track"),
+                    ("track", self.current_track["surah_number"]),
+                ],
+                "⏸️",
+            )
             self.is_playing = False
 
             # Stop the update task
@@ -455,7 +552,14 @@ class RichPresenceManager:
                     name=f"{surah_info.emoji} {surah_info.name_transliteration} • ⏸️ Paused",
                 )
                 await self.bot.change_presence(activity=activity)
-                log_tree_final("rich_presence", "✅ Paused playback")
+                log_perfect_tree_section(
+                    "Rich Presence - Pause Complete",
+                    [
+                        ("status", "✅ Paused playback"),
+                        ("surah", surah_info.name_transliteration),
+                    ],
+                    "⏸️",
+                )
             else:
                 log_warning_with_context(
                     "Could not update Rich Presence for pause",
@@ -477,7 +581,14 @@ class RichPresenceManager:
                 )
                 return
 
-            log_tree_branch("rich_presence", "▶️ Resuming track")
+            log_perfect_tree_section(
+                "Rich Presence - Resume Track",
+                [
+                    ("status", "▶️ Resuming track"),
+                    ("track", self.current_track["surah_number"]),
+                ],
+                "▶️",
+            )
 
             # Adjust start time to account for pause duration
             if self.track_start_time:
@@ -490,7 +601,14 @@ class RichPresenceManager:
 
             # Restart the progress update task
             self.update_task = self.bot.loop.create_task(self.update_progress())
-            log_tree_final("rich_presence", "✅ Resumed playback")
+            log_perfect_tree_section(
+                "Rich Presence - Resume Complete",
+                [
+                    ("status", "✅ Resumed playback"),
+                    ("progress_task", "✅ Progress updates restarted"),
+                ],
+                "▶️",
+            )
 
         except Exception as e:
             log_error_with_traceback("Error resuming track in Rich Presence", e)
@@ -562,7 +680,15 @@ class RichPresenceManager:
             # Adjust the start time to simulate seeking
             self.track_start_time = time.time() - position_seconds
 
-            log_tree_branch("rich_presence_seek", f"Seeked to {position_seconds:.1f}s")
+            log_perfect_tree_section(
+                "Rich Presence - Seek Position",
+                [
+                    ("position", f"{position_seconds:.1f}s"),
+                    ("status", "✅ Seeked to new position"),
+                    ("track", self.current_track["surah_number"]),
+                ],
+                "⏩",
+            )
 
         except Exception as e:
             log_error_with_traceback("Error seeking to position in Rich Presence", e)
@@ -582,7 +708,6 @@ def validate_rich_presence_dependencies(ffmpeg_path="ffmpeg"):
         dict: Validation results with status and warnings
     """
     try:
-        log_section_start("Rich Presence Dependencies Validation", "🔍")
         results = {"ffmpeg": False, "ffprobe": False, "warnings": []}
 
         # Check FFmpeg
@@ -591,7 +716,14 @@ def validate_rich_presence_dependencies(ffmpeg_path="ffmpeg"):
                 [ffmpeg_path, "-version"], capture_output=True, check=True, timeout=5
             )
             results["ffmpeg"] = True
-            log_tree_branch("rich_presence_deps", "✅ FFmpeg is accessible")
+            log_perfect_tree_section(
+                "Rich Presence - FFmpeg Check",
+                [
+                    ("ffmpeg_path", ffmpeg_path),
+                    ("status", "✅ FFmpeg is accessible"),
+                ],
+                "✅",
+            )
         except subprocess.TimeoutExpired:
             results["warnings"].append("FFmpeg check timed out - may be slow")
             log_warning_with_context("FFmpeg validation timeout", "Check may be slow")
@@ -599,7 +731,15 @@ def validate_rich_presence_dependencies(ffmpeg_path="ffmpeg"):
             results["warnings"].append(
                 f"FFmpeg not found at '{ffmpeg_path}' - Rich Presence may be limited"
             )
-            log_tree_branch("rich_presence_deps", f"❌ FFmpeg not accessible: {e}")
+            log_perfect_tree_section(
+                "Rich Presence - FFmpeg Error",
+                [
+                    ("ffmpeg_path", ffmpeg_path),
+                    ("status", f"❌ FFmpeg not accessible: {e}"),
+                    ("warning", "Rich Presence may be limited"),
+                ],
+                "❌",
+            )
 
         # Check FFprobe
         try:
@@ -608,7 +748,14 @@ def validate_rich_presence_dependencies(ffmpeg_path="ffmpeg"):
                 [ffprobe_path, "-version"], capture_output=True, check=True, timeout=5
             )
             results["ffprobe"] = True
-            log_tree_branch("rich_presence_deps", "✅ FFprobe is accessible")
+            log_perfect_tree_section(
+                "Rich Presence - FFprobe Check",
+                [
+                    ("ffprobe_path", ffprobe_path),
+                    ("status", "✅ FFprobe is accessible"),
+                ],
+                "✅",
+            )
         except subprocess.TimeoutExpired:
             results["warnings"].append("FFprobe check timed out - may be slow")
             log_warning_with_context("FFprobe validation timeout", "Check may be slow")
@@ -616,19 +763,34 @@ def validate_rich_presence_dependencies(ffmpeg_path="ffmpeg"):
             results["warnings"].append(
                 "FFprobe not found - Rich Presence progress bars will be limited"
             )
-            log_tree_branch("rich_presence_deps", f"❌ FFprobe not accessible: {e}")
+            log_perfect_tree_section(
+                "Rich Presence - FFprobe Error",
+                [
+                    ("ffprobe_path", ffprobe_path),
+                    ("status", f"❌ FFprobe not accessible: {e}"),
+                    ("warning", "Progress bars will be limited"),
+                ],
+                "❌",
+            )
 
         # Summary
         if results["ffmpeg"] and results["ffprobe"]:
-            log_tree_final(
-                "validation_result", "✅ All Rich Presence dependencies available"
-            )
+            validation_status = "✅ All Rich Presence dependencies available"
         elif results["ffmpeg"]:
-            log_tree_final("validation_result", "⚠️ FFmpeg available, FFprobe missing")
+            validation_status = "⚠️ FFmpeg available, FFprobe missing"
         else:
-            log_tree_final(
-                "validation_result", "❌ Critical Rich Presence dependencies missing"
-            )
+            validation_status = "❌ Critical Rich Presence dependencies missing"
+
+        log_perfect_tree_section(
+            "Rich Presence Dependencies Validation",
+            [
+                ("ffmpeg", "✅ Available" if results["ffmpeg"] else "❌ Missing"),
+                ("ffprobe", "✅ Available" if results["ffprobe"] else "❌ Missing"),
+                ("result", validation_status),
+                ("warnings_count", len(results["warnings"])),
+            ],
+            "🔍",
+        )
 
         return results
 

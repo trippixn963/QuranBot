@@ -16,8 +16,7 @@ from discord.ui import Button, Modal, Select, TextInput, View
 from .surah_mapper import get_surah_info, search_surahs
 from .tree_log import (
     log_error_with_traceback,
-    log_tree_branch,
-    log_tree_final,
+    log_perfect_tree_section,
     log_user_interaction,
 )
 
@@ -55,44 +54,52 @@ class SurahSearchModal(Modal):
     async def on_submit(self, interaction: discord.Interaction):
         """Handle search submission"""
         try:
-            # Log search initiation with user details
-            log_tree_branch(
-                "search_initiated",
-                f"User: {interaction.user.display_name} ({interaction.user.id})",
-            )
-
             query = self.search_input.value.strip()
 
             if not query:
-                log_tree_branch(
-                    "search_empty_query", "User submitted empty search query"
+                log_perfect_tree_section(
+                    "Surah Search - Empty Query",
+                    [
+                        (
+                            "user",
+                            f"{interaction.user.display_name} ({interaction.user.id})",
+                        ),
+                        ("status", "❌ Empty search query submitted"),
+                        ("action", "Requesting user to enter search term"),
+                    ],
+                    "🔍",
                 )
                 await interaction.response.send_message(
                     "❌ Please enter a search term!", ephemeral=True
                 )
                 return
 
-            # Log search query details
-            log_tree_branch("search_query", f"'{query}' (length: {len(query)} chars)")
-
             # Search for surahs
             results = search_surahs(query)
 
-            # Log search results count
-            log_tree_branch("search_results_count", f"{len(results)} surah(s) found")
-
-            if results:
-                # Log found surahs for debugging (first 3)
-                result_names = [
-                    f"{s.name_transliteration} ({s.number})" for s in results[:3]
-                ]
-                if len(results) > 3:
-                    result_names.append(f"... and {len(results) - 3} more")
-                log_tree_branch("search_results_preview", ", ".join(result_names))
+            # Log search with results
+            log_perfect_tree_section(
+                "Surah Search - Query Processed",
+                [
+                    (
+                        "user",
+                        f"{interaction.user.display_name} ({interaction.user.id})",
+                    ),
+                    ("query", f"'{query}' (length: {len(query)} chars)"),
+                    ("results_count", f"{len(results)} surah(s) found"),
+                ],
+                "🔍",
+            )
 
             if not results:
-                log_tree_branch(
-                    "search_no_results", f"No matches found for query '{query}'"
+                log_perfect_tree_section(
+                    "Surah Search - No Results",
+                    [
+                        ("query", f"'{query}'"),
+                        ("status", "❌ No matches found"),
+                        ("action", "Sending search guidance to user"),
+                    ],
+                    "🔍",
                 )
                 await interaction.response.send_message(
                     f"❌ No surahs found for '{query}'. Try searching by:\n"
@@ -109,9 +116,17 @@ class SurahSearchModal(Modal):
                 surah = results[0]
 
                 # Log single result found
-                log_tree_branch(
-                    "search_single_result",
-                    f"Exact match: {surah.name_transliteration} (#{surah.number})",
+                log_perfect_tree_section(
+                    "Surah Search - Single Result",
+                    [
+                        ("query", f"'{query}'"),
+                        (
+                            "result",
+                            f"Exact match: {surah.name_transliteration} (#{surah.number})",
+                        ),
+                        ("action", "Showing confirmation dialog"),
+                    ],
+                    "🔍",
                 )
 
                 # Show confirmation embed with options
@@ -143,9 +158,14 @@ class SurahSearchModal(Modal):
 
                 embed.set_footer(text="Choose an action below:")
 
-                log_tree_branch(
-                    "search_confirmation_sent",
-                    "Single result confirmation embed sent to user",
+                log_perfect_tree_section(
+                    "Surah Search - Confirmation Sent",
+                    [
+                        ("surah", f"{surah.name_transliteration} (#{surah.number})"),
+                        ("embed_type", "Single result confirmation"),
+                        ("status", "✅ Sent to user"),
+                    ],
+                    "📤",
                 )
                 await interaction.response.send_message(
                     embed=embed, view=confirmation_view, ephemeral=True
@@ -153,9 +173,14 @@ class SurahSearchModal(Modal):
                 return
 
             # Multiple results - show selection view
-            log_tree_branch(
-                "search_multiple_results",
-                f"Showing selection dropdown for {len(results)} results",
+            log_perfect_tree_section(
+                "Surah Search - Multiple Results",
+                [
+                    ("query", f"'{query}'"),
+                    ("results_count", f"{len(results)} surahs found"),
+                    ("action", "Showing selection dropdown"),
+                ],
+                "🔍",
             )
 
             search_results_view = SearchResultsView(
@@ -186,9 +211,15 @@ class SurahSearchModal(Modal):
                     inline=False,
                 )
 
-            log_tree_branch(
-                "search_results_sent",
-                f"Multiple results embed sent with {min(5, len(results))} visible results",
+            log_perfect_tree_section(
+                "Surah Search - Results Sent",
+                [
+                    ("results_total", len(results)),
+                    ("results_visible", min(5, len(results))),
+                    ("embed_type", "Multiple results selection"),
+                    ("status", "✅ Sent to user"),
+                ],
+                "📤",
             )
             await interaction.response.send_message(
                 embed=embed, view=search_results_view, ephemeral=True
@@ -257,24 +288,19 @@ class SearchResultsSelect(Select):
     async def callback(self, interaction: discord.Interaction):
         """Handle surah selection from search results"""
         try:
-            # Log selection from multiple results
-            log_tree_branch(
-                "search_selection_initiated",
-                f"User: {interaction.user.display_name} selecting from results",
-            )
-
             selected_surah_number = int(self.values[0])
-            log_tree_branch(
-                "search_selected_number",
-                f"Selected surah number: {selected_surah_number}",
-            )
-
             surah = get_surah_info(selected_surah_number)
 
             if not surah:
-                log_tree_branch(
-                    "search_selection_error",
-                    f"Failed to load surah info for number {selected_surah_number}",
+                log_perfect_tree_section(
+                    "Search Selection - Error",
+                    [
+                        (
+                            "search_selection_error",
+                            f"Failed to load surah info for number {selected_surah_number}",
+                        ),
+                    ],
+                    "❌",
                 )
                 await interaction.response.send_message(
                     "❌ Error loading surah information.", ephemeral=True
@@ -282,9 +308,23 @@ class SearchResultsSelect(Select):
                 return
 
             # Log successful selection
-            log_tree_branch(
-                "search_selection_success",
-                f"Selected: {surah.name_transliteration} (#{surah.number})",
+            log_perfect_tree_section(
+                "Search Selection - Success",
+                [
+                    (
+                        "search_selection_initiated",
+                        f"User: {interaction.user.display_name} selecting from results",
+                    ),
+                    (
+                        "search_selected_number",
+                        f"Selected surah number: {selected_surah_number}",
+                    ),
+                    (
+                        "search_selection_success",
+                        f"Selected: {surah.name_transliteration} (#{surah.number})",
+                    ),
+                ],
+                "✅",
             )
 
             # Show confirmation embed with options
@@ -434,13 +474,19 @@ class SurahConfirmationView(View):
         """Cancel the selection"""
         try:
             # Log cancellation interaction
-            log_tree_branch(
-                "search_cancel_initiated",
-                f"User: {interaction.user.display_name} cancelling selection",
-            )
-            log_tree_branch(
-                "search_cancel_details",
-                f"Cancelled: '{self.query}' → {self.surah.name_transliteration}",
+            log_perfect_tree_section(
+                "Search Selection - Cancelled",
+                [
+                    (
+                        "search_cancel_initiated",
+                        f"User: {interaction.user.display_name} cancelling selection",
+                    ),
+                    (
+                        "search_cancel_details",
+                        f"Cancelled: '{self.query}' → {self.surah.name_transliteration}",
+                    ),
+                ],
+                "❌",
             )
 
             # Disable all buttons
@@ -455,9 +501,6 @@ class SurahConfirmationView(View):
 
             embed.set_footer(text="Use the search button again anytime!")
 
-            log_tree_branch(
-                "search_cancel_confirmed", "Selection cancelled embed sent to user"
-            )
             await interaction.response.edit_message(embed=embed, view=self)
 
         except Exception as e:
@@ -759,9 +802,15 @@ class SimpleControlPanelView(View):
                 await self.panel_message.channel.fetch_message(self.panel_message.id)
             except discord.NotFound:
                 # Message was deleted, stop trying to update it
-                log_tree_branch(
-                    "panel_message_deleted",
-                    "Control panel message was deleted, stopping updates",
+                log_perfect_tree_section(
+                    "Control Panel - Message Deleted",
+                    [
+                        (
+                            "panel_message_deleted",
+                            "Control panel message was deleted, stopping updates",
+                        ),
+                    ],
+                    "🗑️",
                 )
                 if self.update_task and not self.update_task.done():
                     self.update_task.cancel()
@@ -884,18 +933,28 @@ class SimpleControlPanelView(View):
                 await self.panel_message.edit(embed=embed, view=self)
             except discord.NotFound:
                 # Message was deleted during our update
-                log_tree_branch(
-                    "panel_message_deleted",
-                    "Control panel message was deleted during update",
+                log_perfect_tree_section(
+                    "Control Panel - Message Deleted",
+                    [
+                        ("status", "⚠️ Panel message was deleted during update"),
+                        ("action", "Cancelling update task"),
+                        ("result", "Panel update stopped"),
+                    ],
+                    "🗑️",
                 )
                 if self.update_task and not self.update_task.done():
                     self.update_task.cancel()
                 return
             except discord.HTTPException as e:
                 if e.status == 429:  # Rate limited
-                    log_tree_branch(
-                        "panel_rate_limited",
-                        "Control panel update rate limited, skipping",
+                    log_perfect_tree_section(
+                        "Control Panel - Rate Limited",
+                        [
+                            ("status", "⚠️ Update rate limited"),
+                            ("http_status", "429"),
+                            ("action", "Skipping this update"),
+                        ],
+                        "⏱️",
                     )
                     return
                 else:
@@ -1190,7 +1249,14 @@ class SimpleControlPanelView(View):
         """Clean up the view"""
         if self.update_task and not self.update_task.done():
             self.update_task.cancel()
-            log_tree_branch("panel_cleanup", "Control panel update task cancelled")
+            log_perfect_tree_section(
+                "Control Panel - Cleanup",
+                [
+                    ("status", "✅ Update task cancelled"),
+                    ("action", "Panel cleanup completed"),
+                ],
+                "🧹",
+            )
 
 
 # =============================================================================
@@ -1213,7 +1279,14 @@ def cleanup_all_control_panels():
             if panel:
                 panel.cleanup()
         _active_panels.clear()
-        log_tree_final("all_panels_cleaned", "All control panels cleaned up")
+        log_perfect_tree_section(
+            "Control Panel - Global Cleanup",
+            [
+                ("panels_cleaned", len(_active_panels)),
+                ("status", "✅ All control panels cleaned up"),
+            ],
+            "🧹",
+        )
     except Exception as e:
         log_error_with_traceback("Error cleaning up control panels", e)
 
@@ -1228,11 +1301,18 @@ async def create_control_panel(
 ) -> Optional[discord.Message]:
     """Create a simple control panel"""
     try:
-        log_tree_branch("creating_panel", f"Channel: {channel.name}")
+        log_perfect_tree_section(
+            "Control Panel - Creation Started",
+            [
+                ("channel", channel.name),
+                ("channel_id", str(channel.id)),
+                ("audio_manager", "Connected" if audio_manager else "Not available"),
+            ],
+            "🎛️",
+        )
 
         # Delete all existing messages in the channel first
         try:
-            log_tree_branch("clearing_channel", "Deleting existing messages...")
             deleted_count = 0
 
             # Use a more robust approach to delete messages
@@ -1249,26 +1329,47 @@ async def create_control_panel(
                     pass
                 except discord.Forbidden:
                     # No permission to delete
-                    log_tree_branch(
-                        "delete_permission", "No permission to delete some messages"
+                    log_perfect_tree_section(
+                        "Control Panel - Delete Permission Error",
+                        [
+                            ("status", "⚠️ No permission to delete some messages"),
+                            ("action", "Continuing with panel creation"),
+                        ],
+                        "🚫",
                     )
                     pass
                 except discord.HTTPException as e:
                     if e.status == 429:  # Rate limited
-                        log_tree_branch(
-                            "delete_rate_limited",
-                            "Rate limited while deleting messages",
+                        log_perfect_tree_section(
+                            "Control Panel - Delete Rate Limited",
+                            [
+                                ("status", "⚠️ Rate limited while deleting messages"),
+                                ("action", "Waiting 1 second"),
+                            ],
+                            "⏱️",
                         )
                         await asyncio.sleep(1)
                     else:
                         pass  # Skip other HTTP errors
 
             if deleted_count > 0:
-                log_tree_branch(
-                    "messages_deleted", f"Deleted {deleted_count} existing messages"
+                log_perfect_tree_section(
+                    "Control Panel - Channel Cleared",
+                    [
+                        ("messages_deleted", deleted_count),
+                        ("status", "✅ Channel cleared successfully"),
+                    ],
+                    "🧹",
                 )
             else:
-                log_tree_branch("channel_status", "Channel was already empty")
+                log_perfect_tree_section(
+                    "Control Panel - Channel Status",
+                    [
+                        ("messages_deleted", 0),
+                        ("status", "✅ Channel was already empty"),
+                    ],
+                    "📭",
+                )
 
             # Wait a moment after cleanup to avoid rate limiting
             await asyncio.sleep(1)
@@ -1304,13 +1405,28 @@ async def create_control_panel(
             await asyncio.sleep(2)
             await view.update_panel()
 
-            log_tree_final("panel_created", "✅ Simple control panel created")
+            log_perfect_tree_section(
+                "Control Panel - Creation Complete",
+                [
+                    ("status", "✅ Simple control panel created"),
+                    ("channel", channel.name),
+                    ("message_id", str(message.id)),
+                    ("view_registered", "Yes"),
+                ],
+                "🎛️",
+            )
             return message
 
         except discord.HTTPException as e:
             if e.status == 429:  # Rate limited
-                log_tree_branch(
-                    "panel_rate_limited", "Rate limited while creating panel"
+                log_perfect_tree_section(
+                    "Control Panel - Rate Limited on Creation",
+                    [
+                        ("status", "⚠️ Rate limited while creating panel"),
+                        ("action", "Waiting 5 seconds and retrying"),
+                        ("http_status", "429"),
+                    ],
+                    "⏱️",
                 )
                 await asyncio.sleep(5)
                 # Try again after rate limit
@@ -1332,7 +1448,15 @@ async def setup_control_panel(bot, channel_id: int, audio_manager=None) -> bool:
     try:
         channel = bot.get_channel(channel_id)
         if not channel:
-            log_tree_branch("setup_error", f"Channel {channel_id} not found")
+            log_perfect_tree_section(
+                "Control Panel - Setup Error",
+                [
+                    ("channel_id", str(channel_id)),
+                    ("status", "❌ Channel not found"),
+                    ("result", "Setup failed"),
+                ],
+                "❌",
+            )
             return False
 
         message = await create_control_panel(bot, channel, audio_manager)

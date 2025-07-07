@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional
 
 from dotenv import load_dotenv
 
-from .tree_log import log_error_with_traceback, log_tree_branch, log_tree_final
+from .tree_log import log_error_with_traceback, log_perfect_tree_section
 
 # Load environment variables
 env_path = os.path.join(os.path.dirname(__file__), "..", "..", "config", ".env")
@@ -188,8 +188,12 @@ class StateManager:
         """
         try:
             if not self.playback_state_file.exists():
-                log_tree_branch(
-                    "state_default", "No previous state found, using defaults"
+                log_perfect_tree_section(
+                    "Playback State - Default",
+                    [
+                        ("state_default", "No previous state found, using defaults"),
+                    ],
+                    "📁",
                 )
                 return self.default_playback_state.copy()
 
@@ -200,12 +204,14 @@ class StateManager:
             if not isinstance(state, dict):
                 raise ValueError("State file contains invalid data structure")
 
+            validation_items = []
+
             # Validate surah number if present
             if "current_surah" in state:
                 surah = state["current_surah"]
                 if not isinstance(surah, int) or not (1 <= surah <= 114):
-                    log_tree_branch(
-                        "state_validation", f"Invalid surah {surah}, using default"
+                    validation_items.append(
+                        ("state_validation", f"Invalid surah {surah}, using default")
                     )
                     state["current_surah"] = 1
 
@@ -213,8 +219,8 @@ class StateManager:
             if "current_position" in state:
                 position = state["current_position"]
                 if not isinstance(position, (int, float)) or position < 0:
-                    log_tree_branch(
-                        "state_validation", f"Invalid position {position}, using 0"
+                    validation_items.append(
+                        ("state_validation", f"Invalid position {position}, using 0")
                     )
                     state["current_position"] = 0.0
 
@@ -222,9 +228,20 @@ class StateManager:
             merged_state = self.default_playback_state.copy()
             merged_state.update(state)
 
-            log_tree_branch(
-                "state_loaded",
-                f"Surah {merged_state['current_surah']} at {merged_state['current_position']:.1f}s",
+            state_items = [
+                (
+                    "state_loaded",
+                    f"Surah {merged_state['current_surah']} at {merged_state['current_position']:.1f}s",
+                ),
+            ]
+
+            if validation_items:
+                state_items.extend(validation_items)
+
+            log_perfect_tree_section(
+                "Playback State - Loaded",
+                state_items,
+                "✅",
             )
             return merged_state
 
@@ -269,13 +286,15 @@ class StateManager:
             # Load existing stats or use defaults
             current_stats = self.load_bot_stats()
 
+            validation_items = []
+
             # Update provided values with validation
             if total_runtime is not None:
                 if isinstance(total_runtime, (int, float)) and total_runtime >= 0:
                     current_stats["total_runtime"] = float(total_runtime)
                 else:
-                    log_tree_branch(
-                        "stats_validation", "Invalid runtime value, skipping"
+                    validation_items.append(
+                        ("stats_validation", "Invalid runtime value, skipping")
                     )
 
             if increment_sessions:
@@ -285,16 +304,16 @@ class StateManager:
                 if isinstance(last_startup, str):
                     current_stats["last_startup"] = last_startup
                 else:
-                    log_tree_branch(
-                        "stats_validation", "Invalid startup timestamp, skipping"
+                    validation_items.append(
+                        ("stats_validation", "Invalid startup timestamp, skipping")
                     )
 
             if last_shutdown:
                 if isinstance(last_shutdown, str):
                     current_stats["last_shutdown"] = last_shutdown
                 else:
-                    log_tree_branch(
-                        "stats_validation", "Invalid shutdown timestamp, skipping"
+                    validation_items.append(
+                        ("stats_validation", "Invalid shutdown timestamp, skipping")
                     )
 
             if increment_completed:
@@ -304,8 +323,8 @@ class StateManager:
                 if isinstance(favorite_reciter, str) and favorite_reciter.strip():
                     current_stats["favorite_reciter"] = favorite_reciter.strip()
                 else:
-                    log_tree_branch(
-                        "stats_validation", "Invalid reciter name, skipping"
+                    validation_items.append(
+                        ("stats_validation", "Invalid reciter name, skipping")
                     )
 
             # Atomic write to prevent corruption
@@ -316,8 +335,17 @@ class StateManager:
             # Move temp file to final location
             temp_file.replace(self.bot_stats_file)
 
-            log_tree_branch(
-                "stats_saved", f"Session #{current_stats['total_sessions']}"
+            stats_items = [
+                ("stats_saved", f"Session #{current_stats['total_sessions']}"),
+            ]
+
+            if validation_items:
+                stats_items.extend(validation_items)
+
+            log_perfect_tree_section(
+                "Bot Stats - Saved",
+                stats_items,
+                "✅",
             )
             return True
 
@@ -497,7 +525,13 @@ class StateManager:
                 self.bot_stats_file.unlink()
                 files_removed += 1
 
-            log_tree_final("state_cleared", f"Cleared {files_removed} state files")
+            log_perfect_tree_section(
+                "State Cleared",
+                [
+                    ("state_cleared", f"Cleared {files_removed} state files"),
+                ],
+                "🗑️",
+            )
             return True
 
         except (FileNotFoundError, PermissionError) as e:
@@ -558,13 +592,25 @@ class StateManager:
                     log_error_with_traceback("Error backing up bot stats", e)
 
             if files_backed_up > 0:
-                log_tree_final(
-                    "state_backed_up",
-                    f"Backup '{backup_name}': {files_backed_up} files",
+                log_perfect_tree_section(
+                    "State Backup - Success",
+                    [
+                        (
+                            "state_backed_up",
+                            f"Backup '{backup_name}': {files_backed_up} files",
+                        ),
+                    ],
+                    "💾",
                 )
                 return True
             else:
-                log_tree_branch("backup_warning", "No state files found to backup")
+                log_perfect_tree_section(
+                    "State Backup - Warning",
+                    [
+                        ("backup_warning", "No state files found to backup"),
+                    ],
+                    "⚠️",
+                )
                 return False
 
         except (IOError, OSError) as e:
