@@ -1,0 +1,177 @@
+name: 🧪 CI/CD Pipeline
+
+on:
+  push:
+    branches: [master, development]
+    tags: ["v*"]
+  pull_request:
+    branches: [master, development]
+
+jobs:
+  test:
+    name: 🧪 Test Suite
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, "3.10", "3.11"]
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: 📦 Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: 📦 Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio black isort flake8
+
+      - name: 🎨 Code Formatting Check (Black)
+        run: |
+          black --check --diff src/ tools/ *.py
+
+      - name: 📝 Import Sorting Check (isort)
+        run: |
+          isort --check-only --diff src/ tools/ *.py
+
+      - name: 🔍 Linting (flake8)
+        run: |
+          flake8 src/ tools/ *.py --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 src/ tools/ *.py --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
+
+      - name: 🧪 Run Test Suite
+        run: |
+          python tools/test_bot.py
+        env:
+          DISCORD_TOKEN: "dummy_token_for_testing"
+          GUILD_ID: "123456789"
+          TARGET_CHANNEL_ID: "123456789"
+          ADMIN_USER_ID: "123456789"
+
+      - name: 📊 Syntax Validation
+        run: |
+          python -m py_compile src/bot/main.py
+          python -m py_compile src/utils/*.py
+          python -m py_compile tools/*.py
+          python -m py_compile *.py
+
+  security:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: 🔒 Run Security Scan (Bandit)
+        run: |
+          pip install bandit
+          bandit -r src/ tools/ *.py -f json -o security-report.json || true
+
+      - name: 📊 Upload Security Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-report
+          path: security-report.json
+
+  release:
+    name: 🚀 Create Release
+    runs-on: ubuntu-latest
+    needs: [test, security]
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: 📦 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🏷️ Get Version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: 📝 Generate Release Notes
+        id: release_notes
+        run: |
+          echo "## 🕌 QuranBot v${{ steps.version.outputs.version }}" > release_notes.md
+          echo "" >> release_notes.md
+          echo "### ✨ What's New" >> release_notes.md
+          echo "" >> release_notes.md
+
+          # Extract latest changes from CHANGELOG
+          sed -n '/^## \[/,/^## \[/p' CHANGELOG.md | head -n -1 | tail -n +2 >> release_notes.md
+
+          echo "" >> release_notes.md
+          echo "### 📦 Installation" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "\`\`\`bash" >> release_notes.md
+          echo "git clone https://github.com/trippixn963/QuranBot.git" >> release_notes.md
+          echo "cd QuranBot" >> release_notes.md
+          echo "git checkout v${{ steps.version.outputs.version }}" >> release_notes.md
+          echo "pip install -r requirements.txt" >> release_notes.md
+          echo "\`\`\`" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### ⚠️ Notice" >> release_notes.md
+          echo "This project is provided AS-IS with NO SUPPORT. Use at your own risk." >> release_notes.md
+          echo "" >> release_notes.md
+          echo "*May Allah (SWT) bless this release and all who use it for the benefit of the Muslim Ummah.*" >> release_notes.md
+
+      - name: 🚀 Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: 🕌 QuranBot v${{ steps.version.outputs.version }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+
+  notify:
+    name: 📢 Notification
+    runs-on: ubuntu-latest
+    needs: [test, security]
+    if: always()
+
+    steps:
+      - name: 📊 Job Summary
+        run: |
+          echo "## 🧪 CI/CD Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | ${{ needs.security.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.test.result }}" = "success" ] && [ "${{ needs.security.result }}" = "success" ]; then
+            echo "🎉 All checks passed! Ready for deployment." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Some checks failed. Please review before proceeding." >> $GITHUB_STEP_SUMMARY
+          fi

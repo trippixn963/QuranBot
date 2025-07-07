@@ -7,6 +7,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2025-01-18
+
+### Added
+
+- **🛡️ Bulletproof Data Protection**: Implemented 5-layer protection system for all data files
+- **📦 Automated ZIP Backup System**: EST-scheduled hourly backups with intuitive date/time naming (e.g., "7/6 - 10PM.zip")
+- **🔍 Missing Surah Detection**: Automatic detection and logging of incomplete reciter collections with range formatting
+- **🎯 Enhanced Audio Management**: Intelligent mapping of surah numbers to available files with comprehensive analysis
+- **🗂️ Perfect Tree Logging**: Complete backup logging with full visibility into all operations
+- **🔄 Smart Looping**: Default looping enabled for continuous playback experience
+- **📊 Audio File Indexing**: Intelligent surah-to-file mapping with missing file detection
+- **🚨 Emergency Backup System**: Multiple fallback mechanisms for critical data protection
+- **🔄 Atomic File Operations**: Corruption-proof saves with automatic recovery mechanisms
+- **⏰ EST Timezone Support**: All backup operations use Eastern Standard Time for consistent scheduling
+
+### Enhanced
+
+- **🎵 Audio Playback**: Fixed surah indexing issues where incomplete reciter collections caused wrong surah numbers
+- **🔄 Looping Behavior**: Changed DEFAULT_LOOP to true for seamless continuous playback
+- **📝 Backup Logging**: Enhanced all backup operations with comprehensive tree-style logging
+- **🕰️ Backup Scheduling**: Modified to run on EST hour marks (1:00, 2:00, etc.) instead of startup intervals
+- **💾 Data Integrity**: Improved all file operations with atomic saves and integrity verification
+- **🔍 Error Detection**: Added comprehensive missing surah detection with user-friendly range formatting
+- **📊 Status Reporting**: Enhanced backup status with current EST time and next backup window information
+
+### Fixed
+
+- **🎵 Surah Indexing**: Fixed issue where Surah 114 showed as index 71 due to incomplete reciter collections
+- **🔄 Playlist Looping**: Fixed bot not looping back to Surah 1 after finishing Surah 114
+- **📦 Backup Timing**: Fixed backup scheduling to use clock hour marks instead of startup-based intervals
+- **🗂️ File Compression**: Replaced individual file copying with efficient ZIP compression
+- **⚠️ Missing File Handling**: Added proper detection and explanation of missing surahs in collections
+
+### Repository Improvements
+
+- **📋 Code of Conduct**: Added comprehensive Code of Conduct with Islamic values integration
+- **🔄 GitHub Actions**: Implemented CI/CD pipeline with automated testing, linting, and releases
+- **🏷️ Release Automation**: Added automated version management and GitHub release creation
+- **📝 Issue Templates**: Enhanced GitHub issue templates with better no-support policy communication
+- **📊 Documentation**: Updated README with latest features and current version information
+- **🔒 Security Scanning**: Added automated security scanning with Bandit integration
+
+### Technical Improvements
+
+- **🧪 Testing Integration**: Enhanced CI/CD with multi-Python version testing (3.8-3.11)
+- **🎨 Code Quality**: Integrated Black formatting, isort, and flake8 linting in CI pipeline
+- **📦 Release Management**: Automated version bumping with centralized version management
+- **🔍 Syntax Validation**: Added comprehensive Python syntax validation in CI
+- **📊 Security Reports**: Automated security scanning with artifact generation
+- **🚀 Deployment Safety**: Enhanced deployment pipeline with comprehensive testing requirements
+
+### Configuration
+
+- **DEFAULT_LOOP**: Changed from false to true for continuous playback
+- **Backup Schedule**: Modified to run on EST hour marks for predictable timing
+- **ZIP Compression**: Enabled ZIP_DEFLATED compression for efficient backup storage
+- **EST Timezone**: Added timezone(timedelta(hours=-5)) for consistent time handling
+
+## [2.1.0] - 2025-01-17
+
+### Added
+
+- **🎯 Centralized Version Management**: Single source of truth version system with src/version.py
+- **🔄 Automated Version Updates**: tools/update_version.py utility for consistent version management
+- **👤 Centralized Author Management**: Standardized author format "John (Discord: Trippixn)"
+- **🗂️ Perfect Tree Logging**: Enhanced logging system with comprehensive backup visibility
+- **📊 Backup Status Reporting**: Real-time backup status with file counts and next backup timing
+
+### Enhanced
+
+- **🔢 Version Consistency**: All files now import from centralized version module
+- **📝 Author Standardization**: Consistent author information across all project files
+- **🛠️ Development Tools**: Enhanced update_version.py with automatic file detection and verification
+- **📊 Logging Improvements**: Better backup logging with detailed file information
+
 ## [1.5.0] - 2025-07-05
 
 ### Added

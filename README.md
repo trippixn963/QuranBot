@@ -9,7 +9,7 @@
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://python.org)
 [![Discord.py](https://img.shields.io/badge/discord.py-2.3.0%2B-blue.svg)](https://github.com/Rapptz/discord.py)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.6.1-blue.svg)](#)
+[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](#)
 [![No Support](https://img.shields.io/badge/support-NONE-red.svg)](#)
 [![Take As Is](https://img.shields.io/badge/policy-take%20as%20is-red.svg)](#)
 
@@ -80,6 +80,21 @@ _Built with ❤️ for the Muslim Ummah - Shared as-is for educational purposes_
 - 🔧 **Easy Configuration** - Environment-based configuration management
 - 🛡️ **Error Handling** - Comprehensive error handling with recovery mechanisms
 - 📈 **Resource Monitoring** - Built-in resource usage monitoring
+
+### 🛡️ **Data Protection & Backup**
+
+- 💾 **Bulletproof Data Protection** - 5-layer protection system for all data files
+- 📦 **Automated ZIP Backups** - EST-scheduled hourly backups with date/time naming
+- 🔄 **Atomic File Operations** - Corruption-proof saves with automatic recovery
+- 🚨 **Emergency Backup System** - Multiple fallback mechanisms for data safety
+- 🗂️ **Perfect Tree Logging** - Comprehensive backup logging with full visibility
+
+### 🎯 **Enhanced Audio Management**
+
+- 🔍 **Missing Surah Detection** - Automatic detection and logging of incomplete reciter collections
+- 🔄 **Smart Looping** - Default looping enabled for continuous playback
+- 📊 **Audio File Indexing** - Intelligent mapping of surah numbers to available files
+- 🎵 **Reciter Collection Analysis** - Complete analysis of available audio files per reciter
 
 ## 🚀 Quick Start
 
