@@ -817,13 +817,22 @@ class AudioManager:
             log_async_error("switch_reciter", e, f"Target reciter: {reciter_name}")
 
     def toggle_loop(self):
-        """Toggle loop mode"""
+        """Toggle individual surah loop mode (24/7 playback continues regardless)"""
         try:
             self.is_loop_enabled = not self.is_loop_enabled
             log_perfect_tree_section(
                 "Audio Settings - Loop Toggle",
                 [
                     ("loop_toggled", "ON" if self.is_loop_enabled else "OFF"),
+                    (
+                        "loop_behavior",
+                        (
+                            "Individual surah repeat"
+                            if self.is_loop_enabled
+                            else "Normal progression"
+                        ),
+                    ),
+                    ("continuous_playback", "24/7 mode always active"),
                 ],
                 "🔁",
             )
@@ -1036,6 +1045,20 @@ class AudioManager:
                     # Reset position for next track
                     self.current_position = 0.0
 
+                    # Handle loop mode for individual surah
+                    if self.is_loop_enabled:
+                        # Loop button is ON - repeat the same surah
+                        log_perfect_tree_section(
+                            "Audio Loop - Individual Surah",
+                            [
+                                ("loop_mode", "Repeating current surah"),
+                                ("current_surah", self.current_surah),
+                            ],
+                            "🔁",
+                        )
+                        # Don't increment index - stay on same surah
+                        continue
+
                     # Move to next track (unless a jump occurred)
                     if self._jump_occurred:
                         # Jump occurred, don't increment - just clear the flag
@@ -1057,14 +1080,22 @@ class AudioManager:
                             0, len(self.current_audio_files) - 1
                         )
                     else:
+                        # Normal progression - always continue 24/7
                         self.current_file_index += 1
 
-                    # Check if we should loop
-                    if (
-                        self.current_file_index >= len(self.current_audio_files)
-                        and not self.is_loop_enabled
-                    ):
-                        break
+                        # 24/7 Continuous Playback: Always restart from beginning after last surah
+                        if self.current_file_index >= len(self.current_audio_files):
+                            self.current_file_index = 0
+                            log_perfect_tree_section(
+                                "Audio Playback - 24/7 Restart",
+                                [
+                                    ("continuous_playback", "Restarting from Surah 1"),
+                                    ("reason", "24/7 mode - completed all surahs"),
+                                ],
+                                "🔄",
+                            )
+
+                    # 24/7 mode - never break the loop, always continue playing
 
                 except Exception as e:
                     log_error_with_traceback("Error in playback loop iteration", e)

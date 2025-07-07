@@ -1174,7 +1174,7 @@ class SimpleControlPanelView(View):
 
     @discord.ui.button(label="🔁 Loop", style=discord.ButtonStyle.secondary, row=3)
     async def toggle_loop(self, interaction: discord.Interaction, button: Button):
-        """Toggle loop mode"""
+        """Toggle individual surah loop mode (24/7 playback continues regardless)"""
         try:
             # Toggle audio manager's loop state
             old_state = self.loop_enabled
@@ -1189,11 +1189,17 @@ class SimpleControlPanelView(View):
                 interaction_type="button_toggle",
                 user_name=interaction.user.display_name,
                 user_id=interaction.user.id,
-                action_description=f"Toggled loop mode: {old_state} → {self.loop_enabled}",
+                action_description=f"Toggled individual surah loop: {old_state} → {self.loop_enabled}",
                 details={
-                    "feature": "loop",
+                    "feature": "individual_surah_loop",
                     "old_state": old_state,
                     "new_state": self.loop_enabled,
+                    "behavior": (
+                        "Individual surah repeat"
+                        if self.loop_enabled
+                        else "Normal progression"
+                    ),
+                    "continuous_playback": "24/7 mode always active",
                     "audio_manager_available": self.audio_manager is not None,
                 },
             )
