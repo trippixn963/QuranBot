@@ -39,19 +39,6 @@
 [![Uptime](https://img.shields.io/badge/uptime-99.9%25-brightgreen.svg)](#)
 [![Maintenance](https://img.shields.io/badge/maintained-yes-brightgreen.svg)](#)
 
-<!-- Project Stats -->
-
-[![GitHub Stars](https://img.shields.io/github/stars/JohnHamwi/QuranBot?style=social)](https://github.com/JohnHamwi/QuranBot/stargazers)
-[![GitHub Forks](https://img.shields.io/github/forks/JohnHamwi/QuranBot?style=social)](https://github.com/JohnHamwi/QuranBot/network/members)
-[![GitHub Issues](https://img.shields.io/github/issues/JohnHamwi/QuranBot)](https://github.com/JohnHamwi/QuranBot/issues)
-[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/JohnHamwi/QuranBot)](https://github.com/JohnHamwi/QuranBot/pulls)
-
-<!-- Activity and Maintenance -->
-
-[![Last Commit](https://img.shields.io/github/last-commit/JohnHamwi/QuranBot)](https://github.com/JohnHamwi/QuranBot/commits/master)
-[![Commit Activity](https://img.shields.io/github/commit-activity/m/JohnHamwi/QuranBot)](https://github.com/JohnHamwi/QuranBot/graphs/commit-activity)
-[![Repository Size](https://img.shields.io/github/repo-size/JohnHamwi/QuranBot)](https://github.com/JohnHamwi/QuranBot)
-
 <!-- Technology Stack -->
 
 [![Made with Python](https://img.shields.io/badge/made%20with-Python-1f425f.svg)](https://www.python.org/)
@@ -166,13 +153,11 @@ _Built with ❤️ for the Muslim Ummah - Shared as-is for educational purposes_
    cd QuranBot
    ```
 
-````
-
 2. **Install Dependencies**
 
    ```bash
    pip install -r requirements.txt
-````
+   ```
 
 3. **Install FFmpeg**
 
@@ -445,55 +430,57 @@ All logs are automatically saved to:
 
 ### v2.2.0 (Latest)
 
-🎯 **🛡️ Bulletproof Data Protection - Implemented 5-layer protection system for all data files
-🎯 **📦 Automated ZIP Backup System - EST-scheduled hourly backups with intuitive date/time naming (e.g., "7/6 - 10PM.zip")
-🎯 **🔍 Missing Surah Detection - Automatic detection and logging of incomplete reciter collections with range formatting
-🎯 **Enhanced Audio Management - Intelligent mapping of surah numbers to available files with comprehensive analysis
-🎯 **🗂️ Perfect Tree Logging - Complete backup logging with full visibility into all operations
-🎯 **🔄 Smart Looping - Default looping enabled for continuous playback experience
-🎯 **📊 Audio File Indexing - Intelligent surah-to-file mapping with missing file detection
-🎯 **🚨 Emergency Backup System - Multiple fallback mechanisms for critical data protection
-🎯 \*\*🔄 Atomic File Operations - Corruption-proof saves with automatic recovery mechanisms
+**🛡️ Data Protection & Backup System**
+
+- **Bulletproof Data Protection** - 5-layer protection system for all data files
+- **Automated ZIP Backups** - EST-scheduled hourly backups with intuitive naming
+- **Emergency Backup System** - Multiple fallback mechanisms for data safety
+- **Atomic File Operations** - Corruption-proof saves with automatic recovery
+
+**🎵 Enhanced Audio Management**
+
+- **Missing Surah Detection** - Automatic detection of incomplete reciter collections
+- **Smart Looping** - Default looping enabled for continuous playback
+- **Audio File Indexing** - Intelligent surah-to-file mapping
+- **Perfect Tree Logging** - Complete backup logging with full visibility
 
 ### v2.1.0
 
-🎯 **Centralized Version Management - Single source of truth version system with src/version.py
-🎯 **🔄 Automated Version Updates - tools/update_version.py utility for consistent version management
-🎯 **👤 Centralized Author Management - Standardized author format "John (Discord: Trippixn)"
-🎯 **🗂️ Perfect Tree Logging - Enhanced logging system with comprehensive backup visibility
-🎯 \*\*📊 Backup Status Reporting - Real-time backup status with file counts and next backup timing
+**🎯 Centralized Management**
+
+- **Version Management** - Single source of truth with `src/version.py`
+- **Automated Updates** - `tools/update_version.py` utility for consistency
+- **Author Management** - Standardized author format across all files
+- **Backup Status Reporting** - Real-time backup status with file counts
 
 ### v1.5.0
 
-🎯 **Environment Default Settings - Added configurable default settings for reciter, shuffle, and loop modes
-🎯 **Startup Reset Behavior - Bot now resets to default reciter (Saad Al Ghamdi) on every restart
-🎯 **Toggle State Persistence - Loop and shuffle modes reset to environment defaults on bot restart
-🎯 **Enhanced Control Panel - Added emojis to buttons and dropdown menus for better user experience
-🎯 \*\*Improved Dropdown Design - Reciter dropdown now shows English names as labels with Arabic names as descriptions
+**⚙️ Configuration & Defaults**
+
+- **Environment Defaults** - Configurable settings for reciter, shuffle, and loop
+- **Startup Reset** - Bot resets to default reciter on every restart
+- **State Persistence** - Loop and shuffle modes reset to environment defaults
+- **Enhanced UI** - Added emojis to buttons and dropdown menus
 
 ### v1.4.0
 
-🎯 **Interactive Control Panel - Complete Discord embed-based control panel with real-time status updates
-🎯 **Audio Manager System - Centralized audio playback management with comprehensive state tracking
-🎯 **Rich Presence Integration - Dynamic Discord Rich Presence showing current Surah with Arabic names and playback timer
-🎯 **User Attribution System - Track and display which user enabled Loop/Shuffle modes with Discord mentions
-🎯 **Progress Bar Display - Visual playback progress bars in control panel with 20-character precision
-🎯 **Surah Selection Dropdown - Paginated dropdown menu with emoji indicators and Arabic descriptions
-🎯 **Reciter Selection - Dynamic reciter switching with automatic audio file discovery
-🎯 **Playback Controls - Previous/Next track buttons with seamless audio transitions
-🎯 \*\*Loop & Shuffle Modes - Toggle controls with user attribution and real-time status updates
+**🎛️ Interactive Control Panel**
+
+- **Discord Control Panel** - Complete embed-based interface with real-time updates
+- **Audio Manager System** - Centralized playback management with state tracking
+- **Rich Presence** - Dynamic Discord status showing current Surah
+- **User Attribution** - Track who enabled Loop/Shuffle modes
+- **Progress Bars** - Visual playback progress with 20-character precision
 
 ### v1.2.0
 
-🎯 **Professional project structure - Reorganized entire project with tools/, docs/, config/, scripts/ directories
-🎯 **Enhanced development tools - Comprehensive testing suite, code formatting, and deployment safety tools
-🎯 **Complete error handling - Added traceback support throughout with enhanced tree_log functions
-🎯 **Development environment setup - Automated virtual environment, ffmpeg installation, and audio file management
-🎯 **Production safety framework - Bulletproof deployment system preventing broken code from reaching VPS
-🎯 **Automated instance detection - Fully automated prevention of multiple bot instances running simultaneously
-🎯 **Automatic instance termination - Seamlessly detects and stops existing instances without user interaction
-🎯 **Bot manager utility - Command-line tool for easy bot management (start, stop, restart, status)
-🎯 \*\*Process monitoring - Detailed process information including uptime, memory usage, and command details
+**🏗️ Professional Architecture**
+
+- **Project Structure** - Reorganized with `tools/`, `docs/`, `config/` directories
+- **Development Tools** - Comprehensive testing suite and deployment safety
+- **Error Handling** - Complete traceback support with enhanced logging
+- **Instance Management** - Automated prevention of multiple bot instances
+- **Bot Manager** - Command-line utility for easy bot management
 
 ## 📄 License
 
@@ -543,7 +530,7 @@ This repository demonstrates professional Discord bot development:
 
 ### 🔗 **Quick Links**
 
-[![GitHub](https://img.shields.io/badge/GitHub-Repository-black?logo=github)](https://github.com/JohnHamwi/QuranBot)
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-black?logo=github)](https://github.com/trippixn963/QuranBot)
 [![License](https://img.shields.io/badge/License-MIT-green?logo=opensourceinitiative)](LICENSE)
 [![Contributing](https://img.shields.io/badge/Contributing-Guidelines-blue?logo=github)](CONTRIBUTING.md)
 [![Security](https://img.shields.io/badge/Security-Policy-red?logo=security)](SECURITY.md)
