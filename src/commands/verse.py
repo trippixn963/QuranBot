@@ -40,6 +40,19 @@ async def verse_slash_command(interaction: discord.Interaction):
                 value="Use `/credits` or `/leaderboard` for general bot information.",
                 inline=False,
             )
+
+            # Set footer with admin profile picture
+            try:
+                admin_user = interaction.client.get_user(DEVELOPER_ID)
+                if admin_user and admin_user.avatar:
+                    embed.set_footer(
+                        text="Created by حَـــــنَـــــا", icon_url=admin_user.avatar.url
+                    )
+                else:
+                    embed.set_footer(text="Created by حَـــــنَـــــا")
+            except Exception:
+                embed.set_footer(text="Created by حَـــــنَـــــا")
+
             await interaction.response.send_message(embed=embed, ephemeral=True)
 
             # Log unauthorized access attempt
@@ -68,6 +81,19 @@ async def verse_slash_command(interaction: discord.Interaction):
                 description="The daily verses system is not set up. Please check the bot configuration.",
                 color=0xFF6B6B,
             )
+
+            # Set footer with admin profile picture
+            try:
+                admin_user = interaction.client.get_user(DEVELOPER_ID)
+                if admin_user and admin_user.avatar:
+                    embed.set_footer(
+                        text="Created by حَـــــنَـــــا", icon_url=admin_user.avatar.url
+                    )
+                else:
+                    embed.set_footer(text="Created by حَـــــنَـــــا")
+            except Exception:
+                embed.set_footer(text="Created by حَـــــنَـــــا")
+
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
@@ -81,6 +107,19 @@ async def verse_slash_command(interaction: discord.Interaction):
                 description="The daily verse channel could not be found.",
                 color=0xFF6B6B,
             )
+
+            # Set footer with admin profile picture
+            try:
+                admin_user = interaction.client.get_user(DEVELOPER_ID)
+                if admin_user and admin_user.avatar:
+                    embed.set_footer(
+                        text="Created by حَـــــنَـــــا", icon_url=admin_user.avatar.url
+                    )
+                else:
+                    embed.set_footer(text="Created by حَـــــنَـــــا")
+            except Exception:
+                embed.set_footer(text="Created by حَـــــنَـــــا")
+
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
@@ -92,6 +131,19 @@ async def verse_slash_command(interaction: discord.Interaction):
                 description="No verses are available in the queue or pool.",
                 color=0xFF6B6B,
             )
+
+            # Set footer with admin profile picture
+            try:
+                admin_user = interaction.client.get_user(DEVELOPER_ID)
+                if admin_user and admin_user.avatar:
+                    embed.set_footer(
+                        text="Created by حَـــــنَـــــا", icon_url=admin_user.avatar.url
+                    )
+                else:
+                    embed.set_footer(text="Created by حَـــــنَـــــا")
+            except Exception:
+                embed.set_footer(text="Created by حَـــــنَـــــا")
+
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
@@ -147,6 +199,18 @@ async def verse_slash_command(interaction: discord.Interaction):
             name="🤝 Coordination", value=coordination_info, inline=True
         )
 
+        # Set footer with admin profile picture
+        try:
+            admin_user = interaction.client.get_user(DEVELOPER_ID)
+            if admin_user and admin_user.avatar:
+                confirmation_embed.set_footer(
+                    text="Created by حَـــــنَـــــا", icon_url=admin_user.avatar.url
+                )
+            else:
+                confirmation_embed.set_footer(text="Created by حَـــــنَـــــا")
+        except Exception:
+            confirmation_embed.set_footer(text="Created by حَـــــنَـــــا")
+
         await interaction.response.send_message(
             embed=confirmation_embed, ephemeral=True
         )
@@ -186,6 +250,19 @@ async def verse_slash_command(interaction: discord.Interaction):
             description="An error occurred while trying to send the verse. Please check the logs.",
             color=0xFF6B6B,
         )
+
+        # Set footer with admin profile picture
+        try:
+            DEVELOPER_ID = int(os.getenv("DEVELOPER_ID") or "0")
+            admin_user = interaction.client.get_user(DEVELOPER_ID)
+            if admin_user and admin_user.avatar:
+                error_embed.set_footer(
+                    text="Created by حَـــــنَـــــا", icon_url=admin_user.avatar.url
+                )
+            else:
+                error_embed.set_footer(text="Created by حَـــــنَـــــا")
+        except Exception:
+            error_embed.set_footer(text="Created by حَـــــنَـــــا")
 
         # Handle both responded and unresponded interactions
         if interaction.response.is_done():
