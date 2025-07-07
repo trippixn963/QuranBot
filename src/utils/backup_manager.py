@@ -281,14 +281,14 @@ class BackupManager:
                 "💾",
             )
 
-            # Automatically clean up old backups (keep only 3 most recent)
-            cleaned_count = self.cleanup_old_backups(keep_count=3)
+            # Automatically clean up old backups (keep only 1 most recent)
+            cleaned_count = self.cleanup_old_backups(keep_count=1)
             if cleaned_count > 0:
                 log_perfect_tree_section(
                     "Backup Manager - Auto Cleanup",
                     [
                         ("cleaned_files", f"🗑️ Removed {cleaned_count} old backup(s)"),
-                        ("retention_policy", "📋 Keeping 3 most recent backups"),
+                        ("retention_policy", "📋 Keeping 1 most recent backup"),
                         ("status", "✅ Cleanup completed automatically"),
                     ],
                     "🧹",
@@ -599,14 +599,14 @@ class BackupManager:
                 "💾",
             )
 
-            # Automatically clean up old manual backups (keep only 2 most recent)
-            cleaned_count = self.cleanup_old_backups(keep_count=2)
+            # Automatically clean up old manual backups (keep only 1 most recent)
+            cleaned_count = self.cleanup_old_backups(keep_count=1)
             if cleaned_count > 0:
                 log_perfect_tree_section(
                     "Backup Manager - Auto Cleanup",
                     [
                         ("cleaned_files", f"🗑️ Removed {cleaned_count} old backup(s)"),
-                        ("retention_policy", "📋 Keeping 2 most recent backups"),
+                        ("retention_policy", "📋 Keeping 1 most recent backup"),
                         ("status", "✅ Cleanup completed automatically"),
                     ],
                     "🧹",
