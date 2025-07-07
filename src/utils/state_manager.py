@@ -8,6 +8,7 @@
 import json
 import os
 import shutil
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -82,6 +83,11 @@ class StateManager:
             self.playback_state_file = self.data_dir / "playback_state.json"
             self.bot_stats_file = self.data_dir / "bot_stats.json"
 
+            # Backup throttling - only create backups when needed
+            self.last_backup_time = 0
+            self.last_backup_data = None
+            self.backup_interval = 300  # Minimum 5 minutes between backups
+
             # Default state structure with environment values
             self.default_playback_state = {
                 "current_surah": 1,
@@ -92,6 +98,11 @@ class StateManager:
                 "is_playing": False,
                 "loop_enabled": default_loop,
                 "shuffle_enabled": default_shuffle,
+                "metadata": {
+                    "version": "2.2.0",
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "save_type": "playback_state",
+                },
             }
 
             self.default_bot_stats = {
@@ -151,39 +162,6 @@ class StateManager:
             if total_duration < 0:
                 total_duration = 0.0  # Clamp negative durations
 
-            # Create backup before saving
-            backup_file = self.playback_state_file.with_suffix(".json.backup")
-            if self.playback_state_file.exists():
-                try:
-                    shutil.copy2(self.playback_state_file, backup_file)
-
-                    # Log backup creation
-                    log_perfect_tree_section(
-                        "Playback State Backup Created",
-                        [
-                            ("backup_file", f"💾 Backup: {backup_file.name}"),
-                            (
-                                "original_size",
-                                f"📊 Original: {self.playback_state_file.stat().st_size} bytes",
-                            ),
-                            (
-                                "backup_size",
-                                f"📊 Backup: {backup_file.stat().st_size} bytes",
-                            ),
-                            (
-                                "timestamp",
-                                f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-                            ),
-                        ],
-                        "💾",
-                    )
-                except Exception as backup_error:
-                    log_error_with_traceback(
-                        "Failed to create playback state backup",
-                        backup_error,
-                        {"backup_file": str(backup_file)},
-                    )
-
             # Prepare state data with metadata
             state = {
                 "current_surah": current_surah,
@@ -200,6 +178,76 @@ class StateManager:
                     "save_type": "playback_state",
                 },
             }
+
+            # Smart backup creation - only when needed
+            should_create_backup = False
+            current_time = time.time()
+
+            # Create backup if:
+            # 1. No backup exists yet
+            # 2. Significant change (surah change, reciter change, or large position jump)
+            # 3. Enough time has passed since last backup
+            if not self.playback_state_file.with_suffix(".json.backup").exists():
+                should_create_backup = True
+            elif self.last_backup_data:
+                # Check for significant changes
+                if (
+                    self.last_backup_data.get("current_surah") != current_surah
+                    or self.last_backup_data.get("current_reciter") != current_reciter
+                    or abs(
+                        self.last_backup_data.get("current_position", 0)
+                        - current_position
+                    )
+                    > 30
+                ):
+                    should_create_backup = True
+            elif current_time - self.last_backup_time > self.backup_interval:
+                should_create_backup = True
+
+            if should_create_backup and self.playback_state_file.exists():
+                try:
+                    backup_file = self.playback_state_file.with_suffix(".json.backup")
+                    shutil.copy2(self.playback_state_file, backup_file)
+                    self.last_backup_time = current_time
+                    self.last_backup_data = state.copy()
+
+                    # Check if this is a significant change
+                    is_significant_change = self.last_backup_data and (
+                        self.last_backup_data.get("current_surah") != current_surah
+                        or self.last_backup_data.get("current_reciter")
+                        != current_reciter
+                    )
+
+                    # Only log detailed info for significant changes
+                    if is_significant_change:
+                        log_perfect_tree_section(
+                            "Playback State Backup Created",
+                            [
+                                ("backup_file", f"💾 Backup: {backup_file.name}"),
+                                (
+                                    "original_size",
+                                    f"📊 Original: {self.playback_state_file.stat().st_size} bytes",
+                                ),
+                                (
+                                    "backup_size",
+                                    f"📊 Backup: {backup_file.stat().st_size} bytes",
+                                ),
+                                ("reason", "📋 Significant change detected"),
+                                (
+                                    "timestamp",
+                                    f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                                ),
+                            ],
+                            "💾",
+                        )
+                    # For periodic backups, just log silently (no spam)
+
+                except Exception as backup_error:
+                    log_error_with_traceback(
+                        "Failed to create playback state backup",
+                        backup_error,
+                        {"backup_file": str(backup_file)},
+                    )
 
             # Atomic write to prevent corruption
             temp_file = self.playback_state_file.with_suffix(".tmp")

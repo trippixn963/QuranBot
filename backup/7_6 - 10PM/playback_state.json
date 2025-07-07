@@ -1,0 +1,15 @@
+{
+  "current_surah": 2,
+  "current_position": 380.9867820739746,
+  "current_reciter": "Saad Al Ghamdi",
+  "total_duration": 7054.331125,
+  "last_updated": "2025-07-07T03:18:21.556468+00:00",
+  "is_playing": true,
+  "loop_enabled": false,
+  "shuffle_enabled": false,
+  "metadata": {
+    "version": "2.2.0",
+    "created_at": "2025-07-07T03:18:21.556472+00:00",
+    "save_type": "playback_state"
+  }
+}
