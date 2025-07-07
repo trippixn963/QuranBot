@@ -54,6 +54,11 @@ from utils.audio_manager import AudioManager
 from utils.control_panel import setup_control_panel
 
 # =============================================================================
+# Import Listening Stats Manager
+# =============================================================================
+from utils.listening_stats import track_voice_join, track_voice_leave
+
+# =============================================================================
 # Import Rich Presence Manager
 # =============================================================================
 from utils.rich_presence import RichPresenceManager, validate_rich_presence_dependencies
@@ -907,9 +912,13 @@ async def on_ready():
                 )
 
                 try:
-                    from src.commands import setup_credits_command
+                    from src.commands import (
+                        setup_credits_command,
+                        setup_leaderboard_command,
+                    )
 
                     await setup_credits_command(bot)
+                    await setup_leaderboard_command(bot)
 
                     # Sync commands to Discord
                     await bot.tree.sync()
@@ -917,7 +926,7 @@ async def on_ready():
                         "Slash Commands Sync",
                         [
                             ("status", "✅ Slash commands synced successfully"),
-                            ("available_commands", "/credits"),
+                            ("available_commands", "/credits, /leaderboard"),
                             ("sync_method", "Discord Tree API"),
                         ],
                         "⚡",
@@ -1339,6 +1348,9 @@ async def on_voice_state_update(member, before, after):
                 and after.channel
                 and after.channel.id == TARGET_CHANNEL_ID
             ):
+                # Track listening time - user joined
+                track_voice_join(member.id)
+
                 log_voice_activity_tree(
                     member.display_name,
                     "join",
@@ -1358,6 +1370,9 @@ async def on_voice_state_update(member, before, after):
                 and after.channel
                 and after.channel.id == TARGET_CHANNEL_ID
             ):
+                # Track listening time - user joined
+                track_voice_join(member.id)
+
                 log_voice_activity_tree(
                     member.display_name,
                     "move",
@@ -1376,6 +1391,9 @@ async def on_voice_state_update(member, before, after):
                 and before.channel.id == TARGET_CHANNEL_ID
                 and not after.channel
             ):
+                # Track listening time - user left
+                track_voice_leave(member.id)
+
                 log_voice_activity_tree(
                     member.display_name,
                     "leave",
@@ -1395,6 +1413,9 @@ async def on_voice_state_update(member, before, after):
                 and after.channel
                 and after.channel.id != TARGET_CHANNEL_ID
             ):
+                # Track listening time - user left
+                track_voice_leave(member.id)
+
                 log_voice_activity_tree(
                     member.display_name,
                     "move",

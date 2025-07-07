@@ -54,6 +54,49 @@ from .tree_log import (
     write_to_log_files,
 )
 
+# Import listening stats utilities
+try:
+    from .listening_stats import (
+        ListeningStatsManager,
+        UserStats,
+        format_listening_time,
+        get_leaderboard_data,
+        get_user_listening_stats,
+        listening_stats_manager,
+        track_voice_join,
+        track_voice_leave,
+    )
+except ImportError:
+    # Fallback if listening stats module is not available
+    def track_voice_join(user_id):
+        pass
+
+    def track_voice_leave(user_id):
+        return 0.0
+
+    def get_user_listening_stats(user_id):
+        return None
+
+    def get_leaderboard_data():
+        return {
+            "top_users": [],
+            "total_listening_time": 0,
+            "total_sessions": 0,
+            "active_users": 0,
+            "total_users": 0,
+        }
+
+    def format_listening_time(seconds):
+        return "0s"
+
+    class ListeningStatsManager:
+        pass
+
+    class UserStats:
+        pass
+
+    listening_stats_manager = None
+
 # Import version utilities with absolute import
 try:
     from src.version import (
@@ -113,6 +156,15 @@ __all__ = [
     "log_warning_with_context",
     "log_voice_activity_tree",
     "write_to_log_files",
+    # Listening Statistics
+    "ListeningStatsManager",
+    "UserStats",
+    "track_voice_join",
+    "track_voice_leave",
+    "get_user_listening_stats",
+    "get_leaderboard_data",
+    "format_listening_time",
+    "listening_stats_manager",
     # Version Information
     "BOT_NAME",
     "BOT_VERSION",
