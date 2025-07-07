@@ -121,14 +121,6 @@ async def leaderboard_command(interaction: discord.Interaction):
         else:
             embed.description = "*No listening data available yet.*\n*Start listening to Quran recitations to appear on the leaderboard!*"
 
-        # Add instructions
-        embed.add_field(
-            name="🎧 How to Earn Time",
-            value="Join the Quran voice channel to start accumulating listening time!\n"
-            "Your time is tracked from the moment you join until you leave.",
-            inline=False,
-        )
-
         # Set bot avatar as thumbnail
         if interaction.client.user.avatar:
             embed.set_thumbnail(url=interaction.client.user.avatar.url)
