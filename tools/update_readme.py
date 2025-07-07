@@ -12,42 +12,65 @@ import sys
 from pathlib import Path
 
 
-def extract_changelog_features(changelog_content, version):
-    """Extract key features from changelog for a specific version"""
-    features = []
+def extract_changelog_features(version):
+    """Extract features from CHANGELOG.md for a specific version"""
+    try:
+        with open("CHANGELOG.md", "r", encoding="utf-8") as f:
+            content = f.read()
 
-    # Find the section for this version
-    version_pattern = rf"## \[{re.escape(version)}\]"
-    lines = changelog_content.split("\n")
+        # Find the version section
+        version_pattern = rf"## \[{re.escape(version)}\]"
+        match = re.search(version_pattern, content)
+        if not match:
+            return []
 
-    in_version_section = False
-    in_added_section = False
+        # Extract content until next version or end
+        start_pos = match.end()
+        next_version_match = re.search(r"## \[[\d.]+\]", content[start_pos:])
+        if next_version_match:
+            end_pos = start_pos + next_version_match.start()
+            section_content = content[start_pos:end_pos]
+        else:
+            section_content = content[start_pos:]
 
-    for line in lines:
-        if re.match(version_pattern, line):
-            in_version_section = True
-            continue
-        elif in_version_section and line.startswith("## ["):
-            # Hit the next version section, stop
-            break
-        elif in_version_section:
-            if line.startswith("### Added"):
-                in_added_section = True
-                continue
-            elif line.startswith("### ") and in_added_section:
-                in_added_section = False
-                continue
-            elif in_added_section and line.startswith("- **"):
-                # Extract feature line
-                feature_match = re.match(r"- \*\*([^*]+)\*\*[^:]*: (.+)", line)
-                if feature_match:
-                    emoji_title = feature_match.group(1)
-                    description = feature_match.group(2)
-                    # Clean up the description and format properly
-                    clean_description = description.strip()
-                    features.append(f"{emoji_title} - {clean_description}")
+        # Extract features from Added and Enhanced sections
+        features = []
 
-    return features
+        # Look for Added section
+        added_match = re.search(
+            r"### Added\s*\n(.*?)(?=###|\Z)", section_content, re.DOTALL
+        )
+        if added_match:
+            added_content = added_match.group(1)
+            # Extract bullet points
+            bullet_matches = re.findall(
+                r"- \*\*(.*?)\*\*: (.*?)(?=\n- |\n\n|\Z)", added_content, re.DOTALL
+            )
+            for title, description in bullet_matches:
+                clean_title = title.strip()
+                clean_desc = description.strip().replace("\n", " ")
+                features.append(f"{clean_title}: {clean_desc}")
+
+        # Look for Enhanced section
+        enhanced_match = re.search(
+            r"### Enhanced\s*\n(.*?)(?=###|\Z)", section_content, re.DOTALL
+        )
+        if enhanced_match:
+            enhanced_content = enhanced_match.group(1)
+            # Extract bullet points
+            bullet_matches = re.findall(
+                r"- \*\*(.*?)\*\*: (.*?)(?=\n- |\n\n|\Z)", enhanced_content, re.DOTALL
+            )
+            for title, description in bullet_matches:
+                clean_title = title.strip()
+                clean_desc = description.strip().replace("\n", " ")
+                features.append(f"{clean_title}: {clean_desc}")
+
+        return features[:9]  # Limit to 9 features
+
+    except Exception as e:
+        print(f"Error extracting changelog features: {e}")
+        return []
 
 
 def update_readme_version_history():
@@ -85,7 +108,7 @@ def update_readme_version_history():
     version_history = []
 
     for i, version in enumerate(versions[:5]):  # Show latest 5 versions
-        features = extract_changelog_features(changelog_content, version)
+        features = extract_changelog_features(version)
 
         if i == 0:
             version_history.append(f"### v{version} (Latest)")
@@ -93,10 +116,10 @@ def update_readme_version_history():
             version_history.append(f"### v{version}")
 
         # Add features with proper formatting
-        for feature in features[:9]:  # Limit to 9 features per version
+        for feature in features:
             # Remove any duplicate emoji prefix and format properly
-            clean_feature = feature.replace("🎯 ", "").replace("**", "")
-            version_history.append(f"🎯 **{clean_feature}")
+            clean_feature = feature.replace("🎯 ", "").replace("**", "").strip()
+            version_history.append(f"- **{clean_feature}**")
 
         version_history.append("")  # Empty line between versions
 
