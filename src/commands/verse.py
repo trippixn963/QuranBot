@@ -6,16 +6,21 @@
 # =============================================================================
 
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 import discord
+from discord.ext import commands
 
-from src.utils.daily_verses import daily_verses_manager
 from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
 
-# =============================================================================
-# Slash Command Implementation
-# =============================================================================
+
+# Get the daily verses manager through a function instead of global import
+def get_daily_verses_manager():
+    """Get the daily verses manager instance"""
+    from src.utils.daily_verses import daily_verses_manager
+
+    return daily_verses_manager
 
 
 @discord.app_commands.command(
@@ -23,22 +28,20 @@ from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_sectio
     description="Send a daily verse manually and reset the 3-hour timer (Admin only)",
 )
 async def verse_slash_command(interaction: discord.Interaction):
-    """Send a daily verse manually and reset the 3-hour timer (Admin only)"""
+    """Send a daily verse manually and reset the 3-hour timer"""
     try:
-        # Get DEVELOPER_ID from environment
+        # Get the daily verses manager
+        daily_verses_manager = get_daily_verses_manager()
+
+        # Get developer ID from environment
         DEVELOPER_ID = int(os.getenv("DEVELOPER_ID") or "0")
 
-        # Check if user is the admin/developer
+        # Check if user is the developer/admin
         if interaction.user.id != DEVELOPER_ID:
             embed = discord.Embed(
-                title="🔒 Admin Only Command",
-                description="This command is restricted to the bot administrator only.",
+                title="❌ Permission Denied",
+                description="This command is only available to the bot administrator.",
                 color=0xFF6B6B,
-            )
-            embed.add_field(
-                name="📋 Available Commands",
-                value="Use `/credits` or `/leaderboard` for general bot information.",
-                inline=False,
             )
 
             # Set footer with admin profile picture
@@ -54,21 +57,6 @@ async def verse_slash_command(interaction: discord.Interaction):
                 embed.set_footer(text="Created by حَـــــنَـــــا")
 
             await interaction.response.send_message(embed=embed, ephemeral=True)
-
-            # Log unauthorized access attempt
-            log_perfect_tree_section(
-                "Daily Verses - Unauthorized Access Attempt",
-                [
-                    (
-                        "attempted_by",
-                        f"{interaction.user.display_name} ({interaction.user.id})",
-                    ),
-                    ("command", "/verse"),
-                    ("status", "🔒 Access denied - Admin only"),
-                    ("admin_id", str(DEVELOPER_ID)),
-                ],
-                "🔒",
-            )
             return
 
         # Check if daily verses system is configured
@@ -76,15 +64,6 @@ async def verse_slash_command(interaction: discord.Interaction):
             not daily_verses_manager.bot
             or not daily_verses_manager.daily_verse_channel_id
         ):
-            # Debug logging to see the actual values
-            print(f"DEBUG: daily_verses_manager.bot = {daily_verses_manager.bot}")
-            print(
-                f"DEBUG: daily_verses_manager.daily_verse_channel_id = {daily_verses_manager.daily_verse_channel_id}"
-            )
-            print(
-                f"DEBUG: daily_verses_manager.developer_user_id = {daily_verses_manager.developer_user_id}"
-            )
-
             embed = discord.Embed(
                 title="❌ Daily Verses Not Configured",
                 description="The daily verses system is not properly configured. Please check the bot configuration.",
@@ -173,7 +152,9 @@ async def verse_slash_command(interaction: discord.Interaction):
         daily_verses_manager.reset_timer()
 
         # Calculate next automatic verse time (3 hours from now)
-        next_auto_time = datetime.now(timezone.utc).replace(microsecond=0)
+        # Get current time in EST
+        est_tz = timezone(timedelta(hours=-5))  # EST is UTC-5
+        next_auto_time = datetime.now(est_tz).replace(microsecond=0)
         next_auto_time = next_auto_time.replace(hour=(next_auto_time.hour + 3) % 24)
         if next_auto_time.hour < 3:  # Handle day rollover
             next_auto_time = next_auto_time.replace(day=next_auto_time.day + 1)
@@ -186,26 +167,20 @@ async def verse_slash_command(interaction: discord.Interaction):
         )
         confirmation_embed.add_field(
             name="🔄 Timer Reset",
-            value=f"Next automatic verse will be sent in **3 hours**\n*Around {next_auto_time.strftime('%I:%M %p')} UTC*",
+            value=f"Next automatic verse will be sent in **3 hours**\n*Around {next_auto_time.strftime('%I:%M %p')} EST*",
             inline=False,
         )
 
-        # Show queue/pool status with coordination info
-        if daily_verses_manager.verses_queue:
-            queue_info = f"**{len(daily_verses_manager.verses_queue)}** verses remaining in queue"
-            coordination_info = "✅ Verse removed from queue to prevent duplicates"
-        elif daily_verses_manager.verses_pool:
-            queue_info = f"Queue empty, **{len(daily_verses_manager.verses_pool)}** verses remaining in pool"
-            coordination_info = "✅ Verse removed from pool to prevent duplicates"
-        else:
-            queue_info = "Both queue and pool are now empty"
-            coordination_info = "✅ All verses have been sent"
-
+        # Show message ID and coordination info
         confirmation_embed.add_field(
-            name="📊 Queue Status", value=queue_info, inline=True
+            name="📨 Message ID",
+            value=f"**{message.id}**\nVerse message in {channel.mention}",
+            inline=True,
         )
         confirmation_embed.add_field(
-            name="🤝 Coordination", value=coordination_info, inline=True
+            name="🤝 Coordination",
+            value="✅ Verse removed from queue to prevent duplicates",
+            inline=True,
         )
 
         # Set footer with admin profile picture
@@ -242,7 +217,7 @@ async def verse_slash_command(interaction: discord.Interaction):
                 ("timer_reset", "✅ 3-hour timer reset"),
                 (
                     "next_auto_verse",
-                    f"In 3 hours ({next_auto_time.strftime('%I:%M %p')} UTC)",
+                    f"In 3 hours ({next_auto_time.strftime('%I:%M %p')} EST)",
                 ),
                 ("queue_remaining", len(daily_verses_manager.verses_queue)),
                 ("pool_remaining", len(daily_verses_manager.verses_pool)),

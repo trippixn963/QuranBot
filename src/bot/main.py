@@ -38,6 +38,11 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import logging
 
 # =============================================================================
+# Import Daily Verses Manager
+# =============================================================================
+from src.utils.daily_verses import setup_daily_verses
+
+# =============================================================================
 # Import Version Information
 # =============================================================================
 from src.version import BOT_NAME, BOT_VERSION
@@ -56,11 +61,6 @@ from utils.backup_manager import start_backup_scheduler
 # Import Control Panel Manager
 # =============================================================================
 from utils.control_panel import setup_control_panel
-
-# =============================================================================
-# Import Daily Verses Manager
-# =============================================================================
-from utils.daily_verses import setup_daily_verses
 
 # =============================================================================
 # Import Listening Stats Manager
@@ -944,6 +944,58 @@ async def on_ready():
                     "⚡",
                 )
 
+                # =============================================================================
+                # Daily Verses System Setup - MUST BE BEFORE COMMAND SETUP
+                # =============================================================================
+                log_spacing()
+                try:
+                    if DAILY_VERSE_CHANNEL_ID and DEVELOPER_ID:
+                        setup_daily_verses(bot, DAILY_VERSE_CHANNEL_ID, DEVELOPER_ID)
+                        log_perfect_tree_section(
+                            "Daily Verses System",
+                            [
+                                ("status", "✅ Daily verses system started"),
+                                ("channel_id", str(DAILY_VERSE_CHANNEL_ID)),
+                                ("developer_id", str(DEVELOPER_ID)),
+                                ("schedule", "Every 3 hours"),
+                                ("features", "🤲 Auto dua reaction, bot thumbnail"),
+                            ],
+                            "📖",
+                        )
+                    else:
+                        missing_vars = []
+                        if not DAILY_VERSE_CHANNEL_ID:
+                            missing_vars.append("DAILY_VERSE_CHANNEL_ID")
+                        if not DEVELOPER_ID:
+                            missing_vars.append("DEVELOPER_ID")
+
+                        log_perfect_tree_section(
+                            "Daily Verses System",
+                            [
+                                ("status", "⚠️ Daily verses system disabled"),
+                                ("missing_vars", ", ".join(missing_vars)),
+                                ("impact", "No automated verse sending"),
+                            ],
+                            "⚠️",
+                        )
+                except Exception as daily_verses_error:
+                    log_error_with_traceback(
+                        "Failed to start daily verses system", daily_verses_error
+                    )
+                    log_perfect_tree_section(
+                        "Daily Verses System Warning",
+                        [
+                            ("status", "⚠️ Daily verses system failed to start"),
+                            ("impact", "No automated verse sending"),
+                            ("action", "Check logs for details"),
+                        ],
+                        "⚠️",
+                    )
+
+                # =============================================================================
+                # Slash Commands Setup - MUST BE AFTER DAILY VERSES SETUP
+                # =============================================================================
+                log_spacing()
                 try:
                     from src.commands import (
                         setup_credits_command,
@@ -1020,56 +1072,6 @@ async def on_ready():
                                 ("status", "⚠️ Backup scheduler failed to start"),
                                 ("impact", "Manual backups still available"),
                                 ("data_protection", "Other protection layers active"),
-                            ],
-                            "⚠️",
-                        )
-
-                    # =============================================================================
-                    # Daily Verses System Setup
-                    # =============================================================================
-                    log_spacing()
-                    try:
-                        if DAILY_VERSE_CHANNEL_ID and DEVELOPER_ID:
-                            setup_daily_verses(
-                                bot, DAILY_VERSE_CHANNEL_ID, DEVELOPER_ID
-                            )
-                            log_perfect_tree_section(
-                                "Daily Verses System",
-                                [
-                                    ("status", "✅ Daily verses system started"),
-                                    ("channel_id", str(DAILY_VERSE_CHANNEL_ID)),
-                                    ("developer_id", str(DEVELOPER_ID)),
-                                    ("schedule", "Every 3 hours"),
-                                    ("features", "🤲 Auto dua reaction, bot thumbnail"),
-                                ],
-                                "📖",
-                            )
-                        else:
-                            missing_vars = []
-                            if not DAILY_VERSE_CHANNEL_ID:
-                                missing_vars.append("DAILY_VERSE_CHANNEL_ID")
-                            if not DEVELOPER_ID:
-                                missing_vars.append("DEVELOPER_ID")
-
-                            log_perfect_tree_section(
-                                "Daily Verses System",
-                                [
-                                    ("status", "⚠️ Daily verses system disabled"),
-                                    ("missing_vars", ", ".join(missing_vars)),
-                                    ("impact", "No automated verse sending"),
-                                ],
-                                "⚠️",
-                            )
-                    except Exception as daily_verses_error:
-                        log_error_with_traceback(
-                            "Failed to start daily verses system", daily_verses_error
-                        )
-                        log_perfect_tree_section(
-                            "Daily Verses System Warning",
-                            [
-                                ("status", "⚠️ Daily verses system failed to start"),
-                                ("impact", "No automated verse sending"),
-                                ("action", "Check logs for details"),
                             ],
                             "⚠️",
                         )

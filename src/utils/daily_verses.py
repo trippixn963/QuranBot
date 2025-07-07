@@ -208,22 +208,8 @@ class DailyVersesManager:
                 inline=False,
             )
 
-            # Set footer with admin profile picture
-            try:
-                if self.bot and self.developer_user_id:
-                    admin_user = self.bot.get_user(self.developer_user_id)
-                    if admin_user and admin_user.avatar:
-                        embed.set_footer(
-                            text="created by حَـــــنَـــــا",
-                            icon_url=admin_user.avatar.url,
-                        )
-                    else:
-                        embed.set_footer(text="created by حَـــــنَـــــا")
-                else:
-                    embed.set_footer(text="created by حَـــــنَـــــا")
-            except Exception:
-                # Fallback to text-only footer if there's any error
-                embed.set_footer(text="created by حَـــــنَـــــا")
+            # Set footer with admin profile picture (will be set in send function)
+            embed.set_footer(text="created by حَـــــنَـــــا")
 
             return embed
 
@@ -261,6 +247,23 @@ class DailyVersesManager:
 
             # Create embed
             embed = self.create_verse_embed(verse)
+
+            # Fetch the admin user to set the footer
+            if self.developer_user_id:
+                try:
+                    admin_user = await self.bot.fetch_user(self.developer_user_id)
+                    if admin_user and admin_user.avatar:
+                        embed.set_footer(
+                            text="created by حَـــــنَـــــا",
+                            icon_url=admin_user.avatar.url,
+                        )
+                    else:
+                        embed.set_footer(text="created by حَـــــنَـــــا")
+                except Exception:
+                    # Fallback to text-only footer if there's any error
+                    embed.set_footer(text="created by حَـــــنَـــــا")
+            else:
+                embed.set_footer(text="created by حَـــــنَـــــا")
 
             # Send the verse
             message = await channel.send(embed=embed)
