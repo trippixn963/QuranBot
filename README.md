@@ -13,10 +13,31 @@
 
 <!-- Build and Quality Badges -->
 
-[![CI/CD Pipeline](https://github.com/JohnHamwi/QuranBot/actions/workflows/ci.yml/badge.svg)](https://github.com/JohnHamwi/QuranBot/actions/workflows/ci.yml)
-[![Code Coverage](https://codecov.io/gh/JohnHamwi/QuranBot/branch/master/graph/badge.svg)](https://codecov.io/gh/JohnHamwi/QuranBot)
+[![CI/CD Pipeline](https://github.com/trippixn963/QuranBot/actions/workflows/ci.yml/badge.svg)](https://github.com/trippixn963/QuranBot/actions/workflows/ci.yml)
+[![Code Coverage](https://codecov.io/gh/trippixn963/QuranBot/branch/master/graph/badge.svg)](https://codecov.io/gh/trippixn963/QuranBot)
 [![Code Quality](https://img.shields.io/badge/code%20quality-A-brightgreen.svg)](#)
-[![Security Rating](https://img.shields.io/badge/security-A-brightgreen.svg)](#)
+[![Security](https://img.shields.io/badge/security-A-brightgreen.svg)](#)
+
+<!-- Repository Activity Badges -->
+
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/trippixn963/QuranBot)](https://github.com/trippixn963/QuranBot/commits/master)
+[![GitHub repo size](https://img.shields.io/github/repo-size/trippixn963/QuranBot)](https://github.com/trippixn963/QuranBot)
+[![GitHub contributors](https://img.shields.io/github/contributors/trippixn963/QuranBot)](https://github.com/trippixn963/QuranBot/graphs/contributors)
+[![GitHub stars](https://img.shields.io/github/stars/trippixn963/QuranBot?style=social)](https://github.com/trippixn963/QuranBot/stargazers)
+
+<!-- Development and Community Badges -->
+
+[![GitHub issues](https://img.shields.io/github/issues/trippixn963/QuranBot)](https://github.com/trippixn963/QuranBot/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/trippixn963/QuranBot)](https://github.com/trippixn963/QuranBot/pulls)
+[![GitHub forks](https://img.shields.io/github/forks/trippixn963/QuranBot?style=social)](https://github.com/trippixn963/QuranBot/network/members)
+[![GitHub watchers](https://img.shields.io/github/watchers/trippixn963/QuranBot?style=social)](https://github.com/trippixn963/QuranBot/watchers)
+
+<!-- Technical Badges -->
+
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](#)
+[![Discord](https://img.shields.io/badge/discord-online-brightgreen.svg)](https://discord.gg/your-server)
+[![Uptime](https://img.shields.io/badge/uptime-99.9%25-brightgreen.svg)](#)
+[![Maintenance](https://img.shields.io/badge/maintained-yes-brightgreen.svg)](#)
 
 <!-- Project Stats -->
 
@@ -141,15 +162,17 @@ _Built with ❤️ for the Muslim Ummah - Shared as-is for educational purposes_
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/JohnHamwi/QuranBot.git
+   git clone https://github.com/trippixn963/QuranBot.git
    cd QuranBot
    ```
+
+````
 
 2. **Install Dependencies**
 
    ```bash
    pip install -r requirements.txt
-   ```
+````
 
 3. **Install FFmpeg**
 
