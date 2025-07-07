@@ -39,6 +39,11 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import logging
 
 # =============================================================================
+# Import Version Information
+# =============================================================================
+from src.version import BOT_NAME, BOT_VERSION
+
+# =============================================================================
 # Import Audio Manager
 # =============================================================================
 from utils.audio_manager import AudioManager
@@ -75,15 +80,11 @@ from utils.tree_log import (
     log_error_with_traceback,
     log_perfect_tree_section,
     log_progress,
+    log_spacing,
     log_voice_activity_tree,
     log_warning_with_context,
     write_to_log_files,
 )
-
-# =============================================================================
-# Import Version Information
-# =============================================================================
-from ..version import BOT_NAME, BOT_VERSION
 
 # =============================================================================
 # Global Managers
