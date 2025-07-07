@@ -123,11 +123,47 @@ class DailyVersesManager:
                 with open(VERSES_QUEUE_FILE, "w", encoding="utf-8") as f:
                     json.dump(self.verses_queue, f, ensure_ascii=False, indent=2)
 
+                log_perfect_tree_section(
+                    "Daily Verses - Queue Verse Selected",
+                    [
+                        ("source", "📋 Queue (ordered)"),
+                        (
+                            "surah",
+                            f"{verse['surah_name']} ({verse['surah']}:{verse['ayah']})",
+                        ),
+                        ("queue_remaining", len(self.verses_queue)),
+                        ("coordination", "✅ Removed from queue to prevent duplicates"),
+                    ],
+                    "📋",
+                )
+
                 return verse
 
             # If queue is empty, pick random from pool
             elif self.verses_pool:
                 verse = random.choice(self.verses_pool)
+
+                # Remove from pool to prevent sending the same verse again
+                self.verses_pool.remove(verse)
+
+                # Save updated pool
+                with open(VERSES_POOL_FILE, "w", encoding="utf-8") as f:
+                    json.dump(self.verses_pool, f, ensure_ascii=False, indent=2)
+
+                log_perfect_tree_section(
+                    "Daily Verses - Pool Verse Selected",
+                    [
+                        ("source", "🎲 Pool (random)"),
+                        (
+                            "surah",
+                            f"{verse['surah_name']} ({verse['surah']}:{verse['ayah']})",
+                        ),
+                        ("pool_remaining", len(self.verses_pool)),
+                        ("coordination", "✅ Removed from pool to prevent duplicates"),
+                    ],
+                    "🎲",
+                )
+
                 return verse
 
             # No verses available
@@ -136,7 +172,9 @@ class DailyVersesManager:
                     "Daily Verses - No Verses Available",
                     [
                         ("status", "⚠️ No verses in queue or pool"),
-                        ("action", "Cannot send verse"),
+                        ("queue_empty", "✅ All queue verses sent"),
+                        ("pool_empty", "✅ All pool verses sent"),
+                        ("action", "Cannot send verse - all verses used"),
                     ],
                     "⚠️",
                 )

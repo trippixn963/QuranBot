@@ -91,10 +91,23 @@ class VerseCommand(commands.Cog):
                 value=f"Next automatic verse will be sent in **3 hours**\n*Around {next_auto_time.strftime('%I:%M %p')} UTC*",
                 inline=False,
             )
+
+            # Show queue/pool status with coordination info
+            if daily_verses_manager.verses_queue:
+                queue_info = f"**{len(daily_verses_manager.verses_queue)}** verses remaining in queue"
+                coordination_info = "✅ Verse removed from queue to prevent duplicates"
+            elif daily_verses_manager.verses_pool:
+                queue_info = f"Queue empty, **{len(daily_verses_manager.verses_pool)}** verses remaining in pool"
+                coordination_info = "✅ Verse removed from pool to prevent duplicates"
+            else:
+                queue_info = "Both queue and pool are now empty"
+                coordination_info = "✅ All verses have been sent"
+
             confirmation_embed.add_field(
-                name="📊 Queue Status",
-                value=f"**{len(daily_verses_manager.verses_queue)}** verses remaining in queue",
-                inline=True,
+                name="📊 Queue Status", value=queue_info, inline=True
+            )
+            confirmation_embed.add_field(
+                name="🤝 Coordination", value=coordination_info, inline=True
             )
 
             await ctx.send(embed=confirmation_embed)
@@ -116,6 +129,8 @@ class VerseCommand(commands.Cog):
                         f"In 3 hours ({next_auto_time.strftime('%I:%M %p')} UTC)",
                     ),
                     ("queue_remaining", len(daily_verses_manager.verses_queue)),
+                    ("pool_remaining", len(daily_verses_manager.verses_pool)),
+                    ("coordination", "✅ Verse removed to prevent automatic duplicate"),
                 ],
                 "📖",
             )
