@@ -111,25 +111,15 @@ async def leaderboard_command(interaction: discord.Interaction):
                 if position < len(top_users):
                     leaderboard_text += "\n"
 
-            embed.add_field(
-                name="📈 Top Listeners", value=leaderboard_text, inline=False
-            )
+            # Add leaderboard directly to embed description or as a single field
+            if leaderboard_text.strip():
+                embed.description = (
+                    f"*Top listeners in the Quran voice channel*\n\n{leaderboard_text}"
+                )
+            else:
+                embed.description = "*No listening data available yet.*\n*Start listening to Quran recitations to appear on the leaderboard!*"
         else:
-            embed.add_field(
-                name="📈 Top Listeners",
-                value="*No listening data available yet.*\n*Start listening to Quran recitations to appear on the leaderboard!*",
-                inline=False,
-            )
-
-        # Add server statistics
-        embed.add_field(
-            name="📊 Server Statistics",
-            value=f"**Total Listening Time:** {format_listening_time(leaderboard_data['total_listening_time'])}\n"
-            f"**Total Sessions:** {leaderboard_data['total_sessions']:,}\n"
-            f"**Active Listeners:** {leaderboard_data['active_users']}\n"
-            f"**Total Users Tracked:** {leaderboard_data['total_users']}",
-            inline=False,
-        )
+            embed.description = "*No listening data available yet.*\n*Start listening to Quran recitations to appear on the leaderboard!*"
 
         # Add instructions
         embed.add_field(
