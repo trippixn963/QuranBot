@@ -9,7 +9,6 @@ import os
 from datetime import datetime, timezone
 
 import discord
-from discord.ext import commands
 
 from src.utils.daily_verses import daily_verses_manager
 from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
@@ -195,34 +194,8 @@ async def verse_slash_command(interaction: discord.Interaction):
             await interaction.response.send_message(embed=error_embed, ephemeral=True)
 
 
-# =============================================================================
-# Legacy Cog Implementation (for compatibility)
-# =============================================================================
-
-
-class VerseCommand(commands.Cog):
-    """Manual verse command for sending daily verses on demand (Admin only)"""
-
-    def __init__(self, bot):
-        self.bot = bot
-
-    @commands.command(name="verse", aliases=["v", "daily"])
-    async def verse(self, ctx):
-        """Send a daily verse manually and reset the 3-hour timer (Admin only)"""
-        # Redirect to slash command functionality
-        embed = discord.Embed(
-            title="ℹ️ Use Slash Command",
-            description="Please use the `/verse` slash command instead of the legacy command.",
-            color=0x3498DB,
-        )
-        await ctx.send(embed=embed)
-
-
 async def setup_verse_command(bot):
     """Set up the verse command"""
-    # Add the legacy cog for compatibility
-    await bot.add_cog(VerseCommand(bot))
-
     # Add the slash command to the bot's command tree
     bot.tree.add_command(verse_slash_command)
 
@@ -231,7 +204,7 @@ async def setup_verse_command(bot):
         [
             ("status", "✅ Verse command loaded successfully"),
             ("command_name", "/verse"),
-            ("command_type", "Slash command"),
+            ("command_type", "Slash command only"),
             ("description", "Send daily verse manually and reset timer"),
             ("permission_level", "🔒 Admin only"),
         ],

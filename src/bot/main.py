@@ -12,7 +12,6 @@ from pathlib import Path
 
 import discord
 from aiohttp.client_exceptions import ClientConnectionResetError
-from discord.ext import commands
 
 # =============================================================================
 # Environment Configuration
@@ -439,7 +438,8 @@ intents.message_content = True
 intents.voice_states = True
 intents.guilds = True
 
-bot = commands.Bot(command_prefix=commands.when_mentioned, intents=intents)
+bot = discord.Client(intents=intents)
+bot.tree = discord.app_commands.CommandTree(bot)
 
 # Bot metadata - imported from centralized version module
 # BOT_NAME and BOT_VERSION now imported from version module
@@ -2119,55 +2119,56 @@ async def _attempt_voice_reconnection(reason):
 @bot.event
 async def on_disconnect():
     """
-    Handle Discord disconnection with proper cleanup and state management.
+    Handle Discord disconnect events with graceful state management.
 
-    Performs cleanup operations when the bot disconnects from Discord,
-    including stopping audio playback and updating state management
-    for session tracking.
+    This event is triggered when the bot loses connection to Discord.
+    It performs cleanup operations and ensures proper state management
+    during disconnection periods.
+
+    Features:
+    - Logs disconnect events with timestamps
+    - Performs graceful cleanup of active connections
+    - Maintains state integrity during connection loss
+    - Prepares for automatic reconnection by Discord.py
+
+    Note:
+        Discord.py automatically handles reconnection, so this handler
+        focuses on cleanup and logging rather than manual reconnection.
     """
-    global rich_presence, audio_manager
-
     try:
+        log_perfect_tree_section(
+            "Discord Connection - Disconnected",
+            [
+                ("status", "⚠️ Bot disconnected from Discord"),
+                ("timestamp", get_timestamp().strip("[]")),
+                ("reconnection", "🔄 Discord.py will handle automatic reconnection"),
+                ("state_management", "💾 Maintaining state during disconnect"),
+            ],
+            "📡",
+        )
 
-        # Stop AudioManager when disconnected to prevent resource leaks
-        if audio_manager:
-            try:
-                await audio_manager.stop_playback()
-                audio_cleanup_status = "✅ Audio playback stopped"
-            except Exception as e:
-                log_error_with_traceback("Error stopping audio during disconnect", e)
-                audio_cleanup_status = "❌ Audio cleanup failed"
-        else:
-            audio_cleanup_status = "No audio manager active"
+        # Clean up any active voice connections
+        if bot.voice_clients:
+            for voice_client in bot.voice_clients:
+                try:
+                    if voice_client.is_connected():
+                        await voice_client.disconnect()
+                except Exception as e:
+                    log_error_with_traceback(
+                        f"Error disconnecting voice client during disconnect event", e
+                    )
 
-        # Mark shutdown in state manager for session tracking
-        try:
-            state_manager.mark_shutdown()
-            state_status = "✅ Shutdown recorded in state manager"
-        except Exception as e:
-            log_error_with_traceback("Error updating state manager", e)
-            state_status = "❌ State update failed"
-
-        # Stop leaderboard auto-updates
-        try:
-            from utils.listening_stats import stop_leaderboard_updates
-
-            stop_leaderboard_updates()
-            leaderboard_status = "✅ Leaderboard updates stopped"
-        except Exception as e:
-            log_error_with_traceback("Error stopping leaderboard updates", e)
-            leaderboard_status = "❌ Leaderboard cleanup failed"
+        # Mark disconnect in state manager
+        state_manager.mark_disconnect()
 
         log_perfect_tree_section(
-            "Discord Disconnection",
+            "Discord Disconnect - Cleanup Complete",
             [
-                ("event", "on_disconnect"),
-                ("status", "Bot disconnected from Discord"),
-                ("audio_cleanup", audio_cleanup_status),
-                ("state_update", state_status),
-                ("leaderboard_cleanup", leaderboard_status),
+                ("voice_cleanup", "✅ Voice connections cleaned up"),
+                ("state_marked", "✅ Disconnect marked in state manager"),
+                ("awaiting_reconnect", "⏳ Waiting for automatic reconnection"),
             ],
-            "⚠️",
+            "🧹",
         )
 
     except Exception as e:
@@ -2210,54 +2211,6 @@ async def on_resumed():
 
     except Exception as e:
         log_error_with_traceback("Error handling resume event", e)
-
-
-@bot.event
-async def on_command_error(ctx, error):
-    """
-    Handle command errors with detailed logging (slash commands only).
-
-    Since prefix commands are disabled, this handler primarily deals with
-    slash command errors and provides appropriate logging.
-
-    Args:
-        ctx: Command context
-        error: Command error that occurred
-    """
-    try:
-        # Skip logging for CommandNotFound since we don't use prefix commands
-        if isinstance(error, commands.CommandNotFound):
-            return
-
-        # Log the error with context information
-        log_discord_error(
-            "command_error",
-            error,
-            ctx.guild.id if ctx.guild else None,
-            ctx.channel.id if ctx.channel else None,
-        )
-
-        # Add command-specific context
-        log_perfect_tree_section(
-            "Command Error Context",
-            [
-                ("command", ctx.command.name if ctx.command else "Unknown"),
-                ("user", str(ctx.author)),
-                (
-                    "command_type",
-                    (
-                        "slash_command"
-                        if hasattr(ctx, "interaction")
-                        else "legacy_command"
-                    ),
-                ),
-                ("error_type", type(error).__name__),
-            ],
-            "❌",
-        )
-
-    except Exception as e:
-        log_critical_error("Error in command error handler", e)
 
 
 @bot.event
