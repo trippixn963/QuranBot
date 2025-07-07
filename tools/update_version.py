@@ -26,6 +26,114 @@ def validate_version(version_string):
         return False
 
 
+def extract_changelog_features(changelog_content, version):
+    """Extract key features from changelog for a specific version"""
+    features = []
+
+    # Find the section for this version
+    version_pattern = rf"## \[{re.escape(version)}\]"
+    lines = changelog_content.split("\n")
+
+    in_version_section = False
+    in_added_section = False
+
+    for line in lines:
+        if re.match(version_pattern, line):
+            in_version_section = True
+            continue
+        elif in_version_section and line.startswith("## ["):
+            # Hit the next version section, stop
+            break
+        elif in_version_section:
+            if line.startswith("### Added"):
+                in_added_section = True
+                continue
+            elif line.startswith("### ") and in_added_section:
+                in_added_section = False
+                continue
+            elif in_added_section and line.startswith("- **"):
+                # Extract feature line
+                feature_match = re.match(r"- \*\*([^*]+)\*\*[^:]*: (.+)", line)
+                if feature_match:
+                    emoji_title = feature_match.group(1)
+                    description = feature_match.group(2)
+                    features.append(f"{emoji_title} - {description}")
+
+    return features
+
+
+def update_readme_version_history():
+    """Update README version history from CHANGELOG.md"""
+    project_root = Path(__file__).parent.parent
+    readme_file = project_root / "README.md"
+    changelog_file = project_root / "CHANGELOG.md"
+
+    if not readme_file.exists():
+        print(f"❌ README file not found: {readme_file}")
+        return False
+
+    if not changelog_file.exists():
+        print(f"❌ CHANGELOG file not found: {changelog_file}")
+        return False
+
+    # Read files
+    with open(readme_file, "r", encoding="utf-8") as f:
+        readme_content = f.read()
+
+    with open(changelog_file, "r", encoding="utf-8") as f:
+        changelog_content = f.read()
+
+    # Extract version information from changelog
+    version_pattern = r"## \[(\d+\.\d+\.\d+)\]"
+    versions = re.findall(version_pattern, changelog_content)
+
+    if not versions:
+        print("❌ No versions found in CHANGELOG.md")
+        return False
+
+    # Build new version history section
+    version_history = []
+
+    for i, version in enumerate(versions[:5]):  # Show latest 5 versions
+        features = extract_changelog_features(changelog_content, version)
+
+        if i == 0:
+            version_history.append(f"### v{version} (Latest)")
+        else:
+            version_history.append(f"### v{version}")
+
+        # Add features
+        for feature in features[:9]:  # Limit to 9 features per version
+            version_history.append(f"🎯 **{feature}")
+
+        version_history.append("")  # Empty line between versions
+
+    # Remove last empty line
+    if version_history and version_history[-1] == "":
+        version_history.pop()
+
+    new_version_section = "\n".join(version_history)
+
+    # Find and replace the version history section
+    version_history_pattern = r"## 📋 Version History\n\n.*?(?=\n## [^📋]|\n### 📁|\Z)"
+    replacement = f"## 📋 Version History\n\n{new_version_section}\n"
+
+    new_readme_content = re.sub(
+        version_history_pattern, replacement, readme_content, flags=re.DOTALL
+    )
+
+    if new_readme_content == readme_content:
+        print("⚠️ No changes needed in README version history")
+        return True
+
+    # Write updated README
+    with open(readme_file, "w", encoding="utf-8") as f:
+        f.write(new_readme_content)
+
+    print(f"✅ Updated README version history with {len(versions)} versions")
+    return True
+
+
 def update_version_file(version_string):
     """Update the centralized version.py file"""
     project_root = Path(__file__).parent.parent
@@ -335,6 +443,11 @@ This tool updates:
     if success:
         print("\n🔍 Verifying version consistency...")
         success &= verify_version_consistency()
+
+    # Update README if version was updated successfully
+    if success and args.version:
+        print("\n📋 Updating README version history...")
+        success &= update_readme_version_history()
 
     if success:
         update_msg = f"Successfully updated QuranBot to version {args.version}!"

@@ -390,47 +390,51 @@ All logs are automatically saved to:
 ## 📋 Version History
 
 ### v2.2.0 (Latest)
-
-🛡️ **Bulletproof Data Protection** - 5-layer protection system for all data files
-📦 **Automated ZIP Backup System** - EST-scheduled hourly backups with intuitive naming
-🔍 **Missing Surah Detection** - Automatic detection of incomplete reciter collections
-🎯 **Enhanced Audio Management** - Intelligent surah-to-file mapping with analysis
-🗂️ **Perfect Tree Logging** - Complete backup logging with full visibility
-🔄 **Smart Looping** - 24/7 continuous playback with individual surah loop support
-📊 **Audio File Indexing** - Fixed surah indexing issues in incomplete collections
-🚨 **Emergency Backup System** - Multiple fallback mechanisms for data protection
-⏰ **EST Timezone Support** - All operations use Eastern Standard Time
+🎯 **🛡️ Bulletproof Data Protection - Implemented 5-layer protection system for all data files
+🎯 **📦 Automated ZIP Backup System - EST-scheduled hourly backups with intuitive date/time naming (e.g., "7/6 - 10PM.zip")
+🎯 **🔍 Missing Surah Detection - Automatic detection and logging of incomplete reciter collections with range formatting
+🎯 **Enhanced Audio Management - Intelligent mapping of surah numbers to available files with comprehensive analysis
+🎯 **🗂️ Perfect Tree Logging - Complete backup logging with full visibility into all operations
+🎯 **🔄 Smart Looping - Default looping enabled for continuous playback experience
+🎯 **📊 Audio File Indexing - Intelligent surah-to-file mapping with missing file detection
+🎯 **🚨 Emergency Backup System - Multiple fallback mechanisms for critical data protection
+🎯 **🔄 Atomic File Operations - Corruption-proof saves with automatic recovery mechanisms
 
 ### v2.1.0
-
-🎯 **Centralized Version Management** - Single source of truth version system
-🔄 **Automated Version Updates** - tools/update_version.py utility
-👤 **Centralized Author Management** - Standardized author format
-🗂️ **Perfect Tree Logging** - Enhanced logging with backup visibility
-📊 **Backup Status Reporting** - Real-time backup status with timing info
+🎯 **Centralized Version Management - Single source of truth version system with src/version.py
+🎯 **🔄 Automated Version Updates - tools/update_version.py utility for consistent version management
+🎯 **👤 Centralized Author Management - Standardized author format "John (Discord: Trippixn)"
+🎯 **🗂️ Perfect Tree Logging - Enhanced logging system with comprehensive backup visibility
+🎯 **📊 Backup Status Reporting - Real-time backup status with file counts and next backup timing
 
 ### v1.5.0
-
-🎛️ **Interactive Control Panel** - Full Discord control panel with buttons and dropdowns
-💾 **State Management** - Automatic save/resume functionality
-🔄 **Smart Resume** - Intelligent playback position restoration
-📊 **Session Statistics** - Usage tracking and analytics
-👤 **Last Activity Tracking** - User interaction monitoring
-🎮 **Enhanced Controls** - Loop, shuffle, and navigation controls
-🎨 **Visual Improvements** - Progress bars, emojis, and better formatting
+🎯 **Environment Default Settings - Added configurable default settings for reciter, shuffle, and loop modes
+🎯 **Startup Reset Behavior - Bot now resets to default reciter (Saad Al Ghamdi) on every restart
+🎯 **Toggle State Persistence - Loop and shuffle modes reset to environment defaults on bot restart
+🎯 **Enhanced Control Panel - Added emojis to buttons and dropdown menus for better user experience
+🎯 **Improved Dropdown Design - Reciter dropdown now shows English names as labels with Arabic names as descriptions
 
 ### v1.4.0
+🎯 **Interactive Control Panel - Complete Discord embed-based control panel with real-time status updates
+🎯 **Audio Manager System - Centralized audio playback management with comprehensive state tracking
+🎯 **Rich Presence Integration - Dynamic Discord Rich Presence showing current Surah with Arabic names and playback timer
+🎯 **User Attribution System - Track and display which user enabled Loop/Shuffle modes with Discord mentions
+🎯 **Progress Bar Display - Visual playback progress bars in control panel with 20-character precision
+🎯 **Surah Selection Dropdown - Paginated dropdown menu with emoji indicators and Arabic descriptions
+🎯 **Reciter Selection - Dynamic reciter switching with automatic audio file discovery
+🎯 **Playback Controls - Previous/Next track buttons with seamless audio transitions
+🎯 **Loop & Shuffle Modes - Toggle controls with user attribution and real-time status updates
 
-🎤 **Multiple Reciters** - Support for 6 renowned Qaris
-🌍 **Arabic Names** - Transliterated Arabic names for reciters
-🎵 **Rich Presence** - Enhanced Discord rich presence
-🔧 **Bug Fixes** - Various stability improvements
-
-### v1.3.0
-
-📖 **Surah Mapping** - Beautiful surah names with emojis
-🌳 **Tree Logging** - Structured logging system
-🛡️ **Instance Management** - Prevent multiple instances
+### v1.2.0
+🎯 **Professional project structure - Reorganized entire project with tools/, docs/, config/, scripts/ directories
+🎯 **Enhanced development tools - Comprehensive testing suite, code formatting, and deployment safety tools
+🎯 **Complete error handling - Added traceback support throughout with enhanced tree_log functions
+🎯 **Development environment setup - Automated virtual environment, ffmpeg installation, and audio file management
+🎯 **Production safety framework - Bulletproof deployment system preventing broken code from reaching VPS
+🎯 **Automated instance detection - Fully automated prevention of multiple bot instances running simultaneously
+🎯 **Automatic instance termination - Seamlessly detects and stops existing instances without user interaction
+🎯 **Bot manager utility - Command-line tool for easy bot management (start, stop, restart, status)
+🎯 **Process monitoring - Detailed process information including uptime, memory usage, and command details
 
 ## 📄 License
 

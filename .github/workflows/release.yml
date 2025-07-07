@@ -74,9 +74,13 @@ jobs:
           echo "new=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "New version: $NEW_VERSION"
 
-      - name: 📝 Update Version Files
+      - name: 🔄 Update Version
         run: |
           python tools/update_version.py "${{ steps.new_version.outputs.new }}"
+
+      - name: 📋 Update README
+        run: |
+          python tools/update_readme.py
 
       - name: 📝 Generate Release Notes
         id: release_notes
