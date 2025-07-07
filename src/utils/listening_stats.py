@@ -105,12 +105,12 @@ class ListeningStatsManager:
         self.total_listening_time = 0.0
         self.total_sessions = 0
         self.last_updated = None
-
-        # Leaderboard auto-update system
         self.bot = None
         self.leaderboard_channel_id = None
         self.leaderboard_update_task = None
         self.last_leaderboard_message = None
+        self.update_counter = 0  # Add counter to reduce log spam
+        self.last_logged_active_count = 0  # Track changes in active users
 
         # Ensure data directory exists
         DATA_DIR.mkdir(exist_ok=True)
@@ -880,10 +880,9 @@ class ListeningStatsManager:
                 # Add active indicator if user is currently listening
                 active_indicator = " 🎧" if user_id in self.active_sessions else ""
 
-                # Create leaderboard entry with robust text direction control
-                # Use Left-to-Right Embedding (U+202A) and Pop Directional Formatting (U+202C)
-                # to create a strong LTR context that prevents Arabic text from affecting layout
-                leaderboard_text += f"\u202a{position_display} <@{user_id}> - `{time_formatted}`{active_indicator}\u202c\n"
+                # Create leaderboard entry with time under the name
+                # This solves Arabic text formatting issues by separating directional content
+                leaderboard_text += f"{position_display} <@{user_id}>{active_indicator}\n`{time_formatted}`\n\n"
 
                 # Add space after each entry except the last one
                 if position < len(top_users):
@@ -922,16 +921,29 @@ class ListeningStatsManager:
             # Send new message
             self.last_leaderboard_message = await channel.send(embed=embed)
 
-            log_perfect_tree_section(
-                "Leaderboard Auto-Update - Updated",
-                [
-                    ("users_shown", len(top_users)),
-                    ("active_users", len(self.active_sessions)),
-                    ("message_id", str(self.last_leaderboard_message.id)),
-                    ("channel", channel.name),
-                ],
-                "🏆",
+            # Only log every 10th update or when active user count changes
+            self.update_counter += 1
+            current_active_count = len(self.active_sessions)
+
+            should_log = (
+                self.update_counter % 10 == 0  # Every 10th update
+                or current_active_count
+                != self.last_logged_active_count  # Active users changed
             )
+
+            if should_log:
+                log_perfect_tree_section(
+                    "Leaderboard Auto-Update - Updated",
+                    [
+                        ("users_shown", len(top_users)),
+                        ("active_users", current_active_count),
+                        ("message_id", str(self.last_leaderboard_message.id)),
+                        ("channel", channel.name),
+                        ("update_count", f"#{self.update_counter}"),
+                    ],
+                    "🏆",
+                )
+                self.last_logged_active_count = current_active_count
 
         except Exception as e:
             log_error_with_traceback("Failed to update leaderboard", e)

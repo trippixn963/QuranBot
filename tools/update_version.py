@@ -104,7 +104,9 @@ def update_readme_version_history():
 
         # Add features
         for feature in features[:9]:  # Limit to 9 features per version
-            version_history.append(f"🎯 **{feature}")
+            # Clean up feature text and ensure proper markdown formatting
+            clean_feature = feature.replace("**", "").strip()
+            version_history.append(f"- **{clean_feature}**")
 
         version_history.append("")  # Empty line between versions
 

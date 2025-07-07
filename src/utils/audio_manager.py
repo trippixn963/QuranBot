@@ -1016,7 +1016,7 @@ class AudioManager:
                                     "Error updating control panel during playback", e
                                 )
 
-                        # Wait for playback to finish
+                        # Wait for playback to finish with better error handling
                         while (
                             self.voice_client.is_playing()
                             or self.voice_client.is_paused()
@@ -1026,11 +1026,39 @@ class AudioManager:
                         # Mark surah as completed
                         state_manager.mark_surah_completed()
 
-                    except Exception as e:
-                        log_error_with_traceback(
-                            f"Error playing audio file: {filename}", e
+                        # Log successful completion
+                        log_perfect_tree_section(
+                            "Audio Track - Completed",
+                            [
+                                ("track_completed", f"Finished playing: {filename}"),
+                                ("surah", self.current_surah),
+                                ("status", "✅ Track completed successfully"),
+                            ],
+                            "✅",
                         )
-                        # Continue to next track on error
+
+                    except Exception as e:
+                        # Log the error but don't crash - continue to next track
+                        error_msg = str(e).lower()
+                        if "broken pipe" in error_msg or "ffmpeg" in error_msg:
+                            log_perfect_tree_section(
+                                "Audio Track - FFmpeg Error",
+                                [
+                                    ("track_error", f"FFmpeg error in: {filename}"),
+                                    ("error_type", "Broken pipe (normal at track end)"),
+                                    ("surah", self.current_surah),
+                                    ("action", "Continuing to next track"),
+                                    ("status", "⚠️ Non-critical error handled"),
+                                ],
+                                "⚠️",
+                            )
+                        else:
+                            log_error_with_traceback(
+                                f"Error playing audio file: {filename}", e
+                            )
+
+                        # Continue to next track on any error
+                        pass
 
                     finally:
                         # Stop Rich Presence for this track
@@ -1094,6 +1122,18 @@ class AudioManager:
                                 ],
                                 "🔄",
                             )
+
+                    # Update control panel after track change
+                    if self.control_panel_view:
+                        try:
+                            await self.control_panel_view.update_panel()
+                        except Exception as e:
+                            log_error_with_traceback(
+                                "Error updating control panel after track change", e
+                            )
+
+                    # Small delay to prevent rapid cycling on repeated errors
+                    await asyncio.sleep(0.5)
 
                     # 24/7 mode - never break the loop, always continue playing
 

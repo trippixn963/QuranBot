@@ -54,6 +54,11 @@ from utils.audio_manager import AudioManager
 from utils.backup_manager import start_backup_scheduler
 
 # =============================================================================
+# Import Control Panel Manager
+# =============================================================================
+from utils.control_panel import setup_control_panel
+
+# =============================================================================
 # Import Listening Stats Manager
 # =============================================================================
 from utils.listening_stats import track_voice_join, track_voice_leave
@@ -1109,50 +1114,28 @@ async def on_ready():
                         # Continue with bot startup even if this fails
 
                     # =============================================================================
-                    # Leaderboard Auto-Update System
+                    # Leaderboard Auto-Update System - DISABLED
                     # =============================================================================
-                    # Set up automatic leaderboard updates if there's a leaderboard channel
+                    # The leaderboard auto-update system has been disabled to prevent
+                    # spamming the control panel channel. Users can still use /leaderboard
+                    # command to view the leaderboard when needed.
                     log_spacing()
                     try:
-                        # Use the same channel as the control panel for leaderboard updates
-                        if PANEL_CHANNEL_ID != 0:
-                            from utils.listening_stats import set_leaderboard_channel
-
-                            set_leaderboard_channel(bot, PANEL_CHANNEL_ID)
-
-                            log_perfect_tree_section(
-                                "Leaderboard Auto-Update System",
-                                [
-                                    ("status", "✅ Auto-update system initialized"),
-                                    ("channel_id", str(PANEL_CHANNEL_ID)),
-                                    ("update_interval", "60 seconds"),
-                                    (
-                                        "trigger",
-                                        "Only when users are actively listening",
-                                    ),
-                                    ("features", "Real-time active session tracking"),
-                                    (
-                                        "active_indicator",
-                                        "🎧 Shows who's currently listening",
-                                    ),
-                                ],
-                                "🏆",
-                            )
-                        else:
-                            log_perfect_tree_section(
-                                "Leaderboard Auto-Update System",
-                                [
-                                    (
-                                        "status",
-                                        "⚠️ Disabled - No panel channel configured",
-                                    ),
-                                    ("manual_command", "/leaderboard still available"),
-                                ],
-                                "🏆",
-                            )
+                        log_perfect_tree_section(
+                            "Leaderboard Auto-Update System",
+                            [
+                                ("status", "🚫 Disabled - Prevents panel channel spam"),
+                                (
+                                    "manual_command",
+                                    "✅ /leaderboard command still available",
+                                ),
+                                ("reason", "Control panel channel is for panels only"),
+                            ],
+                            "🏆",
+                        )
                     except Exception as e:
                         log_error_with_traceback(
-                            "Error setting up leaderboard auto-update", e
+                            "Error in leaderboard auto-update setup", e
                         )
                         # Continue with bot startup even if this fails
 
