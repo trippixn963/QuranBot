@@ -40,16 +40,12 @@ try:
     from .state_manager import StateManager
 
     # Add data protection methods to state_manager instance
-    state_manager_create_manual_backup = state_manager.create_manual_backup
     state_manager_verify_data_integrity = state_manager.verify_data_integrity
     state_manager_get_data_protection_status = state_manager.get_data_protection_status
     state_manager_cleanup_old_backups = state_manager.cleanup_old_backups
 
 except ImportError:
     # Fallback functions if state manager is not available
-    def state_manager_create_manual_backup():
-        return False
-
     def state_manager_verify_data_integrity():
         return False
 
@@ -133,18 +129,14 @@ try:
     from .backup_manager import (
         backup_manager,
         cleanup_old_backups,
-        create_manual_backup,
         get_backup_status,
         start_backup_scheduler,
         stop_backup_scheduler,
     )
 except ImportError:
     # Fallback functions if backup manager is not available
-    def cleanup_old_backups(keep_count=10):
+    def cleanup_old_backups(keep_count=1):
         return 0
-
-    def create_manual_backup():
-        return False
 
     def get_backup_status():
         return {"error": "Backup manager not available"}
@@ -235,11 +227,7 @@ __all__ = [
     "start_backup_scheduler",
     "stop_backup_scheduler",
     "get_backup_status",
-    "create_manual_backup",
-    "cleanup_old_backups",
-    "backup_manager",
     # Data Protection Utilities (State Manager)
-    "state_manager_create_manual_backup",
     "state_manager_verify_data_integrity",
     "state_manager_get_data_protection_status",
     "state_manager_cleanup_old_backups",

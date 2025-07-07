@@ -1180,81 +1180,6 @@ class StateManager:
     # Data Protection and Recovery Utilities
     # =============================================================================
 
-    def create_manual_backup(self) -> bool:
-        """Create manual backups of all state files"""
-        try:
-            timestamp = datetime.now().strftime("%Y%m%d_%I%M%S_%p")
-            backup_count = 0
-
-            # Backup playback state
-            if self.playback_state_file.exists():
-                manual_backup = (
-                    self.data_dir / f"manual_backup_playback_{timestamp}.json"
-                )
-                shutil.copy2(self.playback_state_file, manual_backup)
-                backup_count += 1
-
-            # Backup bot stats
-            if self.bot_stats_file.exists():
-                manual_backup = (
-                    self.data_dir / f"manual_backup_bot_stats_{timestamp}.json"
-                )
-                shutil.copy2(self.bot_stats_file, manual_backup)
-                backup_count += 1
-
-            if backup_count > 0:
-                # Calculate total backup size
-                total_backup_size = 0
-                backup_details = []
-
-                if self.playback_state_file.exists():
-                    playback_backup = (
-                        self.data_dir / f"manual_backup_playback_{timestamp}.json"
-                    )
-                    if playback_backup.exists():
-                        size = playback_backup.stat().st_size
-                        total_backup_size += size
-                        backup_details.append(f"playback_state.json ({size} bytes)")
-
-                if self.bot_stats_file.exists():
-                    stats_backup = (
-                        self.data_dir / f"manual_backup_bot_stats_{timestamp}.json"
-                    )
-                    if stats_backup.exists():
-                        size = stats_backup.stat().st_size
-                        total_backup_size += size
-                        backup_details.append(f"bot_stats.json ({size} bytes)")
-
-                log_perfect_tree_section(
-                    "Manual State Backup Created",
-                    [
-                        ("files_backed_up", f"💾 {backup_count} files backed up"),
-                        (
-                            "total_size",
-                            f"📊 Total backup size: {total_backup_size} bytes",
-                        ),
-                        ("backup_details", f"📋 Files: {', '.join(backup_details)}"),
-                        ("timestamp", f"🕒 Created: {timestamp}"),
-                        ("backup_location", f"📁 Location: {self.data_dir}"),
-                        ("integrity_check", f"✅ All backups verified"),
-                    ],
-                    "💾",
-                )
-                return True
-            else:
-                log_perfect_tree_section(
-                    "Manual Backup - No Data",
-                    [
-                        ("status", "⚠️ No state files exist to backup"),
-                    ],
-                    "⚠️",
-                )
-                return False
-
-        except Exception as e:
-            log_error_with_traceback("Failed to create manual state backup", e)
-            return False
-
     def verify_data_integrity(self) -> bool:
         """Verify integrity of all state files"""
         try:
@@ -1336,7 +1261,6 @@ class StateManager:
 
             emergency_playback = list(self.data_dir.glob("emergency_playback_*.json"))
             emergency_stats = list(self.data_dir.glob("emergency_bot_stats_*.json"))
-            manual_backups = list(self.data_dir.glob("manual_backup_*.json"))
 
             return {
                 "playback_state_exists": self.playback_state_file.exists(),
@@ -1361,10 +1285,8 @@ class StateManager:
                 ),
                 "emergency_playback_files": len(emergency_playback),
                 "emergency_stats_files": len(emergency_stats),
-                "manual_backups": len(manual_backups),
                 "total_protection_files": len(emergency_playback)
                 + len(emergency_stats)
-                + len(manual_backups)
                 + (1 if playback_backup.exists() else 0)
                 + (1 if stats_backup.exists() else 0),
                 "data_integrity": self.verify_data_integrity(),
@@ -1375,16 +1297,15 @@ class StateManager:
             return {"error": str(e)}
 
     def cleanup_old_backups(self, keep_days: int = 7) -> int:
-        """Clean up old emergency and manual backup files"""
+        """Clean up old emergency backup files (manual backups disabled)"""
         try:
             cutoff_time = datetime.now().timestamp() - (keep_days * 24 * 60 * 60)
             cleaned_count = 0
 
-            # Clean emergency files
+            # Clean emergency files only (manual backups disabled)
             for pattern in [
                 "emergency_playback_*.json",
                 "emergency_bot_stats_*.json",
-                "manual_backup_*.json",
             ]:
                 for file in self.data_dir.glob(pattern):
                     if file.stat().st_mtime < cutoff_time:

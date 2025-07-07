@@ -995,61 +995,13 @@ def format_listening_time(seconds: float) -> str:
 # =============================================================================
 
 
-def create_manual_backup() -> bool:
-    """Create a manual backup of listening statistics"""
-    try:
-        if not STATS_FILE.exists():
-            log_perfect_tree_section(
-                "Manual Backup - No Data",
-                [
-                    ("status", "⚠️ No stats file exists to backup"),
-                ],
-                "⚠️",
-            )
-            return False
-
-        timestamp = datetime.now().strftime("%Y%m%d_%I%M%S_%p")
-        manual_backup = DATA_DIR / f"manual_backup_{timestamp}.json"
-
-        import shutil
-
-        shutil.copy2(STATS_FILE, manual_backup)
-
-        log_perfect_tree_section(
-            "Manual Backup Created",
-            [
-                ("backup_file", f"💾 Manual backup: {manual_backup.name}"),
-                (
-                    "original_size",
-                    f"📊 Original size: {STATS_FILE.stat().st_size} bytes",
-                ),
-                (
-                    "backup_size",
-                    f"📊 Backup size: {manual_backup.stat().st_size} bytes",
-                ),
-                ("timestamp", f"🕒 Created: {timestamp}"),
-                ("backup_location", f"📁 Location: {manual_backup.parent}"),
-                ("integrity_check", f"✅ Backup integrity verified"),
-            ],
-            "💾",
-        )
-        return True
-
-    except Exception as e:
-        log_error_with_traceback(
-            "Failed to create manual backup", e, {"stats_file": str(STATS_FILE)}
-        )
-        return False
-
-
 def cleanup_old_backups(keep_count: int = 10) -> None:
     """Clean up old backup files, keeping only the most recent ones"""
     try:
-        # Find all backup files
+        # Find all backup files (excluding manual backups since they're disabled)
         backup_patterns = [
             "*.backup",
             "emergency_backup_*.json",
-            "manual_backup_*.json",
             "emergency_session_*.json",
         ]
 
@@ -1185,7 +1137,6 @@ def get_data_protection_status() -> Dict:
         # Use temp backup directory for .backup files (keeps data/ clean)
         backup_file = TEMP_BACKUP_DIR / f"{STATS_FILE.stem}.backup"
         emergency_files = list(DATA_DIR.glob("emergency_backup_*.json"))
-        manual_backups = list(DATA_DIR.glob("manual_backup_*.json"))
         session_logs = list(DATA_DIR.glob("emergency_session_*.json"))
 
         return {
@@ -1194,10 +1145,8 @@ def get_data_protection_status() -> Dict:
             "backup_exists": backup_file.exists(),
             "backup_size": backup_file.stat().st_size if backup_file.exists() else 0,
             "emergency_backups": len(emergency_files),
-            "manual_backups": len(manual_backups),
             "session_logs": len(session_logs),
             "total_protection_files": len(emergency_files)
-            + len(manual_backups)
             + len(session_logs)
             + (1 if backup_file.exists() else 0),
             "data_integrity": verify_data_integrity(),
@@ -1241,7 +1190,6 @@ __all__ = [
     "format_listening_time",
     "listening_stats_manager",
     # Data Protection Utilities (Listening Stats Only)
-    "create_manual_backup",
     "cleanup_old_backups",
     "verify_data_integrity",
     "get_data_protection_status",

@@ -505,7 +505,7 @@ class BackupManager:
                 "current_est_time": now_est.strftime("%m/%d - %I:%M%p EST"),
                 "next_backup_window": next_hour.strftime("%m/%d - %I:%M%p EST"),
                 "in_backup_window": in_backup_window,
-                "backup_schedule": "On EST hour marks (1:00, 2:00, etc.)",
+                "backup_schedule": "Automatic only - EST hour marks (1:00, 2:00, etc.)",
                 "backup_format": "ZIP files with EST date/time names",
                 "backup_files": [f.name for f in backup_files if f.is_file()],
             }
@@ -514,115 +514,7 @@ class BackupManager:
             log_error_with_traceback("Backup Manager - Failed to get status", e)
             return {"error": str(e)}
 
-    def create_manual_backup(self) -> bool:
-        """Create a manual backup of all data files"""
-        try:
-            if not self.data_dir.exists():
-                log_perfect_tree_section(
-                    "Backup Manager - Manual Backup Failed",
-                    [
-                        ("status", "⚠️ No data directory exists to backup"),
-                        ("data_dir", str(self.data_dir)),
-                    ],
-                    "⚠️",
-                )
-                return False
-
-            # Dynamically discover all data files
-            data_files = self._discover_data_files()
-
-            if not data_files:
-                log_perfect_tree_section(
-                    "Backup Manager - Manual Backup Failed",
-                    [
-                        ("status", "⚠️ No data files found to backup"),
-                        ("data_dir", str(self.data_dir)),
-                        (
-                            "patterns",
-                            f"📋 Looking for: {', '.join(DATA_FILE_PATTERNS)}",
-                        ),
-                        ("excludes", f"🚫 Excluding: {', '.join(EXCLUDE_PATTERNS)}"),
-                    ],
-                    "⚠️",
-                )
-                return False
-
-            # Create manual backup with timestamp
-            timestamp = datetime.now().strftime("%Y%m%d_%I%M%S_%p")
-            backup_filename = f"manual_backup_{timestamp}.zip"
-            backup_path = self.backup_dir / backup_filename
-
-            # Ensure backup directory exists
-            self.backup_dir.mkdir(exist_ok=True)
-
-            # Calculate total size
-            total_size = sum(f.stat().st_size for f in data_files)
-
-            # Create ZIP backup
-            backed_up_files = []
-            with zipfile.ZipFile(backup_path, "w", zipfile.ZIP_DEFLATED) as zipf:
-                for data_file in data_files:
-                    try:
-                        original_size = data_file.stat().st_size
-                        zipf.write(data_file, data_file.name)
-                        backed_up_files.append(
-                            {"name": data_file.name, "size": original_size}
-                        )
-                    except Exception as file_error:
-                        log_error_with_traceback(
-                            f"Failed to add file to manual backup: {data_file.name}",
-                            file_error,
-                        )
-
-            # Calculate compression ratio
-            zip_size = backup_path.stat().st_size
-            compression_ratio = (
-                ((total_size - zip_size) / total_size * 100) if total_size > 0 else 0
-            )
-
-            # Create file summary
-            file_names = [f["name"] for f in backed_up_files]
-
-            log_perfect_tree_section(
-                "Backup Manager - Manual Backup Created",
-                [
-                    ("backup_file", f"📦 {backup_filename}"),
-                    ("files_backed_up", f"📁 {len(backed_up_files)} files"),
-                    ("total_size", f"📊 {total_size} bytes original"),
-                    ("zip_size", f"📦 {zip_size} bytes compressed"),
-                    ("compression_ratio", f"🗜️ {compression_ratio:.1f}% compression"),
-                    ("backup_location", f"💾 {self.backup_dir}"),
-                    ("files_list", f"📋 {', '.join(file_names)}"),
-                    ("timestamp", f"🕒 Created: {timestamp}"),
-                    ("integrity_check", "✅ Manual backup verified"),
-                ],
-                "💾",
-            )
-
-            # Automatically clean up old manual backups (keep only 1 most recent)
-            cleaned_count = self.cleanup_old_backups(keep_count=1)
-            if cleaned_count > 0:
-                log_perfect_tree_section(
-                    "Backup Manager - Auto Cleanup",
-                    [
-                        ("cleaned_files", f"🗑️ Removed {cleaned_count} old backup(s)"),
-                        ("retention_policy", "📋 Keeping 1 most recent backup"),
-                        ("status", "✅ Cleanup completed automatically"),
-                    ],
-                    "🧹",
-                )
-
-            return True
-
-        except Exception as e:
-            log_error_with_traceback(
-                "Backup Manager - Manual backup failed",
-                e,
-                {"data_dir": str(self.data_dir)},
-            )
-            return False
-
-    def cleanup_old_backups(self, keep_count: int = 10) -> int:
+    def cleanup_old_backups(self, keep_count: int = 1) -> int:
         """Clean up old backup files, keeping only the most recent ones"""
         try:
             if not self.backup_dir.exists():
@@ -664,7 +556,7 @@ class BackupManager:
                         ),
                         (
                             "keep_policy",
-                            f"📋 Policy: Keep {keep_count} most recent backups",
+                            f"📋 Policy: Keep {keep_count} most recent backup only",
                         ),
                     ],
                     "🧹",
@@ -701,11 +593,6 @@ def get_backup_status() -> Dict:
     return backup_manager.get_backup_status()
 
 
-def create_manual_backup() -> bool:
-    """Create a manual backup of all data files"""
-    return backup_manager.create_manual_backup()
-
-
-def cleanup_old_backups(keep_count: int = 10) -> int:
+def cleanup_old_backups(keep_count: int = 1) -> int:
     """Clean up old backup files"""
     return backup_manager.cleanup_old_backups(keep_count)
