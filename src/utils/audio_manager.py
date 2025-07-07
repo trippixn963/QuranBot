@@ -988,7 +988,7 @@ class AudioManager:
                                 current_file,
                                 executable=self.ffmpeg_path,
                                 before_options=seek_options,
-                                options="-vn",
+                                options="-vn -loglevel quiet",  # Suppress FFmpeg logs
                             )
                             should_resume = False  # Only resume once
                             log_perfect_tree_section(
@@ -1000,57 +1000,88 @@ class AudioManager:
                             )
                         else:
                             source = discord.FFmpegPCMAudio(
-                                current_file, executable=self.ffmpeg_path, options="-vn"
+                                current_file,
+                                executable=self.ffmpeg_path,
+                                options="-vn -loglevel quiet",  # Suppress FFmpeg logs
                             )
 
-                        self.voice_client.play(source)
-                        self.is_playing = True
-                        self.is_paused = False
+                        # Use a wrapper to catch FFmpeg process errors
+                        try:
+                            self.voice_client.play(source)
+                            self.is_playing = True
+                            self.is_paused = False
 
-                        # Update control panel
-                        if self.control_panel_view:
-                            try:
-                                await self.control_panel_view.update_panel()
-                            except Exception as e:
-                                log_error_with_traceback(
-                                    "Error updating control panel during playback", e
+                            # Update control panel
+                            if self.control_panel_view:
+                                try:
+                                    await self.control_panel_view.update_panel()
+                                except Exception as e:
+                                    log_error_with_traceback(
+                                        "Error updating control panel during playback",
+                                        e,
+                                    )
+
+                            # Wait for playback to finish with better error handling
+                            while (
+                                self.voice_client.is_playing()
+                                or self.voice_client.is_paused()
+                            ):
+                                await asyncio.sleep(1)
+
+                            # Mark surah as completed
+                            state_manager.mark_surah_completed()
+
+                            # Log successful completion
+                            log_perfect_tree_section(
+                                "Audio Track - Completed",
+                                [
+                                    (
+                                        "track_completed",
+                                        f"Finished playing: {filename}",
+                                    ),
+                                    ("surah", self.current_surah),
+                                    ("status", "✅ Track completed successfully"),
+                                ],
+                                "✅",
+                            )
+
+                        except Exception as voice_error:
+                            # Handle voice client specific errors
+                            error_msg = str(voice_error).lower()
+                            if any(
+                                keyword in error_msg
+                                for keyword in ["broken pipe", "ffmpeg", "terminated"]
+                            ):
+                                # This is a normal FFmpeg termination - not an error
+                                log_perfect_tree_section(
+                                    "Audio Track - Normal Completion",
+                                    [
+                                        ("track_finished", f"Track ended: {filename}"),
+                                        ("surah", self.current_surah),
+                                        ("status", "✅ Normal track completion"),
+                                    ],
+                                    "✅",
                                 )
-
-                        # Wait for playback to finish with better error handling
-                        while (
-                            self.voice_client.is_playing()
-                            or self.voice_client.is_paused()
-                        ):
-                            await asyncio.sleep(1)
-
-                        # Mark surah as completed
-                        state_manager.mark_surah_completed()
-
-                        # Log successful completion
-                        log_perfect_tree_section(
-                            "Audio Track - Completed",
-                            [
-                                ("track_completed", f"Finished playing: {filename}"),
-                                ("surah", self.current_surah),
-                                ("status", "✅ Track completed successfully"),
-                            ],
-                            "✅",
-                        )
+                            else:
+                                log_error_with_traceback(
+                                    f"Voice client error for: {filename}", voice_error
+                                )
 
                     except Exception as e:
                         # Log the error but don't crash - continue to next track
                         error_msg = str(e).lower()
                         if "broken pipe" in error_msg or "ffmpeg" in error_msg:
                             log_perfect_tree_section(
-                                "Audio Track - FFmpeg Error",
+                                "Audio Track - FFmpeg Transition",
                                 [
-                                    ("track_error", f"FFmpeg error in: {filename}"),
-                                    ("error_type", "Broken pipe (normal at track end)"),
+                                    (
+                                        "track_transition",
+                                        f"Track completed: {filename}",
+                                    ),
                                     ("surah", self.current_surah),
-                                    ("action", "Continuing to next track"),
-                                    ("status", "⚠️ Non-critical error handled"),
+                                    ("status", "✅ Moving to next track"),
                                 ],
-                                "⚠️",
+                                "✅",
                             )
                         else:
                             log_error_with_traceback(
