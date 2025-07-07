@@ -1,0 +1,163 @@
+name: 🤖 Auto-Release on Version Change
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "src/version.py"
+  workflow_dispatch:
+
+jobs:
+  check-version:
+    name: 🔍 Check Version Change
+    runs-on: ubuntu-latest
+    outputs:
+      version-changed: ${{ steps.version-check.outputs.changed }}
+      new-version: ${{ steps.version-check.outputs.new-version }}
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: 🔍 Check Version Change
+        id: version-check
+        run: |
+          # Get current version from src/version.py
+          CURRENT_VERSION=$(python -c "from src.version import __version__; print(__version__)")
+          echo "Current version: $CURRENT_VERSION"
+
+          # Check if this version tag already exists
+          if git tag --list | grep -q "^v$CURRENT_VERSION$"; then
+            echo "Tag v$CURRENT_VERSION already exists"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "New version detected: $CURRENT_VERSION"
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "new-version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          fi
+
+  auto-release:
+    name: 🚀 Auto-Create Release
+    runs-on: ubuntu-latest
+    needs: check-version
+    if: needs.check-version.outputs.version-changed == 'true'
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: 📦 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🏷️ Create Git Tag
+        run: |
+          NEW_VERSION="${{ needs.check-version.outputs.new-version }}"
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+          # Create tag with message
+          git tag -a "v$NEW_VERSION" -m "🚀 Release v$NEW_VERSION - Auto-generated from version change"
+
+          echo "Created tag: v$NEW_VERSION"
+
+      - name: 📝 Generate Release Notes
+        id: release-notes
+        run: |
+          NEW_VERSION="${{ needs.check-version.outputs.new-version }}"
+
+          # Create release notes file
+          cat > release_notes.md << 'EOF'
+          ## 🕌 QuranBot v$NEW_VERSION
+
+          ### ✨ What's New
+
+          This release was automatically generated from version change detection.
+
+          EOF
+
+          # Try to extract changelog entry for this version
+          if [ -f "CHANGELOG.md" ]; then
+            echo "### 📋 Changelog" >> release_notes.md
+            echo "" >> release_notes.md
+
+            # Extract the section for this version from CHANGELOG.md
+            sed -n "/^## \[$NEW_VERSION\]/,/^## \[/p" CHANGELOG.md | head -n -1 | tail -n +2 >> release_notes.md
+
+            if [ ! -s release_notes.md ]; then
+              echo "- Version bump to $NEW_VERSION" >> release_notes.md
+              echo "- Latest improvements and bug fixes" >> release_notes.md
+              echo "- Enhanced stability and performance" >> release_notes.md
+            fi
+          else
+            echo "- Version bump to $NEW_VERSION" >> release_notes.md
+            echo "- Latest improvements and bug fixes" >> release_notes.md
+            echo "- Enhanced stability and performance" >> release_notes.md
+          fi
+
+          cat >> release_notes.md << 'EOF'
+
+          ### 📦 Installation
+
+          ```bash
+          git clone https://github.com/trippixn963/QuranBot.git
+          cd QuranBot
+          git checkout v$NEW_VERSION
+          pip install -r requirements.txt
+          ```
+
+          ### ⚠️ Notice
+          This project is provided AS-IS with NO SUPPORT. Use at your own risk.
+
+          *May Allah (SWT) bless this release and all who use it for the benefit of the Muslim Ummah.*
+          EOF
+
+          # Replace version placeholder
+          sed -i "s/\$NEW_VERSION/$NEW_VERSION/g" release_notes.md
+
+          echo "Release notes generated:"
+          cat release_notes.md
+
+      - name: 📤 Push Tag
+        run: |
+          git push origin "v${{ needs.check-version.outputs.new-version }}"
+
+      - name: 🚀 Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ needs.check-version.outputs.new-version }}
+          release_name: 🕌 QuranBot v${{ needs.check-version.outputs.new-version }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+
+      - name: 📊 Summary
+        run: |
+          echo "## 🚀 Auto-Release Created Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** v${{ needs.check-version.outputs.new-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** Version change detected in src/version.py" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ✅ Release created automatically" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Git tag created and pushed" >> $GITHUB_STEP_SUMMARY
+          echo "✅ GitHub release published" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Release notes generated from changelog" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🎯 **Next Steps:** The release is now live and ready for use!"
