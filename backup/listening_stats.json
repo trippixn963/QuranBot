@@ -1,0 +1,13 @@
+{
+    "users": {},
+    "active_sessions": {},
+    "total_stats": {
+        "total_listening_time": 0,
+        "total_sessions": 0,
+        "last_updated": null
+    },
+    "leaderboard_cache": {
+        "last_calculated": null,
+        "top_users": []
+    }
+}

@@ -56,7 +56,11 @@ from utils.control_panel import setup_control_panel
 # =============================================================================
 # Import Listening Stats Manager
 # =============================================================================
-from utils.listening_stats import track_voice_join, track_voice_leave
+from utils.listening_stats import (
+    start_backup_scheduler,
+    track_voice_join,
+    track_voice_leave,
+)
 
 # =============================================================================
 # Import Rich Presence Manager
@@ -951,6 +955,37 @@ async def on_ready():
                         ],
                         "🎯",
                     )
+
+                    # =============================================================================
+                    # Start Automated Backup System
+                    # =============================================================================
+                    log_spacing()
+                    try:
+                        start_backup_scheduler()
+                        log_perfect_tree_section(
+                            "Automated Backup System",
+                            [
+                                ("status", "✅ Hourly backup system started"),
+                                ("interval", "Every 1 hour"),
+                                ("backup_location", "backup/ directory"),
+                                ("data_protection", "Enhanced with automated backups"),
+                            ],
+                            "💾",
+                        )
+                    except Exception as backup_error:
+                        log_error_with_traceback(
+                            "Failed to start backup scheduler", backup_error
+                        )
+                        log_perfect_tree_section(
+                            "Backup System Warning",
+                            [
+                                ("status", "⚠️ Backup scheduler failed to start"),
+                                ("impact", "Manual backups still available"),
+                                ("data_protection", "Other protection layers active"),
+                            ],
+                            "⚠️",
+                        )
+
                 except Exception as e:
                     log_error_with_traceback("Error starting audio playback", e)
                     raise  # Re-raise to trigger retry

@@ -56,13 +56,17 @@ from .tree_log import (
 
 # Import listening stats utilities
 try:
-    from .listening_stats import (
+    from .listening_stats import (  # Backup system functions
         ListeningStatsManager,
         UserStats,
+        create_hourly_backup,
         format_listening_time,
+        get_backup_status,
         get_leaderboard_data,
         get_user_listening_stats,
         listening_stats_manager,
+        start_backup_scheduler,
+        stop_backup_scheduler,
         track_voice_join,
         track_voice_leave,
     )
@@ -88,6 +92,19 @@ except ImportError:
 
     def format_listening_time(seconds):
         return "0s"
+
+    # Backup system fallbacks
+    def start_backup_scheduler():
+        pass
+
+    def stop_backup_scheduler():
+        pass
+
+    def get_backup_status():
+        return {"error": "Backup system not available"}
+
+    def create_hourly_backup():
+        return False
 
     class ListeningStatsManager:
         pass
@@ -165,6 +182,11 @@ __all__ = [
     "get_leaderboard_data",
     "format_listening_time",
     "listening_stats_manager",
+    # Backup System
+    "start_backup_scheduler",
+    "stop_backup_scheduler",
+    "get_backup_status",
+    "create_hourly_backup",
     # Version Information
     "BOT_NAME",
     "BOT_VERSION",
