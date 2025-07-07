@@ -156,6 +156,27 @@ class StateManager:
             if self.playback_state_file.exists():
                 try:
                     shutil.copy2(self.playback_state_file, backup_file)
+
+                    # Log backup creation
+                    log_perfect_tree_section(
+                        "Playback State Backup Created",
+                        [
+                            ("backup_file", f"💾 Backup: {backup_file.name}"),
+                            (
+                                "original_size",
+                                f"📊 Original: {self.playback_state_file.stat().st_size} bytes",
+                            ),
+                            (
+                                "backup_size",
+                                f"📊 Backup: {backup_file.stat().st_size} bytes",
+                            ),
+                            (
+                                "timestamp",
+                                f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                            ),
+                        ],
+                        "💾",
+                    )
                 except Exception as backup_error:
                     log_error_with_traceback(
                         "Failed to create playback state backup",
@@ -497,6 +518,27 @@ class StateManager:
             if self.bot_stats_file.exists():
                 try:
                     shutil.copy2(self.bot_stats_file, backup_file)
+
+                    # Log backup creation
+                    log_perfect_tree_section(
+                        "Bot Stats Backup Created",
+                        [
+                            ("backup_file", f"💾 Backup: {backup_file.name}"),
+                            (
+                                "original_size",
+                                f"📊 Original: {self.bot_stats_file.stat().st_size} bytes",
+                            ),
+                            (
+                                "backup_size",
+                                f"📊 Backup: {backup_file.stat().st_size} bytes",
+                            ),
+                            (
+                                "timestamp",
+                                f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                            ),
+                        ],
+                        "💾",
+                    )
                 except Exception as backup_error:
                     log_error_with_traceback(
                         "Failed to create bot stats backup",
