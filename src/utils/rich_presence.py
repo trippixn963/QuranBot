@@ -462,7 +462,9 @@ class RichPresenceManager:
                             continue
 
                     update_count += 1
-                    if update_count % 12 == 0:  # Log every minute (12 * 5 seconds)
+                    if (
+                        update_count % 120 == 0
+                    ):  # Log every 10 minutes (120 * 5 seconds)
                         log_perfect_tree_section(
                             "Rich Presence - Progress Update",
                             [
