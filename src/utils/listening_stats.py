@@ -992,7 +992,8 @@ def verify_data_integrity() -> bool:
 def get_data_protection_status() -> Dict:
     """Get comprehensive data protection status"""
     try:
-        backup_file = STATS_FILE.with_suffix(".json.backup")
+        # Use temp backup directory for .backup files (keeps data/ clean)
+        backup_file = TEMP_BACKUP_DIR / f"{STATS_FILE.stem}.backup"
         emergency_files = list(DATA_DIR.glob("emergency_backup_*.json"))
         manual_backups = list(DATA_DIR.glob("manual_backup_*.json"))
         session_logs = list(DATA_DIR.glob("emergency_session_*.json"))
