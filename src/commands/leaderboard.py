@@ -76,6 +76,14 @@ async def leaderboard_command(interaction: discord.Interaction):
             f"*Top listeners in the Quran voice channel*\n\n{leaderboard_text}"
         )
 
+        # Set bot profile picture as thumbnail
+        try:
+            if interaction.client.user and interaction.client.user.avatar:
+                embed.set_thumbnail(url=interaction.client.user.avatar.url)
+        except Exception:
+            # Continue without thumbnail if there's an error
+            pass
+
         # Set footer with admin user profile picture
         try:
             # Get admin user (your user ID from logs)
