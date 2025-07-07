@@ -76,8 +76,21 @@ async def leaderboard_command(interaction: discord.Interaction):
             f"*Top listeners in the Quran voice channel*\n\n{leaderboard_text}"
         )
 
-        # Set footer
-        embed.set_footer(text="Created by حَـــــنَّـــــا")
+        # Set footer with admin user profile picture
+        try:
+            # Get admin user (your user ID from logs)
+            admin_user_id = 259725211664908288
+            admin_user = interaction.client.get_user(admin_user_id)
+
+            if admin_user and admin_user.avatar:
+                embed.set_footer(
+                    text="Created by حَـــــنَّـــــا", icon_url=admin_user.avatar.url
+                )
+            else:
+                embed.set_footer(text="Created by حَـــــنَّـــــا")
+        except Exception as e:
+            # Fallback to text-only footer if avatar fetch fails
+            embed.set_footer(text="Created by حَـــــنَّـــــا")
 
         await interaction.response.send_message(embed=embed)
 

@@ -208,22 +208,22 @@ class DailyVersesManager:
                 inline=False,
             )
 
-            # Set admin profile picture as thumbnail
-            if self.bot and self.developer_user_id:
-                try:
+            # Set footer with admin profile picture
+            try:
+                if self.bot and self.developer_user_id:
                     admin_user = self.bot.get_user(self.developer_user_id)
                     if admin_user and admin_user.avatar:
-                        embed.set_thumbnail(url=admin_user.avatar.url)
-                    elif self.bot.user and self.bot.user.avatar:
-                        # Fallback to bot avatar if admin avatar not available
-                        embed.set_thumbnail(url=self.bot.user.avatar.url)
-                except Exception:
-                    # Fallback to bot avatar if there's any error
-                    if self.bot.user and self.bot.user.avatar:
-                        embed.set_thumbnail(url=self.bot.user.avatar.url)
-
-            # Set footer with Arabic name (no timestamp)
-            embed.set_footer(text="created by حَـــــنَـــــا")
+                        embed.set_footer(
+                            text="created by حَـــــنَـــــا",
+                            icon_url=admin_user.avatar.url,
+                        )
+                    else:
+                        embed.set_footer(text="created by حَـــــنَـــــا")
+                else:
+                    embed.set_footer(text="created by حَـــــنَـــــا")
+            except Exception:
+                # Fallback to text-only footer if there's any error
+                embed.set_footer(text="created by حَـــــنَـــــا")
 
             return embed
 
