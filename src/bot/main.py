@@ -965,10 +965,17 @@ async def on_ready():
                         log_perfect_tree_section(
                             "Automated Backup System",
                             [
-                                ("status", "✅ Hourly backup system started"),
-                                ("interval", "Every 1 hour"),
+                                ("status", "✅ EST hour-mark backup system started"),
+                                (
+                                    "schedule",
+                                    "Every hour on EST clock (1:00, 2:00, etc.)",
+                                ),
+                                ("backup_format", "ZIP files with EST date/time names"),
                                 ("backup_location", "backup/ directory"),
-                                ("data_protection", "Enhanced with automated backups"),
+                                (
+                                    "data_protection",
+                                    "Enhanced with automated ZIP backups",
+                                ),
                             ],
                             "💾",
                         )

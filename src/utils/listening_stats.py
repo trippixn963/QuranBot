@@ -8,11 +8,15 @@ import asyncio
 import json
 import os
 import shutil
+import zipfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from .tree_log import log_error_with_traceback, log_perfect_tree_section
+
+# EST timezone for backup scheduling and naming
+EST = timezone(timedelta(hours=-5))
 
 # =============================================================================
 # Configuration
@@ -995,8 +999,41 @@ def get_data_protection_status() -> Dict:
 # =============================================================================
 
 
+def _generate_backup_filename() -> str:
+    """Generate EST-based backup filename like '7_6 - 10PM.zip'"""
+    try:
+        now_est = datetime.now(EST)
+
+        # Format: "7/6 - 10PM" becomes "7_6 - 10PM.zip"
+        month = now_est.month
+        day = now_est.day
+        hour = now_est.hour
+
+        # Convert to 12-hour format with AM/PM
+        if hour == 0:
+            time_str = "12AM"
+        elif hour < 12:
+            time_str = f"{hour}AM"
+        elif hour == 12:
+            time_str = "12PM"
+        else:
+            time_str = f"{hour - 12}PM"
+
+        # Replace / with _ for filename compatibility
+        filename = f"{month}_{day} - {time_str}.zip"
+        return filename
+
+    except Exception as e:
+        # Fallback to UTC timestamp if EST conversion fails
+        fallback = datetime.now().strftime("backup_%Y%m%d_%H%M%S.zip")
+        log_error_with_traceback(
+            "Error generating EST backup filename, using fallback", e
+        )
+        return fallback
+
+
 async def create_hourly_backup() -> bool:
-    """Create a full backup of the data directory"""
+    """Create a ZIP backup of the data directory with EST-based naming"""
     global _last_backup_time
 
     try:
@@ -1016,7 +1053,7 @@ async def create_hourly_backup() -> bool:
             return False
 
         # Get all files in data directory
-        data_files = list(DATA_DIR.glob("*"))
+        data_files = [f for f in DATA_DIR.glob("*") if f.is_file()]
         if not data_files:
             log_perfect_tree_section(
                 "Hourly Backup - No Data Files",
@@ -1028,36 +1065,49 @@ async def create_hourly_backup() -> bool:
             )
             return False
 
-        # Calculate total size before backup
-        total_size = sum(f.stat().st_size for f in data_files if f.is_file())
+        # Generate backup filename with EST timezone
+        backup_filename = _generate_backup_filename()
+        backup_path = BACKUP_DIR / backup_filename
 
-        # Copy each file to backup directory (overwriting existing)
+        # Calculate total size before backup
+        total_size = sum(f.stat().st_size for f in data_files)
+
+        # Create ZIP backup
         backed_up_files = []
-        for data_file in data_files:
-            if data_file.is_file():
-                backup_file = BACKUP_DIR / data_file.name
+        with zipfile.ZipFile(backup_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+            for data_file in data_files:
                 try:
-                    shutil.copy2(data_file, backup_file)
+                    # Add file to ZIP with just the filename (no path)
+                    zipf.write(data_file, data_file.name)
                     backed_up_files.append(data_file.name)
                 except Exception as file_error:
                     log_error_with_traceback(
-                        f"Failed to backup file: {data_file.name}",
+                        f"Failed to add file to backup ZIP: {data_file.name}",
                         file_error,
-                        {"source": str(data_file), "destination": str(backup_file)},
+                        {"source": str(data_file), "zip_file": str(backup_path)},
                     )
 
         # Update last backup time
         _last_backup_time = datetime.now(timezone.utc)
 
+        # Get EST time for logging
+        now_est = datetime.now(EST)
+
         log_perfect_tree_section(
             "Hourly Backup - Completed",
             [
                 (
-                    "backup_time",
+                    "backup_time_est",
+                    f"🕒 {now_est.strftime('%m/%d - %I%p')} EST",
+                ),
+                (
+                    "backup_time_utc",
                     f"🕒 {_last_backup_time.strftime('%Y-%m-%d %H:%M:%S')} UTC",
                 ),
-                ("files_backed_up", f"📁 {len(backed_up_files)} files backed up"),
-                ("total_size", f"📊 {total_size} bytes backed up"),
+                ("backup_file", f"📦 {backup_filename}"),
+                ("files_backed_up", f"📁 {len(backed_up_files)} files"),
+                ("total_size", f"📊 {total_size} bytes"),
+                ("zip_size", f"📦 {backup_path.stat().st_size} bytes compressed"),
                 ("backup_location", f"💾 {BACKUP_DIR}"),
                 ("files_list", f"📋 {', '.join(backed_up_files)}"),
             ],
@@ -1082,14 +1132,15 @@ async def create_hourly_backup() -> bool:
 
 
 async def backup_scheduler():
-    """Background task that runs hourly backups"""
+    """Background task that runs backups on EST hour marks"""
     global _last_backup_time
 
     log_perfect_tree_section(
         "Backup Scheduler - Started",
         [
-            ("interval", f"⏰ Every {BACKUP_INTERVAL_HOURS} hour(s)"),
+            ("schedule", "⏰ On every EST hour mark (1:00, 2:00, etc.)"),
             ("backup_dir", f"📁 {BACKUP_DIR}"),
+            ("timezone", "🌍 Eastern Standard Time (EST)"),
             ("status", "🔄 Backup scheduler running"),
         ],
         "🔄",
@@ -1097,30 +1148,40 @@ async def backup_scheduler():
 
     while True:
         try:
-            # Check if it's time for a backup
-            now = datetime.now(timezone.utc)
+            # Get current EST time
+            now_est = datetime.now(EST)
+            now_utc = datetime.now(timezone.utc)
+
+            # Check if we're at the top of an hour (within the first 5 minutes)
             should_backup = False
+            reason = ""
 
             if _last_backup_time is None:
-                # First backup
+                # First backup - run immediately
                 should_backup = True
                 reason = "Initial backup"
             else:
-                # Check if enough time has passed
-                time_since_backup = now - _last_backup_time
-                if time_since_backup.total_seconds() >= (BACKUP_INTERVAL_HOURS * 3600):
+                # Check if we've crossed an hour mark since last backup
+                last_backup_est = _last_backup_time.astimezone(EST)
+
+                # If we're in the first 5 minutes of an hour and haven't backed up this hour
+                if now_est.minute < 5 and (
+                    last_backup_est.hour != now_est.hour
+                    or last_backup_est.date() != now_est.date()
+                ):
                     should_backup = True
-                    reason = f"Scheduled backup ({time_since_backup.total_seconds():.0f}s since last)"
+                    reason = f"EST hour mark reached ({now_est.strftime('%I%p')})"
 
             if should_backup:
                 log_perfect_tree_section(
                     "Backup Scheduler - Triggering Backup",
                     [
                         ("reason", f"📅 {reason}"),
-                        ("current_time", f"🕒 {now.strftime('%Y-%m-%d %H:%M:%S')} UTC"),
+                        ("est_time", f"🕒 {now_est.strftime('%m/%d - %I:%M%p')} EST"),
+                        ("utc_time", f"🕒 {now_utc.strftime('%Y-%m-%d %H:%M:%S')} UTC"),
                         (
-                            "last_backup",
-                            f"🕒 {_last_backup_time.strftime('%Y-%m-%d %H:%M:%S') if _last_backup_time else 'Never'} UTC",
+                            "last_backup_est",
+                            f"🕒 {_last_backup_time.astimezone(EST).strftime('%m/%d - %I:%M%p') if _last_backup_time else 'Never'} EST",
                         ),
                     ],
                     "🔄",
@@ -1136,15 +1197,14 @@ async def backup_scheduler():
                         "❌",
                     )
 
-            # Wait 5 minutes before checking again
-            await asyncio.sleep(300)  # 5 minutes
+            # Calculate sleep time to next check
+            # Check every 2 minutes to catch hour marks reliably
+            await asyncio.sleep(120)  # 2 minutes
 
         except Exception as e:
-            log_error_with_traceback(
-                "Backup scheduler error", e, {"backup_interval": BACKUP_INTERVAL_HOURS}
-            )
+            log_error_with_traceback("Backup scheduler error", e, {"timezone": "EST"})
             # Wait before retrying
-            await asyncio.sleep(300)
+            await asyncio.sleep(120)
 
 
 def start_backup_scheduler():
@@ -1166,11 +1226,24 @@ def start_backup_scheduler():
         # Create the backup task
         _backup_task = asyncio.create_task(backup_scheduler())
 
+        # Get current EST time for display
+        now_est = datetime.now(EST)
+        next_hour = now_est.replace(minute=0, second=0, microsecond=0) + timedelta(
+            hours=1
+        )
+
         log_perfect_tree_section(
             "Backup Scheduler - Initialized",
             [
                 ("status", "✅ Automated backup system started"),
-                ("interval", f"⏰ Every {BACKUP_INTERVAL_HOURS} hour(s)"),
+                ("schedule", "⏰ On EST hour marks (1:00, 2:00, etc.)"),
+                ("timezone", "🌍 Eastern Standard Time (EST)"),
+                ("current_est_time", f"🕒 {now_est.strftime('%m/%d - %I:%M%p')} EST"),
+                (
+                    "next_backup_window",
+                    f"🕒 {next_hour.strftime('%m/%d - %I:%M%p')} EST",
+                ),
+                ("backup_format", "📦 ZIP files with EST date/time names"),
                 ("backup_dir", f"📁 {BACKUP_DIR}"),
                 ("task_id", f"🆔 {id(_backup_task)}"),
             ],
@@ -1218,8 +1291,17 @@ def get_backup_status() -> Dict:
     global _last_backup_time, _backup_task
 
     try:
-        backup_files = list(BACKUP_DIR.glob("*")) if BACKUP_DIR.exists() else []
+        backup_files = list(BACKUP_DIR.glob("*.zip")) if BACKUP_DIR.exists() else []
         backup_size = sum(f.stat().st_size for f in backup_files if f.is_file())
+
+        # Calculate next backup window
+        now_est = datetime.now(EST)
+        next_hour = now_est.replace(minute=0, second=0, microsecond=0) + timedelta(
+            hours=1
+        )
+
+        # Check if we're currently in a backup window (first 5 minutes of hour)
+        in_backup_window = now_est.minute < 5
 
         return {
             "scheduler_running": _backup_task is not None and not _backup_task.done(),
@@ -1229,12 +1311,16 @@ def get_backup_status() -> Dict:
             "last_backup_time": (
                 _last_backup_time.isoformat() if _last_backup_time else None
             ),
-            "backup_interval_hours": BACKUP_INTERVAL_HOURS,
-            "next_backup_due": (
-                (_last_backup_time + timedelta(hours=BACKUP_INTERVAL_HOURS)).isoformat()
+            "last_backup_time_est": (
+                _last_backup_time.astimezone(EST).strftime("%m/%d - %I:%M%p EST")
                 if _last_backup_time
-                else "Immediately"
+                else None
             ),
+            "current_est_time": now_est.strftime("%m/%d - %I:%M%p EST"),
+            "next_backup_window": next_hour.strftime("%m/%d - %I:%M%p EST"),
+            "in_backup_window": in_backup_window,
+            "backup_schedule": "On EST hour marks (1:00, 2:00, etc.)",
+            "backup_format": "ZIP files with EST date/time names",
             "backup_files": [f.name for f in backup_files if f.is_file()],
         }
 
