@@ -400,7 +400,7 @@ class ListeningStatsManager:
                             ),
                             (
                                 "timestamp",
-                                f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                                f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')}",
                             ),
                             (
                                 "integrity_check",
@@ -506,8 +506,8 @@ class ListeningStatsManager:
             # Try emergency save to a different location
             try:
                 emergency_file = (
-                    DATA_DIR
-                    / f"emergency_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                    STATS_FILE.parent
+                    / f"emergency_session_{user_id}_{datetime.now().strftime('%Y%m%d_%I%M%S_%p')}.json"
                 )
                 with open(emergency_file, "w", encoding="utf-8") as f:
                     json.dump(
@@ -543,7 +543,7 @@ class ListeningStatsManager:
                         ),
                         (
                             "timestamp",
-                            f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                            f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')}",
                         ),
                         ("users_saved", f"👥 Users: {len(self.users)}"),
                         ("sessions_saved", f"🎧 Sessions: {len(self.active_sessions)}"),
@@ -587,7 +587,7 @@ class ListeningStatsManager:
                     ("user_id", f"👤 User {user_id} joined voice channel"),
                     (
                         "session_start",
-                        f"⏰ Session started at {datetime.now(timezone.utc).strftime('%H:%M:%S')}",
+                        f"⏰ Session started at {datetime.now(timezone.utc).strftime('%I:%M:%S %p')}",
                     ),
                     ("total_users", f"📊 {len(self.active_sessions)} users in voice"),
                 ],
@@ -646,11 +646,11 @@ class ListeningStatsManager:
                     }
 
                     # Try to write emergency log
-                    emergency_log = (
-                        DATA_DIR
-                        / f"emergency_session_{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                    emergency_file = (
+                        STATS_FILE.parent
+                        / f"emergency_session_{user_id}_{datetime.now().strftime('%Y%m%d_%I%M%S_%p')}.json"
                     )
-                    with open(emergency_log, "w") as f:
+                    with open(emergency_file, "w") as f:
                         json.dump(emergency_data, f, indent=2)
 
                     log_perfect_tree_section(
@@ -658,7 +658,7 @@ class ListeningStatsManager:
                         [
                             (
                                 "emergency_log",
-                                f"🚨 Session data saved to: {emergency_log.name}",
+                                f"🚨 Session data saved to: {emergency_file.name}",
                             ),
                             ("user_id", f"👤 User: {user_id}"),
                             ("duration", f"⏱️ Duration: {self.format_time(duration)}"),
@@ -812,7 +812,7 @@ def create_manual_backup() -> bool:
             )
             return False
 
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now().strftime("%Y%m%d_%I%M%S_%p")
         manual_backup = DATA_DIR / f"manual_backup_{timestamp}.json"
 
         import shutil

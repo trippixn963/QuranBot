@@ -72,7 +72,7 @@ class BackupManager:
 
         except Exception as e:
             # Fallback to UTC timestamp if EST conversion fails
-            fallback = datetime.now().strftime("backup_%Y%m%d_%H%M%S.zip")
+            fallback = datetime.now().strftime("backup_%Y%m%d_%I%M%S_%p.zip")
             log_error_with_traceback(
                 "Error generating EST backup filename, using fallback", e
             )
@@ -185,7 +185,7 @@ class BackupManager:
                     ),
                     (
                         "backup_time_utc",
-                        f"🕒 {self.last_backup_time.strftime('%Y-%m-%d %H:%M:%S')} UTC",
+                        f"🕒 {self.last_backup_time.strftime('%Y-%m-%d %I:%M:%S %p')} UTC",
                     ),
                     ("backup_file", f"📦 {backup_filename}"),
                     (
@@ -278,7 +278,7 @@ class BackupManager:
                             ),
                             (
                                 "utc_time",
-                                f"🕒 {now_utc.strftime('%Y-%m-%d %H:%M:%S')} UTC",
+                                f"🕒 {now_utc.strftime('%Y-%m-%d %I:%M:%S %p')} UTC",
                             ),
                             (
                                 "last_backup_est",
@@ -458,7 +458,7 @@ class BackupManager:
                 return False
 
             # Create manual backup with timestamp
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now().strftime("%Y%m%d_%I%M%S_%p")
             backup_filename = f"manual_backup_{timestamp}.zip"
             backup_path = self.backup_dir / backup_filename
 

@@ -235,7 +235,7 @@ class StateManager:
                                 ("reason", "📋 Significant change detected"),
                                 (
                                     "timestamp",
-                                    f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                                    f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')}",
                                 ),
                             ],
                             "💾",
@@ -279,7 +279,7 @@ class StateManager:
             try:
                 emergency_file = (
                     self.data_dir
-                    / f"emergency_playback_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                    / f"emergency_playback_{datetime.now().strftime('%Y%m%d_%I%M%S_%p')}.json"
                 )
                 emergency_data = {
                     "emergency_save": True,
@@ -303,7 +303,7 @@ class StateManager:
                         ("reciter", f"🎤 Reciter: {current_reciter}"),
                         (
                             "timestamp",
-                            f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                            f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')}",
                         ),
                         ("status", "✅ Playback state preserved"),
                     ],
@@ -592,7 +592,7 @@ class StateManager:
                             ),
                             (
                                 "timestamp",
-                                f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                                f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')}",
                             ),
                         ],
                         "💾",
@@ -719,7 +719,7 @@ class StateManager:
             try:
                 emergency_file = (
                     self.data_dir
-                    / f"emergency_bot_stats_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                    / f"emergency_bot_stats_{datetime.now().strftime('%Y%m%d_%I%M%S_%p')}.json"
                 )
                 emergency_data = {
                     "emergency_save": True,
@@ -748,7 +748,7 @@ class StateManager:
                         ),
                         (
                             "timestamp",
-                            f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                            f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')}",
                         ),
                         ("status", "✅ Bot statistics preserved"),
                     ],
@@ -1076,7 +1076,7 @@ class StateManager:
         """
         try:
             if not backup_name:
-                backup_name = f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                backup_name = f"backup_{datetime.now().strftime('%Y%m%d_%I%M%S_%p')}"
 
             # Validate backup name
             if not isinstance(backup_name, str) or not backup_name.strip():
@@ -1139,7 +1139,7 @@ class StateManager:
                         ("backup_location", f"📁 Location: {backup_dir}"),
                         (
                             "timestamp",
-                            f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                            f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')}",
                         ),
                         ("integrity_check", f"✅ All backups verified"),
                     ],
@@ -1173,7 +1173,7 @@ class StateManager:
     def create_manual_backup(self) -> bool:
         """Create manual backups of all state files"""
         try:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now().strftime("%Y%m%d_%I%M%S_%p")
             backup_count = 0
 
             # Backup playback state

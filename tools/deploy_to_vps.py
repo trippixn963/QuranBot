@@ -260,7 +260,7 @@ def generate_deployment_commands():
     commands = [
         "# QuranBot VPS Deployment Commands",
         f"# Version: {BOT_VERSION}",
-        f"# Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        f"# Generated: {datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')}",
         "",
         "# 1. Connect to VPS",
         f"ssh {VPS_USER}@{VPS_HOST}",
