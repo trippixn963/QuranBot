@@ -58,6 +58,10 @@ async def leaderboard_command(interaction: discord.Interaction):
             # Get user object to access username
             try:
                 user = interaction.client.get_user(user_id)
+                if not user:
+                    # If user not in cache, fetch from Discord API
+                    user = await interaction.client.fetch_user(user_id)
+
                 if user:
                     # Use the actual Discord username (not display name)
                     username = user.name  # This is the Discord username
@@ -96,19 +100,28 @@ async def leaderboard_command(interaction: discord.Interaction):
 
         # Set footer with admin user profile picture
         try:
-            # Get admin user (your user ID from logs)
+            # Get admin user (your user ID)
             admin_user_id = 259725211664908288
             admin_user = interaction.client.get_user(admin_user_id)
+
+            if not admin_user:
+                # If admin user not in cache, fetch from Discord API
+                admin_user = await interaction.client.fetch_user(admin_user_id)
 
             if admin_user and admin_user.avatar:
                 embed.set_footer(
                     text="Created by حَـــــنَّـــــا", icon_url=admin_user.avatar.url
                 )
+                print(f"Debug: Admin footer set with avatar: {admin_user.avatar.url}")
             else:
                 embed.set_footer(text="Created by حَـــــنَّـــــا")
+                print(
+                    f"Debug: Admin user found but no avatar, admin_user: {admin_user}"
+                )
         except Exception as e:
             # Fallback to text-only footer if avatar fetch fails
             embed.set_footer(text="Created by حَـــــنَّـــــا")
+            print(f"Debug: Error setting admin footer: {e}")
 
         await interaction.response.send_message(embed=embed)
 
