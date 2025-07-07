@@ -10,6 +10,7 @@
 # - Discord control panel with interactive buttons and dropdowns
 # - Audio playback management with state persistence
 # - State management for cross-restart persistence
+# - Bulletproof data protection for all persistent files
 #
 # Key Features:
 # - Consistent tree-style logging across all components
@@ -18,6 +19,7 @@
 # - Interactive Discord UI components for user control
 # - Robust state persistence and recovery mechanisms
 # - Multi-reciter audio support with dynamic switching
+# - Atomic writes and backup protection for all data files
 # =============================================================================
 
 # Import all utility components
@@ -32,6 +34,35 @@ from .control_panel import (
 )
 from .rich_presence import RichPresenceManager, validate_rich_presence_dependencies
 from .state_manager import state_manager
+
+# Import state manager data protection utilities
+try:
+    from .state_manager import StateManager
+
+    # Add data protection methods to state_manager instance
+    state_manager_create_manual_backup = state_manager.create_manual_backup
+    state_manager_verify_data_integrity = state_manager.verify_data_integrity
+    state_manager_get_data_protection_status = state_manager.get_data_protection_status
+    state_manager_cleanup_old_backups = state_manager.cleanup_old_backups
+
+except ImportError:
+    # Fallback functions if state manager is not available
+    def state_manager_create_manual_backup():
+        return False
+
+    def state_manager_verify_data_integrity():
+        return False
+
+    def state_manager_get_data_protection_status():
+        return {"error": "State manager not available"}
+
+    def state_manager_cleanup_old_backups(keep_days=7):
+        return 0
+
+    class StateManager:
+        pass
+
+
 from .surah_mapper import (
     format_now_playing,
     get_surah_display,
@@ -56,12 +87,15 @@ from .tree_log import (
 
 # Import listening stats utilities
 try:
-    from .listening_stats import (  # Backup system functions
+    from .listening_stats import (  # Backup system functions; Data protection utilities
         ListeningStatsManager,
         UserStats,
+        cleanup_old_backups,
         create_hourly_backup,
+        create_manual_backup,
         format_listening_time,
         get_backup_status,
+        get_data_protection_status,
         get_leaderboard_data,
         get_user_listening_stats,
         listening_stats_manager,
@@ -69,6 +103,7 @@ try:
         stop_backup_scheduler,
         track_voice_join,
         track_voice_leave,
+        verify_data_integrity,
     )
 except ImportError:
     # Fallback if listening stats module is not available
@@ -105,6 +140,19 @@ except ImportError:
 
     def create_hourly_backup():
         return False
+
+    # Data protection fallbacks
+    def create_manual_backup():
+        return False
+
+    def cleanup_old_backups(keep_count=10):
+        pass
+
+    def verify_data_integrity():
+        return False
+
+    def get_data_protection_status():
+        return {"error": "Data protection not available"}
 
     class ListeningStatsManager:
         pass
@@ -154,6 +202,9 @@ __all__ = [
     # Rich Presence Management
     "RichPresenceManager",
     "validate_rich_presence_dependencies",
+    # State Management
+    "state_manager",
+    "StateManager",
     # Surah Mapping and Metadata
     "get_surah_info",
     "get_surah_display",
@@ -182,11 +233,21 @@ __all__ = [
     "get_leaderboard_data",
     "format_listening_time",
     "listening_stats_manager",
-    # Backup System
+    # Automated Backup System
     "start_backup_scheduler",
     "stop_backup_scheduler",
     "get_backup_status",
     "create_hourly_backup",
+    # Data Protection Utilities (Listening Stats)
+    "create_manual_backup",
+    "cleanup_old_backups",
+    "verify_data_integrity",
+    "get_data_protection_status",
+    # Data Protection Utilities (State Manager)
+    "state_manager_create_manual_backup",
+    "state_manager_verify_data_integrity",
+    "state_manager_get_data_protection_status",
+    "state_manager_cleanup_old_backups",
     # Version Information
     "BOT_NAME",
     "BOT_VERSION",
