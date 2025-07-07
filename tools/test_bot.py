@@ -446,7 +446,8 @@ def test_surah_mapper():
             validation_tests.append(("validation", "✅ Number validation working"))
 
         # Test formatting
-        now_playing = format_now_playing(36, "Saad Al Ghamdi")
+        surah_info = get_surah_info(36)
+        now_playing = format_now_playing(surah_info, "Saad Al Ghamdi")
         if "Ya-Sin" not in now_playing or "💚" not in now_playing:
             test_results.append(("formatting", "❌ Now playing format incorrect"))
         else:

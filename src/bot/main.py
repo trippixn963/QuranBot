@@ -1116,7 +1116,8 @@ async def play_audio(voice_client):
                     surah_number = int(filename.split(".")[0])
                     if validate_surah_number(surah_number):
                         surah_display = get_surah_display(surah_number)
-                        now_playing = format_now_playing(surah_number, "Saad Al Ghamdi")
+                        surah_info = get_surah_info(surah_number)
+                        now_playing = format_now_playing(surah_info, "Saad Al Ghamdi")
 
                         log_progress(i, len(audio_files))
 
