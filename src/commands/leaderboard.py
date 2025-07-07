@@ -59,14 +59,14 @@ async def leaderboard_command(interaction: discord.Interaction):
             try:
                 user = interaction.client.get_user(user_id)
                 if user:
-                    username = user.name  # Discord username (can't contain Arabic)
+                    username = user.name  # Discord username
                     user_display = f"{username} - <@{user_id}>"
                 else:
                     user_display = f"<@{user_id}>"
             except:
                 user_display = f"<@{user_id}>"
 
-            # Create leaderboard entry with username first, then mention
+            # Create leaderboard entry
             leaderboard_text += (
                 f"{position_display} {user_display}\n"
                 f"**Time spent**: `{time_formatted}`\n\n"
@@ -76,28 +76,8 @@ async def leaderboard_command(interaction: discord.Interaction):
             f"*Top listeners in the Quran voice channel*\n\n{leaderboard_text}"
         )
 
-        # Add stats footer
-        embed.add_field(
-            name="📊 Server Statistics",
-            value=f"**Active Listeners:** {leaderboard_data['active_users']} 🎧\n"
-            f"**Total Users:** {leaderboard_data['total_users']} 👥\n"
-            f"**Total Sessions:** {leaderboard_data['total_sessions']} 🔢",
-            inline=False,
-        )
-
-        # Set bot avatar as thumbnail
-        if interaction.client.user and interaction.client.user.avatar:
-            embed.set_thumbnail(url=interaction.client.user.avatar.url)
-
         # Set footer
-        embed.set_footer(
-            text=f"QuranBot v2.2.1 • Requested by {interaction.user.display_name}",
-            icon_url=(
-                interaction.client.user.avatar.url
-                if interaction.client.user.avatar
-                else None
-            ),
-        )
+        embed.set_footer(text="Created by حَـــــنَّـــــا")
 
         await interaction.response.send_message(embed=embed)
 
