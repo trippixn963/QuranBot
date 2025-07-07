@@ -4,227 +4,134 @@
 # Displays listening time leaderboard for Quran voice channel users
 # =============================================================================
 
+from datetime import datetime, timezone
+
 import discord
 from discord.ext import commands
 
-# Import listening stats functions
-from src.utils.listening_stats import format_listening_time, get_leaderboard_data
-
-# Import tree logging functions
-from src.utils.tree_log import (
-    log_error_with_traceback,
-    log_perfect_tree_section,
-    log_user_interaction,
-)
-
-# Import version information
-from src.version import BOT_VERSION
-
-# =============================================================================
-# Medal Emojis for Top 3
-# =============================================================================
-
-MEDAL_EMOJIS = {
-    1: "🥇",  # Gold medal
-    2: "🥈",  # Silver medal
-    3: "🥉",  # Bronze medal
-}
-
-# =============================================================================
-# Leaderboard Command
-# =============================================================================
+from src.utils.listening_stats import get_leaderboard_data
+from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
 
 
-async def leaderboard_command(interaction: discord.Interaction):
-    """
-    Display the listening time leaderboard for Quran voice channel users.
+class LeaderboardCommand(commands.Cog):
+    """Leaderboard command for displaying listening statistics"""
 
-    Shows the top 10 users by total listening time with:
-    - Medal emojis for top 3 positions
-    - User mentions and listening time in black boxes
-    - Bot profile picture as thumbnail
-    - Total server statistics
-    """
-    try:
-        # Log user interaction
-        log_user_interaction(
-            interaction_type="slash_command",
-            user_name=interaction.user.display_name,
-            user_id=interaction.user.id,
-            action_description="Used /leaderboard command",
-            details={
-                "command": "leaderboard",
-                "guild_id": interaction.guild_id if interaction.guild else None,
-                "channel_id": interaction.channel_id,
-            },
-        )
+    def __init__(self, bot):
+        self.bot = bot
 
-        # Get leaderboard data
-        leaderboard_data = get_leaderboard_data()
-        top_users = leaderboard_data["top_users"]
+    @commands.command(name="leaderboard", aliases=["lb", "top"])
+    async def leaderboard(self, ctx):
+        """Display the Quran listening leaderboard"""
+        try:
+            # Get leaderboard data
+            leaderboard_data = get_leaderboard_data()
+            top_users = leaderboard_data["top_users"]
 
-        log_perfect_tree_section(
-            "Leaderboard Data Retrieved",
-            [
-                ("top_users_count", f"📊 {len(top_users)} users in leaderboard"),
-                (
-                    "total_listening_time",
-                    f"⏱️ Total server listening time: {format_listening_time(leaderboard_data['total_listening_time'])}",
-                ),
-                (
-                    "active_users",
-                    f"🎧 Currently active: {leaderboard_data['active_users']} users",
-                ),
-                (
-                    "total_users",
-                    f"👥 Total users tracked: {leaderboard_data['total_users']}",
-                ),
-            ],
-            "🏆",
-        )
+            if not top_users:
+                embed = discord.Embed(
+                    title="🏆 Quran Listening Leaderboard",
+                    description="No listening data available yet. Join the voice channel to start tracking!",
+                    color=0x00D4AA,
+                )
+                await ctx.send(embed=embed)
+                return
 
-        # Create embed
-        embed = discord.Embed(
-            title="🏆 Quran Listening Leaderboard",
-            description="*Top listeners in the Quran voice channel*",
-            color=0x00D4AA,
-            timestamp=interaction.created_at,
-        )
+            # Create embed
+            embed = discord.Embed(
+                title="🏆 Quran Listening Leaderboard",
+                description="*Top listeners in the Quran voice channel*",
+                color=0x00D4AA,
+                timestamp=datetime.now(timezone.utc),
+            )
 
-        # Add leaderboard entries
-        if top_users:
+            # Medal emojis for top 3
+            medal_emojis = {1: "🥇", 2: "🥈", 3: "🥉"}
+
             leaderboard_text = ""
-
             for position, (user_id, total_time, sessions) in enumerate(top_users, 1):
-                # Get medal emoji or position number
-                position_display = MEDAL_EMOJIS.get(position, f"{position}.")
+                # Get position display
+                position_display = medal_emojis.get(position, f"{position}.")
 
                 # Format time
-                time_formatted = format_listening_time(total_time)
+                time_formatted = self._format_time(total_time)
 
-                # Create leaderboard entry with time under the name
-                # This solves Arabic text formatting issues by separating directional content
-                # Use aggressive Unicode direction control to force left-to-right on mobile
+                # Get user object to access username
+                try:
+                    user = self.bot.get_user(user_id)
+                    if user:
+                        username = user.name  # Discord username (can't contain Arabic)
+                        user_display = f"{username} - <@{user_id}>"
+                    else:
+                        user_display = f"<@{user_id}>"
+                except:
+                    user_display = f"<@{user_id}>"
+
+                # Create leaderboard entry with username first, then mention
                 leaderboard_text += (
-                    f"\u202d\u200e{position_display} \u200e<@{user_id}>\u200e\u202c\n"
-                    f"　　　　`{time_formatted}`\n\n"
+                    f"{position_display} {user_display}\n"
+                    f"**Time spent**: `{time_formatted}`\n\n"
                 )
 
-                # Add space after each entry except the last one
-                if position < len(top_users):
-                    leaderboard_text += "\n"
+            embed.description = (
+                f"*Top listeners in the Quran voice channel*\n\n{leaderboard_text}"
+            )
 
-            # Add leaderboard directly to embed description or as a single field
-            if leaderboard_text.strip():
-                embed.description = (
-                    f"*Top listeners in the Quran voice channel*\n\n{leaderboard_text}"
-                )
-            else:
-                embed.description = "*No listening data available yet.*\n*Start listening to Quran recitations to appear on the leaderboard!*"
+            # Add stats footer
+            embed.add_field(
+                name="📊 Server Statistics",
+                value=f"**Active Listeners:** {leaderboard_data['active_users']} 🎧\n"
+                f"**Total Users:** {leaderboard_data['total_users']} 👥\n"
+                f"**Total Sessions:** {leaderboard_data['total_sessions']} 🔢",
+                inline=False,
+            )
+
+            # Set bot avatar as thumbnail
+            if self.bot.user and self.bot.user.avatar:
+                embed.set_thumbnail(url=self.bot.user.avatar.url)
+
+            # Set footer
+            embed.set_footer(
+                text=f"QuranBot v2.2.1 • Requested by {ctx.author.display_name}",
+                icon_url=self.bot.user.avatar.url if self.bot.user.avatar else None,
+            )
+
+            await ctx.send(embed=embed)
+
+            # Log command usage
+            log_perfect_tree_section(
+                "Leaderboard Command - Success",
+                [
+                    ("user", ctx.author.display_name),
+                    ("user_id", ctx.author.id),
+                    ("channel", ctx.channel.name),
+                    ("top_users_shown", len(top_users)),
+                ],
+                "🏆",
+            )
+
+        except Exception as e:
+            log_error_with_traceback("Error in leaderboard command", e)
+            await ctx.send("❌ Error generating leaderboard. Please try again.")
+
+    def _format_time(self, seconds: float) -> str:
+        """Format time in seconds to human-readable format"""
+        if seconds < 60:
+            return f"{int(seconds)}s"
+        elif seconds < 3600:
+            minutes = int(seconds // 60)
+            secs = int(seconds % 60)
+            return f"{minutes}m {secs}s"
         else:
-            embed.description = "*No listening data available yet.*\n*Start listening to Quran recitations to appear on the leaderboard!*"
-
-        # Set bot avatar as thumbnail
-        if interaction.client.user.avatar:
-            embed.set_thumbnail(url=interaction.client.user.avatar.url)
-
-        # Set footer
-        embed.set_footer(
-            text=f"QuranBot v{BOT_VERSION} • Requested by {interaction.user.display_name}",
-            icon_url=interaction.user.display_avatar.url,
-        )
-
-        # Send the embed
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-
-        log_perfect_tree_section(
-            "Leaderboard Command - Success",
-            [
-                (
-                    "command_completed",
-                    f"✅ Leaderboard displayed for {interaction.user.display_name}",
-                ),
-                ("users_shown", f"📊 {len(top_users)} users displayed"),
-            ],
-            "✅",
-        )
-
-    except Exception as e:
-        log_error_with_traceback(
-            "Leaderboard command failed",
-            e,
-            {
-                "user_id": interaction.user.id,
-                "guild_id": interaction.guild_id if interaction.guild else None,
-                "channel_id": interaction.channel_id,
-            },
-        )
-
-        # Send error message
-        await interaction.response.send_message(
-            "❌ An error occurred while displaying the leaderboard. Please try again.",
-            ephemeral=True,
-        )
+            hours = int(seconds // 3600)
+            minutes = int((seconds % 3600) // 60)
+            if hours < 24:
+                return f"{hours}h {minutes}m"
+            else:
+                days = int(hours // 24)
+                remaining_hours = int(hours % 24)
+                return f"{days}d {remaining_hours}h"
 
 
-# =============================================================================
-# Setup Function
-# =============================================================================
-
-
-async def setup_leaderboard_command(bot):
-    """
-    Set up the leaderboard slash command.
-
-    Args:
-        bot: The Discord bot instance
-    """
-    try:
-        log_perfect_tree_section(
-            "Leaderboard Command Setup - Starting",
-            [
-                ("setup_start", "🏆 Setting up leaderboard command"),
-            ],
-            "🔧",
-        )
-
-        @bot.tree.command(
-            name="leaderboard",
-            description="Display the top 10 Quran listeners by listening time",
-        )
-        async def leaderboard(interaction: discord.Interaction):
-            """Display the listening time leaderboard for Quran voice channel users"""
-            await leaderboard_command(interaction)
-
-        log_perfect_tree_section(
-            "Leaderboard Command Setup - Complete",
-            [
-                (
-                    "command_registered",
-                    "✅ /leaderboard command registered with bot tree",
-                ),
-                ("command_name", "leaderboard"),
-                (
-                    "command_description",
-                    "Display the top 10 Quran listeners by listening time",
-                ),
-                (
-                    "setup_completed",
-                    "✅ Leaderboard command setup completed successfully",
-                ),
-            ],
-            "✅",
-        )
-
-    except Exception as e:
-        log_error_with_traceback("Failed to setup leaderboard command", e)
-
-
-# =============================================================================
-# Export Functions
-# =============================================================================
-
-__all__ = [
-    "leaderboard_command",
-    "setup_leaderboard_command",
-]
+async def setup(bot):
+    """Set up the leaderboard command"""
+    await bot.add_cog(LeaderboardCommand(bot))

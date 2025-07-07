@@ -59,6 +59,11 @@ from utils.backup_manager import start_backup_scheduler
 from utils.control_panel import setup_control_panel
 
 # =============================================================================
+# Import Daily Verses Manager
+# =============================================================================
+from utils.daily_verses import setup_daily_verses
+
+# =============================================================================
 # Import Listening Stats Manager
 # =============================================================================
 from utils.listening_stats import track_voice_join, track_voice_leave
@@ -445,6 +450,8 @@ TARGET_CHANNEL_ID = int(os.getenv("TARGET_CHANNEL_ID") or "0")
 PANEL_CHANNEL_ID = int(os.getenv("PANEL_CHANNEL_ID") or "0")
 GUILD_ID = int(os.getenv("GUILD_ID") or "0")
 PANEL_ACCESS_ROLE_ID = int(os.getenv("PANEL_ACCESS_ROLE_ID") or "1391500136366211243")
+DAILY_VERSE_CHANNEL_ID = int(os.getenv("DAILY_VERSE_CHANNEL_ID") or "0")
+DEVELOPER_ID = int(os.getenv("DEVELOPER_ID") or "0")
 FFMPEG_PATH = os.getenv("FFMPEG_PATH", "ffmpeg")
 AUDIO_FOLDER = "audio/Saad Al Ghamdi"
 
@@ -941,10 +948,12 @@ async def on_ready():
                     from src.commands import (
                         setup_credits_command,
                         setup_leaderboard_command,
+                        setup_verse_command,
                     )
 
                     await setup_credits_command(bot)
                     await setup_leaderboard_command(bot)
+                    await setup_verse_command(bot)
 
                     # Sync commands to Discord
                     await bot.tree.sync()
@@ -952,7 +961,7 @@ async def on_ready():
                         "Slash Commands Sync",
                         [
                             ("status", "✅ Slash commands synced successfully"),
-                            ("available_commands", "/credits, /leaderboard"),
+                            ("available_commands", "/credits, /leaderboard, /verse"),
                             ("sync_method", "Discord Tree API"),
                         ],
                         "⚡",
@@ -1011,6 +1020,56 @@ async def on_ready():
                                 ("status", "⚠️ Backup scheduler failed to start"),
                                 ("impact", "Manual backups still available"),
                                 ("data_protection", "Other protection layers active"),
+                            ],
+                            "⚠️",
+                        )
+
+                    # =============================================================================
+                    # Daily Verses System Setup
+                    # =============================================================================
+                    log_spacing()
+                    try:
+                        if DAILY_VERSE_CHANNEL_ID and DEVELOPER_ID:
+                            setup_daily_verses(
+                                bot, DAILY_VERSE_CHANNEL_ID, DEVELOPER_ID
+                            )
+                            log_perfect_tree_section(
+                                "Daily Verses System",
+                                [
+                                    ("status", "✅ Daily verses system started"),
+                                    ("channel_id", str(DAILY_VERSE_CHANNEL_ID)),
+                                    ("developer_id", str(DEVELOPER_ID)),
+                                    ("schedule", "Every 3 hours"),
+                                    ("features", "🤲 Auto dua reaction, bot thumbnail"),
+                                ],
+                                "📖",
+                            )
+                        else:
+                            missing_vars = []
+                            if not DAILY_VERSE_CHANNEL_ID:
+                                missing_vars.append("DAILY_VERSE_CHANNEL_ID")
+                            if not DEVELOPER_ID:
+                                missing_vars.append("DEVELOPER_ID")
+
+                            log_perfect_tree_section(
+                                "Daily Verses System",
+                                [
+                                    ("status", "⚠️ Daily verses system disabled"),
+                                    ("missing_vars", ", ".join(missing_vars)),
+                                    ("impact", "No automated verse sending"),
+                                ],
+                                "⚠️",
+                            )
+                    except Exception as daily_verses_error:
+                        log_error_with_traceback(
+                            "Failed to start daily verses system", daily_verses_error
+                        )
+                        log_perfect_tree_section(
+                            "Daily Verses System Warning",
+                            [
+                                ("status", "⚠️ Daily verses system failed to start"),
+                                ("impact", "No automated verse sending"),
+                                ("action", "Check logs for details"),
                             ],
                             "⚠️",
                         )
