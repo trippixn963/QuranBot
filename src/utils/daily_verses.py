@@ -301,9 +301,23 @@ class DailyVersesManager:
             next_verse_info = "Will send immediately (first verse)"
             if self.last_sent_time:
                 try:
-                    last_time = datetime.fromisoformat(
-                        self.last_sent_time.replace("Z", "+00:00")
-                    )
+                    # Handle different datetime string formats
+                    if self.last_sent_time.endswith("Z"):
+                        # ISO format with Z suffix
+                        last_time = datetime.fromisoformat(
+                            self.last_sent_time.replace("Z", "+00:00")
+                        )
+                    elif "+" in self.last_sent_time or self.last_sent_time.endswith(
+                        "00:00"
+                    ):
+                        # ISO format with timezone
+                        last_time = datetime.fromisoformat(self.last_sent_time)
+                    else:
+                        # ISO format without timezone - assume UTC
+                        last_time = datetime.fromisoformat(self.last_sent_time).replace(
+                            tzinfo=timezone.utc
+                        )
+
                     now = datetime.now(timezone.utc)
                     time_diff = (now - last_time).total_seconds()
                     time_remaining = VERSE_SEND_INTERVAL - time_diff
@@ -373,11 +387,41 @@ class DailyVersesManager:
                     reason = "First verse - never sent before"
                 else:
                     # Check if 3 hours have passed since last verse
-                    last_time = datetime.fromisoformat(
-                        self.last_sent_time.replace("Z", "+00:00")
-                    )
-                    now = datetime.now(timezone.utc)
-                    time_diff = (now - last_time).total_seconds()
+                    try:
+                        # Handle different datetime string formats
+                        if self.last_sent_time.endswith("Z"):
+                            # ISO format with Z suffix
+                            last_time = datetime.fromisoformat(
+                                self.last_sent_time.replace("Z", "+00:00")
+                            )
+                        elif "+" in self.last_sent_time or self.last_sent_time.endswith(
+                            "00:00"
+                        ):
+                            # ISO format with timezone
+                            last_time = datetime.fromisoformat(self.last_sent_time)
+                        else:
+                            # ISO format without timezone - assume UTC
+                            last_time = datetime.fromisoformat(
+                                self.last_sent_time
+                            ).replace(tzinfo=timezone.utc)
+
+                        now = datetime.now(timezone.utc)
+                        time_diff = (now - last_time).total_seconds()
+                    except (ValueError, TypeError) as e:
+                        # If datetime parsing fails, send immediately
+                        log_perfect_tree_section(
+                            "Daily Verses - Datetime Parse Error",
+                            [
+                                ("last_sent_time", str(self.last_sent_time)),
+                                ("error", str(e)),
+                                ("action", "Sending verse immediately"),
+                            ],
+                            "⚠️",
+                        )
+                        should_send = True
+                        reason = "Datetime parsing error - sending immediately"
+                        continue
+
                     time_remaining = VERSE_SEND_INTERVAL - time_diff
 
                     if time_diff >= VERSE_SEND_INTERVAL:
