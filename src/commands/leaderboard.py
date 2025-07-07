@@ -102,12 +102,10 @@ async def leaderboard_command(interaction: discord.Interaction):
                 # Format time
                 time_formatted = format_listening_time(total_time)
 
-                # Create leaderboard entry with proper text direction control
-                # Use Unicode Left-to-Right Mark (U+200E) to force LTR display on mobile
-                # This prevents Arabic text from affecting the layout direction
-                leaderboard_text += (
-                    f"\u200e{position_display} <@{user_id}> - `{time_formatted}`\n"
-                )
+                # Create leaderboard entry with robust text direction control
+                # Use Left-to-Right Embedding (U+202A) and Pop Directional Formatting (U+202C)
+                # to create a strong LTR context that prevents Arabic text from affecting layout
+                leaderboard_text += f"\u202a{position_display} <@{user_id}> - `{time_formatted}`\u202c\n"
 
                 # Add space after each entry except the last one
                 if position < len(top_users):

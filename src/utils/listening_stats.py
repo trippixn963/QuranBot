@@ -880,10 +880,10 @@ class ListeningStatsManager:
                 # Add active indicator if user is currently listening
                 active_indicator = " 🎧" if user_id in self.active_sessions else ""
 
-                # Create leaderboard entry with proper text direction control
-                # Use Unicode Left-to-Right Mark (U+200E) to force LTR display on mobile
-                # This prevents Arabic text from affecting the layout direction
-                leaderboard_text += f"\u200e{position_display} <@{user_id}> - `{time_formatted}`{active_indicator}\n"
+                # Create leaderboard entry with robust text direction control
+                # Use Left-to-Right Embedding (U+202A) and Pop Directional Formatting (U+202C)
+                # to create a strong LTR context that prevents Arabic text from affecting layout
+                leaderboard_text += f"\u202a{position_display} <@{user_id}> - `{time_formatted}`{active_indicator}\u202c\n"
 
                 # Add space after each entry except the last one
                 if position < len(top_users):
