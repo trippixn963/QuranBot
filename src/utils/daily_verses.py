@@ -194,29 +194,36 @@ class DailyVersesManager:
                 color=0x00D4AA,
             )
 
-            # Add Arabic text field
+            # Add Arabic text field with black box background
             embed.add_field(
                 name="🌙 Arabic",
-                value=verse["arabic"],
+                value=f"```\n{verse['arabic']}\n```",
                 inline=False,
             )
 
-            # Add English translation field
+            # Add English translation field with black box background
             embed.add_field(
                 name="📝 Translation",
-                value=verse["translation"],
+                value=f"```\n{verse['translation']}\n```",
                 inline=False,
             )
 
-            # Set bot thumbnail
-            if self.bot and self.bot.user and self.bot.user.avatar:
-                embed.set_thumbnail(url=self.bot.user.avatar.url)
+            # Set admin profile picture as thumbnail
+            if self.bot and self.developer_user_id:
+                try:
+                    admin_user = self.bot.get_user(self.developer_user_id)
+                    if admin_user and admin_user.avatar:
+                        embed.set_thumbnail(url=admin_user.avatar.url)
+                    elif self.bot.user and self.bot.user.avatar:
+                        # Fallback to bot avatar if admin avatar not available
+                        embed.set_thumbnail(url=self.bot.user.avatar.url)
+                except Exception:
+                    # Fallback to bot avatar if there's any error
+                    if self.bot.user and self.bot.user.avatar:
+                        embed.set_thumbnail(url=self.bot.user.avatar.url)
 
-            # Set footer with developer credit (no timestamp)
-            if self.developer_user_id:
-                embed.set_footer(text=f"Bot created by <@{self.developer_user_id}>")
-            else:
-                embed.set_footer(text="QuranBot - Daily Verses")
+            # Set footer with Arabic name (no timestamp)
+            embed.set_footer(text="created by حَـــــنَـــــا")
 
             return embed
 
