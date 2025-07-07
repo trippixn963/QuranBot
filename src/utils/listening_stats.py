@@ -601,6 +601,17 @@ class ListeningStatsManager:
             if user_id not in self.users:
                 self.users[user_id] = UserStats(user_id)
 
+            # CRITICAL: Save stats immediately after creating active session
+            # This ensures active sessions persist if bot restarts
+            try:
+                self.save_stats()
+            except Exception as save_error:
+                log_error_with_traceback(
+                    "CRITICAL: Failed to save stats after user joined voice",
+                    save_error,
+                    {"user_id": user_id, "active_sessions": len(self.active_sessions)},
+                )
+
             log_perfect_tree_section(
                 "Voice Join Tracking",
                 [
@@ -610,6 +621,7 @@ class ListeningStatsManager:
                         f"⏰ Session started at {datetime.now(timezone.utc).strftime('%I:%M:%S %p')}",
                     ),
                     ("total_users", f"📊 {len(self.active_sessions)} users in voice"),
+                    ("data_saved", "💾 Active session saved to disk"),
                 ],
                 "🎧",
             )
