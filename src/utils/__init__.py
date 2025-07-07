@@ -87,23 +87,15 @@ from .tree_log import (
 
 # Import listening stats utilities
 try:
-    from .listening_stats import (  # Backup system functions; Data protection utilities
+    from .listening_stats import (
         ListeningStatsManager,
         UserStats,
-        cleanup_old_backups,
-        create_hourly_backup,
-        create_manual_backup,
         format_listening_time,
-        get_backup_status,
-        get_data_protection_status,
         get_leaderboard_data,
         get_user_listening_stats,
         listening_stats_manager,
-        start_backup_scheduler,
-        stop_backup_scheduler,
         track_voice_join,
         track_voice_leave,
-        verify_data_integrity,
     )
 except ImportError:
     # Fallback if listening stats module is not available
@@ -128,32 +120,6 @@ except ImportError:
     def format_listening_time(seconds):
         return "0s"
 
-    # Backup system fallbacks
-    def start_backup_scheduler():
-        pass
-
-    def stop_backup_scheduler():
-        pass
-
-    def get_backup_status():
-        return {"error": "Backup system not available"}
-
-    def create_hourly_backup():
-        return False
-
-    # Data protection fallbacks
-    def create_manual_backup():
-        return False
-
-    def cleanup_old_backups(keep_count=10):
-        pass
-
-    def verify_data_integrity():
-        return False
-
-    def get_data_protection_status():
-        return {"error": "Data protection not available"}
-
     class ListeningStatsManager:
         pass
 
@@ -161,6 +127,38 @@ except ImportError:
         pass
 
     listening_stats_manager = None
+
+# Import backup manager utilities
+try:
+    from .backup_manager import (
+        backup_manager,
+        cleanup_old_backups,
+        create_manual_backup,
+        get_backup_status,
+        start_backup_scheduler,
+        stop_backup_scheduler,
+    )
+except ImportError:
+    # Fallback functions if backup manager is not available
+    def cleanup_old_backups(keep_count=10):
+        return 0
+
+    def create_manual_backup():
+        return False
+
+    def get_backup_status():
+        return {"error": "Backup manager not available"}
+
+    def start_backup_scheduler():
+        pass
+
+    def stop_backup_scheduler():
+        pass
+
+    class BackupManager:
+        pass
+
+    backup_manager = None
 
 # Import version utilities with absolute import
 try:
@@ -237,12 +235,9 @@ __all__ = [
     "start_backup_scheduler",
     "stop_backup_scheduler",
     "get_backup_status",
-    "create_hourly_backup",
-    # Data Protection Utilities (Listening Stats)
     "create_manual_backup",
     "cleanup_old_backups",
-    "verify_data_integrity",
-    "get_data_protection_status",
+    "backup_manager",
     # Data Protection Utilities (State Manager)
     "state_manager_create_manual_backup",
     "state_manager_verify_data_integrity",
