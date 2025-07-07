@@ -32,5 +32,5 @@ __all__ = [
     "leaderboard_command",
     # Verse Command
     "setup_verse_command",
-    "verse_command",
+    "verse_slash_command",
 ]
