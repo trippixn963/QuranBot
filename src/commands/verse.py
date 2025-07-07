@@ -71,14 +71,23 @@ async def verse_slash_command(interaction: discord.Interaction):
             )
             return
 
-        # Check if daily verses system is set up
+        # Check if daily verses system is configured
         if (
             not daily_verses_manager.bot
             or not daily_verses_manager.daily_verse_channel_id
         ):
+            # Debug logging to see the actual values
+            print(f"DEBUG: daily_verses_manager.bot = {daily_verses_manager.bot}")
+            print(
+                f"DEBUG: daily_verses_manager.daily_verse_channel_id = {daily_verses_manager.daily_verse_channel_id}"
+            )
+            print(
+                f"DEBUG: daily_verses_manager.developer_user_id = {daily_verses_manager.developer_user_id}"
+            )
+
             embed = discord.Embed(
                 title="❌ Daily Verses Not Configured",
-                description="The daily verses system is not set up. Please check the bot configuration.",
+                description="The daily verses system is not properly configured. Please check the bot configuration.",
                 color=0xFF6B6B,
             )
 

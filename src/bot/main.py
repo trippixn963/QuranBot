@@ -955,7 +955,7 @@ async def on_ready():
                     await setup_leaderboard_command(bot)
                     await setup_verse_command(bot)
 
-                    # Sync commands to Discord
+                    # Sync commands to Discord with force sync
                     await bot.tree.sync()
                     log_perfect_tree_section(
                         "Slash Commands Sync",
