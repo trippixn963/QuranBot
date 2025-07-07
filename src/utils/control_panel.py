@@ -149,7 +149,7 @@ class SurahSearchModal(Modal):
 
                 embed.add_field(
                     name=f"{surah.emoji} {surah.name_transliteration}",
-                    value=f"*{surah.name_arabic}*\n📖 Surah {surah.number:03d} • {surah.verses} verses\n🏛️ {surah.revelation_type.value}",
+                    value=f"*{surah.name_arabic}*\n📖 Surah {surah.number} • {surah.verses} verses\n🏛️ {surah.revelation_type.value}",
                     inline=False,
                 )
 
@@ -200,7 +200,7 @@ class SurahSearchModal(Modal):
             for i, surah in enumerate(results[:5], 1):  # Show max 5 in embed
                 embed.add_field(
                     name=f"{i}. {surah.emoji} {surah.name_transliteration}",
-                    value=f"*{surah.name_arabic}* • Surah {surah.number:03d} • {surah.verses} verses",
+                    value=f"*{surah.name_arabic}* • Surah {surah.number} • {surah.verses} verses",
                     inline=False,
                 )
 
@@ -273,7 +273,7 @@ class SearchResultsSelect(Select):
             options.append(
                 discord.SelectOption(
                     label=f"{surah.emoji} {surah.name_transliteration}",
-                    description=f"{surah.name_arabic} • Surah {surah.number:03d} • {surah.verses} verses",
+                    description=f"{surah.name_arabic} • Surah {surah.number} • {surah.verses} verses",
                     value=str(surah.number),
                 )
             )
@@ -343,7 +343,7 @@ class SearchResultsSelect(Select):
 
             embed.add_field(
                 name=f"{surah.emoji} {surah.name_transliteration}",
-                value=f"*{surah.name_arabic}*\n📖 Surah {surah.number:03d} • {surah.verses} verses\n🏛️ {surah.revelation_type.value}",
+                value=f"*{surah.name_arabic}*\n📖 Surah {surah.number} • {surah.verses} verses\n🏛️ {surah.revelation_type.value}",
                 inline=False,
             )
 
@@ -552,7 +552,7 @@ class SurahSelect(Select):
                 if surah_info:
                     self.options.append(
                         discord.SelectOption(
-                            label=f"{surah_info.emoji} {surah_number:03d}. {surah_info.name_transliteration}",
+                            label=f"{surah_info.emoji} {surah_number}. {surah_info.name_transliteration}",
                             description=surah_info.name_arabic,
                             value=str(surah_number),
                         )
