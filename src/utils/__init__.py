@@ -173,7 +173,7 @@ try:
 except ImportError:
     # Fallback for different import contexts
     BOT_NAME = "QuranBot"
-    BOT_VERSION = "2.1.0"  # Keep in sync with src/version.py
+    BOT_VERSION = "2.2.1"  # Keep in sync with src/version.py
     __author__ = "John (Discord: Trippixn)"  # Keep in sync with src/version.py
 
     def get_version_info():
@@ -183,7 +183,7 @@ except ImportError:
         return BOT_VERSION
 
     def get_version_tuple():
-        return (2, 1, 0)  # Keep in sync with src/version.py
+        return (2, 2, 1)  # Keep in sync with src/version.py
 
 
 # Export main utility classes and functions

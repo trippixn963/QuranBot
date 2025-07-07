@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.1] - 2025-01-18
+
+### Fixed
+
+- **🎛️ Control Panel Cleanup**: Fixed control panel stuck issue with robust cleanup system at bot startup
+- **🔄 Existing Users Detection**: Fixed bot not tracking listening time for users already in voice channel when bot starts
+- **👥 Role Assignment Bug**: Fixed role being assigned when users joined ANY voice channel instead of only Quran channel
+- **📊 Time Tracking Persistence**: Fixed listening time not continuing across bot restarts
+- **🐛 Syntax Error Resolution**: Fixed misplaced break statement causing SyntaxError in voice state handler
+- **📝 Import Path Fix**: Fixed control panel creation error due to incorrect import path
+- **📋 README Formatting**: Fixed messy version history formatting with clean, professional structure
+
+### Enhanced
+
+- **🧹 Panel Cleanup System**: Added comprehensive control panel cleanup with rate limiting protection
+- **🔍 Existing Users Scanner**: Implemented system to detect and start tracking users already in voice channel
+- **🎯 Channel-Specific Roles**: Enhanced role management to only work for designated Quran voice channel
+- **📊 Persistent Time Tracking**: Time tracking now seamlessly continues across bot restarts
+- **🛡️ Error Handling**: Improved exception handling for role operations and panel cleanup
+- **📝 Documentation**: Clean, organized README with professional formatting and correct repository references
+
+### Technical Improvements
+
+- **🔄 Bot Startup Flow**: Enhanced startup sequence with existing user detection and panel cleanup
+- **🎭 Role Management**: Added proper channel ID validation before role assignment/removal
+- **📱 Control Panel Registry**: Global panel tracking to prevent stuck panels
+- **🔒 Thread Safety**: Improved cleanup operations with list copying for thread safety
+- **📊 Logging Enhancement**: Better logging for all cleanup and tracking operations
+
 ## [2.2.0] - 2025-01-18
 
 ### Added
