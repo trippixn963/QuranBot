@@ -359,6 +359,9 @@ class AudioManager:
             # Update file index to match current surah
             self._update_file_index_for_surah()
 
+            # Check for missing surahs and log them
+            self._check_missing_surahs()
+
             log_perfect_tree_section(
                 "Audio Files - Loaded",
                 [
@@ -382,6 +385,75 @@ class AudioManager:
                     break
         except Exception as e:
             log_error_with_traceback("Error updating file index for surah", e)
+
+    def _check_missing_surahs(self):
+        """Check for missing surahs in the current reciter's collection"""
+        try:
+            # Get list of available surah numbers from filenames
+            available_surahs = set()
+            for audio_file in self.current_audio_files:
+                filename = os.path.basename(audio_file)
+                try:
+                    # Extract surah number from filename (e.g., "001.mp3" -> 1)
+                    surah_num = int(filename.split(".")[0])
+                    if 1 <= surah_num <= 114:  # Valid surah range
+                        available_surahs.add(surah_num)
+                except (ValueError, IndexError):
+                    continue
+
+            # Find missing surahs
+            all_surahs = set(range(1, 115))  # Surahs 1-114
+            missing_surahs = sorted(all_surahs - available_surahs)
+
+            if missing_surahs:
+                # Log missing surahs in groups for better readability
+                missing_ranges = []
+                start = missing_surahs[0]
+                end = start
+
+                for i in range(1, len(missing_surahs)):
+                    if missing_surahs[i] == end + 1:
+                        end = missing_surahs[i]
+                    else:
+                        if start == end:
+                            missing_ranges.append(str(start))
+                        else:
+                            missing_ranges.append(f"{start}-{end}")
+                        start = missing_surahs[i]
+                        end = start
+
+                # Add the last range
+                if start == end:
+                    missing_ranges.append(str(start))
+                else:
+                    missing_ranges.append(f"{start}-{end}")
+
+                log_perfect_tree_section(
+                    "Audio Collection - Missing Surahs",
+                    [
+                        ("reciter", self.current_reciter),
+                        ("available_surahs", f"{len(available_surahs)}/114"),
+                        ("missing_count", len(missing_surahs)),
+                        ("missing_surahs", ", ".join(missing_ranges)),
+                        (
+                            "note",
+                            "This explains why surah numbers don't match file indices",
+                        ),
+                    ],
+                    "⚠️",
+                )
+            else:
+                log_perfect_tree_section(
+                    "Audio Collection - Complete",
+                    [
+                        ("reciter", self.current_reciter),
+                        ("status", "✅ All 114 surahs available"),
+                    ],
+                    "✅",
+                )
+
+        except Exception as e:
+            log_error_with_traceback("Error checking missing surahs", e)
 
     async def start_playback(self, resume_position: bool = True):
         """Start the audio playback loop"""
