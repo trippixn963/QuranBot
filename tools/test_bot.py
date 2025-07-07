@@ -422,7 +422,7 @@ def test_surah_mapper():
                     "📖",
                 )
                 return False
-            display = get_surah_display(surah_num, "short")
+            display = get_surah_display(surah_num)
             surah_tests.append((f"surah_{surah_num}", f"✅ {display}"))
 
         # Test validation

@@ -868,9 +868,7 @@ class AudioManager:
                     )
 
                     if validate_surah_number(self.current_surah):
-                        surah_display = get_surah_display(
-                            self.current_surah, "detailed"
-                        )
+                        surah_display = get_surah_display(self.current_surah)
                         log_perfect_tree_section(
                             "Now Playing",
                             [
