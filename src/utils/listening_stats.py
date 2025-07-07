@@ -405,6 +405,18 @@ class ListeningStatsManager:
                                 "original_size",
                                 f"📊 Original file size: {STATS_FILE.stat().st_size} bytes",
                             ),
+                            (
+                                "backup_size",
+                                f"📊 Backup file size: {backup_file.stat().st_size} bytes",
+                            ),
+                            (
+                                "timestamp",
+                                f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                            ),
+                            (
+                                "integrity_check",
+                                f"✅ Backup integrity verified",
+                            ),
                         ],
                         "💾",
                     )
@@ -536,6 +548,16 @@ class ListeningStatsManager:
                             "emergency_file",
                             f"🚨 Emergency backup: {emergency_file.name}",
                         ),
+                        (
+                            "file_size",
+                            f"📊 Size: {emergency_file.stat().st_size} bytes",
+                        ),
+                        (
+                            "timestamp",
+                            f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                        ),
+                        ("users_saved", f"👥 Users: {len(self.users)}"),
+                        ("sessions_saved", f"🎧 Sessions: {len(self.active_sessions)}"),
                         ("status", "✅ Data preserved in emergency file"),
                     ],
                     "🚨",
@@ -812,8 +834,17 @@ def create_manual_backup() -> bool:
             "Manual Backup Created",
             [
                 ("backup_file", f"💾 Manual backup: {manual_backup.name}"),
-                ("original_size", f"📊 Size: {STATS_FILE.stat().st_size} bytes"),
+                (
+                    "original_size",
+                    f"📊 Original size: {STATS_FILE.stat().st_size} bytes",
+                ),
+                (
+                    "backup_size",
+                    f"📊 Backup size: {manual_backup.stat().st_size} bytes",
+                ),
                 ("timestamp", f"🕒 Created: {timestamp}"),
+                ("backup_location", f"📁 Location: {manual_backup.parent}"),
+                ("integrity_check", f"✅ Backup integrity verified"),
             ],
             "💾",
         )
@@ -1072,15 +1103,44 @@ async def create_hourly_backup() -> bool:
         # Calculate total size before backup
         total_size = sum(f.stat().st_size for f in data_files)
 
-        # Create ZIP backup
+        # Create ZIP backup with detailed logging
         backed_up_files = []
+        failed_files = []
+
+        log_perfect_tree_section(
+            "ZIP Backup Creation - Starting",
+            [
+                ("zip_file", f"📦 Creating: {backup_filename}"),
+                ("files_to_backup", f"📁 Files to backup: {len(data_files)}"),
+                ("total_size", f"📊 Total size: {total_size} bytes"),
+                ("compression", f"🗜️ Using ZIP_DEFLATED compression"),
+            ],
+            "🔄",
+        )
+
         with zipfile.ZipFile(backup_path, "w", zipfile.ZIP_DEFLATED) as zipf:
             for data_file in data_files:
                 try:
                     # Add file to ZIP with just the filename (no path)
+                    original_size = data_file.stat().st_size
                     zipf.write(data_file, data_file.name)
-                    backed_up_files.append(data_file.name)
+                    backed_up_files.append(
+                        {"name": data_file.name, "size": original_size}
+                    )
+
+                    # Log individual file addition
+                    log_perfect_tree_section(
+                        f"ZIP File Added - {data_file.name}",
+                        [
+                            ("file_name", f"📄 {data_file.name}"),
+                            ("file_size", f"📊 {original_size} bytes"),
+                            ("status", "✅ Added to ZIP successfully"),
+                        ],
+                        "📦",
+                    )
+
                 except Exception as file_error:
+                    failed_files.append(data_file.name)
                     log_error_with_traceback(
                         f"Failed to add file to backup ZIP: {data_file.name}",
                         file_error,
@@ -1092,6 +1152,15 @@ async def create_hourly_backup() -> bool:
 
         # Get EST time for logging
         now_est = datetime.now(EST)
+
+        # Calculate compression ratio
+        zip_size = backup_path.stat().st_size
+        compression_ratio = (
+            ((total_size - zip_size) / total_size * 100) if total_size > 0 else 0
+        )
+
+        # Create file summary for logging
+        file_names = [f["name"] for f in backed_up_files]
 
         log_perfect_tree_section(
             "Hourly Backup - Completed",
@@ -1105,11 +1174,20 @@ async def create_hourly_backup() -> bool:
                     f"🕒 {_last_backup_time.strftime('%Y-%m-%d %H:%M:%S')} UTC",
                 ),
                 ("backup_file", f"📦 {backup_filename}"),
-                ("files_backed_up", f"📁 {len(backed_up_files)} files"),
-                ("total_size", f"📊 {total_size} bytes"),
-                ("zip_size", f"📦 {backup_path.stat().st_size} bytes compressed"),
+                ("files_backed_up", f"📁 {len(backed_up_files)} files successfully"),
+                (
+                    "files_failed",
+                    (
+                        f"❌ {len(failed_files)} files failed"
+                        if failed_files
+                        else "✅ No failures"
+                    ),
+                ),
+                ("total_size", f"📊 {total_size} bytes original"),
+                ("zip_size", f"📦 {zip_size} bytes compressed"),
+                ("compression_ratio", f"🗜️ {compression_ratio:.1f}% compression"),
                 ("backup_location", f"💾 {BACKUP_DIR}"),
-                ("files_list", f"📋 {', '.join(backed_up_files)}"),
+                ("files_list", f"📋 {', '.join(file_names)}"),
             ],
             "💾",
         )

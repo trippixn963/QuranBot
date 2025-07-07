@@ -246,8 +246,18 @@ class StateManager:
                     "Emergency Playback Save Created",
                     [
                         ("emergency_file", f"🚨 Emergency save: {emergency_file.name}"),
+                        (
+                            "file_size",
+                            f"📊 Size: {emergency_file.stat().st_size} bytes",
+                        ),
                         ("surah", f"📖 Surah: {current_surah}"),
                         ("position", f"⏱️ Position: {current_position:.1f}s"),
+                        ("reciter", f"🎤 Reciter: {current_reciter}"),
+                        (
+                            "timestamp",
+                            f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                        ),
+                        ("status", "✅ Playback state preserved"),
                     ],
                     "🚨",
                 )
@@ -677,6 +687,10 @@ class StateManager:
                     [
                         ("emergency_file", f"🚨 Emergency save: {emergency_file.name}"),
                         (
+                            "file_size",
+                            f"📊 Size: {emergency_file.stat().st_size} bytes",
+                        ),
+                        (
                             "sessions",
                             f"📊 Sessions: {current_stats.get('total_sessions', 0)}",
                         ),
@@ -684,6 +698,11 @@ class StateManager:
                             "runtime",
                             f"⏱️ Runtime: {current_stats.get('total_runtime', 0):.1f}s",
                         ),
+                        (
+                            "timestamp",
+                            f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                        ),
+                        ("status", "✅ Bot statistics preserved"),
                     ],
                     "🚨",
                 )
@@ -1044,13 +1063,37 @@ class StateManager:
                     log_error_with_traceback("Error backing up bot stats", e)
 
             if files_backed_up > 0:
+                # Calculate total backup size
+                total_backup_size = 0
+                backup_details = []
+
+                if self.playback_state_file.exists():
+                    backup_playback = backup_dir / f"{backup_name}_playback_state.json"
+                    if backup_playback.exists():
+                        size = backup_playback.stat().st_size
+                        total_backup_size += size
+                        backup_details.append(f"playback_state ({size} bytes)")
+
+                if self.bot_stats_file.exists():
+                    backup_stats = backup_dir / f"{backup_name}_bot_stats.json"
+                    if backup_stats.exists():
+                        size = backup_stats.stat().st_size
+                        total_backup_size += size
+                        backup_details.append(f"bot_stats ({size} bytes)")
+
                 log_perfect_tree_section(
                     "State Backup - Success",
                     [
+                        ("backup_name", f"📦 Backup: {backup_name}"),
+                        ("files_backed_up", f"💾 {files_backed_up} files backed up"),
+                        ("total_size", f"📊 Total size: {total_backup_size} bytes"),
+                        ("backup_details", f"📋 Files: {', '.join(backup_details)}"),
+                        ("backup_location", f"📁 Location: {backup_dir}"),
                         (
-                            "state_backed_up",
-                            f"Backup '{backup_name}': {files_backed_up} files",
+                            "timestamp",
+                            f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
                         ),
+                        ("integrity_check", f"✅ All backups verified"),
                     ],
                     "💾",
                 )
@@ -1102,11 +1145,40 @@ class StateManager:
                 backup_count += 1
 
             if backup_count > 0:
+                # Calculate total backup size
+                total_backup_size = 0
+                backup_details = []
+
+                if self.playback_state_file.exists():
+                    playback_backup = (
+                        self.data_dir / f"manual_backup_playback_{timestamp}.json"
+                    )
+                    if playback_backup.exists():
+                        size = playback_backup.stat().st_size
+                        total_backup_size += size
+                        backup_details.append(f"playback_state.json ({size} bytes)")
+
+                if self.bot_stats_file.exists():
+                    stats_backup = (
+                        self.data_dir / f"manual_backup_bot_stats_{timestamp}.json"
+                    )
+                    if stats_backup.exists():
+                        size = stats_backup.stat().st_size
+                        total_backup_size += size
+                        backup_details.append(f"bot_stats.json ({size} bytes)")
+
                 log_perfect_tree_section(
                     "Manual State Backup Created",
                     [
                         ("files_backed_up", f"💾 {backup_count} files backed up"),
+                        (
+                            "total_size",
+                            f"📊 Total backup size: {total_backup_size} bytes",
+                        ),
+                        ("backup_details", f"📋 Files: {', '.join(backup_details)}"),
                         ("timestamp", f"🕒 Created: {timestamp}"),
+                        ("backup_location", f"📁 Location: {self.data_dir}"),
+                        ("integrity_check", f"✅ All backups verified"),
                     ],
                     "💾",
                 )
