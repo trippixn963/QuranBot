@@ -1243,15 +1243,18 @@ async def on_voice_state_update(member, before, after):
                 try:
                     voice_client = await channel.connect(reconnect=False, timeout=60)
 
-                    if audio_manager:
-                        audio_manager.set_voice_client(voice_client)
-                        await audio_manager.start_playback()
+                    # Use intelligent auto-restart logic
+                    await auto_restart_audio_playback(voice_client)
 
                     log_perfect_tree_section(
                         "Reconnection Success",
                         [
-                            ("reconnect_attempt", f"Reconnecting due to: {reason}"),
+                            ("reconnect_attempt", f"Reconnecting due to disconnection"),
                             ("reconnect", f"✅ Reconnected to {channel.name}"),
+                            (
+                                "audio_restart",
+                                "✅ Audio playback intelligently restarted",
+                            ),
                         ],
                         "✅",
                     )
@@ -1806,13 +1809,18 @@ async def _attempt_voice_reconnection(reason):
 
                 if audio_manager:
                     audio_manager.set_voice_client(voice_client)
-                    await audio_manager.start_playback()
+                    # Restart audio playback with resume position to continue where we left off
+                    await audio_manager.start_playback(resume_position=True)
 
                 log_perfect_tree_section(
                     "Voice Reconnection - Success",
                     [
                         ("reconnect_attempt", f"Reconnecting due to: {reason}"),
                         ("reconnect", f"✅ Reconnected to {channel.name}"),
+                        (
+                            "audio_restart",
+                            "✅ Audio playback resumed from saved position",
+                        ),
                     ],
                     "✅",
                 )
@@ -1873,14 +1881,17 @@ async def on_resumed():
     """
     Handle Discord reconnection after temporary disconnection.
 
-    Logs the reconnection event and performs any necessary reinitialization
-    of bot services after a temporary disconnection.
+    Automatically restarts audio playback when the bot reconnects,
+    ensuring seamless continuation from where it left off.
     """
-    try:
+    global rich_presence, audio_manager
 
+    try:
         # Verify voice connection is still active
         voice_status = "No active voice connections"
-        if audio_manager and hasattr(bot, "voice_clients"):
+        voice_clients = []
+
+        if hasattr(bot, "voice_clients"):
             voice_clients = bot.voice_clients
             if voice_clients:
                 voice_status = f"Voice connections: {len(voice_clients)}"
@@ -1894,6 +1905,10 @@ async def on_resumed():
             ],
             "🔄",
         )
+
+        # Automatically restart audio playback using intelligent logic
+        if voice_clients:
+            await auto_restart_audio_playback(voice_clients[0])
 
     except Exception as e:
         log_error_with_traceback("Error handling resume event", e)
@@ -2023,6 +2038,152 @@ async def on_guild_available(guild):
 
     except Exception as e:
         log_error_with_traceback("Error handling guild available event", e)
+
+
+# =============================================================================
+# Helper Functions for Auto-Restart Logic
+# =============================================================================
+
+
+def should_auto_restart_audio() -> bool:
+    """
+    Determine if audio playback should automatically restart after reconnection.
+
+    Checks the saved state to see if audio was playing when the bot disconnected
+    and if there's a valid resume position.
+
+    Returns:
+        bool: True if audio should auto-restart, False otherwise
+    """
+    try:
+        if not audio_manager:
+            return False
+
+        # Get resume info from state manager
+        resume_info = state_manager.get_resume_info()
+
+        # Check if we have a valid resume position or if audio was previously playing
+        saved_state = state_manager.load_playback_state()
+        was_playing = saved_state.get("is_playing", False)
+        has_position = resume_info.get("should_resume", False)
+
+        # Auto-restart if audio was playing OR if we have a saved position
+        return was_playing or has_position
+
+    except Exception as e:
+        log_error_with_traceback("Error checking auto-restart conditions", e)
+        return False
+
+
+async def auto_restart_audio_playback(voice_client=None) -> bool:
+    """
+    Automatically restart audio playback with intelligent resume logic.
+
+    Args:
+        voice_client: Optional voice client to use (will detect if None)
+
+    Returns:
+        bool: True if restart was successful, False otherwise
+    """
+    global audio_manager
+
+    try:
+        if not audio_manager:
+            log_perfect_tree_section(
+                "Auto-Restart Check",
+                [
+                    ("status", "❌ No audio manager available"),
+                ],
+                "❌",
+            )
+            return False
+
+        # Check if we should auto-restart
+        if not should_auto_restart_audio():
+            log_perfect_tree_section(
+                "Auto-Restart Check",
+                [
+                    ("status", "ℹ️ No auto-restart needed"),
+                    ("reason", "Audio was not playing when disconnected"),
+                ],
+                "ℹ️",
+            )
+            return False
+
+        # Get voice client if not provided
+        if not voice_client and hasattr(bot, "voice_clients") and bot.voice_clients:
+            voice_client = bot.voice_clients[0]
+
+        if not voice_client or not voice_client.is_connected():
+            log_perfect_tree_section(
+                "Auto-Restart Failed",
+                [
+                    ("status", "❌ No voice client available"),
+                ],
+                "❌",
+            )
+            return False
+
+        # Update audio manager with voice client
+        if (
+            not audio_manager.voice_client
+            or not audio_manager.voice_client.is_connected()
+        ):
+            audio_manager.set_voice_client(voice_client)
+
+        # Check if already playing
+        if audio_manager.is_playing:
+            log_perfect_tree_section(
+                "Auto-Restart Check",
+                [
+                    ("status", "✅ Audio already playing"),
+                    ("current_surah", audio_manager.current_surah),
+                ],
+                "✅",
+            )
+            return True
+
+        # Get resume info for logging
+        resume_info = state_manager.get_resume_info()
+
+        log_perfect_tree_section(
+            "Auto-Restart Audio Playback",
+            [
+                ("status", "🔄 Restarting audio after reconnection"),
+                ("resume_surah", resume_info["surah"]),
+                ("resume_position", f"{resume_info['position']:.1f}s"),
+                ("resume_reciter", resume_info["reciter"]),
+            ],
+            "🎵",
+        )
+
+        # Restart audio playback with resume position
+        await audio_manager.start_playback(resume_position=True)
+
+        log_perfect_tree_section(
+            "Auto-Restart Complete",
+            [
+                ("status", "✅ Audio playback restarted successfully"),
+                ("current_surah", audio_manager.current_surah),
+                ("reciter", audio_manager.current_reciter),
+                ("is_playing", audio_manager.is_playing),
+            ],
+            "✅",
+        )
+
+        return True
+
+    except Exception as e:
+        log_error_with_traceback("Error in auto-restart audio playback", e)
+        log_perfect_tree_section(
+            "Auto-Restart Failed",
+            [
+                ("status", "❌ Failed to restart audio automatically"),
+                ("error", str(e)),
+            ],
+            "❌",
+        )
+        return False
 
 
 # =============================================================================

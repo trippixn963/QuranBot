@@ -238,10 +238,33 @@ def log_spacing():
     write_to_log_files("", "INFO", "spacing")
 
 
+def reset_section_tracking():
+    """Reset the section tracking for a new run or major section group"""
+    global _is_first_section
+    _is_first_section = True
+
+
+def log_section_group_separator(title=None):
+    """Add extra spacing and optional title for major section groups"""
+    print()
+    if title:
+        timestamp = get_timestamp()
+        separator_line = f"{'='*60}"
+        title_line = f"📋 {title}"
+        print(f"{timestamp} {separator_line}")
+        print(f"{timestamp} {title_line}")
+        print(f"{timestamp} {separator_line}")
+        write_to_log_files(separator_line, "INFO", "section_group_separator")
+        write_to_log_files(title_line, "INFO", "section_group_separator")
+        write_to_log_files(separator_line, "INFO", "section_group_separator")
+    print()
+    write_to_log_files("", "INFO", "section_group_spacing")
+
+
 def log_run_separator():
     """Create a visual separator for new runs"""
-    global _is_first_section
-    _is_first_section = True  # Reset for new run
+    # Reset section tracking for new run
+    reset_section_tracking()
 
     separator_line = "=" * 80
     timestamp = get_timestamp()
@@ -531,6 +554,7 @@ def log_discord_error(event_name, exception, guild_id=None, channel_id=None):
 def log_perfect_tree_section(title, items, emoji="🎯", nested_groups=None):
     """
     Create a perfect tree structure with proper nesting and visual hierarchy.
+    Automatically adds spacing before each section for better readability.
 
     Args:
         title: Section title
@@ -538,7 +562,16 @@ def log_perfect_tree_section(title, items, emoji="🎯", nested_groups=None):
         emoji: Emoji for the section header
         nested_groups: Dict of nested groups {group_name: [(key, value), ...]}
     """
+    global _is_first_section
+
     timestamp = get_timestamp()
+
+    # Add spacing before section (except for the very first section)
+    if not _is_first_section:
+        print("")
+        write_to_log_files("", "INFO", "section_spacing")
+    else:
+        _is_first_section = False
 
     # Reset tree structure for this section
     reset_tree_structure()

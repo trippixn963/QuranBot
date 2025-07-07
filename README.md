@@ -95,7 +95,7 @@ _Built with ❤️ for the Muslim Ummah - Shared as-is for educational purposes_
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/JohnHamwi/QuranBot.git
+   git clone https://github.com/trippixn963/QuranBot.git
    cd QuranBot
    ```
 
@@ -445,7 +445,7 @@ This repository demonstrates professional Discord bot development:
 
 ### 🔗 **Quick Links**
 
-[![GitHub](https://img.shields.io/badge/GitHub-Repository-black?logo=github)](https://github.com/johnhamwi/QuranBot)
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-black?logo=github)](https://github.com/trippixn963/QuranBot)
 [![License](https://img.shields.io/badge/License-MIT-green?logo=opensourceinitiative)](LICENSE)
 [![Contributing](https://img.shields.io/badge/Contributing-Guidelines-blue?logo=github)](CONTRIBUTING.md)
 [![Security](https://img.shields.io/badge/Security-Policy-red?logo=security)](SECURITY.md)

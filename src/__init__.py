@@ -17,7 +17,7 @@ from .version import __author__, __version__
 
 __description__ = "Discord bot for playing Quran audio with tree-style logging"
 __license__ = "MIT"
-__url__ = "https://github.com/johnhamwi/QuranBot"
+__url__ = "https://github.com/trippixn963/QuranBot"
 
 # Package metadata for external tools
 __all__ = ["__version__", "__author__", "__description__", "__license__", "__url__"]

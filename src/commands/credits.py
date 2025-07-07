@@ -35,7 +35,7 @@ load_dotenv(env_path)
 
 # Configuration
 ADMIN_USER_ID = int(os.getenv("ADMIN_USER_ID", "0"))
-GITHUB_REPO_URL = "https://github.com/JohnHamwi/QuranBot"
+GITHUB_REPO_URL = "https://github.com/trippixn963/QuranBot"
 # BOT_VERSION now imported from centralized version module
 
 
@@ -374,7 +374,7 @@ async def setup_credits_command(bot):
             # Repository & Support
             embed.add_field(
                 name="📋 Repository & Policy",
-                value='• **GitHub:** [QuranBot Repository](https://github.com/johnhamwi/QuranBot)\n• **License:** MIT License\n• **Support Policy:** ⚠️ **"Take as it is" - No support provided**\n• **Purpose:** Educational and reference use only',
+                value='• **GitHub:** [QuranBot Repository](https://github.com/trippixn963/QuranBot)\n• **License:** MIT License\n• **Support Policy:** ⚠️ **"Take as it is" - No support provided**\n• **Purpose:** Educational and reference use only',
                 inline=False,
             )
 
