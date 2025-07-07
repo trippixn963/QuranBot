@@ -104,9 +104,9 @@ async def leaderboard_command(interaction: discord.Interaction):
 
                 # Create leaderboard entry with time under the name
                 # This solves Arabic text formatting issues by separating directional content
-                # Add Unicode Left-to-Right mark to prevent Arabic text direction issues
+                # Add strong Unicode direction control to prevent Arabic names from appearing on right
                 leaderboard_text += (
-                    f"{position_display} <@{user_id}>\u200e\n"
+                    f"\u202d{position_display} <@{user_id}>\u202c\u200e\n"
                     f"　　　　`{time_formatted}`\n\n"
                 )
 
