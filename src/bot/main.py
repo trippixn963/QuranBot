@@ -49,18 +49,14 @@ from src.version import BOT_NAME, BOT_VERSION
 from utils.audio_manager import AudioManager
 
 # =============================================================================
-# Import Control Panel Functions
+# Import Backup Manager
 # =============================================================================
-from utils.control_panel import setup_control_panel
+from utils.backup_manager import start_backup_scheduler
 
 # =============================================================================
 # Import Listening Stats Manager
 # =============================================================================
-from utils.listening_stats import (
-    start_backup_scheduler,
-    track_voice_join,
-    track_voice_leave,
-)
+from utils.listening_stats import track_voice_join, track_voice_leave
 
 # =============================================================================
 # Import Rich Presence Manager

@@ -340,9 +340,9 @@ The bot features a beautiful tree-style logging system:
 ================================================================================
 🚀 NEW BOT RUN STARTED
 ================================================================================
-🎯 QuranBot v1.5.0 - Run ID: B331F430
+🎯 QuranBot v2.2.0 - Run ID: B331F430
 ├─ started_at: [07/05 10:28 PM EST]
-├─ version: 1.5.0
+├─ version: 2.2.0
 ├─ run_id: B331F430
 └─ log_session: 2025-07-05
 
@@ -387,30 +387,50 @@ All logs are automatically saved to:
 - ✅ Secure token handling
 - ✅ State file encryption ready
 
-## 📈 Version History
+## 📋 Version History
 
-### v1.5.0 (Latest)
+### v2.2.0 (Latest)
 
-- 🎛️ **Interactive Control Panel** - Full Discord control panel with buttons and dropdowns
-- 💾 **State Management** - Automatic save/resume functionality
-- 🔄 **Smart Resume** - Intelligent playback position restoration
-- 📊 **Session Statistics** - Usage tracking and analytics
-- 👤 **Last Activity Tracking** - User interaction monitoring
-- 🎮 **Enhanced Controls** - Loop, shuffle, and navigation controls
-- 🎨 **Visual Improvements** - Progress bars, emojis, and better formatting
+🛡️ **Bulletproof Data Protection** - 5-layer protection system for all data files
+📦 **Automated ZIP Backup System** - EST-scheduled hourly backups with intuitive naming
+🔍 **Missing Surah Detection** - Automatic detection of incomplete reciter collections
+🎯 **Enhanced Audio Management** - Intelligent surah-to-file mapping with analysis
+🗂️ **Perfect Tree Logging** - Complete backup logging with full visibility
+🔄 **Smart Looping** - 24/7 continuous playback with individual surah loop support
+📊 **Audio File Indexing** - Fixed surah indexing issues in incomplete collections
+🚨 **Emergency Backup System** - Multiple fallback mechanisms for data protection
+⏰ **EST Timezone Support** - All operations use Eastern Standard Time
+
+### v2.1.0
+
+🎯 **Centralized Version Management** - Single source of truth version system
+🔄 **Automated Version Updates** - tools/update_version.py utility
+👤 **Centralized Author Management** - Standardized author format
+🗂️ **Perfect Tree Logging** - Enhanced logging with backup visibility
+📊 **Backup Status Reporting** - Real-time backup status with timing info
+
+### v1.5.0
+
+🎛️ **Interactive Control Panel** - Full Discord control panel with buttons and dropdowns
+💾 **State Management** - Automatic save/resume functionality
+🔄 **Smart Resume** - Intelligent playback position restoration
+📊 **Session Statistics** - Usage tracking and analytics
+👤 **Last Activity Tracking** - User interaction monitoring
+🎮 **Enhanced Controls** - Loop, shuffle, and navigation controls
+🎨 **Visual Improvements** - Progress bars, emojis, and better formatting
 
 ### v1.4.0
 
-- 🎤 **Multiple Reciters** - Support for 6 renowned Qaris
-- 🌍 **Arabic Names** - Transliterated Arabic names for reciters
-- 🎵 **Rich Presence** - Enhanced Discord rich presence
-- 🔧 **Bug Fixes** - Various stability improvements
+🎤 **Multiple Reciters** - Support for 6 renowned Qaris
+🌍 **Arabic Names** - Transliterated Arabic names for reciters
+🎵 **Rich Presence** - Enhanced Discord rich presence
+🔧 **Bug Fixes** - Various stability improvements
 
 ### v1.3.0
 
-- 📖 **Surah Mapping** - Beautiful surah names with emojis
-- 🌳 **Tree Logging** - Structured logging system
-- 🛡️ **Instance Management** - Prevent multiple instances
+📖 **Surah Mapping** - Beautiful surah names with emojis
+🌳 **Tree Logging** - Structured logging system
+🛡️ **Instance Management** - Prevent multiple instances
 
 ## 📄 License
 
