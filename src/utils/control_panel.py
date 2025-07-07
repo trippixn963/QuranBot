@@ -790,35 +790,9 @@ class SimpleControlPanelView(View):
             except Exception as e:
                 log_error_with_traceback("Error in update loop", e)
 
-    async def update_panel(self):
-        """Update the control panel embed"""
+    def _create_panel_embed(self) -> discord.Embed:
+        """Create the control panel embed with current status"""
         try:
-            # Check if message still exists before trying to update it
-            if not self.panel_message:
-                return
-
-            # Try to fetch the message to see if it still exists
-            try:
-                await self.panel_message.channel.fetch_message(self.panel_message.id)
-            except discord.NotFound:
-                # Message was deleted, stop trying to update it
-                log_perfect_tree_section(
-                    "Control Panel - Message Deleted",
-                    [
-                        (
-                            "panel_message_deleted",
-                            "Control panel message was deleted, stopping updates",
-                        ),
-                    ],
-                    "🗑️",
-                )
-                if self.update_task and not self.update_task.done():
-                    self.update_task.cancel()
-                return
-            except discord.HTTPException:
-                # Other HTTP errors, wait and try again later
-                return
-
             # Get current status
             current_surah = 1
             current_reciter = "Unknown"
@@ -928,6 +902,48 @@ class SimpleControlPanelView(View):
                     inline=False,
                 )
 
+            return embed
+
+        except Exception as e:
+            log_error_with_traceback("Error creating panel embed", e)
+            # Return a basic embed on error
+            return discord.Embed(
+                description="❌ Error loading panel information",
+                color=0xFF6B6B,
+            )
+
+    async def update_panel(self):
+        """Update the control panel embed"""
+        try:
+            # Check if message still exists before trying to update it
+            if not self.panel_message:
+                return
+
+            # Try to fetch the message to see if it still exists
+            try:
+                await self.panel_message.channel.fetch_message(self.panel_message.id)
+            except discord.NotFound:
+                # Message was deleted, stop trying to update it
+                log_perfect_tree_section(
+                    "Control Panel - Message Deleted",
+                    [
+                        (
+                            "panel_message_deleted",
+                            "Control panel message was deleted, stopping updates",
+                        ),
+                    ],
+                    "🗑️",
+                )
+                if self.update_task and not self.update_task.done():
+                    self.update_task.cancel()
+                return
+            except discord.HTTPException:
+                # Other HTTP errors, wait and try again later
+                return
+
+            # Create embed using helper method
+            embed = self._create_panel_embed()
+
             # Update the message with additional error handling
             try:
                 await self.panel_message.edit(embed=embed, view=self)
@@ -1003,6 +1019,23 @@ class SimpleControlPanelView(View):
         except Exception:
             return "▱" * length + " 0%"
 
+    async def update_panel_for_page_change(self, interaction: discord.Interaction):
+        """Helper to update the panel after page navigation"""
+        try:
+            # Update the surah select to new page
+            for item in self.children:
+                if isinstance(item, SurahSelect):
+                    item.page = self.current_page
+                    item._update_options()
+                    break
+
+            # Update the panel content immediately to show current progress
+            embed = self._create_panel_embed()
+            await interaction.response.edit_message(embed=embed, view=self)
+        except Exception as e:
+            log_error_with_traceback("Error updating panel after page change", e)
+            await interaction.response.defer()
+
     @discord.ui.button(label="⬅️ Prev Page", style=discord.ButtonStyle.secondary, row=2)
     async def prev_page(self, interaction: discord.Interaction, button: Button):
         """Go to previous page"""
@@ -1028,13 +1061,7 @@ class SimpleControlPanelView(View):
                     interaction.user, "switched to previous page"
                 )
 
-                # Update the surah select to new page
-                for item in self.children:
-                    if isinstance(item, SurahSelect):
-                        item.page = self.current_page
-                        item._update_options()
-                        break
-                await interaction.response.edit_message(view=self)
+                await self.update_panel_for_page_change(interaction)
             else:
                 await interaction.response.defer()
         except Exception as e:
@@ -1066,13 +1093,7 @@ class SimpleControlPanelView(View):
 
                 self._update_last_activity(interaction.user, "switched to next page")
 
-                # Update the surah select to new page
-                for item in self.children:
-                    if isinstance(item, SurahSelect):
-                        item.page = self.current_page
-                        item._update_options()
-                        break
-                await interaction.response.edit_message(view=self)
+                await self.update_panel_for_page_change(interaction)
             else:
                 await interaction.response.defer()
         except Exception as e:

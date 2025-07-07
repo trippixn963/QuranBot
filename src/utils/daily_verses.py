@@ -189,15 +189,22 @@ class DailyVersesManager:
         try:
             # Create embed with verse content
             embed = discord.Embed(
-                title=f"📖 {verse['surah_name']} ({verse['arabic_name']})",
-                description=f"**{verse['arabic']}**\n\n*{verse['translation']}*",
+                title=f"📖 Daily Verse - {verse['surah_name']} ({verse['arabic_name']})",
+                description=f"Ayah {verse['ayah']}",
                 color=0x00D4AA,
             )
 
-            # Add surah and ayah info
+            # Add Arabic text field
             embed.add_field(
-                name="📍 Reference",
-                value=f"Surah {verse['surah']}, Ayah {verse['ayah']}",
+                name="🌙 Arabic",
+                value=verse["arabic"],
+                inline=False,
+            )
+
+            # Add English translation field
+            embed.add_field(
+                name="📝 Translation",
+                value=verse["translation"],
                 inline=False,
             )
 
