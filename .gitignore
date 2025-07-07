@@ -9,6 +9,33 @@ config/.env
 .env.local
 .env.production
 
+# CRITICAL: Backup Files and Directories (contain user IDs and sensitive data)
+backup/
+backups/
+*.backup
+*.bak
+*_backup_*
+manual_backup_*
+emergency_backup_*
+emergency_session_*
+emergency_playback_*
+emergency_bot_stats_*
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Data Files (contain user-specific information)
+data/
+user_data/
+*.sqlite
+*.db
+playback_state.json
+bot_stats.json
+listening_stats.json
+*.json.backup
+
 # Python
 __pycache__/
 *.py[cod]
@@ -81,11 +108,6 @@ internal_docs/
 .Trashes
 ehthumbs.db
 Desktop.ini
-
-# Backup Files
-*.backup
-*.bak
-*_backup_*
 
 # Environment and Sensitive Files
 .env.*
@@ -161,12 +183,6 @@ Thumbs.db
 *.bak
 *.backup
 *.orig
-
-# Data Files (user-specific)
-data/
-user_data/
-*.sqlite
-*.db
 
 # FFmpeg and Media Tools
 ffmpeg/
