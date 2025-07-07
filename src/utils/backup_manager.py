@@ -25,9 +25,27 @@ EST = timezone(timedelta(hours=-5))
 # Directory paths
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 BACKUP_DIR = Path(__file__).parent.parent.parent / "backup"
+TEMP_BACKUP_DIR = BACKUP_DIR / "temp"  # For .backup files to keep data/ clean
 
-# Core data files to backup (only these files)
-CORE_DATA_FILES = ["playback_state.json", "bot_stats.json", "listening_stats.json"]
+# Dynamic data file discovery (automatically finds all JSON files)
+# This makes the backup system future-proof for new data files
+DATA_FILE_PATTERNS = [
+    "*.json",  # All JSON data files
+    "*.db",  # Database files
+    "*.sqlite",  # SQLite databases
+    "*.txt",  # Text data files
+    "*.csv",  # CSV data files
+]
+
+# Files to exclude from backup (temporary/cache files)
+EXCLUDE_PATTERNS = [
+    "*.tmp",
+    "*.temp",
+    "*.cache",
+    "*.log",
+    "*_temp_*",
+    "*_cache_*",
+]
 
 # Backup configuration
 BACKUP_INTERVAL_HOURS = 1
@@ -42,21 +60,56 @@ _backup_task = None
 
 class BackupManager:
     """
-    Centralized backup system for QuranBot's core data files.
+    Dynamic backup system for QuranBot's data files.
 
-    Only backs up the 3 essential data files:
-    - playback_state.json (current playback position and settings)
-    - bot_stats.json (bot statistics and session data)
-    - listening_stats.json (user listening statistics)
+    Automatically discovers and backs up all data files in the data directory:
+    - JSON files (*.json) - Configuration and state data
+    - Database files (*.db, *.sqlite) - User data and statistics
+    - Text files (*.txt) - Log files and configuration
+    - CSV files (*.csv) - Exported data and reports
 
-    Excludes manual backup files and temporary files to prevent recursive backups.
+    Features:
+    - Dynamic file discovery (future-proof for new data files)
+    - Clean data directory (no .backup files cluttering data/)
+    - Automatic exclusion of temporary and cache files
+    - EST-scheduled ZIP backups with intuitive naming
     """
 
     def __init__(self):
         self.data_dir = DATA_DIR
         self.backup_dir = BACKUP_DIR
+        self.temp_backup_dir = TEMP_BACKUP_DIR
         self.last_backup_time = None
         self.backup_task = None
+
+        # Ensure temp backup directory exists
+        self.temp_backup_dir.mkdir(parents=True, exist_ok=True)
+
+    def _discover_data_files(self) -> List[Path]:
+        """
+        Dynamically discover all data files in the data directory.
+        Returns a list of Path objects for files that should be backed up.
+        """
+        if not self.data_dir.exists():
+            return []
+
+        discovered_files = []
+
+        # Search for files matching our patterns
+        for pattern in DATA_FILE_PATTERNS:
+            for file_path in self.data_dir.glob(pattern):
+                if file_path.is_file():
+                    # Check if file should be excluded
+                    should_exclude = False
+                    for exclude_pattern in EXCLUDE_PATTERNS:
+                        if file_path.match(exclude_pattern):
+                            should_exclude = True
+                            break
+
+                    if not should_exclude:
+                        discovered_files.append(file_path)
+
+        return sorted(discovered_files)  # Sort for consistent ordering
 
     def _generate_backup_filename(self) -> str:
         """Generate EST-based backup filename like '7_6 - 10PM.zip'"""
@@ -108,20 +161,20 @@ class BackupManager:
                 )
                 return False
 
-            # Get only the core data files that exist
-            data_files = []
-            for core_file in CORE_DATA_FILES:
-                file_path = self.data_dir / core_file
-                if file_path.exists() and file_path.is_file():
-                    data_files.append(file_path)
+            # Dynamically discover all data files
+            data_files = self._discover_data_files()
 
             if not data_files:
                 log_perfect_tree_section(
-                    "Backup Manager - No Core Data Files",
+                    "Backup Manager - No Data Files Found",
                     [
-                        ("status", "⚠️ No core data files found to backup"),
+                        ("status", "⚠️ No data files found to backup"),
                         ("data_dir", str(self.data_dir)),
-                        ("core_files", f"📋 Looking for: {', '.join(CORE_DATA_FILES)}"),
+                        (
+                            "patterns",
+                            f"📋 Looking for: {', '.join(DATA_FILE_PATTERNS)}",
+                        ),
+                        ("excludes", f"🚫 Excluding: {', '.join(EXCLUDE_PATTERNS)}"),
                     ],
                     "⚠️",
                 )
@@ -475,20 +528,20 @@ class BackupManager:
                 )
                 return False
 
-            # Get only the core data files that exist
-            data_files = []
-            for core_file in CORE_DATA_FILES:
-                file_path = self.data_dir / core_file
-                if file_path.exists() and file_path.is_file():
-                    data_files.append(file_path)
+            # Dynamically discover all data files
+            data_files = self._discover_data_files()
 
             if not data_files:
                 log_perfect_tree_section(
                     "Backup Manager - Manual Backup Failed",
                     [
-                        ("status", "⚠️ No core data files found to backup"),
+                        ("status", "⚠️ No data files found to backup"),
                         ("data_dir", str(self.data_dir)),
-                        ("core_files", f"📋 Looking for: {', '.join(CORE_DATA_FILES)}"),
+                        (
+                            "patterns",
+                            f"📋 Looking for: {', '.join(DATA_FILE_PATTERNS)}",
+                        ),
+                        ("excludes", f"🚫 Excluding: {', '.join(EXCLUDE_PATTERNS)}"),
                     ],
                     "⚠️",
                 )

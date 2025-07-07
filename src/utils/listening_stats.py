@@ -21,6 +21,9 @@ from .tree_log import log_error_with_traceback, log_perfect_tree_section
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 STATS_FILE = DATA_DIR / "listening_stats.json"
 
+# Temp backup directory for .backup files (keeps data/ clean)
+TEMP_BACKUP_DIR = Path(__file__).parent.parent.parent / "backup" / "temp"
+
 # =============================================================================
 # Data Structure Classes
 # =============================================================================
@@ -97,6 +100,9 @@ class ListeningStatsManager:
 
         # Ensure data directory exists
         DATA_DIR.mkdir(exist_ok=True)
+
+        # Ensure temp backup directory exists (keeps data/ clean)
+        TEMP_BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
         # Load existing data
         self.load_stats()
@@ -194,8 +200,8 @@ class ListeningStatsManager:
                         {"main_file": str(STATS_FILE)},
                     )
 
-                    # Try to load from backup
-                    backup_file = STATS_FILE.with_suffix(".json.backup")
+                    # Try to load from backup (now in temp directory)
+                    backup_file = TEMP_BACKUP_DIR / f"{STATS_FILE.stem}.backup"
                     if backup_file.exists():
                         try:
                             with open(backup_file, "r", encoding="utf-8") as f:
@@ -379,8 +385,8 @@ class ListeningStatsManager:
     def save_stats(self) -> None:
         """Save listening statistics to file with atomic writes and backup protection"""
         try:
-            # Create backup before saving
-            backup_file = STATS_FILE.with_suffix(".json.backup")
+            # Create backup before saving (in temp directory to keep data/ clean)
+            backup_file = TEMP_BACKUP_DIR / f"{STATS_FILE.stem}.backup"
             if STATS_FILE.exists():
                 try:
                     import shutil

@@ -79,6 +79,10 @@ class StateManager:
             self.data_dir = Path(data_dir)
             self.data_dir.mkdir(exist_ok=True)
 
+            # Create temp backup directory for .backup files (keeps data/ clean)
+            self.temp_backup_dir = Path("backup") / "temp"
+            self.temp_backup_dir.mkdir(parents=True, exist_ok=True)
+
             # State file paths
             self.playback_state_file = self.data_dir / "playback_state.json"
             self.bot_stats_file = self.data_dir / "bot_stats.json"
@@ -187,7 +191,10 @@ class StateManager:
             # 1. No backup exists yet
             # 2. Significant change (surah change, reciter change, or large position jump)
             # 3. Enough time has passed since last backup
-            if not self.playback_state_file.with_suffix(".json.backup").exists():
+            backup_file = (
+                self.temp_backup_dir / f"{self.playback_state_file.stem}.backup"
+            )
+            if not backup_file.exists():
                 should_create_backup = True
             elif self.last_backup_data:
                 # Check for significant changes
@@ -206,7 +213,6 @@ class StateManager:
 
             if should_create_backup and self.playback_state_file.exists():
                 try:
-                    backup_file = self.playback_state_file.with_suffix(".json.backup")
                     shutil.copy2(self.playback_state_file, backup_file)
                     self.last_backup_time = current_time
                     self.last_backup_data = state.copy()
@@ -409,7 +415,9 @@ class StateManager:
                 )
 
                 # Try to load from backup
-                backup_file = self.playback_state_file.with_suffix(".json.backup")
+                backup_file = (
+                    self.temp_backup_dir / f"{self.playback_state_file.stem}.backup"
+                )
                 if backup_file.exists():
                     try:
                         with open(backup_file, "r", encoding="utf-8") as f:
@@ -571,8 +579,8 @@ class StateManager:
             # Load existing stats or use defaults
             current_stats = self.load_bot_stats()
 
-            # Create backup before saving
-            backup_file = self.bot_stats_file.with_suffix(".json.backup")
+            # Create backup before saving (in temp directory to keep data/ clean)
+            backup_file = self.temp_backup_dir / f"{self.bot_stats_file.stem}.backup"
             if self.bot_stats_file.exists():
                 try:
                     shutil.copy2(self.bot_stats_file, backup_file)
@@ -823,7 +831,9 @@ class StateManager:
                 )
 
                 # Try to load from backup
-                backup_file = self.bot_stats_file.with_suffix(".json.backup")
+                backup_file = (
+                    self.temp_backup_dir / f"{self.bot_stats_file.stem}.backup"
+                )
                 if backup_file.exists():
                     try:
                         with open(backup_file, "r", encoding="utf-8") as f:
@@ -1285,9 +1295,11 @@ class StateManager:
             else:
                 integrity_items.append(("bot_stats", "⚠️ File not found"))
 
-            # Check backup files
-            playback_backup = self.playback_state_file.with_suffix(".json.backup")
-            stats_backup = self.bot_stats_file.with_suffix(".json.backup")
+            # Check backup files (now in temp directory)
+            playback_backup = (
+                self.temp_backup_dir / f"{self.playback_state_file.stem}.backup"
+            )
+            stats_backup = self.temp_backup_dir / f"{self.bot_stats_file.stem}.backup"
 
             integrity_items.append(
                 (
@@ -1317,8 +1329,10 @@ class StateManager:
     def get_data_protection_status(self) -> Dict:
         """Get comprehensive data protection status for state files"""
         try:
-            playback_backup = self.playback_state_file.with_suffix(".json.backup")
-            stats_backup = self.bot_stats_file.with_suffix(".json.backup")
+            playback_backup = (
+                self.temp_backup_dir / f"{self.playback_state_file.stem}.backup"
+            )
+            stats_backup = self.temp_backup_dir / f"{self.bot_stats_file.stem}.backup"
 
             emergency_playback = list(self.data_dir.glob("emergency_playback_*.json"))
             emergency_stats = list(self.data_dir.glob("emergency_bot_stats_*.json"))
