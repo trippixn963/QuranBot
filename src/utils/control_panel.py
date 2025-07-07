@@ -1281,20 +1281,32 @@ def register_control_panel(panel_view):
 def cleanup_all_control_panels():
     """Clean up all active control panels"""
     try:
-        for panel in _active_panels:
+        cleaned_count = 0
+        for (
+            panel
+        ) in _active_panels.copy():  # Use copy to avoid modification during iteration
             if panel:
-                panel.cleanup()
+                try:
+                    panel.cleanup()
+                    cleaned_count += 1
+                except Exception as e:
+                    log_error_with_traceback(f"Error cleaning up individual panel", e)
+
         _active_panels.clear()
+
         log_perfect_tree_section(
             "Control Panel - Global Cleanup",
             [
-                ("panels_cleaned", len(_active_panels)),
+                ("panels_cleaned", cleaned_count),
                 ("status", "✅ All control panels cleaned up"),
+                ("action", "Ready for new panel creation"),
             ],
             "🧹",
         )
     except Exception as e:
         log_error_with_traceback("Error cleaning up control panels", e)
+        # Force clear the list even if cleanup failed
+        _active_panels.clear()
 
 
 # =============================================================================
@@ -1317,14 +1329,16 @@ async def create_control_panel(
             "🎛️",
         )
 
+        # Clean up any existing control panels first
+        cleanup_all_control_panels()
+
         # Delete all existing messages in the channel first
         try:
             deleted_count = 0
+            failed_deletions = 0
 
             # Use a more robust approach to delete messages
-            async for message in channel.history(
-                limit=100
-            ):  # Limit to prevent excessive API calls
+            async for message in channel.history(limit=100):
                 try:
                     await message.delete()
                     deleted_count += 1
@@ -1335,34 +1349,51 @@ async def create_control_panel(
                     pass
                 except discord.Forbidden:
                     # No permission to delete
+                    failed_deletions += 1
                     log_perfect_tree_section(
                         "Control Panel - Delete Permission Error",
                         [
                             ("status", "⚠️ No permission to delete some messages"),
+                            ("message_id", str(message.id)),
                             ("action", "Continuing with panel creation"),
                         ],
                         "🚫",
                     )
-                    pass
                 except discord.HTTPException as e:
                     if e.status == 429:  # Rate limited
                         log_perfect_tree_section(
                             "Control Panel - Delete Rate Limited",
                             [
                                 ("status", "⚠️ Rate limited while deleting messages"),
-                                ("action", "Waiting 1 second"),
+                                ("action", "Waiting 2 seconds"),
                             ],
                             "⏱️",
                         )
-                        await asyncio.sleep(1)
+                        await asyncio.sleep(2)
+                        # Try to delete the message again after rate limit
+                        try:
+                            await message.delete()
+                            deleted_count += 1
+                        except:
+                            failed_deletions += 1
                     else:
-                        pass  # Skip other HTTP errors
+                        failed_deletions += 1
+                        log_perfect_tree_section(
+                            "Control Panel - Delete HTTP Error",
+                            [
+                                ("status", f"⚠️ HTTP {e.status} error deleting message"),
+                                ("message_id", str(message.id)),
+                                ("action", "Skipping message"),
+                            ],
+                            "🚫",
+                        )
 
             if deleted_count > 0:
                 log_perfect_tree_section(
                     "Control Panel - Channel Cleared",
                     [
                         ("messages_deleted", deleted_count),
+                        ("failed_deletions", failed_deletions),
                         ("status", "✅ Channel cleared successfully"),
                     ],
                     "🧹",
@@ -1372,13 +1403,14 @@ async def create_control_panel(
                     "Control Panel - Channel Status",
                     [
                         ("messages_deleted", 0),
+                        ("failed_deletions", failed_deletions),
                         ("status", "✅ Channel was already empty"),
                     ],
                     "📭",
                 )
 
             # Wait a moment after cleanup to avoid rate limiting
-            await asyncio.sleep(1)
+            await asyncio.sleep(2)
 
         except Exception as e:
             log_error_with_traceback("Error clearing channel", e)
@@ -1391,7 +1423,7 @@ async def create_control_panel(
 
         # Create initial embed
         embed = discord.Embed(
-            description="Loading...",
+            description="🔄 Initializing control panel...",
             color=0x00D4AA,
         )
 
@@ -1408,7 +1440,7 @@ async def create_control_panel(
             view.set_panel_message(message)
 
             # Initial update with delay to prevent rate limiting
-            await asyncio.sleep(2)
+            await asyncio.sleep(3)
             await view.update_panel()
 
             log_perfect_tree_section(
@@ -1418,6 +1450,7 @@ async def create_control_panel(
                     ("channel", channel.name),
                     ("message_id", str(message.id)),
                     ("view_registered", "Yes"),
+                    ("auto_updates", "Enabled (15s interval)"),
                 ],
                 "🎛️",
             )
@@ -1438,7 +1471,7 @@ async def create_control_panel(
                 # Try again after rate limit
                 message = await channel.send(embed=embed, view=view)
                 view.set_panel_message(message)
-                await asyncio.sleep(2)
+                await asyncio.sleep(3)
                 await view.update_panel()
                 return message
             else:
@@ -1452,6 +1485,16 @@ async def create_control_panel(
 async def setup_control_panel(bot, channel_id: int, audio_manager=None) -> bool:
     """Set up the control panel in specified channel"""
     try:
+        log_perfect_tree_section(
+            "Control Panel - Setup Started",
+            [
+                ("channel_id", str(channel_id)),
+                ("audio_manager", "Connected" if audio_manager else "Not available"),
+                ("action", "Initializing control panel setup"),
+            ],
+            "🎛️",
+        )
+
         channel = bot.get_channel(channel_id)
         if not channel:
             log_perfect_tree_section(
@@ -1465,8 +1508,59 @@ async def setup_control_panel(bot, channel_id: int, audio_manager=None) -> bool:
             )
             return False
 
+        # Ensure we have proper permissions
+        if not channel.permissions_for(channel.guild.me).send_messages:
+            log_perfect_tree_section(
+                "Control Panel - Permission Error",
+                [
+                    ("channel", channel.name),
+                    ("status", "❌ No permission to send messages"),
+                    ("result", "Setup failed"),
+                ],
+                "🚫",
+            )
+            return False
+
+        if not channel.permissions_for(channel.guild.me).manage_messages:
+            log_perfect_tree_section(
+                "Control Panel - Permission Warning",
+                [
+                    ("channel", channel.name),
+                    ("status", "⚠️ No permission to manage messages"),
+                    ("impact", "Cannot clean up old messages"),
+                    ("action", "Continuing with setup"),
+                ],
+                "⚠️",
+            )
+
+        # Clean up any existing panels before creating new one
+        cleanup_all_control_panels()
+
         message = await create_control_panel(bot, channel, audio_manager)
-        return message is not None
+
+        if message:
+            log_perfect_tree_section(
+                "Control Panel - Setup Complete",
+                [
+                    ("channel", channel.name),
+                    ("message_id", str(message.id)),
+                    ("status", "✅ Control panel setup successful"),
+                    ("result", "Panel is now active"),
+                ],
+                "✅",
+            )
+            return True
+        else:
+            log_perfect_tree_section(
+                "Control Panel - Setup Failed",
+                [
+                    ("channel", channel.name),
+                    ("status", "❌ Failed to create control panel"),
+                    ("result", "Setup failed"),
+                ],
+                "❌",
+            )
+            return False
 
     except Exception as e:
         log_error_with_traceback("Error setting up control panel", e)

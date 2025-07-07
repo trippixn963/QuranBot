@@ -703,7 +703,28 @@ async def on_ready():
 
     try:
         # =============================================================================
-        # Bot Startup and State Management
+        # Control Panel Cleanup
+        # =============================================================================
+        # Clean up any existing control panels before creating new ones
+        log_spacing()
+        try:
+            from utils.control_panel import cleanup_all_control_panels
+
+            cleanup_all_control_panels()
+            log_perfect_tree_section(
+                "Control Panel - Startup Cleanup",
+                [
+                    ("status", "✅ Existing control panels cleaned up"),
+                    ("action", "Ready for new panel creation"),
+                    ("timing", "Before bot initialization"),
+                ],
+                "🧹",
+            )
+        except Exception as e:
+            log_error_with_traceback("Error cleaning up control panels on startup", e)
+
+        # =============================================================================
+        # State Manager Initialization
         # =============================================================================
         # Mark startup in state manager for session tracking
         state_manager.mark_startup()
