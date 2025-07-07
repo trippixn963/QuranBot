@@ -191,7 +191,14 @@ def test_imports():
 
     # Test local imports
     try:
-        from src.utils.surah_mapper import format_now_playing, get_surah_info
+        from src.utils.surah_mapper import (
+            get_quran_statistics,
+            get_random_surah,
+            get_surah_display,
+            get_surah_info,
+            get_surah_name,
+            validate_surah_number,
+        )
         from src.utils.tree_log import log_perfect_tree_section as test_import
 
         import_results.append(("local_imports", "✅ OK"))
@@ -384,9 +391,9 @@ def test_surah_mapper():
         from src.utils.surah_mapper import (
             SURAH_DATABASE,
             format_now_playing,
+            get_quran_statistics,
             get_surah_display,
             get_surah_info,
-            get_surah_stats,
             validate_surah_number,
         )
 
@@ -446,7 +453,7 @@ def test_surah_mapper():
             test_results.append(("formatting", "✅ Now playing format working"))
 
         # Test statistics
-        stats = get_surah_stats()
+        stats = get_quran_statistics()
         expected_keys = [
             "total_surahs",
             "meccan_surahs",

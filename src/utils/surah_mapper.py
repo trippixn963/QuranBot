@@ -462,7 +462,14 @@ def get_quran_statistics() -> Dict[str, int]:
             ).verses,
         }
 
-        log_perfect_tree_section(f"📊 Generated Quran statistics: {len(stats)} metrics")
+        log_perfect_tree_section(
+            "Quran Statistics Generated",
+            [
+                ("total_metrics", len(stats)),
+                ("status", "📊 Statistics compiled successfully"),
+            ],
+            "📊",
+        )
         return stats
 
     except Exception as e:
