@@ -59,12 +59,22 @@ async def leaderboard_command(interaction: discord.Interaction):
             try:
                 user = interaction.client.get_user(user_id)
                 if user:
-                    username = user.name  # Discord username
+                    # Use the actual Discord username (not display name)
+                    username = user.name  # This is the Discord username
                     user_display = f"{username} - <@{user_id}>"
+
+                    # Debug logging to see what we're getting
+                    print(
+                        f"Debug: User {user_id} - username: {username}, display_name: {user.display_name}"
+                    )
                 else:
-                    user_display = f"<@{user_id}>"
-            except:
-                user_display = f"<@{user_id}>"
+                    # Fallback if user not found
+                    user_display = f"Unknown User - <@{user_id}>"
+                    print(f"Debug: User {user_id} not found, using fallback")
+            except Exception as e:
+                # Fallback if error occurs
+                user_display = f"Unknown User - <@{user_id}>"
+                print(f"Debug: Error getting user {user_id}: {e}")
 
             # Create leaderboard entry
             leaderboard_text += (
