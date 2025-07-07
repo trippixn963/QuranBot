@@ -2,8 +2,10 @@
 # QuranBot - Verse Command
 # =============================================================================
 # Manual verse command that sends a daily verse and resets the timer
+# Admin-only command for controlling daily verse system
 # =============================================================================
 
+import os
 from datetime import datetime, timezone
 
 import discord
@@ -14,15 +16,48 @@ from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_sectio
 
 
 class VerseCommand(commands.Cog):
-    """Manual verse command for sending daily verses on demand"""
+    """Manual verse command for sending daily verses on demand (Admin only)"""
 
     def __init__(self, bot):
         self.bot = bot
 
     @commands.command(name="verse", aliases=["v", "daily"])
     async def verse(self, ctx):
-        """Send a daily verse manually and reset the 3-hour timer"""
+        """Send a daily verse manually and reset the 3-hour timer (Admin only)"""
         try:
+            # Get DEVELOPER_ID from environment
+            DEVELOPER_ID = int(os.getenv("DEVELOPER_ID") or "0")
+
+            # Check if user is the admin/developer
+            if ctx.author.id != DEVELOPER_ID:
+                embed = discord.Embed(
+                    title="🔒 Admin Only Command",
+                    description="This command is restricted to the bot administrator only.",
+                    color=0xFF6B6B,
+                )
+                embed.add_field(
+                    name="📋 Available Commands",
+                    value="Use `/credits` or `/leaderboard` for general bot information.",
+                    inline=False,
+                )
+                await ctx.send(embed=embed)
+
+                # Log unauthorized access attempt
+                log_perfect_tree_section(
+                    "Daily Verses - Unauthorized Access Attempt",
+                    [
+                        (
+                            "attempted_by",
+                            f"{ctx.author.display_name} ({ctx.author.id})",
+                        ),
+                        ("command", "/verse"),
+                        ("status", "🔒 Access denied - Admin only"),
+                        ("admin_id", str(DEVELOPER_ID)),
+                    ],
+                    "🔒",
+                )
+                return
+
             # Check if daily verses system is set up
             if (
                 not daily_verses_manager.bot
@@ -117,6 +152,7 @@ class VerseCommand(commands.Cog):
                 "Daily Verses - Manual Verse Sent",
                 [
                     ("triggered_by", f"{ctx.author.display_name} ({ctx.author.id})"),
+                    ("admin_verified", "✅ Admin permission confirmed"),
                     ("channel", channel.name),
                     (
                         "surah",
@@ -157,6 +193,7 @@ async def setup_verse_command(bot):
             ("command_name", "/verse"),
             ("aliases", "/v, /daily"),
             ("description", "Send daily verse manually and reset timer"),
+            ("permission_level", "🔒 Admin only"),
         ],
         "📖",
     )
