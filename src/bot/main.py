@@ -54,11 +54,6 @@ from utils.audio_manager import AudioManager
 from utils.backup_manager import start_backup_scheduler
 
 # =============================================================================
-# Import Control Panel
-# =============================================================================
-from utils.control_panel import setup_control_panel
-
-# =============================================================================
 # Import Listening Stats Manager
 # =============================================================================
 from utils.listening_stats import track_voice_join, track_voice_leave
@@ -942,60 +937,159 @@ async def on_ready():
                     # Command setup failure is not critical, continue without them
 
                 # =============================================================================
-                # Check for Existing Users in Voice Channel
+                # Audio Playback Initialization
                 # =============================================================================
-                # Check if users are already in the Quran voice channel when bot starts
+                # Start playing audio using AudioManager
                 try:
-                    existing_users = [
-                        member for member in channel.members if not member.bot
-                    ]
-                    if existing_users:
+                    await audio_manager.start_playback()
+                    log_perfect_tree_section(
+                        "Bot Initialization Complete",
+                        [
+                            ("status", "✅ Bot initialization successful"),
+                            ("audio_playback", "Started"),
+                            ("initialization_phase", "Complete"),
+                        ],
+                        "🎯",
+                    )
+
+                    # =============================================================================
+                    # Start Automated Backup System
+                    # =============================================================================
+                    log_spacing()
+                    try:
+                        start_backup_scheduler()
                         log_perfect_tree_section(
-                            "Existing Users Detection",
+                            "Automated Backup System",
                             [
+                                ("status", "✅ EST hour-mark backup system started"),
                                 (
-                                    "status",
-                                    "🔍 Checking for users already in voice channel",
+                                    "schedule",
+                                    "Every hour on EST clock (1:00, 2:00, etc.)",
                                 ),
-                                ("channel_name", channel.name),
+                                ("backup_format", "ZIP files with EST date/time names"),
+                                ("backup_location", "backup/ directory"),
                                 (
-                                    "users_found",
-                                    f"{len(existing_users)} users already in channel",
+                                    "data_protection",
+                                    "Enhanced with automated ZIP backups",
                                 ),
                             ],
-                            "👥",
+                            "💾",
+                        )
+                    except Exception as backup_error:
+                        log_error_with_traceback(
+                            "Failed to start backup scheduler", backup_error
+                        )
+                        log_perfect_tree_section(
+                            "Backup System Warning",
+                            [
+                                ("status", "⚠️ Backup scheduler failed to start"),
+                                ("impact", "Manual backups still available"),
+                                ("data_protection", "Other protection layers active"),
+                            ],
+                            "⚠️",
                         )
 
-                        # Start tracking time for existing users
-                        for member in existing_users:
-                            track_voice_join(member.id)
+                    # =============================================================================
+                    # Check for Existing Users in Voice Channel
+                    # =============================================================================
+                    # Check if users are already in the Quran voice channel when bot starts
+                    log_spacing()
+                    try:
+                        existing_users = [
+                            member for member in channel.members if not member.bot
+                        ]
+                        if existing_users:
                             log_perfect_tree_section(
-                                "Existing User Tracking Started",
+                                "Existing Users Detection",
                                 [
-                                    ("user", member.display_name),
-                                    ("user_id", str(member.id)),
                                     (
                                         "status",
-                                        "✅ Time tracking started from bot startup",
+                                        "🔍 Scanning voice channel for existing users",
                                     ),
-                                    ("channel", channel.name),
+                                    ("channel_name", channel.name),
+                                    ("channel_id", str(channel.id)),
+                                    (
+                                        "users_found",
+                                        f"{len(existing_users)} users already present",
+                                    ),
+                                    (
+                                        "action",
+                                        "Starting time tracking for all existing users",
+                                    ),
                                 ],
-                                "⏱️",
+                                "👥",
                             )
-                    else:
-                        log_perfect_tree_section(
-                            "Existing Users Detection",
-                            [
-                                ("status", "ℹ️ No users currently in voice channel"),
-                                ("channel_name", channel.name),
-                            ],
-                            "👥",
+
+                            # Start tracking time for existing users with beautiful logging
+                            for member in existing_users:
+                                track_voice_join(member.id)
+
+                                # Beautiful tree log for each user that starts tracking
+                                log_perfect_tree_section(
+                                    "🎧 Listening Time Tracking Started",
+                                    [
+                                        ("user", f"👤 {member.display_name}"),
+                                        ("user_id", f"🆔 {member.id}"),
+                                        ("channel", f"🎵 {channel.name}"),
+                                        (
+                                            "status",
+                                            "✅ Time tracking initiated from bot startup",
+                                        ),
+                                        (
+                                            "tracking_start",
+                                            f"⏰ {get_timestamp().strip('[]')}",
+                                        ),
+                                        (
+                                            "session_type",
+                                            "🔄 Continuation from existing presence",
+                                        ),
+                                        (
+                                            "data_protection",
+                                            "💾 Automatically saved to listening stats",
+                                        ),
+                                    ],
+                                    "⏱️",
+                                )
+
+                            log_perfect_tree_section(
+                                "Existing Users Tracking Summary",
+                                [
+                                    (
+                                        "total_users",
+                                        f"✅ {len(existing_users)} users now being tracked",
+                                    ),
+                                    ("channel", f"🎵 {channel.name}"),
+                                    (
+                                        "benefit",
+                                        "🎯 No listening time lost during bot restart",
+                                    ),
+                                    (
+                                        "persistence",
+                                        "💾 Time tracking continues seamlessly",
+                                    ),
+                                ],
+                                "📊",
+                            )
+                        else:
+                            log_perfect_tree_section(
+                                "Existing Users Detection",
+                                [
+                                    ("status", "ℹ️ Voice channel scan complete"),
+                                    ("channel_name", channel.name),
+                                    ("users_found", "0 users currently in channel"),
+                                    ("ready_state", "🎯 Bot ready to track new users"),
+                                ],
+                                "👥",
+                            )
+                    except Exception as e:
+                        log_error_with_traceback(
+                            "Error checking for existing users in voice channel", e
                         )
+                        # Continue with bot startup even if this fails
+
                 except Exception as e:
-                    log_error_with_traceback(
-                        "Error checking for existing users in voice channel", e
-                    )
-                    # Continue with bot startup even if this fails
+                    log_error_with_traceback("Error starting audio playback", e)
+                    raise  # Re-raise to trigger retry
 
                 break  # Success, exit retry loop
 
@@ -1062,123 +1156,6 @@ async def on_ready():
                     "💥",
                 )
                 return
-
-        # =============================================================================
-        # Audio Playback Initialization
-        # =============================================================================
-        # Start playing audio using AudioManager
-        try:
-            await audio_manager.start_playback()
-            log_perfect_tree_section(
-                "Bot Initialization Complete",
-                [
-                    ("status", "✅ Bot initialization successful"),
-                    ("audio_playback", "Started"),
-                    ("initialization_phase", "Complete"),
-                ],
-                "🎯",
-            )
-
-            # =============================================================================
-            # Start Automated Backup System
-            # =============================================================================
-            log_spacing()
-            try:
-                start_backup_scheduler()
-                log_perfect_tree_section(
-                    "Automated Backup System",
-                    [
-                        ("status", "✅ EST hour-mark backup system started"),
-                        (
-                            "schedule",
-                            "Every hour on EST clock (1:00, 2:00, etc.)",
-                        ),
-                        ("backup_format", "ZIP files with EST date/time names"),
-                        ("backup_location", "backup/ directory"),
-                        (
-                            "data_protection",
-                            "Enhanced with automated ZIP backups",
-                        ),
-                    ],
-                    "💾",
-                )
-            except Exception as backup_error:
-                log_error_with_traceback(
-                    "Failed to start backup scheduler", backup_error
-                )
-                log_perfect_tree_section(
-                    "Backup System Warning",
-                    [
-                        ("status", "⚠️ Backup scheduler failed to start"),
-                        ("impact", "Manual backups still available"),
-                        ("data_protection", "Other protection layers active"),
-                    ],
-                    "⚠️",
-                )
-
-        except discord.errors.ClientException as e:
-            log_perfect_tree_section(
-                f"Connection Error - Attempt {attempt + 1}",
-                [
-                    ("error_type", "Discord Client Exception"),
-                    ("error_message", str(e)),
-                    ("attempt", f"{attempt + 1}/{max_retries}"),
-                ],
-                "❌",
-            )
-            if "already connected" in str(e).lower():
-                # Handle already connected case
-                voice_client = guild.voice_client
-                if voice_client:
-                    break
-
-        except asyncio.TimeoutError:
-            log_perfect_tree_section(
-                f"Connection Error - Attempt {attempt + 1}",
-                [
-                    ("error_type", "Connection Timeout"),
-                    ("timeout_duration", "60s"),
-                    ("attempt", f"{attempt + 1}/{max_retries}"),
-                ],
-                "❌",
-            )
-
-        except Exception as e:
-            log_perfect_tree_section(
-                f"Connection Error - Attempt {attempt + 1}",
-                [
-                    ("error_type", type(e).__name__),
-                    ("error_message", str(e)),
-                    ("attempt", f"{attempt + 1}/{max_retries}"),
-                ],
-                "❌",
-            )
-
-        # Handle retry logic
-        if attempt < max_retries - 1:
-            log_perfect_tree_section(
-                "Connection Retry",
-                [
-                    ("status", f"Waiting {retry_delay} seconds before retry"),
-                    ("next_attempt", f"{attempt + 2}/{max_retries}"),
-                    ("retry_delay", f"{retry_delay}s"),
-                ],
-                "🔄",
-            )
-            await asyncio.sleep(retry_delay)
-            retry_delay *= 2  # Exponential backoff
-        else:
-            log_discord_error("on_ready", e, GUILD_ID, TARGET_CHANNEL_ID)
-            log_perfect_tree_section(
-                "Connection Failed",
-                [
-                    ("status", "❌ All connection attempts failed"),
-                    ("total_attempts", max_retries),
-                    ("final_result", "Bot startup failed"),
-                ],
-                "💥",
-            )
-            return
 
     except Exception as e:
         log_critical_error("Fatal error in on_ready event", e)
@@ -1703,12 +1680,12 @@ async def on_voice_state_update(member, before, after):
 
 async def _assign_panel_access_role(member, panel_role, channel):
     """
-    Assign the panel access role to a user who joined the Quran voice channel.
+    Assign the panel access role to a user who joined a voice channel.
 
     Args:
         member: Discord member to assign role to
         panel_role: The panel access role object
-        channel: Quran voice channel the user joined
+        channel: Voice channel the user joined
     """
     try:
         # Check if user already has the role
@@ -1727,7 +1704,7 @@ async def _assign_panel_access_role(member, panel_role, channel):
 
         # Assign the role
         await member.add_roles(
-            panel_role, reason="Joined Quran voice channel for panel access"
+            panel_role, reason="Joined voice channel for panel access"
         )
 
         # Log the role assignment with perfect tree structure
@@ -1741,7 +1718,7 @@ async def _assign_panel_access_role(member, panel_role, channel):
                 ("role", panel_role.name),
                 ("role_id", str(panel_role.id)),
                 ("action", "GRANTED"),
-                ("reason", "Joined Quran voice channel"),
+                ("reason", "Joined voice channel"),
                 ("status", "✅ SUCCESS"),
             ],
             "🎤",
@@ -1770,12 +1747,12 @@ async def _assign_panel_access_role(member, panel_role, channel):
 
 async def _remove_panel_access_role(member, panel_role, channel):
     """
-    Remove the panel access role from a user who left the Quran voice channel.
+    Remove the panel access role from a user who left all voice channels.
 
     Args:
         member: Discord member to remove role from
         panel_role: The panel access role object
-        channel: Quran voice channel the user left
+        channel: Voice channel the user left
     """
     try:
         # Check if user has the role
@@ -1794,7 +1771,7 @@ async def _remove_panel_access_role(member, panel_role, channel):
 
         # Remove the role
         await member.remove_roles(
-            panel_role, reason="Left Quran voice channel, removing panel access"
+            panel_role, reason="Left voice channel, removing panel access"
         )
 
         # Log the role removal with perfect tree structure
@@ -1808,7 +1785,7 @@ async def _remove_panel_access_role(member, panel_role, channel):
                 ("role", panel_role.name),
                 ("role_id", str(panel_role.id)),
                 ("action", "REVOKED"),
-                ("reason", "Left Quran voice channel"),
+                ("reason", "Left voice channel"),
                 ("status", "✅ SUCCESS"),
             ],
             "👋",
