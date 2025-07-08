@@ -63,7 +63,7 @@ async def credits_command(interaction: discord.Interaction):
         # Create simple embed
         embed = discord.Embed(
             title="🕌 QuranBot - Credits",
-            description=f"**A Discord bot for Quran recitation and daily verses**\n\n*Serving {user_count} users across {guild_count} servers*",
+            description="**A Discord bot for Quran recitation and daily verses**",
             color=0x1ABC9C,
             timestamp=datetime.now(timezone.utc),
         )
