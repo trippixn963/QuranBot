@@ -184,7 +184,7 @@ class DailyVersesManager:
             log_error_with_traceback("Error getting next verse", e)
             return None
 
-    def create_verse_embed(self, verse: Dict) -> discord.Embed:
+    async def create_verse_embed(self, verse: Dict) -> discord.Embed:
         """Create a beautiful embed for the verse"""
         try:
             # Create embed with verse content
@@ -208,19 +208,37 @@ class DailyVersesManager:
                 inline=False,
             )
 
-            # Set footer with admin profile picture (will be set in send function)
-            embed.set_footer(text="created by حَـــــنَـــــا")
+            # Set footer with admin profile picture
+            if self.bot and self.developer_user_id:
+                try:
+                    admin_user = await self.bot.fetch_user(self.developer_user_id)
+                    if admin_user and admin_user.avatar:
+                        embed.set_footer(
+                            text="created by حَـــــنَـــــا",
+                            icon_url=admin_user.avatar.url,
+                        )
+                    else:
+                        embed.set_footer(text="created by حَـــــنَـــــا")
+                except Exception as avatar_error:
+                    log_error_with_traceback(
+                        "Failed to fetch admin avatar for verse embed", avatar_error
+                    )
+                    embed.set_footer(text="created by حَـــــنَـــــا")
+            else:
+                embed.set_footer(text="created by حَـــــنَـــــا")
 
             return embed
 
         except Exception as e:
             log_error_with_traceback("Error creating verse embed", e)
             # Return fallback embed
-            return discord.Embed(
+            fallback_embed = discord.Embed(
                 title="📖 Daily Verse",
                 description="*Error loading verse content*",
                 color=0x00D4AA,
             )
+            fallback_embed.set_footer(text="created by حَـــــنَـــــا")
+            return fallback_embed
 
     async def send_daily_verse(self):
         """Send a daily verse to the general chat"""
@@ -246,24 +264,7 @@ class DailyVersesManager:
                 return
 
             # Create embed
-            embed = self.create_verse_embed(verse)
-
-            # Fetch the admin user to set the footer
-            if self.developer_user_id:
-                try:
-                    admin_user = await self.bot.fetch_user(self.developer_user_id)
-                    if admin_user and admin_user.avatar:
-                        embed.set_footer(
-                            text="created by حَـــــنَـــــا",
-                            icon_url=admin_user.avatar.url,
-                        )
-                    else:
-                        embed.set_footer(text="created by حَـــــنَـــــا")
-                except Exception:
-                    # Fallback to text-only footer if there's any error
-                    embed.set_footer(text="created by حَـــــنَـــــا")
-            else:
-                embed.set_footer(text="created by حَـــــنَـــــا")
+            embed = await self.create_verse_embed(verse)
 
             # Send the verse
             message = await channel.send(embed=embed)
