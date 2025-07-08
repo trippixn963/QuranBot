@@ -65,7 +65,6 @@ async def credits_command(interaction: discord.Interaction):
             title="🕌 QuranBot - Credits",
             description="**A Discord bot for Quran recitation and daily verses**",
             color=0x1ABC9C,
-            timestamp=datetime.now(timezone.utc),
         )
 
         # Bot Information
