@@ -78,6 +78,9 @@ async def credits_command(interaction: discord.Interaction):
             inline=False,
         )
 
+        # Spacer
+        embed.add_field(name="\u200b", value="\u200b", inline=False)
+
         # Developer & Links
         embed.add_field(
             name="👨‍💻 Developer Information",
@@ -88,6 +91,9 @@ async def credits_command(interaction: discord.Interaction):
             ),
             inline=False,
         )
+
+        # Spacer
+        embed.add_field(name="\u200b", value="\u200b", inline=False)
 
         # Beta Testing Notice
         embed.add_field(
