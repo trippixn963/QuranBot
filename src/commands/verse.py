@@ -377,12 +377,12 @@ async def verse_slash_command(interaction: discord.Interaction):
             )
             verse_embed.add_field(
                 name="🌙 Arabic",
-                value=f"```\\n{verse.get('arabic', 'Arabic text unavailable')}\\n```",
+                value=f"```\n{verse.get('arabic', 'Arabic text unavailable')}\n```",
                 inline=False,
             )
             verse_embed.add_field(
                 name="📝 English",
-                value=f"```\\n{verse.get('english', 'English translation unavailable')}\\n```",
+                value=f"```\n{verse.get('english', 'English translation unavailable')}\n```",
                 inline=False,
             )
 
@@ -521,13 +521,13 @@ async def verse_slash_command(interaction: discord.Interaction):
             if next_auto_time:
                 confirmation_embed.add_field(
                     name="🔄 Timer Reset",
-                    value=f"Next automatic verse will be sent in **3 hours**\\n*Around {next_auto_time.strftime('%I:%M %p')} EST*",
+                    value=f"Next automatic verse will be sent in **3 hours**\n*Around {next_auto_time.strftime('%I:%M %p')} EST*",
                     inline=False,
                 )
             else:
                 confirmation_embed.add_field(
                     name="🔄 Timer Reset",
-                    value="Next automatic verse will be sent in **3 hours**\\n*Time calculation failed - check logs*",
+                    value="Next automatic verse will be sent in **3 hours**\n*Time calculation failed - check logs*",
                     inline=False,
                 )
 
