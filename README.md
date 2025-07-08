@@ -388,7 +388,18 @@ All logs are automatically saved to:
 
 ## 📋 Version History
 
-### v2.2.1 (Latest)
+### v2.3.2 (Latest)
+
+### v2.3.1
+
+### v2.3.0
+- **⚡ Command Registration - Fixed /verse command registration and initialization timing**
+- **🕐 EST Timezone Support - Added EST timezone support for all verse timers**
+- **👤 Admin Profile Integration - Enhanced daily verse embeds with admin profile picture in footer**
+- **📱 Message ID Tracking - Improved /verse command response with message ID tracking**
+- **🛡️ Enhanced Error Handling - Better error handling and user feedback**
+
+### v2.2.1
 
 ### v2.2.0
 - **🛡️ Bulletproof Data Protection - Implemented 5-layer protection system for all data files**
@@ -400,31 +411,6 @@ All logs are automatically saved to:
 - **📊 Audio File Indexing - Intelligent surah-to-file mapping with missing file detection**
 - **🚨 Emergency Backup System - Multiple fallback mechanisms for critical data protection**
 - **🔄 Atomic File Operations - Corruption-proof saves with automatic recovery mechanisms**
-
-### v2.1.0
-- **🎯 Centralized Version Management - Single source of truth version system with src/version.py**
-- **🔄 Automated Version Updates - tools/update_version.py utility for consistent version management**
-- **👤 Centralized Author Management - Standardized author format "John (Discord: Trippixn)"**
-- **🗂️ Perfect Tree Logging - Enhanced logging system with comprehensive backup visibility**
-- **📊 Backup Status Reporting - Real-time backup status with file counts and next backup timing**
-
-### v1.5.0
-- **Environment Default Settings - Added configurable default settings for reciter, shuffle, and loop modes**
-- **Startup Reset Behavior - Bot now resets to default reciter (Saad Al Ghamdi) on every restart**
-- **Toggle State Persistence - Loop and shuffle modes reset to environment defaults on bot restart**
-- **Enhanced Control Panel - Added emojis to buttons and dropdown menus for better user experience**
-- **Improved Dropdown Design - Reciter dropdown now shows English names as labels with Arabic names as descriptions**
-
-### v1.4.0
-- **Interactive Control Panel - Complete Discord embed-based control panel with real-time status updates**
-- **Audio Manager System - Centralized audio playback management with comprehensive state tracking**
-- **Rich Presence Integration - Dynamic Discord Rich Presence showing current Surah with Arabic names and playback timer**
-- **User Attribution System - Track and display which user enabled Loop/Shuffle modes with Discord mentions**
-- **Progress Bar Display - Visual playback progress bars in control panel with 20-character precision**
-- **Surah Selection Dropdown - Paginated dropdown menu with emoji indicators and Arabic descriptions**
-- **Reciter Selection - Dynamic reciter switching with automatic audio file discovery**
-- **Playback Controls - Previous/Next track buttons with seamless audio transitions**
-- **Loop & Shuffle Modes - Toggle controls with user attribution and real-time status updates**
 
 ## 📄 License
 

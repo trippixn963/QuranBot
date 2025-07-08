@@ -37,46 +37,78 @@ class DailyVersesManager:
     """Manages automated daily Quran verse sending to general chat"""
 
     def __init__(self):
+        """Initialize the Daily Verses Manager with enhanced metadata support"""
+        self.verses_pool = []
+        self.verses_queue = []
+        self.pool_metadata = {}
+        self.queue_metadata = {}
+        self.system_stats = {"verses_from_queue": 0, "verses_from_pool": 0}
+        self.schedule_config = {"send_interval_hours": 3, "timezone": "UTC"}
+        self.last_sent_verse = None
+        self.last_sent_time = None
         self.bot = None
         self.daily_verse_channel_id = None
         self.developer_user_id = None
         self.verse_task = None
-        self.verses_pool = []
-        self.verses_queue = []
-        self.last_sent_verse = None
-        self.last_sent_time = None
-
-        # Ensure data directory exists
-        DATA_DIR.mkdir(exist_ok=True)
-
-        # Load existing data
         self.load_verses_data()
 
     def load_verses_data(self):
-        """Load verses data from JSON files"""
+        """Load verses data from JSON files with enhanced structure support"""
         try:
-            # Load verses pool
+            # Load verses pool (enhanced structure)
             if VERSES_POOL_FILE.exists():
                 with open(VERSES_POOL_FILE, "r", encoding="utf-8") as f:
-                    self.verses_pool = json.load(f)
+                    pool_data = json.load(f)
+                    # Handle enhanced structure with metadata
+                    if isinstance(pool_data, dict) and "verses" in pool_data:
+                        self.verses_pool = pool_data["verses"]
+                        self.pool_metadata = pool_data.get("pool_metadata", {})
+                    else:
+                        # Fallback for old structure
+                        self.verses_pool = (
+                            pool_data if isinstance(pool_data, list) else []
+                        )
+                        self.pool_metadata = {}
 
-            # Load verses queue
+            # Load verses queue (enhanced structure)
             if VERSES_QUEUE_FILE.exists():
                 with open(VERSES_QUEUE_FILE, "r", encoding="utf-8") as f:
-                    self.verses_queue = json.load(f)
+                    queue_data = json.load(f)
+                    # Handle enhanced structure with metadata
+                    if isinstance(queue_data, dict) and "queue" in queue_data:
+                        self.verses_queue = queue_data["queue"]
+                        self.queue_metadata = queue_data.get("queue_metadata", {})
+                    else:
+                        # Fallback for old structure
+                        self.verses_queue = (
+                            queue_data if isinstance(queue_data, list) else []
+                        )
+                        self.queue_metadata = {}
 
-            # Load state
+            # Load state (enhanced structure)
             if VERSES_STATE_FILE.exists():
                 with open(VERSES_STATE_FILE, "r", encoding="utf-8") as f:
                     state_data = json.load(f)
                     self.last_sent_verse = state_data.get("last_sent_verse")
                     self.last_sent_time = state_data.get("last_sent_time")
+                    self.system_stats = state_data.get("system_stats", {})
+                    self.schedule_config = state_data.get("schedule_config", {})
+
+            # Log enhanced data loading
+            pool_categories = self.pool_metadata.get("categories", {})
+            queue_themes = {}
+            if self.verses_queue:
+                for verse in self.verses_queue:
+                    theme = verse.get("theme", "unknown")
+                    queue_themes[theme] = queue_themes.get(theme, 0) + 1
 
             log_perfect_tree_section(
-                "Daily Verses - Data Loaded",
+                "Daily Verses - Enhanced Data Loaded",
                 [
                     ("verses_pool", f"{len(self.verses_pool)} verses in pool"),
+                    ("pool_categories", f"{len(pool_categories)} categories"),
                     ("verses_queue", f"{len(self.verses_queue)} verses in queue"),
+                    ("queue_themes", f"{len(queue_themes)} themes"),
                     (
                         "last_sent_verse",
                         (
@@ -86,6 +118,7 @@ class DailyVersesManager:
                         ),
                     ),
                     ("last_sent_time", self.last_sent_time or "Never"),
+                    ("enhanced_features", "✅ Metadata, categories, themes loaded"),
                 ],
                 "📖",
             )
@@ -99,11 +132,42 @@ class DailyVersesManager:
             self.last_sent_time = None
 
     def save_state(self):
-        """Save current state to JSON file"""
+        """Save current state to JSON file with enhanced structure"""
         try:
+            # Update system stats
+            if not hasattr(self, "system_stats"):
+                self.system_stats = {}
+
+            self.system_stats.update(
+                {
+                    "verses_from_queue": self.system_stats.get("verses_from_queue", 0),
+                    "verses_from_pool": self.system_stats.get("verses_from_pool", 0),
+                    "duplicate_prevention": True,
+                    "auto_refill_enabled": True,
+                }
+            )
+
+            # Update schedule config
+            if not hasattr(self, "schedule_config"):
+                self.schedule_config = {}
+
+            self.schedule_config.update({"send_interval_hours": 3, "timezone": "UTC"})
+
             state_data = {
                 "last_sent_verse": self.last_sent_verse,
                 "last_sent_time": self.last_sent_time,
+                "queue_position": (
+                    len(self.verses_queue) if hasattr(self, "verses_queue") else 0
+                ),
+                "pool_size": (
+                    len(self.verses_pool) if hasattr(self, "verses_pool") else 0
+                ),
+                "total_verses_sent": self.system_stats.get("verses_from_queue", 0)
+                + self.system_stats.get("verses_from_pool", 0),
+                "system_stats": self.system_stats,
+                "schedule_config": self.schedule_config,
+                "last_updated": datetime.now(timezone.utc).isoformat(),
+                "version": "2.3.2",
             }
 
             with open(VERSES_STATE_FILE, "w", encoding="utf-8") as f:
@@ -113,25 +177,46 @@ class DailyVersesManager:
             log_error_with_traceback("Error saving verses state", e)
 
     def get_next_verse(self) -> Optional[Dict]:
-        """Get the next verse to send from queue or pool"""
+        """Get the next verse to send from queue or pool with enhanced tracking"""
         try:
+            # Initialize system stats if not present
+            if not hasattr(self, "system_stats"):
+                self.system_stats = {"verses_from_queue": 0, "verses_from_pool": 0}
+
             # Use queue first if available
             if self.verses_queue:
                 verse = self.verses_queue.pop(0)
 
-                # Save updated queue
+                # Update statistics
+                self.system_stats["verses_from_queue"] = (
+                    self.system_stats.get("verses_from_queue", 0) + 1
+                )
+
+                # Save updated queue with enhanced structure
+                queue_data = {
+                    "queue_metadata": getattr(self, "queue_metadata", {}),
+                    "queue": self.verses_queue,
+                }
+                queue_data["queue_metadata"]["last_modified"] = datetime.now(
+                    timezone.utc
+                ).isoformat()
+                queue_data["queue_metadata"]["total_verses"] = len(self.verses_queue)
+
                 with open(VERSES_QUEUE_FILE, "w", encoding="utf-8") as f:
-                    json.dump(self.verses_queue, f, ensure_ascii=False, indent=2)
+                    json.dump(queue_data, f, ensure_ascii=False, indent=2)
 
                 log_perfect_tree_section(
                     "Daily Verses - Queue Verse Selected",
                     [
                         ("source", "📋 Queue (ordered)"),
+                        ("verse_id", verse.get("id", "unknown")),
+                        ("theme", verse.get("theme", "unknown")),
                         (
                             "surah",
                             f"{verse['surah_name']} ({verse['surah']}:{verse['ayah']})",
                         ),
                         ("queue_remaining", len(self.verses_queue)),
+                        ("priority", verse.get("priority", "N/A")),
                         ("coordination", "✅ Removed from queue to prevent duplicates"),
                     ],
                     "📋",
@@ -146,19 +231,36 @@ class DailyVersesManager:
                 # Remove from pool to prevent sending the same verse again
                 self.verses_pool.remove(verse)
 
-                # Save updated pool
+                # Update statistics
+                self.system_stats["verses_from_pool"] = (
+                    self.system_stats.get("verses_from_pool", 0) + 1
+                )
+
+                # Save updated pool with enhanced structure
+                pool_data = {
+                    "pool_metadata": getattr(self, "pool_metadata", {}),
+                    "verses": self.verses_pool,
+                }
+                pool_data["pool_metadata"]["last_modified"] = datetime.now(
+                    timezone.utc
+                ).isoformat()
+                pool_data["pool_metadata"]["total_verses"] = len(self.verses_pool)
+
                 with open(VERSES_POOL_FILE, "w", encoding="utf-8") as f:
-                    json.dump(self.verses_pool, f, ensure_ascii=False, indent=2)
+                    json.dump(pool_data, f, ensure_ascii=False, indent=2)
 
                 log_perfect_tree_section(
                     "Daily Verses - Pool Verse Selected",
                     [
                         ("source", "🎲 Pool (random)"),
+                        ("verse_id", verse.get("id", "unknown")),
+                        ("category", verse.get("category", "unknown")),
                         (
                             "surah",
                             f"{verse['surah_name']} ({verse['surah']}:{verse['ayah']})",
                         ),
                         ("pool_remaining", len(self.verses_pool)),
+                        ("themes", ", ".join(verse.get("themes", []))),
                         ("coordination", "✅ Removed from pool to prevent duplicates"),
                     ],
                     "🎲",
@@ -174,6 +276,10 @@ class DailyVersesManager:
                         ("status", "⚠️ No verses in queue or pool"),
                         ("queue_empty", "✅ All queue verses sent"),
                         ("pool_empty", "✅ All pool verses sent"),
+                        (
+                            "total_sent",
+                            f"{self.system_stats.get('verses_from_queue', 0) + self.system_stats.get('verses_from_pool', 0)} verses",
+                        ),
                         ("action", "Cannot send verse - all verses used"),
                     ],
                     "⚠️",
@@ -185,12 +291,26 @@ class DailyVersesManager:
             return None
 
     async def create_verse_embed(self, verse: Dict) -> discord.Embed:
-        """Create a beautiful embed for the verse"""
+        """Create a beautiful embed for the verse with enhanced metadata"""
         try:
+            # Get enhanced metadata
+            theme = verse.get("theme", "")
+            category = verse.get("category", "")
+            themes_list = verse.get("themes", [])
+
+            # Create description with enhanced info
+            description_parts = [f"Ayah {verse['ayah']}"]
+            if theme:
+                description_parts.append(f"Theme: {theme.title()}")
+            if category and category != theme:
+                description_parts.append(f"Category: {category.title()}")
+
+            description = " • ".join(description_parts)
+
             # Create embed with verse content
             embed = discord.Embed(
                 title=f"📖 Daily Verse - {verse['surah_name']} ({verse['arabic_name']})",
-                description=f"Ayah {verse['ayah']}",
+                description=description,
                 color=0x00D4AA,
             )
 
@@ -207,6 +327,15 @@ class DailyVersesManager:
                 value=f"```\n{verse['translation']}\n```",
                 inline=False,
             )
+
+            # Add themes as footer if available
+            if themes_list and len(themes_list) > 1:
+                themes_text = f"Related themes: {', '.join(themes_list)}"
+                embed.add_field(
+                    name="🏷️ Tags",
+                    value=themes_text,
+                    inline=False,
+                )
 
             # Set footer with admin profile picture
             if self.bot and self.developer_user_id:

@@ -7,6 +7,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.2] - 2025-01-07
+
+### Enhanced
+
+- **✨ Credits Command Spacing**: Added visual separators between categories in /credits command
+- **📖 Enhanced Readability**: Improved spacing between sections for better visual organization
+- **🎨 Clean Design**: Maintains simple, clean design with better user experience
+- **🔧 UI Polish**: Small patch focusing on visual improvements and readability
+
+### Technical Improvements
+
+- **📱 Visual Separators**: Added invisible spacer fields between embed categories
+- **🎯 User Experience**: Enhanced command layout for better information consumption
+
+## [2.3.1] - 2025-01-07
+
+### Fixed
+
+- **📖 Truncated Verses**: Fixed 27 truncated verses in daily verse database
+- **✅ Complete Verse Display**: All verses now show complete Arabic text and translations
+- **🔍 No More Truncation**: Eliminated '...' truncation in verse content
+- **📊 Database Quality**: Enhanced verse display quality across all daily verses
+
+### Verses Fixed
+
+- **🕌 Al-Hadid 57:4**: Complete creation verse
+- **💡 An-Nur 24:35**: Complete Light verse
+- **⏰ Al-Asr 103:1-3**: Complete time surah
+- **🏆 An-Nasr 110:1-3**: Complete victory surah
+- **🌅 Al-Falaq 113:1-5**: Complete dawn surah
+- **👥 An-Nas 114:1-6**: Complete mankind surah
+- **📚 21 Additional Verses**: With complete Arabic & translations
+
+### Enhanced
+
+- **📈 Verse Quality**: Better user experience with full verse content
+- **🎯 Consistent Formatting**: Uniform formatting across all verses
+- **🔄 Database Integrity**: Maintained original verse database structure
+
+## [2.3.0] - 2025-01-07
+
+### Added
+
+- **⚡ Command Registration**: Fixed /verse command registration and initialization timing
+- **🕐 EST Timezone Support**: Added EST timezone support for all verse timers
+- **👤 Admin Profile Integration**: Enhanced daily verse embeds with admin profile picture in footer
+- **📱 Message ID Tracking**: Improved /verse command response with message ID tracking
+- **🛡️ Enhanced Error Handling**: Better error handling and user feedback
+
+### Technical Improvements
+
+- **🔄 Module Import Timing**: Resolved module import timing issues in daily verses system
+- **⚡ Dynamic Instance Fetching**: Implemented dynamic daily_verses_manager instance fetching
+- **📋 Command Initialization**: Streamlined command initialization order
+- **🧹 Production Readiness**: Cleaned up debug code for production readiness
+
+### Enhanced
+
+- **🎨 Footer Styling**: Consistent footer styling with admin profile picture
+- **📊 Status Information**: Replaced queue status with more useful message ID information
+- **🕐 Timezone Display**: Better timezone display (EST instead of UTC)
+- **📱 Embed Formatting**: Improved embed formatting and visual consistency
+
+### Fixed
+
+- **🔧 Daily Verses Configuration**: Fixed 'Daily Verses Not Configured' error despite proper initialization
+- **⏰ Timing Issues**: Resolved timing issues between command registration and system setup
+- **👤 Profile Picture Fetching**: Fixed profile picture fetching in embed footers
+- **🛡️ Avatar Loading**: Improved error handling for avatar loading
+
 ## [2.2.1] - 2025-01-18
 
 ### Fixed
