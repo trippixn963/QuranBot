@@ -90,10 +90,10 @@ async def credits_command(interaction: discord.Interaction):
             inline=False,
         )
 
-        # Support Policy
+        # Beta Testing Notice
         embed.add_field(
-            name="⚠️ Support Policy",
-            value='**"Take as it is"** - No support provided • Educational use only',
+            name="⚠️ Beta Testing",
+            value=f"This bot is currently in **beta testing phase**. Please DM <@{ADMIN_USER_ID}> if you encounter any issues or bugs.",
             inline=False,
         )
 
@@ -101,10 +101,7 @@ async def credits_command(interaction: discord.Interaction):
         if interaction.client.user and interaction.client.user.avatar:
             embed.set_thumbnail(url=interaction.client.user.avatar.url)
 
-        # Simple footer
-        embed.set_footer(
-            text=f"QuranBot v{BOT_VERSION} • Requested by {interaction.user.display_name}"
-        )
+        # No footer as requested
 
         # Send the embed
         await interaction.response.send_message(embed=embed, ephemeral=False)
