@@ -85,7 +85,7 @@ async def credits_command(interaction: discord.Interaction):
             value=(
                 f"**Created by:** <@{ADMIN_USER_ID}>\n"
                 f"**GitHub:** [QuranBot Repository]({GITHUB_REPO_URL})\n"
-                f"**License:** MIT License - Open Source"
+                f"**⭐ Please star the repository if you like it!**"
             ),
             inline=False,
         )
