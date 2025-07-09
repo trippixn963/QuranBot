@@ -998,36 +998,13 @@ class AudioManager:
     def _get_playback_time_display(self) -> str:
         """Get formatted playback time display like control panel"""
         try:
-            # Get time information
-            current_time = self.current_position
+            # Use actual current position for real-time tracking
+            current_time_seconds = self.current_position
 
-            # For now, provide track-based progress instead of time-based
-            # This gives users a sense of progress through the Quran
+            # For total time, use track-based progression through the Quran
             if self.current_audio_files and len(self.current_audio_files) > 0:
-                # Use track progression as a proxy for time
-                # Each track represents roughly equal progress through the Quran
-                current_track = self.current_file_index + 1
-                total_tracks = len(self.current_audio_files)
-
-                # Convert to "time" format for progress bar (minutes)
-                # Scale it so full Quran = ~100 "minutes" for nice display
+                # Scale total time so full Quran = ~100 "minutes" for nice display
                 total_time_seconds = 100 * 60  # 100 "minutes" total
-                current_time_seconds = (
-                    current_track / total_tracks
-                ) * total_time_seconds
-
-                # Also add position within current track if available
-                if self.current_position > 0:
-                    # Add current position as fraction of estimated track length
-                    estimated_track_length = (
-                        total_time_seconds / total_tracks
-                    )  # seconds per track
-                    position_in_track = min(
-                        self.current_position, estimated_track_length
-                    )
-                    current_time_seconds = (
-                        (current_track - 1) / total_tracks
-                    ) * total_time_seconds + position_in_track
 
                 # Format both times
                 current_str = self._format_time(current_time_seconds)
@@ -1468,42 +1445,16 @@ class AudioManager:
                 "total_time": 0,
             }
 
-            # Get time information from rich presence if available
-            if self.rich_presence:
-                try:
-                    # Use current position from audio manager
-                    status["current_time"] = self.current_position
+            # Use the exact same time calculation as rich presence
+            # This ensures both control panel and rich presence show identical times
+            status["current_time"] = (
+                self.current_position
+            )  # Use actual current position
 
-                    # For now, provide track-based progress instead of time-based
-                    # This gives users a sense of progress through the Quran
-                    if self.current_audio_files and len(self.current_audio_files) > 0:
-                        # Use track progression as a proxy for time
-                        # Each track represents roughly equal progress through the Quran
-                        current_track = self.current_file_index + 1
-                        total_tracks = len(self.current_audio_files)
-
-                        # Convert to "time" format for progress bar (minutes)
-                        # Scale it so full Quran = ~100 "minutes" for nice display
-                        status["current_time"] = (
-                            (current_track / total_tracks) * 100 * 60
-                        )  # seconds
-                        status["total_time"] = 100 * 60  # 100 "minutes" total
-
-                        # Also add position within current track if available
-                        if self.current_position > 0:
-                            # Add current position as fraction of estimated track length
-                            estimated_track_length = (
-                                100 * 60
-                            ) / total_tracks  # seconds per track
-                            position_in_track = min(
-                                self.current_position, estimated_track_length
-                            )
-                            status["current_time"] = (
-                                (current_track - 1) / total_tracks
-                            ) * 100 * 60 + position_in_track
-
-                except Exception as e:
-                    log_error_with_traceback("Error getting time from rich presence", e)
+            # For total time, use the same scale as rich presence
+            if self.current_audio_files and len(self.current_audio_files) > 0:
+                # Scale total time so full Quran = ~100 "minutes" for nice display
+                status["total_time"] = 100 * 60  # 100 "minutes" total
 
             return status
 
