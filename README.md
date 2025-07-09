@@ -57,6 +57,22 @@ QuranBot transforms your Discord server into a spiritual haven with **continuous
 
 ---
 
+## 🎬 **See QuranBot in Action**
+
+**Want to experience QuranBot before setting it up?** Join our main community server where QuranBot runs 24/7:
+
+<div align="center">
+
+### 🌟 **[Join discord.gg/syria](https://discord.gg/syria)**
+
+_Experience all features live: 24/7 Quran recitation, interactive quizzes, daily verses, and more!_
+
+**Perfect for:** Testing features • Learning how it works • Seeing community engagement • Getting inspired
+
+</div>
+
+---
+
 ## 🚀 Quick Start
 
 Get QuranBot running in your server in **5 minutes**:
@@ -614,6 +630,16 @@ python bot_manager.py stats
 ### 🌍 **Built for the Ummah**
 
 QuranBot was created with love for the global Muslim community. Whether you're running a mosque's Discord server, organizing Islamic study groups, or creating a peaceful space for family and friends, QuranBot brings the beauty of Quran recitation to your digital community.
+
+### 🏠 **Main Community Server**
+
+Join our main community at **[discord.gg/syria](https://discord.gg/syria)** to:
+
+- 🎵 Experience QuranBot running 24/7
+- 🧠 Participate in daily Islamic quizzes
+- 📖 Receive daily Quranic verses
+- 🤝 Connect with Muslims worldwide
+- 💡 Get inspiration for your own server setup
 
 ### 📖 **Islamic Values**
 
