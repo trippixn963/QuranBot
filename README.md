@@ -6,7 +6,7 @@
 
 **A Discord Bot for 24/7 Quran Audio Streaming with Interactive Control Panel**
 
-[![Version](https://img.shields.io/badge/version-2.2.1-blue.svg)](#)
+[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](#)
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![No Support](https://img.shields.io/badge/support-NONE-red.svg)](#)
@@ -94,6 +94,27 @@ _Built with ❤️ for the Muslim Ummah - Shared as-is for educational purposes_
 - 🔄 **Smart Looping** - Default looping enabled for continuous playback
 - 📊 **Audio File Indexing** - Intelligent mapping of surah numbers to available files
 - 🎵 **Reciter Collection Analysis** - Complete analysis of available audio files per reciter
+
+### 🧠 **Quiz System**
+
+- 📝 **Dynamic Quiz Embeds** - Real-time updates as users answer
+- 🏆 **Public Results Panel** - Shows correct/incorrect users and correct answer
+- 🔥 **Streak & Points Tracking** - Tracks user streaks and points instantly
+- 🏅 **Instant Leaderboard Updates** - Leaderboard reflects latest results immediately
+- 🛡️ **Robust Error Handling** - Handles deleted messages, Discord API errors, and more
+- 🌲 **Comprehensive Logging** - Perfect tree logging for all quiz actions
+
+### 🏆 **Leaderboard**
+
+- 📊 **Points-Based Sorting** - Sorted by quiz points, shows streak and listening time
+- 🧹 **Clean Footer** - Only shows creator credits
+- ⚡ **Instant Updates** - Always up to date after each quiz
+
+### 🛡️ **Stability & Logging**
+
+- 🌲 **Perfect Tree Logging** - For all major systems and errors
+- 🛡️ **Traceback Logging** - For all exceptions and Discord errors
+- 🛠️ **Consistent Error Handling** - Across all commands and background tasks
 
 ## 🚀 Quick Start
 
@@ -393,6 +414,7 @@ All logs are automatically saved to:
 ### v2.3.1
 
 ### v2.3.0
+
 - **⚡ Command Registration - Fixed /verse command registration and initialization timing**
 - **🕐 EST Timezone Support - Added EST timezone support for all verse timers**
 - **👤 Admin Profile Integration - Enhanced daily verse embeds with admin profile picture in footer**
@@ -402,6 +424,7 @@ All logs are automatically saved to:
 ### v2.2.1
 
 ### v2.2.0
+
 - **🛡️ Bulletproof Data Protection - Implemented 5-layer protection system for all data files**
 - **📦 Automated ZIP Backup System - EST-scheduled hourly backups with intuitive date/time naming (e.g., "7/6 - 10PM.zip")**
 - **🔍 Missing Surah Detection - Automatic detection and logging of incomplete reciter collections with range formatting**

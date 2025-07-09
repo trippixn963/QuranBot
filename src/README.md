@@ -79,6 +79,15 @@ All commands use **Discord slash commands** (`@discord.app_commands.command`) - 
 - Surah name and verse number display
 - Integration with daily verse system
 
+### `quiz_manager.py`
+
+**Quiz system and leaderboard**
+
+- Dynamic quiz embeds with real-time updates
+- Public results panel with correct/incorrect user lists
+- Streak and points tracking
+- Robust error handling and logging
+
 ## 🛠️ Utilities (`utils/`)
 
 ### Core Systems

@@ -5,6 +5,42 @@ All notable changes to QuranBot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2025-07-08
+
+### Major Release
+
+- **Quiz System Overhaul**: Completely redesigned quiz system with:
+  - Dynamic quiz embeds that update in real time as users answer
+  - Public results panel with correct/incorrect user lists
+  - Streak and points tracking with instant leaderboard updates
+  - Choices formatting improvements and bug fixes
+  - Robust error handling for deleted messages and Discord API issues
+  - Comprehensive logging for all quiz actions and errors
+- **Leaderboard Improvements**:
+  - Points-based sorting with streak and listening time display
+  - Footer cleaned up to only show creator credits
+  - Instant updates after each quiz
+- **Daily Verses & Backup**:
+  - Enhanced daily verse scheduling and formatting
+  - Improved backup system with hourly ZIP backups and integrity checks
+- **Logging & Error Handling**:
+  - Perfect tree logging for all major systems
+  - Traceback logging for all exceptions and Discord errors
+  - Consistent error handling across all commands and background tasks
+- **UI/UX Polish**:
+  - Consistent embed formatting for all commands
+  - Bot and admin profile pictures in embed thumbnails/footers
+  - Clean, modern look for all panels and results
+- **Performance & Stability**:
+  - Faster timer updates and more responsive UI
+  - Bug fixes for streak resets, duplicate questions, and command registration
+  - Improved state management and data protection
+- **Documentation**:
+  - Updated README and src/README.md to reflect all new features and usage
+  - Clear versioning and changelog entries
+
+---
+
 ## [Unreleased]
 
 ## [2.3.2] - 2025-01-07
