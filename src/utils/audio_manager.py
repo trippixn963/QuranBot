@@ -8,14 +8,16 @@ import asyncio
 import glob
 import os
 import re
+import time
 from typing import Any, Dict, List, Optional
 
 import discord
+from mutagen.mp3 import MP3  # Add mutagen for getting MP3 duration
 
 from .state_manager import state_manager
 from .surah_mapper import (
-    format_now_playing,
     get_surah_display,
+    get_surah_info,
     get_surah_name,
     validate_surah_number,
 )
@@ -1007,6 +1009,27 @@ class AudioManager:
         except Exception:
             return "00:00"
 
+    def _get_current_file_duration(self) -> float:
+        """Get the duration of the currently playing MP3 file in seconds"""
+        try:
+            if not self.current_audio_files or self.current_file_index >= len(
+                self.current_audio_files
+            ):
+                return 0.0
+
+            current_file = self.current_audio_files[self.current_file_index]
+
+            # Use mutagen to get MP3 duration
+            audio = MP3(current_file)
+            if audio.info and hasattr(audio.info, "length"):
+                return float(audio.info.length)
+            else:
+                return 0.0
+
+        except Exception as e:
+            log_error_with_traceback("Error getting MP3 duration", e)
+            return 0.0
+
     def _get_playback_time_display(self) -> str:
         """Get formatted playback time display like control panel"""
         try:
@@ -1023,11 +1046,10 @@ class AudioManager:
                 # Use saved position when not playing
                 current_time_seconds = self.current_position
 
-            # For total time, use track-based progression through the Quran
-            if self.current_audio_files and len(self.current_audio_files) > 0:
-                # Scale total time so full Quran = ~100 "minutes" for nice display
-                total_time_seconds = 100 * 60  # 100 "minutes" total
+            # Get the real duration of the current MP3 file
+            total_time_seconds = self._get_current_file_duration()
 
+            if total_time_seconds > 0:
                 # Format both times
                 current_str = self._format_time(current_time_seconds)
                 total_str = self._format_time(total_time_seconds)
@@ -1473,10 +1495,8 @@ class AudioManager:
                 self.current_position
             )  # Use actual current position
 
-            # For total time, use the same scale as rich presence
-            if self.current_audio_files and len(self.current_audio_files) > 0:
-                # Scale total time so full Quran = ~100 "minutes" for nice display
-                status["total_time"] = 100 * 60  # 100 "minutes" total
+            # Get the real duration of the current MP3 file
+            status["total_time"] = self._get_current_file_duration()
 
             return status
 
