@@ -5,6 +5,7 @@
 # Admin-only command for controlling daily verse system
 # =============================================================================
 
+import asyncio
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -19,11 +20,11 @@ from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_sectio
 def get_daily_verses_manager():
     """Get the daily verses manager instance"""
     try:
-        from src.utils.daily_verses import daily_verses_manager
+        from src.utils.daily_verses import daily_verse_manager
 
-        return daily_verses_manager
+        return daily_verse_manager
     except Exception as e:
-        log_error_with_traceback("Failed to import daily_verses_manager", e)
+        log_error_with_traceback("Failed to import daily_verse_manager", e)
         return None
 
 
@@ -161,24 +162,13 @@ async def verse_slash_command(interaction: discord.Interaction):
         )
 
         # Check if daily verses system is configured
-        if (
-            not daily_verses_manager.bot
-            or not daily_verses_manager.daily_verse_channel_id
-        ):
+        if not daily_verses_manager.verse_pool:
             log_perfect_tree_section(
                 "Verse Command - System Not Configured",
                 [
                     (
-                        "bot_instance",
-                        "❌ Not set" if not daily_verses_manager.bot else "✅ Set",
-                    ),
-                    (
-                        "channel_id",
-                        (
-                            "❌ Not set"
-                            if not daily_verses_manager.daily_verse_channel_id
-                            else f"✅ {daily_verses_manager.daily_verse_channel_id}"
-                        ),
+                        "verse_pool",
+                        f"❌ Empty ({len(daily_verses_manager.verse_pool)} verses)",
                     ),
                     ("status", "🚨 Daily verses system not properly configured"),
                 ],
@@ -187,7 +177,7 @@ async def verse_slash_command(interaction: discord.Interaction):
 
             embed = discord.Embed(
                 title="❌ Daily Verses Not Configured",
-                description="The daily verses system is not properly configured. Please check the bot configuration.",
+                description="The daily verses system is not properly configured. No verses are available in the pool.",
                 color=0xFF6B6B,
             )
 
@@ -210,102 +200,23 @@ async def verse_slash_command(interaction: discord.Interaction):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        # Get the daily verse channel with error handling
+        # Get a random verse from the daily verses manager
         try:
-            channel = interaction.client.get_channel(
-                daily_verses_manager.daily_verse_channel_id
-            )
-            if not channel:
-                # Try fetching the channel if get_channel fails
-                channel = await interaction.client.fetch_channel(
-                    daily_verses_manager.daily_verse_channel_id
-                )
-        except Exception as channel_error:
+            verse = daily_verses_manager.get_random_verse()
+        except Exception as e:
             log_error_with_traceback(
-                f"Failed to get/fetch channel {daily_verses_manager.daily_verse_channel_id}",
-                channel_error,
-            )
-            channel = None
-
-        if not channel:
-            log_perfect_tree_section(
-                "Verse Command - Channel Not Found",
-                [
-                    ("channel_id", str(daily_verses_manager.daily_verse_channel_id)),
-                    ("status", "❌ Channel not accessible"),
-                    (
-                        "possible_causes",
-                        "Channel deleted, bot lacks permissions, or invalid ID",
-                    ),
-                ],
-                "🔍",
-            )
-
-            embed = discord.Embed(
-                title="❌ Channel Not Found",
-                description=f"The daily verse channel (ID: {daily_verses_manager.daily_verse_channel_id}) could not be found or accessed.",
-                color=0xFF6B6B,
-            )
-
-            # Set footer with admin profile picture with error handling
-            try:
-                admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
-                if admin_user and admin_user.avatar:
-                    embed.set_footer(
-                        text="Created by حَـــــنَـــــا", icon_url=admin_user.avatar.url
-                    )
-                else:
-                    embed.set_footer(text="Created by حَـــــنَـــــا")
-            except Exception as avatar_error:
-                log_error_with_traceback(
-                    "Failed to fetch admin avatar for channel error message",
-                    avatar_error,
-                )
-                embed.set_footer(text="Created by حَـــــنَـــــا")
-
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
-
-        # Log successful channel access
-        log_perfect_tree_section(
-            "Verse Command - Channel Access Success",
-            [
-                ("channel_name", f"#{channel.name}"),
-                ("channel_id", str(channel.id)),
-                ("guild", f"{channel.guild.name}" if channel.guild else "DM"),
-                ("status", "✅ Channel accessible"),
-            ],
-            "📺",
-        )
-
-        # Get next verse with error handling
-        try:
-            verse = daily_verses_manager.get_next_verse()
-        except Exception as verse_error:
-            log_error_with_traceback(
-                "Failed to get next verse from daily verses manager", verse_error
+                "Failed to get random verse from daily verses manager", e
             )
             verse = None
 
+        # Check if we got a verse
         if not verse:
             log_perfect_tree_section(
                 "Verse Command - No Verses Available",
                 [
                     (
-                        "queue_size",
-                        (
-                            len(daily_verses_manager.verses_queue)
-                            if hasattr(daily_verses_manager, "verses_queue")
-                            else "Unknown"
-                        ),
-                    ),
-                    (
                         "pool_size",
-                        (
-                            len(daily_verses_manager.verses_pool)
-                            if hasattr(daily_verses_manager, "verses_pool")
-                            else "Unknown"
-                        ),
+                        f"📊 Pool size: {len(daily_verses_manager.verse_pool)}",
                     ),
                     ("status", "❌ No verses available"),
                 ],
@@ -314,314 +225,202 @@ async def verse_slash_command(interaction: discord.Interaction):
 
             embed = discord.Embed(
                 title="❌ No Verses Available",
-                description="No verses are available in the queue or pool. The system may need to be reloaded.",
-                color=0xFF6B6B,
+                description="The daily verses system is not properly configured or has no verses available.",
+                color=0xFF0000,
             )
-
-            # Set footer with admin profile picture with error handling
-            try:
-                admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
-                if admin_user and admin_user.avatar:
-                    embed.set_footer(
-                        text="Created by حَـــــنَـــــا", icon_url=admin_user.avatar.url
-                    )
-                else:
-                    embed.set_footer(text="Created by حَـــــنَـــــا")
-            except Exception as avatar_error:
-                log_error_with_traceback(
-                    "Failed to fetch admin avatar for no verses message", avatar_error
-                )
-                embed.set_footer(text="Created by حَـــــنَـــــا")
-
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        # Log successful verse retrieval
-        log_perfect_tree_section(
-            "Verse Command - Verse Retrieved",
-            [
-                ("surah", f"{verse['surah_name']} ({verse['surah']}:{verse['ayah']})"),
-                ("arabic_name", verse.get("arabic_name", "N/A")),
-                (
-                    "queue_remaining",
-                    (
-                        len(daily_verses_manager.verses_queue)
-                        if hasattr(daily_verses_manager, "verses_queue")
-                        else "Unknown"
-                    ),
-                ),
-                (
-                    "pool_remaining",
-                    (
-                        len(daily_verses_manager.verses_pool)
-                        if hasattr(daily_verses_manager, "verses_pool")
-                        else "Unknown"
-                    ),
-                ),
-                ("status", "✅ Verse selected for sending"),
-            ],
-            "📖",
-        )
-
-        # Create verse embed with error handling
+        # Get channel for sending verse
         try:
-            verse_embed = await daily_verses_manager.create_verse_embed(verse)
-        except Exception as embed_error:
-            log_error_with_traceback("Failed to create verse embed", embed_error)
-
-            # Create a fallback embed
-            verse_embed = discord.Embed(
-                title=f"📖 Daily Verse - {verse['surah_name']}",
-                description=f"Ayah {verse['ayah']}",
-                color=0x00D4AA,
-            )
-            verse_embed.add_field(
-                name="🌙 Arabic",
-                value=f"```\n{verse.get('arabic', 'Arabic text unavailable')}\n```",
-                inline=False,
-            )
-            verse_embed.add_field(
-                name="📝 English",
-                value=f"```\n{verse.get('english', 'English translation unavailable')}\n```",
-                inline=False,
-            )
-
-        # Send the verse to the daily verse channel with error handling
-        try:
-            message = await channel.send(embed=verse_embed)
-
-            log_perfect_tree_section(
-                "Verse Command - Message Sent",
-                [
-                    ("message_id", str(message.id)),
-                    ("channel", f"#{channel.name}"),
-                    (
-                        "surah",
-                        f"{verse['surah_name']} ({verse['surah']}:{verse['ayah']})",
-                    ),
-                    ("status", "✅ Verse message sent successfully"),
-                ],
-                "📤",
-            )
-        except Exception as send_error:
-            log_error_with_traceback(
-                "Failed to send verse message to channel", send_error
-            )
-
-            error_embed = discord.Embed(
-                title="❌ Failed to Send Verse",
-                description=f"Could not send the verse to {channel.mention}. Please check bot permissions.",
-                color=0xFF6B6B,
-            )
-
-            # Set footer with admin profile picture with error handling
-            try:
-                admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
-                if admin_user and admin_user.avatar:
-                    error_embed.set_footer(
-                        text="Created by حَـــــنَـــــا", icon_url=admin_user.avatar.url
-                    )
-                else:
-                    error_embed.set_footer(text="Created by حَـــــنَـــــا")
-            except Exception as avatar_error:
-                log_error_with_traceback(
-                    "Failed to fetch admin avatar for send error message", avatar_error
+            DAILY_VERSE_CHANNEL_ID = int(os.getenv("DAILY_VERSE_CHANNEL_ID") or "0")
+            if DAILY_VERSE_CHANNEL_ID == 0:
+                await interaction.response.send_message(
+                    "❌ Daily verse channel not configured. Please set DAILY_VERSE_CHANNEL_ID in environment.",
+                    ephemeral=True,
                 )
-                error_embed.set_footer(text="Created by حَـــــنَـــــا")
+                return
 
-            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+            channel = interaction.client.get_channel(DAILY_VERSE_CHANNEL_ID)
+            if not channel:
+                await interaction.response.send_message(
+                    f"❌ Could not find daily verse channel with ID {DAILY_VERSE_CHANNEL_ID}.",
+                    ephemeral=True,
+                )
+                return
+        except Exception as e:
+            log_error_with_traceback("Failed to get daily verse channel", e)
+            await interaction.response.send_message(
+                "❌ Failed to access daily verse channel.", ephemeral=True
+            )
             return
 
-        # Add dua reaction automatically with error handling
+        # Extract verse information with proper field names
+        surah_number = verse.get("surah", "Unknown")
+        ayah_number = verse.get("ayah", verse.get("verse", "Unknown"))
+
+        # Get surah name from surah mapper
         try:
-            await message.add_reaction("🤲")
+            from src.utils.surah_mapper import get_surah_name
 
-            log_perfect_tree_section(
-                "Verse Command - Reaction Added",
-                [
-                    ("reaction", "🤲 (Dua)"),
-                    ("message_id", str(message.id)),
-                    ("status", "✅ Dua reaction added successfully"),
-                ],
-                "🤲",
-            )
-        except Exception as reaction_error:
-            log_error_with_traceback(
-                "Failed to add dua reaction to manual verse", reaction_error
-            )
+            surah_name = get_surah_name(surah_number)
+        except Exception:
+            surah_name = f"Surah {surah_number}"
 
-            log_perfect_tree_section(
-                "Verse Command - Reaction Failed",
-                [
-                    ("reaction", "🤲 (Dua)"),
-                    ("message_id", str(message.id)),
-                    ("status", "❌ Failed to add reaction (non-critical)"),
-                    ("impact", "Message sent successfully, reaction failed"),
-                ],
-                "⚠️",
-            )
-
-        # Update last sent verse and reset timer with error handling
+        # Update last sent verse
         try:
-            daily_verses_manager.last_sent_verse = verse
-            daily_verses_manager.reset_timer()
+            daily_verses_manager.save_state()
+        except Exception as e:
+            log_error_with_traceback("Failed to update last sent verse", e)
 
-            log_perfect_tree_section(
-                "Verse Command - Timer Reset",
-                [
-                    (
-                        "last_sent_verse",
-                        f"{verse['surah_name']} ({verse['surah']}:{verse['ayah']})",
-                    ),
-                    ("timer_status", "✅ 3-hour timer reset"),
-                    ("status", "✅ System state updated"),
-                ],
-                "⏰",
-            )
-        except Exception as timer_error:
-            log_error_with_traceback(
-                "Failed to update last sent verse or reset timer", timer_error
-            )
+        # Calculate next automatic verse time
+        current_time = datetime.now(timezone.utc).astimezone(
+            timezone(timedelta(hours=-5))
+        )  # EST
+        next_auto_time = current_time + timedelta(hours=3)  # Default 3 hour interval
+        hours_until_next = 3
 
-        # Calculate next automatic verse time (3 hours from now) with error handling
-        try:
-            # Get current time in EST
-            est_tz = timezone(timedelta(hours=-5))  # EST is UTC-5
-            current_time = datetime.now(est_tz)
-            next_auto_time = current_time + timedelta(hours=3)
-            next_auto_time = next_auto_time.replace(microsecond=0)
+        log_perfect_tree_section(
+            "Verse Command - Next Timer Calculated",
+            [
+                (
+                    "current_time",
+                    f"{current_time.strftime('%Y-%m-%d %I:%M:%S %p')} EST",
+                ),
+                (
+                    "next_auto_time",
+                    f"{next_auto_time.strftime('%Y-%m-%d %I:%M:%S %p')} EST",
+                ),
+                ("hours_until_next", f"{hours_until_next}"),
+                ("status", "✅ Next automatic verse time calculated"),
+            ],
+            "🕐",
+        )
 
-            log_perfect_tree_section(
-                "Verse Command - Next Timer Calculated",
-                [
-                    ("current_time", current_time.strftime("%Y-%m-%d %I:%M:%S %p EST")),
-                    (
-                        "next_auto_time",
-                        next_auto_time.strftime("%Y-%m-%d %I:%M:%S %p EST"),
-                    ),
-                    ("hours_until_next", "3"),
-                    ("status", "✅ Next automatic verse time calculated"),
-                ],
-                "🕐",
-            )
-        except Exception as time_error:
-            log_error_with_traceback(
-                "Failed to calculate next automatic verse time", time_error
-            )
-            next_auto_time = None
-
-        # Send confirmation to the user with comprehensive error handling
+        # Send confirmation message to user
         try:
             confirmation_embed = discord.Embed(
-                title="✅ Verse Sent Successfully",
-                description=f"**{verse['surah_name']} ({verse['surah']}:{verse['ayah']})** has been sent to {channel.mention}",
-                color=0x00D4AA,
-            )
-
-            if next_auto_time:
-                confirmation_embed.add_field(
-                    name="🔄 Timer Reset",
-                    value=f"Next automatic verse will be sent in **3 hours**\n*Around {next_auto_time.strftime('%I:%M %p')} EST*",
-                    inline=False,
-                )
-            else:
-                confirmation_embed.add_field(
-                    name="🔄 Timer Reset",
-                    value="Next automatic verse will be sent in **3 hours**\n*Time calculation failed - check logs*",
-                    inline=False,
-                )
-
-            # Show message ID and coordination info
-            confirmation_embed.add_field(
-                name="📨 Message ID",
-                value=f"**[{message.id}](https://discord.com/channels/{channel.guild.id}/{channel.id}/{message.id})**\nVerse message in {channel.mention}",
-                inline=True,
+                title="📖 Verse Sent Successfully",
+                description=f"**{surah_name} ({surah_number}:{ayah_number})** has been sent to {channel.mention}",
+                color=0x2ECC71,
             )
             confirmation_embed.add_field(
-                name="🤝 Coordination",
-                value="✅ Verse removed from queue to prevent duplicates",
-                inline=True,
+                name="⏰ Next Automatic Verse",
+                value=f"In approximately **{hours_until_next} hours** at {next_auto_time.strftime('%I:%M %p')} EST",
+                inline=False,
             )
-
-            # Set footer with admin profile picture with error handling
-            try:
-                admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
-                if admin_user and admin_user.avatar:
-                    confirmation_embed.set_footer(
-                        text="Created by حَـــــنَـــــا", icon_url=admin_user.avatar.url
-                    )
-                else:
-                    confirmation_embed.set_footer(text="Created by حَـــــنَـــــا")
-            except Exception as avatar_error:
-                log_error_with_traceback(
-                    "Failed to fetch admin avatar for confirmation message",
-                    avatar_error,
-                )
-                confirmation_embed.set_footer(text="Created by حَـــــنَـــــا")
-
             await interaction.response.send_message(
                 embed=confirmation_embed, ephemeral=True
             )
-
-            log_perfect_tree_section(
-                "Verse Command - Confirmation Sent",
-                [
-                    (
-                        "user",
-                        f"{interaction.user.display_name} ({interaction.user.id})",
-                    ),
-                    ("message_type", "Ephemeral confirmation"),
-                    ("status", "✅ User confirmation sent successfully"),
-                ],
-                "📋",
-            )
-        except Exception as confirmation_error:
-            log_error_with_traceback(
-                "Failed to send confirmation message to user", confirmation_error
+        except Exception as e:
+            log_error_with_traceback("Failed to send confirmation message to user", e)
+            await interaction.response.send_message(
+                "✅ Verse sent successfully!", ephemeral=True
             )
 
-        # Log the successful manual verse sending with comprehensive details
+        # Create and send verse embed
+        try:
+            embed = discord.Embed(
+                title=f"📖 Daily Verse - {surah_name}",
+                description=f"Ayah {ayah_number}",
+                color=0x2ECC71,
+            )
+
+            # Add bot's profile picture as thumbnail
+            if interaction.client.user and interaction.client.user.avatar:
+                embed.set_thumbnail(url=interaction.client.user.avatar.url)
+            elif interaction.client.user:
+                # Fallback to default avatar if no custom avatar
+                embed.set_thumbnail(url=interaction.client.user.default_avatar.url)
+
+            # Add Arabic section with code block formatting
+            embed.add_field(
+                name="🌙 Arabic",
+                value=f"```\n{verse.get('arabic', verse['text'])}\n```",
+                inline=False,
+            )
+
+            # Add Translation section with code block formatting
+            embed.add_field(
+                name="📝 Translation",
+                value=f"```\n{verse['translation']}\n```",
+                inline=False,
+            )
+
+            # Set footer with creator information
+            try:
+                DEVELOPER_ID = int(os.getenv("DEVELOPER_ID") or "0")
+                if DEVELOPER_ID != 0:
+                    admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
+                    if admin_user and admin_user.avatar:
+                        embed.set_footer(
+                            text="created by حَـــــنَّـــــا",
+                            icon_url=admin_user.avatar.url,
+                        )
+                    else:
+                        embed.set_footer(text="created by حَـــــنَّـــــا")
+                else:
+                    embed.set_footer(text="created by حَـــــنَّـــــا")
+            except Exception as e:
+                log_error_with_traceback("Failed to set footer with admin avatar", e)
+                embed.set_footer(text="created by حَـــــنَّـــــا")
+
+            # Send message
+            message = await channel.send(embed=embed)
+
+            # Add dua reaction
+            try:
+                await message.add_reaction("🤲")
+
+                # Monitor reactions to remove unwanted ones
+                def check_reaction(reaction, user):
+                    return (
+                        reaction.message.id == message.id
+                        and str(reaction.emoji) != "🤲"
+                        and not user.bot
+                    )
+
+                # Set up reaction monitoring in background
+                async def monitor_reactions():
+                    try:
+                        while True:
+                            reaction, user = await interaction.client.wait_for(
+                                "reaction_add",
+                                timeout=3600,  # Monitor for 1 hour
+                                check=check_reaction,
+                            )
+                            # Remove the unwanted reaction
+                            await reaction.remove(user)
+                    except asyncio.TimeoutError:
+                        pass  # Stop monitoring after timeout
+                    except Exception:
+                        pass  # Ignore any other errors
+
+                # Start monitoring task in background
+                asyncio.create_task(monitor_reactions())
+
+            except Exception as e:
+                log_error_with_traceback(
+                    "Failed to add dua reaction or set up monitoring", e
+                )
+
+        except Exception as e:
+            log_error_with_traceback("Failed to create or send verse embed", e)
+            await interaction.followup.send(
+                "❌ Failed to send verse embed.", ephemeral=True
+            )
+            return
+
+        # Log success
         log_perfect_tree_section(
-            "Verse Command - Execution Complete",
+            "Verse Command - Success",
             [
-                (
-                    "triggered_by",
-                    f"{interaction.user.display_name} ({interaction.user.id})",
-                ),
-                ("admin_verified", "✅ Admin permission confirmed"),
-                ("channel", f"#{channel.name} ({channel.id})"),
-                ("surah", f"{verse['surah_name']} ({verse['surah']}:{verse['ayah']})"),
-                ("message_id", str(message.id)),
-                ("timer_reset", "✅ 3-hour timer reset"),
-                (
-                    "next_auto_verse",
-                    (
-                        f"In 3 hours ({next_auto_time.strftime('%I:%M %p')} EST)"
-                        if next_auto_time
-                        else "Time calculation failed"
-                    ),
-                ),
-                (
-                    "queue_remaining",
-                    (
-                        len(daily_verses_manager.verses_queue)
-                        if hasattr(daily_verses_manager, "verses_queue")
-                        else "Unknown"
-                    ),
-                ),
-                (
-                    "pool_remaining",
-                    (
-                        len(daily_verses_manager.verses_pool)
-                        if hasattr(daily_verses_manager, "verses_pool")
-                        else "Unknown"
-                    ),
-                ),
-                ("coordination", "✅ Verse removed to prevent automatic duplicate"),
-                ("reaction_added", "✅ Dua reaction added"),
-                ("status", "🎉 Command executed successfully"),
+                ("user", f"{interaction.user.display_name} ({interaction.user.id})"),
+                ("surah", f"{surah_name} ({surah_number}:{ayah_number})"),
+                ("channel", f"{channel.name} ({channel.id})"),
+                ("status", "✅ Verse sent successfully"),
             ],
-            "🏆",
+            "📖",
         )
 
     except discord.errors.NotFound as not_found_error:

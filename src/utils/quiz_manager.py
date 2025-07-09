@@ -419,10 +419,18 @@ class QuizManager:
     def load_state(self) -> bool:
         """Load state from file"""
         try:
+            # First try to load from quiz_data.json (the main quiz database)
+            if QUIZ_DATA_FILE.exists():
+                with open(QUIZ_DATA_FILE, "r", encoding="utf-8") as f:
+                    quiz_data = json.load(f)
+                    if "questions" in quiz_data:
+                        self.questions = quiz_data["questions"]
+
+            # Then load user scores and timing from state file
             if self.state_file.exists():
                 with open(self.state_file, "r", encoding="utf-8") as f:
                     state = json.load(f)
-                    self.questions = state.get("questions", [])
+                    # Only load user scores and timing, not questions
                     self.user_scores = state.get("user_scores", {})
 
                     # Handle last_sent_time with timezone

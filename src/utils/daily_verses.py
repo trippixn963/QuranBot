@@ -7,6 +7,7 @@
 
 import asyncio
 import json
+import os
 import random
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -471,25 +472,45 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
                     # Add Ayah number as description
                     embed.description = f"Ayah {verse.get('ayah', verse['verse'])}"
 
-                    # Add Arabic section with moon emoji
+                    # Add bot's profile picture as thumbnail
+                    if bot.user and bot.user.avatar:
+                        embed.set_thumbnail(url=bot.user.avatar.url)
+                    elif bot.user:
+                        # Fallback to default avatar if no custom avatar
+                        embed.set_thumbnail(url=bot.user.default_avatar.url)
+
+                    # Add Arabic section with moon emoji and code block formatting
                     embed.add_field(
                         name="🌙 Arabic",
-                        value=verse.get("arabic", verse["text"]),
+                        value=f"```\n{verse.get('arabic', verse['text'])}\n```",
                         inline=False,
                     )
 
-                    # Add Translation section with scroll emoji
+                    # Add Translation section with scroll emoji and code block formatting
                     embed.add_field(
                         name="📝 Translation",
-                        value=verse["translation"],
+                        value=f"```\n{verse['translation']}\n```",
                         inline=False,
                     )
 
                     # Set footer with creator information like in screenshot
-                    embed.set_footer(
-                        text="created by حَـــــنَّـــــا",
-                        icon_url=bot.user.avatar.url if bot.user.avatar else None,
-                    )
+                    try:
+                        # Get developer ID from environment
+                        DEVELOPER_ID = int(os.getenv("DEVELOPER_ID") or "0")
+                        if DEVELOPER_ID != 0:
+                            admin_user = await bot.fetch_user(DEVELOPER_ID)
+                            if admin_user and admin_user.avatar:
+                                embed.set_footer(
+                                    text="created by حَـــــنَّـــــا",
+                                    icon_url=admin_user.avatar.url,
+                                )
+                            else:
+                                embed.set_footer(text="created by حَـــــنَّـــــا")
+                        else:
+                            embed.set_footer(text="created by حَـــــنَّـــــا")
+                    except Exception:
+                        # Fallback to text-only footer if avatar fetch fails
+                        embed.set_footer(text="created by حَـــــنَّـــــا")
 
                     # Send message
                     message = await channel.send(embed=embed)
@@ -497,6 +518,34 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
                     # Add dua reaction
                     try:
                         await message.add_reaction("🤲")
+
+                        # Monitor reactions to remove unwanted ones
+                        def check_reaction(reaction, user):
+                            return (
+                                reaction.message.id == message.id
+                                and str(reaction.emoji) != "🤲"
+                                and not user.bot
+                            )
+
+                        # Set up reaction monitoring in background
+                        async def monitor_reactions():
+                            try:
+                                while True:
+                                    reaction, user = await bot.wait_for(
+                                        "reaction_add",
+                                        timeout=3600,  # Monitor for 1 hour
+                                        check=check_reaction,
+                                    )
+                                    # Remove unwanted reaction
+                                    await reaction.remove(user)
+                            except asyncio.TimeoutError:
+                                pass  # Stop monitoring after timeout
+                            except Exception:
+                                pass  # Ignore errors in monitoring
+
+                        # Start monitoring task
+                        asyncio.create_task(monitor_reactions())
+
                     except Exception:
                         pass  # Non-critical if reaction fails
 
@@ -552,25 +601,45 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
                     # Add Ayah number as description
                     embed.description = f"Ayah {verse.get('ayah', verse['verse'])}"
 
+                    # Add bot's profile picture as thumbnail
+                    if bot.user and bot.user.avatar:
+                        embed.set_thumbnail(url=bot.user.avatar.url)
+                    elif bot.user:
+                        # Fallback to default avatar if no custom avatar
+                        embed.set_thumbnail(url=bot.user.default_avatar.url)
+
                     # Add Arabic section with moon emoji
                     embed.add_field(
                         name="🌙 Arabic",
-                        value=verse.get("arabic", verse["text"]),
+                        value=f"```\n{verse.get('arabic', verse['text'])}\n```",
                         inline=False,
                     )
 
                     # Add Translation section with scroll emoji
                     embed.add_field(
                         name="📝 Translation",
-                        value=verse["translation"],
+                        value=f"```\n{verse['translation']}\n```",
                         inline=False,
                     )
 
                     # Set footer with creator information like in screenshot
-                    embed.set_footer(
-                        text="created by حَـــــنَّـــــا",
-                        icon_url=bot.user.avatar.url if bot.user.avatar else None,
-                    )
+                    try:
+                        # Get developer ID from environment
+                        DEVELOPER_ID = int(os.getenv("DEVELOPER_ID") or "0")
+                        if DEVELOPER_ID != 0:
+                            admin_user = await bot.fetch_user(DEVELOPER_ID)
+                            if admin_user and admin_user.avatar:
+                                embed.set_footer(
+                                    text="created by حَـــــنَّـــــا",
+                                    icon_url=admin_user.avatar.url,
+                                )
+                            else:
+                                embed.set_footer(text="created by حَـــــنَّـــــا")
+                        else:
+                            embed.set_footer(text="created by حَـــــنَّـــــا")
+                    except Exception:
+                        # Fallback to text-only footer if avatar fetch fails
+                        embed.set_footer(text="created by حَـــــنَّـــــا")
 
                     # Send message
                     message = await channel.send(embed=embed)
@@ -578,6 +647,34 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
                     # Add dua reaction
                     try:
                         await message.add_reaction("🤲")
+
+                        # Monitor reactions to remove unwanted ones
+                        def check_reaction(reaction, user):
+                            return (
+                                reaction.message.id == message.id
+                                and str(reaction.emoji) != "🤲"
+                                and not user.bot
+                            )
+
+                        # Set up reaction monitoring in background
+                        async def monitor_reactions():
+                            try:
+                                while True:
+                                    reaction, user = await bot.wait_for(
+                                        "reaction_add",
+                                        timeout=3600,  # Monitor for 1 hour
+                                        check=check_reaction,
+                                    )
+                                    # Remove unwanted reaction
+                                    await reaction.remove(user)
+                            except asyncio.TimeoutError:
+                                pass  # Stop monitoring after timeout
+                            except Exception:
+                                pass  # Ignore errors in monitoring
+
+                        # Start monitoring task
+                        asyncio.create_task(monitor_reactions())
+
                     except Exception:
                         pass  # Non-critical if reaction fails
 

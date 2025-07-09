@@ -68,7 +68,9 @@ async def leaderboard_command(interaction: discord.Interaction):
 
             # Format quiz stats
             points = stats["points"]
-            streak = stats.get("streak", 0)
+            streak = stats.get(
+                "current_streak", 0
+            )  # Show current streak, not best streak
 
             # Get listening time stats
             listening_stats = get_user_listening_stats(int(user_id))

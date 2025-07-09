@@ -143,10 +143,7 @@ class StateManager:
                 )
                 return False
 
-            # Create backup of existing state
-            if self.playback_state_file.exists():
-                backup_file = self.playback_state_file.with_suffix(".json.backup")
-                shutil.copy2(self.playback_state_file, backup_file)
+            # Individual backup files disabled - using hourly ZIP backup system instead
 
             # Save new state
             state = {
@@ -431,36 +428,7 @@ class StateManager:
 
             # Create backup before saving (in temp directory to keep data/ clean)
             backup_file = self.temp_backup_dir / f"{self.bot_stats_file.stem}.backup"
-            if self.bot_stats_file.exists():
-                try:
-                    shutil.copy2(self.bot_stats_file, backup_file)
-
-                    # Log backup creation
-                    log_perfect_tree_section(
-                        "Bot Stats Backup Created",
-                        [
-                            ("backup_file", f"💾 Backup: {backup_file.name}"),
-                            (
-                                "original_size",
-                                f"📊 Original: {self.bot_stats_file.stat().st_size} bytes",
-                            ),
-                            (
-                                "backup_size",
-                                f"📊 Backup: {backup_file.stat().st_size} bytes",
-                            ),
-                            (
-                                "timestamp",
-                                f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')}",
-                            ),
-                        ],
-                        "💾",
-                    )
-                except Exception as backup_error:
-                    log_error_with_traceback(
-                        "Failed to create bot stats backup",
-                        backup_error,
-                        {"backup_file": str(backup_file)},
-                    )
+            # Individual backup files disabled - using hourly ZIP backup system instead
 
             validation_items = []
 
@@ -539,7 +507,6 @@ class StateManager:
                         "surahs_completed",
                         f"📖 Surahs completed: {current_stats['surahs_completed']}",
                     ),
-                    ("backup_available", f"💾 Backup: {backup_file.exists()}"),
                 ]
 
                 if validation_items:
@@ -577,7 +544,7 @@ class StateManager:
             try:
                 emergency_file = (
                     self.data_dir
-                    / f"emergency_bot_stats_{datetime.now().strftime('%Y%m%d_%I%M%S_%p')}.json"
+                    / f"emergency_bot_stats_{datetime.now().strftime('%Y-%m-%d_%I-%M-%S_%p')}.json"
                 )
                 emergency_data = {
                     "emergency_save": True,
@@ -863,7 +830,7 @@ class StateManager:
             stats["last_disconnect"] = datetime.now(timezone.utc).isoformat()
 
             # Create emergency backup
-            backup_name = f"emergency_disconnect_{int(time.time())}"
+            backup_name = f"emergency_disconnect_{datetime.now().strftime('%Y-%m-%d_%I-%M-%S_%p')}"
             self.backup_state(backup_name)
 
             # Save updated stats

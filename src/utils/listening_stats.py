@@ -341,40 +341,7 @@ class ListeningStatsManager:
         try:
             # Create backup before saving (in temp directory to keep data/ clean)
             backup_file = TEMP_BACKUP_DIR / f"{STATS_FILE.stem}.backup"
-            if STATS_FILE.exists():
-                try:
-                    import shutil
-
-                    shutil.copy2(STATS_FILE, backup_file)
-                    log_perfect_tree_section(
-                        "Data Backup Created",
-                        [
-                            ("backup_file", f"📁 Backup created: {backup_file.name}"),
-                            (
-                                "original_size",
-                                f"📊 Original file size: {STATS_FILE.stat().st_size} bytes",
-                            ),
-                            (
-                                "backup_size",
-                                f"📊 Backup file size: {backup_file.stat().st_size} bytes",
-                            ),
-                            (
-                                "timestamp",
-                                f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')}",
-                            ),
-                            (
-                                "integrity_check",
-                                f"✅ Backup integrity verified",
-                            ),
-                        ],
-                        "💾",
-                    )
-                except Exception as backup_error:
-                    log_error_with_traceback(
-                        "Failed to create backup file",
-                        backup_error,
-                        {"backup_file": str(backup_file)},
-                    )
+            # Individual backup files disabled - using hourly ZIP backup system instead
 
             # Prepare data structure
             data = {
@@ -434,7 +401,6 @@ class ListeningStatsManager:
                             "file_size",
                             f"📊 File size: {STATS_FILE.stat().st_size} bytes",
                         ),
-                        ("backup_available", f"💾 Backup: {backup_file.exists()}"),
                     ],
                     "✅",
                 )
@@ -467,7 +433,7 @@ class ListeningStatsManager:
             try:
                 emergency_file = (
                     STATS_FILE.parent
-                    / f"emergency_session_{user_id}_{datetime.now().strftime('%Y%m%d_%I%M%S_%p')}.json"
+                    / f"emergency_session_{user_id}_{datetime.now().strftime('%Y-%m-%d_%I-%M-%S_%p')}.json"
                 )
                 with open(emergency_file, "w", encoding="utf-8") as f:
                     json.dump(
@@ -620,7 +586,7 @@ class ListeningStatsManager:
                     # Try to write emergency log
                     emergency_file = (
                         STATS_FILE.parent
-                        / f"emergency_session_{user_id}_{datetime.now().strftime('%Y%m%d_%I%M%S_%p')}.json"
+                        / f"emergency_session_{user_id}_{datetime.now().strftime('%Y-%m-%d_%I-%M-%S_%p')}.json"
                     )
                     with open(emergency_file, "w") as f:
                         json.dump(emergency_data, f, indent=2)

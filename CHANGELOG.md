@@ -5,6 +5,31 @@ All notable changes to QuranBot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0] - 2025-07-09
+
+### Enhanced
+
+#### 🎮 Quiz System Display Improvements
+
+- **User-Friendly Results**: Quiz results now display Discord mentions (`<@user_id>`) in embeds for easy user identification
+- **Readable Logs**: Quiz processing logs show actual usernames (e.g., "Golden", "The Caliph") instead of user IDs for better debugging
+- **Black Box Explanations**: Quiz explanations now display in formatted black code boxes while keeping titles outside for better readability
+- **Dual Display System**: Optimized display system - mentions in Discord embeds for tagging, usernames in logs for debugging
+
+#### 🔧 Quiz Results Processing
+
+- **Enhanced User Lookup**: Improved user fetching system for better username resolution in quiz results
+- **Consistent Formatting**: Standardized quiz results format with proper Discord mention handling
+- **Error Handling**: Better fallback handling when user lookup fails during quiz processing
+- **Log Clarity**: Clear separation between user-facing display and developer debugging information
+
+### Technical Improvements
+
+- **📱 Embed Optimization**: Maintained Discord mention functionality in embeds for proper user notifications
+- **🔍 Debug Enhancement**: Enhanced logging with readable usernames for easier troubleshooting
+- **🎨 Visual Formatting**: Improved explanation display with proper code block formatting
+- **⚡ Performance**: Optimized user lookup process during quiz results generation
+
 ## [3.1.0] - 2025-07-09
 
 ### Added
