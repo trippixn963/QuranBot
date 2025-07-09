@@ -70,6 +70,53 @@ class SurahInfo:
     meaning: str
     description: str
 
+    def __getitem__(self, key: str) -> str:
+        """Make the class subscriptable"""
+        mapping = {
+            "name": self.name_transliteration,
+            "name_arabic": self.name_arabic,
+            "name_english": self.name_english,
+            "name_transliteration": self.name_transliteration,
+            "emoji": self.emoji,
+            "verses": self.verses,
+            "revelation_type": self.revelation_type.value,
+            "meaning": self.meaning,
+            "description": self.description,
+        }
+        if key not in mapping:
+            raise KeyError(f"Key {key} not found")
+        return mapping[key]
+
+    def __iter__(self):
+        """Make the class iterable"""
+        yield from [
+            "name",
+            "name_arabic",
+            "name_english",
+            "name_transliteration",
+            "emoji",
+            "verses",
+            "revelation_type",
+            "meaning",
+            "description",
+        ]
+
+    def __eq__(self, other):
+        """Custom equality check"""
+        if not isinstance(other, SurahInfo):
+            return False
+        return (
+            self.number == other.number
+            and self.name_arabic == other.name_arabic
+            and self.name_english == other.name_english
+            and self.name_transliteration == other.name_transliteration
+            and self.emoji == other.emoji
+            and self.verses == other.verses
+            and self.revelation_type == other.revelation_type
+            and self.meaning == other.meaning
+            and self.description == other.description
+        )
+
 
 # =============================================================================
 # JSON Data Loading
@@ -251,30 +298,31 @@ def get_random_surah() -> Optional[SurahInfo]:
     """Get a random Surah from the database"""
     try:
         if not SURAH_DATABASE:
-            log_error_with_traceback("Cannot get random Surah", "Database not loaded")
+            log_error_with_traceback(
+                "Surah database not loaded", "Cannot retrieve random Surah"
+            )
             return None
 
         surah_number = random.randint(1, 114)
-        surah = get_surah_info(surah_number)
-        if surah:
-            log_perfect_tree_section(
-                "Random Surah Selected",
-                [
-                    ("surah_number", surah_number),
-                    ("surah_name", surah.name_transliteration),
-                    ("status", "🎲 Random selection complete"),
-                ],
-                "🎲",
-            )
-            return surah
-        else:
-            log_error_with_traceback(
-                f"Random Surah {surah_number} not found", "Database issue"
-            )
-            return None
+        return get_surah_info(surah_number)
     except Exception as e:
         log_error_with_traceback("Error getting random Surah", e)
         return None
+
+
+def get_all_surahs() -> Dict[int, SurahInfo]:
+    """Get all Surahs from the database"""
+    try:
+        if not SURAH_DATABASE:
+            log_error_with_traceback(
+                "Surah database not loaded", "Cannot retrieve Surahs"
+            )
+            return {}
+
+        return SURAH_DATABASE.copy()
+    except Exception as e:
+        log_error_with_traceback("Error getting all Surahs", e)
+        return {}
 
 
 def search_surahs(query: str) -> List[SurahInfo]:

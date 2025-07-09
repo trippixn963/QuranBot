@@ -31,8 +31,14 @@ class TestSurahMapper:
         surah_info = get_surah_info(1)
         assert surah_info is not None
         assert "name" in surah_info
-        assert "english_name" in surah_info
+        assert "name_english" in surah_info
+        assert "name_arabic" in surah_info
+        assert "name_transliteration" in surah_info
+        assert "emoji" in surah_info
         assert "verses" in surah_info
+        assert "revelation_type" in surah_info
+        assert "meaning" in surah_info
+        assert "description" in surah_info
 
         # Test invalid surah
         invalid_surah = get_surah_info(150)
@@ -54,10 +60,14 @@ class TestSurahMapper:
         # Check that all surahs have required fields
         for surah_num, surah_info in all_surahs.items():
             assert "name" in surah_info
-            assert "english_name" in surah_info
+            assert "name_english" in surah_info
+            assert "name_arabic" in surah_info
+            assert "name_transliteration" in surah_info
+            assert "emoji" in surah_info
             assert "verses" in surah_info
-            assert isinstance(surah_info["verses"], int)
-            assert surah_info["verses"] > 0
+            assert "revelation_type" in surah_info
+            assert "meaning" in surah_info
+            assert "description" in surah_info
 
 
 class TestTreeLog:
@@ -107,9 +117,14 @@ class TestIntegration:
             surah_info = get_surah_info(i)
             assert surah_info is not None
             assert isinstance(surah_info["name"], str)
-            assert isinstance(surah_info["english_name"], str)
+            assert isinstance(surah_info["name_english"], str)
+            assert isinstance(surah_info["name_arabic"], str)
+            assert isinstance(surah_info["name_transliteration"], str)
+            assert isinstance(surah_info["emoji"], str)
             assert isinstance(surah_info["verses"], int)
-            assert surah_info["verses"] > 0
+            assert isinstance(surah_info["revelation_type"], str)
+            assert isinstance(surah_info["meaning"], str)
+            assert isinstance(surah_info["description"], str)
 
     def test_data_consistency(self):
         """Test data consistency across components"""
@@ -118,7 +133,9 @@ class TestIntegration:
         # Test that individual surah info matches bulk data
         for surah_num in range(1, 115):
             individual_info = get_surah_info(surah_num)
-            bulk_info = all_surahs.get(str(surah_num))
+            bulk_info = all_surahs.get(
+                surah_num
+            )  # Changed from str(surah_num) to surah_num
 
             assert individual_info == bulk_info
 

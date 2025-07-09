@@ -71,8 +71,8 @@ async def credits_command(interaction: discord.Interaction):
         embed.add_field(
             name="🤖 Bot Information",
             value=(
-                f"**Version:** `{BOT_VERSION}`\n"
-                f"**Commands:** `/credits` `/leaderboard` `/verse`\n"
+                f"**Version:** `3.0.0`\n"
+                f"**Commands:** `/credits` `/leaderboard`\n"
                 f"**Features:** Audio streaming, Daily verses, Leaderboard"
             ),
             inline=False,

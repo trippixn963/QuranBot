@@ -7,6 +7,7 @@
 import asyncio
 import glob
 import os
+import re
 from typing import Any, Dict, List, Optional
 
 import discord
@@ -146,27 +147,36 @@ class AudioManager:
     async def _position_save_loop(self):
         """Periodically save playback position"""
         try:
+            save_counter = 0  # Counter to control logging frequency
             while True:
                 await asyncio.sleep(5)  # Save every 5 seconds
+                save_counter += 1
 
                 if self.is_playing and self.rich_presence:
                     try:
-                        # Get current position from rich presence
-                        track_info = self.rich_presence.get_current_track_info()
-                        if track_info:
-                            current_time = track_info.get("current_time", 0)
-                            total_time = track_info.get("duration", 0)
+                        # Use current position from audio manager instead of rich presence
+                        # since get_current_track_info doesn't exist
+                        current_time = self.current_position
+                        total_time = 0  # Could be enhanced with audio file metadata
 
-                            # Save state
-                            state_manager.save_playback_state(
-                                current_surah=self.current_surah,
-                                current_position=current_time,
-                                current_reciter=self.current_reciter,
-                                total_duration=total_time,
-                                is_playing=self.is_playing,
-                                loop_enabled=self.is_loop_enabled,
-                                shuffle_enabled=self.is_shuffle_enabled,
-                            )
+                        # Save state silently most of the time, only log every 60 seconds
+                        should_log = (
+                            save_counter >= 12
+                        )  # Log every 12th save (60 seconds)
+
+                        state_manager.save_playback_state(
+                            current_surah=self.current_surah,
+                            current_position=current_time,
+                            current_reciter=self.current_reciter,
+                            is_playing=self.is_playing,
+                            loop_enabled=self.is_loop_enabled,
+                            shuffle_enabled=self.is_shuffle_enabled,
+                            silent=not should_log,  # Silent unless it's time to log
+                        )
+
+                        # Reset counter after logging
+                        if should_log:
+                            save_counter = 0
                     except Exception as e:
                         log_error_with_traceback("Error in position save loop", e)
 
@@ -509,20 +519,18 @@ class AudioManager:
             if self.is_playing:
                 try:
                     if self.rich_presence:
-                        track_info = self.rich_presence.get_current_track_info()
-                        if track_info:
-                            current_time = track_info.get("current_time", 0)
-                            total_time = track_info.get("duration", 0)
+                        # Use current position from audio manager instead of rich presence
+                        current_time = self.current_position
+                        total_time = 0  # Could be enhanced with audio file metadata
 
-                            state_manager.save_playback_state(
-                                current_surah=self.current_surah,
-                                current_position=current_time,
-                                current_reciter=self.current_reciter,
-                                total_duration=total_time,
-                                is_playing=False,
-                                loop_enabled=self.is_loop_enabled,
-                                shuffle_enabled=self.is_shuffle_enabled,
-                            )
+                        state_manager.save_playback_state(
+                            current_surah=self.current_surah,
+                            current_position=current_time,
+                            current_reciter=self.current_reciter,
+                            is_playing=False,
+                            loop_enabled=self.is_loop_enabled,
+                            shuffle_enabled=self.is_shuffle_enabled,
+                        )
                 except Exception as e:
                     log_error_with_traceback("Error saving final state", e)
 
@@ -542,7 +550,8 @@ class AudioManager:
 
             if self.rich_presence:
                 try:
-                    await self.rich_presence.stop_track()
+                    # Use clear_presence instead of stop_track
+                    self.rich_presence.clear_presence()
                 except Exception as e:
                     log_error_with_traceback("Error stopping rich presence", e)
 
@@ -854,42 +863,90 @@ class AudioManager:
             log_error_with_traceback("Error toggling shuffle mode", e)
 
     def _update_current_surah(self):
-        """Update current Surah based on current file index"""
+        """Update current surah based on current file index"""
         try:
-            if not self.current_audio_files or self.current_file_index >= len(
+            if self.current_audio_files and self.current_file_index < len(
                 self.current_audio_files
             ):
-                return
+                current_file = self.current_audio_files[self.current_file_index]
+                filename = os.path.basename(current_file)
 
-            current_file = self.current_audio_files[self.current_file_index]
-            filename = os.path.basename(current_file)
+                # Extract surah number from filename
+                match = re.search(r"(\d+)", filename)
+                if match:
+                    self.current_surah = int(match.group(1))
+                else:
+                    # Fallback: use file index + 1
+                    self.current_surah = self.current_file_index + 1
 
-            try:
-                surah_number = int(filename.split(".")[0])
-                if validate_surah_number(surah_number):
-                    self.current_surah = surah_number
-
-                    # Log successful update
-                    log_perfect_tree_section(
-                        "Audio Manager - Surah Update",
-                        [
-                            (
-                                "update_debug_index",
-                                f"Using file index: {self.current_file_index}",
-                            ),
-                            ("update_debug_file", f"Reading file: {filename}"),
-                            ("surah_updated", f"Current: {surah_number}"),
-                        ],
-                        "📖",
-                    )
-            except (ValueError, IndexError):
-                log_warning_with_context(
-                    "Could not parse Surah number from filename",
-                    f"Filename: {filename}",
-                )
+                # Ensure surah is within valid range
+                if not (1 <= self.current_surah <= 114):
+                    self.current_surah = 1
 
         except Exception as e:
-            log_error_with_traceback("Error updating current Surah", e)
+            log_error_with_traceback("Error updating current surah", e)
+            self.current_surah = 1
+
+    def _format_time(self, seconds: float) -> str:
+        """Format seconds to MM:SS or H:MM:SS like the control panel"""
+        try:
+            total_seconds = int(seconds)
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            secs = total_seconds % 60
+
+            if hours > 0:
+                return f"{hours}:{minutes:02d}:{secs:02d}"  # H:MM:SS (no leading zero for hours)
+            else:
+                return f"{minutes:02d}:{secs:02d}"  # MM:SS
+
+        except Exception:
+            return "00:00"
+
+    def _get_playback_time_display(self) -> str:
+        """Get formatted playback time display like control panel"""
+        try:
+            # Get time information
+            current_time = self.current_position
+
+            # For now, provide track-based progress instead of time-based
+            # This gives users a sense of progress through the Quran
+            if self.current_audio_files and len(self.current_audio_files) > 0:
+                # Use track progression as a proxy for time
+                # Each track represents roughly equal progress through the Quran
+                current_track = self.current_file_index + 1
+                total_tracks = len(self.current_audio_files)
+
+                # Convert to "time" format for progress bar (minutes)
+                # Scale it so full Quran = ~100 "minutes" for nice display
+                total_time_seconds = 100 * 60  # 100 "minutes" total
+                current_time_seconds = (
+                    current_track / total_tracks
+                ) * total_time_seconds
+
+                # Also add position within current track if available
+                if self.current_position > 0:
+                    # Add current position as fraction of estimated track length
+                    estimated_track_length = (
+                        total_time_seconds / total_tracks
+                    )  # seconds per track
+                    position_in_track = min(
+                        self.current_position, estimated_track_length
+                    )
+                    current_time_seconds = (
+                        (current_track - 1) / total_tracks
+                    ) * total_time_seconds + position_in_track
+
+                # Format both times
+                current_str = self._format_time(current_time_seconds)
+                total_str = self._format_time(total_time_seconds)
+                return f"{current_str} / {total_str}"
+            else:
+                return "00:00 / 00:00"
+
+        except Exception as e:
+            log_error_with_traceback("Error getting playback time display", e)
+            return "00:00 / 00:00"
 
     async def _playback_loop(self, resume_position: bool = True):
         """Main playback loop with resume capability"""
@@ -907,10 +964,12 @@ class AudioManager:
                         else None
                     )
                     if current_file:
-                        duration = self.rich_presence.get_audio_duration(current_file)
-                        if duration and self.current_position >= (
-                            duration - 5
-                        ):  # Within 5 seconds of end
+                        # Skip track completion check since get_audio_duration doesn't exist
+                        # This functionality can be enhanced later with proper audio duration detection
+                        duration = None
+                        if (
+                            False
+                        ):  # Disabled until proper duration detection is implemented
                             # Track is complete or nearly complete - skip to next track
                             log_perfect_tree_section(
                                 "Audio Playback - Track Complete on Startup",
@@ -940,7 +999,6 @@ class AudioManager:
                                 current_surah=self.current_surah,
                                 current_position=0,
                                 current_reciter=self.current_reciter,
-                                total_duration=0,
                                 is_playing=False,
                                 loop_enabled=self.is_loop_enabled,
                                 shuffle_enabled=self.is_shuffle_enabled,
@@ -1018,18 +1076,33 @@ class AudioManager:
                         # Start Rich Presence tracking
                         if self.rich_presence:
                             try:
-                                await self.rich_presence.start_track(
-                                    self.current_surah,
-                                    current_file,
-                                    self.current_reciter,
+                                # Use update_presence_with_template instead of start_track
+                                from src.utils.surah_mapper import (
+                                    get_surah_info,
+                                    get_surah_name,
                                 )
 
-                                # If resuming, seek to saved position
-                                if should_resume:
-                                    await self.rich_presence.seek_to_position(
-                                        self.current_position
-                                    )
-                                    should_resume = False  # Only resume once
+                                surah_name = get_surah_name(self.current_surah)
+                                surah_info = get_surah_info(self.current_surah)
+                                verse_count = (
+                                    str(surah_info.verses) if surah_info else "Unknown"
+                                )
+                                surah_emoji = surah_info.emoji if surah_info else "📖"
+
+                                self.rich_presence.update_presence_with_template(
+                                    "listening",
+                                    {
+                                        "emoji": surah_emoji,
+                                        "surah": surah_name,
+                                        "verse": "1",  # Could be enhanced with actual verse tracking
+                                        "total": verse_count,  # Now shows actual verse count
+                                        "reciter": self.current_reciter,
+                                        "playback_time": self._get_playback_time_display(),
+                                    },
+                                )
+
+                                # Note: seek_to_position doesn't exist either, so we'll skip that
+                                should_resume = False  # Only resume once
 
                             except Exception as e:
                                 log_error_with_traceback(
@@ -1152,7 +1225,8 @@ class AudioManager:
                         # Stop Rich Presence for this track
                         if self.rich_presence:
                             try:
-                                await self.rich_presence.stop_track()
+                                # Use clear_presence instead of stop_track
+                                self.rich_presence.clear_presence()
                             except Exception as e:
                                 log_error_with_traceback(
                                     "Error stopping rich presence track", e
@@ -1288,10 +1362,37 @@ class AudioManager:
             # Get time information from rich presence if available
             if self.rich_presence:
                 try:
-                    track_info = self.rich_presence.get_current_track_info()
-                    if track_info:
-                        status["current_time"] = track_info.get("current_time", 0)
-                        status["total_time"] = track_info.get("duration", 0)
+                    # Use current position from audio manager
+                    status["current_time"] = self.current_position
+
+                    # For now, provide track-based progress instead of time-based
+                    # This gives users a sense of progress through the Quran
+                    if self.current_audio_files and len(self.current_audio_files) > 0:
+                        # Use track progression as a proxy for time
+                        # Each track represents roughly equal progress through the Quran
+                        current_track = self.current_file_index + 1
+                        total_tracks = len(self.current_audio_files)
+
+                        # Convert to "time" format for progress bar (minutes)
+                        # Scale it so full Quran = ~100 "minutes" for nice display
+                        status["current_time"] = (
+                            (current_track / total_tracks) * 100 * 60
+                        )  # seconds
+                        status["total_time"] = 100 * 60  # 100 "minutes" total
+
+                        # Also add position within current track if available
+                        if self.current_position > 0:
+                            # Add current position as fraction of estimated track length
+                            estimated_track_length = (
+                                100 * 60
+                            ) / total_tracks  # seconds per track
+                            position_in_track = min(
+                                self.current_position, estimated_track_length
+                            )
+                            status["current_time"] = (
+                                (current_track - 1) / total_tracks
+                            ) * 100 * 60 + position_in_track
+
                 except Exception as e:
                     log_error_with_traceback("Error getting time from rich presence", e)
 

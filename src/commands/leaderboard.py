@@ -1,16 +1,21 @@
 # =============================================================================
 # QuranBot - Leaderboard Command
 # =============================================================================
-# Displays listening time leaderboard for Quran voice channel users
+# Displays quiz points leaderboard
 # =============================================================================
 
+import json
 import os
 from datetime import datetime, timezone
+from pathlib import Path
 
 import discord
 
-from src.utils.listening_stats import get_leaderboard_data
+from src.utils.listening_stats import format_listening_time, get_user_listening_stats
 from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
+
+# Path to quiz stats file
+QUIZ_STATS_FILE = Path("data/quiz_stats.json")
 
 # =============================================================================
 # Slash Command Implementation
@@ -18,110 +23,97 @@ from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_sectio
 
 
 @discord.app_commands.command(
-    name="leaderboard", description="Display the Quran listening time leaderboard"
+    name="leaderboard",
+    description="Display the quiz points leaderboard",
 )
 async def leaderboard_command(interaction: discord.Interaction):
-    """Display the Quran listening leaderboard"""
+    """Display the quiz points leaderboard"""
     try:
-        # Get leaderboard data
-        leaderboard_data = get_leaderboard_data()
-        top_users = leaderboard_data["top_users"]
+        # Load fresh quiz stats from file each time
+        try:
+            if QUIZ_STATS_FILE.exists():
+                with open(QUIZ_STATS_FILE, "r", encoding="utf-8") as f:
+                    quiz_stats = json.load(f)
+            else:
+                quiz_stats = {"user_scores": {}}
+        except Exception as e:
+            log_error_with_traceback("Error loading quiz stats for leaderboard", e)
+            quiz_stats = {"user_scores": {}}
 
-        if not top_users:
-            embed = discord.Embed(
-                title="🏆 Quran Listening Leaderboard",
-                description="No listening data available yet. Join the voice channel to start tracking!",
-                color=0x00D4AA,
-            )
-            await interaction.response.send_message(embed=embed)
-            return
+        user_scores = quiz_stats.get("user_scores", {})
+
+        # Sort users by points (primary) and correct answers (secondary)
+        sorted_users = sorted(
+            user_scores.items(),
+            key=lambda x: (x[1]["points"], x[1].get("correct", 0)),
+            reverse=True,
+        )[
+            :10
+        ]  # Top 10 users
 
         # Create embed
         embed = discord.Embed(
-            title="🏆 Quran Listening Leaderboard",
-            description="*Top listeners in the Quran voice channel*",
+            title="🏆 QuranBot Leaderboard",
+            description="*Top users ranked by quiz points*",
             color=0x00D4AA,
-            timestamp=datetime.now(timezone.utc),
         )
 
         # Medal emojis for top 3
         medal_emojis = {1: "🥇", 2: "🥈", 3: "🥉"}
 
         leaderboard_text = ""
-        for position, (user_id, total_time, sessions) in enumerate(top_users, 1):
+        for position, (user_id, stats) in enumerate(sorted_users, 1):
             # Get position display
             position_display = medal_emojis.get(position, f"{position}.")
 
-            # Format time
-            time_formatted = _format_time(total_time)
+            # Format quiz stats
+            points = stats["points"]
+            streak = stats.get("streak", 0)
 
-            # Get user object to access username
-            try:
-                user = interaction.client.get_user(user_id)
-                if not user:
-                    # If user not in cache, fetch from Discord API
-                    user = await interaction.client.fetch_user(user_id)
-
-                if user:
-                    # Use the actual Discord username (not display name)
-                    username = user.name  # This is the Discord username
-                    user_display = f"{username} - <@{user_id}>"
-
-                    # Debug logging to see what we're getting
-                    print(
-                        f"Debug: User {user_id} - username: {username}, display_name: {user.display_name}"
-                    )
-                else:
-                    # Fallback if user not found
-                    user_display = f"Unknown User - <@{user_id}>"
-                    print(f"Debug: User {user_id} not found, using fallback")
-            except Exception as e:
-                # Fallback if error occurs
-                user_display = f"Unknown User - <@{user_id}>"
-                print(f"Debug: Error getting user {user_id}: {e}")
+            # Get listening time stats
+            listening_stats = get_user_listening_stats(int(user_id))
+            if listening_stats:
+                listening_time = format_listening_time(listening_stats.total_time)
+            else:
+                listening_time = "0s"
 
             # Create leaderboard entry
             leaderboard_text += (
-                f"{position_display} {user_display}\n"
-                f"**Time spent**: `{time_formatted}`\n\n"
+                f"{position_display} <@{user_id}>\n"
+                f"Points: **{points}** • Streak: **{streak}** 🔥\n"
+                f"Listening Time: **{listening_time}**\n\n"
             )
 
-        embed.description = (
-            f"*Top listeners in the Quran voice channel*\n\n{leaderboard_text}"
-        )
+        if leaderboard_text:
+            embed.description = (
+                f"*Top users ranked by quiz points*\n\n{leaderboard_text}"
+            )
+        else:
+            embed.description = "*No quiz data available yet. Answer some questions to appear on the leaderboard!*"
 
         # Set bot profile picture as thumbnail
         try:
             if interaction.client.user and interaction.client.user.avatar:
                 embed.set_thumbnail(url=interaction.client.user.avatar.url)
         except Exception:
-            # Continue without thumbnail if there's an error
             pass
 
-        # Set footer with admin user profile picture
+        # Set footer with admin profile picture
         try:
-            # Get admin user (your user ID)
-            admin_user_id = 259725211664908288
-            admin_user = interaction.client.get_user(admin_user_id)
-
-            if not admin_user:
-                # If admin user not in cache, fetch from Discord API
-                admin_user = await interaction.client.fetch_user(admin_user_id)
-
-            if admin_user and admin_user.avatar:
-                embed.set_footer(
-                    text="Created by حَـــــنَّـــــا", icon_url=admin_user.avatar.url
-                )
-                print(f"Debug: Admin footer set with avatar: {admin_user.avatar.url}")
+            developer_id = int(os.getenv("DEVELOPER_ID", 0))
+            if developer_id:
+                admin_user = await interaction.client.fetch_user(developer_id)
+                if admin_user and admin_user.avatar:
+                    embed.set_footer(
+                        text="created by حَـــــنَـــــا",
+                        icon_url=admin_user.avatar.url,
+                    )
+                else:
+                    embed.set_footer(text="created by حَـــــنَـــــا")
             else:
-                embed.set_footer(text="Created by حَـــــنَّـــــا")
-                print(
-                    f"Debug: Admin user found but no avatar, admin_user: {admin_user}"
-                )
-        except Exception as e:
-            # Fallback to text-only footer if avatar fetch fails
-            embed.set_footer(text="Created by حَـــــنَّـــــا")
-            print(f"Debug: Error setting admin footer: {e}")
+                embed.set_footer(text="created by حَـــــنَـــــا")
+        except Exception:
+            embed.set_footer(text="created by حَـــــنَـــــا")
 
         await interaction.response.send_message(embed=embed)
 
@@ -132,7 +124,7 @@ async def leaderboard_command(interaction: discord.Interaction):
                 ("user", interaction.user.display_name),
                 ("user_id", interaction.user.id),
                 ("channel", interaction.channel.name if interaction.channel else "DM"),
-                ("top_users_shown", len(top_users)),
+                ("users_shown", len(sorted_users)),
             ],
             "🏆",
         )
@@ -149,25 +141,6 @@ async def leaderboard_command(interaction: discord.Interaction):
             )
 
 
-def _format_time(seconds: float) -> str:
-    """Format time in seconds to human-readable format"""
-    if seconds < 60:
-        return f"{int(seconds)}s"
-    elif seconds < 3600:
-        minutes = int(seconds // 60)
-        secs = int(seconds % 60)
-        return f"{minutes}m {secs}s"
-    else:
-        hours = int(seconds // 3600)
-        minutes = int((seconds % 3600) // 60)
-        if hours < 24:
-            return f"{hours}h {minutes}m"
-        else:
-            days = int(hours // 24)
-            remaining_hours = int(hours % 24)
-            return f"{days}d {remaining_hours}h"
-
-
 async def setup_leaderboard_command(bot):
     """Set up the leaderboard command"""
     # Add the slash command to the bot's command tree
@@ -179,7 +152,7 @@ async def setup_leaderboard_command(bot):
             ("status", "✅ Leaderboard command loaded successfully"),
             ("command_name", "/leaderboard"),
             ("command_type", "Slash command only"),
-            ("description", "Display Quran listening time leaderboard"),
+            ("description", "Display quiz points leaderboard"),
             ("permission_level", "🌐 Public command"),
         ],
         "🏆",

@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+import pytz
 from dotenv import load_dotenv
 
 from .tree_log import log_error_with_traceback, log_perfect_tree_section
@@ -127,206 +128,55 @@ class StateManager:
         current_surah: int,
         current_position: float,
         current_reciter: str,
-        total_duration: float = 0.0,
-        is_playing: bool = True,
+        is_playing: bool = False,
         loop_enabled: bool = False,
         shuffle_enabled: bool = False,
+        silent: bool = False,
     ) -> bool:
-        """
-        Save current playback state to persistent storage with bulletproof protection.
-
-        Saves the current playback position and settings to JSON file with atomic writes,
-        backup creation, and emergency save mechanisms for recovery after bot restarts.
-        Operation is silent to prevent log spam during frequent automatic saves.
-
-        Args:
-            current_surah: Current surah number (1-114)
-            current_position: Current playback position in seconds
-            current_reciter: Name of current reciter
-            total_duration: Total duration of current track in seconds
-            is_playing: Whether audio is currently playing
-            loop_enabled: Whether loop mode is enabled
-            shuffle_enabled: Whether shuffle mode is enabled
-
-        Returns:
-            bool: True if save was successful, False otherwise
-        """
+        """Save current playback state"""
         try:
-            # Validate input parameters
+            # Validate surah number
             if not (1 <= current_surah <= 114):
                 log_error_with_traceback(
-                    "Invalid surah number in save_playback_state",
+                    "Invalid surah number",
                     ValueError(f"Surah number must be 1-114, got {current_surah}"),
                 )
                 return False
 
-            if current_position < 0:
-                current_position = 0.0  # Clamp negative positions
+            # Create backup of existing state
+            if self.playback_state_file.exists():
+                backup_file = self.playback_state_file.with_suffix(".json.backup")
+                shutil.copy2(self.playback_state_file, backup_file)
 
-            if total_duration < 0:
-                total_duration = 0.0  # Clamp negative durations
-
-            # Prepare state data with metadata
+            # Save new state
             state = {
                 "current_surah": current_surah,
                 "current_position": current_position,
                 "current_reciter": current_reciter,
-                "total_duration": total_duration,
-                "last_updated": datetime.now(timezone.utc).isoformat(),
                 "is_playing": is_playing,
                 "loop_enabled": loop_enabled,
                 "shuffle_enabled": shuffle_enabled,
-                "metadata": {
-                    "version": "2.2.0",
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                    "save_type": "playback_state",
-                },
+                "timestamp": datetime.now(pytz.UTC).timestamp(),
             }
 
-            # Smart backup creation - only when needed
-            should_create_backup = False
-            current_time = time.time()
+            with open(self.playback_state_file, "w", encoding="utf-8") as f:
+                json.dump(state, f, indent=2)
 
-            # Create backup if:
-            # 1. No backup exists yet
-            # 2. Significant change (surah change, reciter change, or large position jump)
-            # 3. Enough time has passed since last backup
-            backup_file = (
-                self.temp_backup_dir / f"{self.playback_state_file.stem}.backup"
-            )
-            if not backup_file.exists():
-                should_create_backup = True
-            elif self.last_backup_data:
-                # Check for significant changes
-                if (
-                    self.last_backup_data.get("current_surah") != current_surah
-                    or self.last_backup_data.get("current_reciter") != current_reciter
-                    or abs(
-                        self.last_backup_data.get("current_position", 0)
-                        - current_position
-                    )
-                    > 30
-                ):
-                    should_create_backup = True
-            elif current_time - self.last_backup_time > self.backup_interval:
-                should_create_backup = True
-
-            if should_create_backup and self.playback_state_file.exists():
-                try:
-                    shutil.copy2(self.playback_state_file, backup_file)
-                    self.last_backup_time = current_time
-                    self.last_backup_data = state.copy()
-
-                    # Check if this is a significant change
-                    is_significant_change = self.last_backup_data and (
-                        self.last_backup_data.get("current_surah") != current_surah
-                        or self.last_backup_data.get("current_reciter")
-                        != current_reciter
-                    )
-
-                    # Only log detailed info for significant changes
-                    if is_significant_change:
-                        log_perfect_tree_section(
-                            "Playback State Backup Created",
-                            [
-                                ("backup_file", f"💾 Backup: {backup_file.name}"),
-                                (
-                                    "original_size",
-                                    f"📊 Original: {self.playback_state_file.stat().st_size} bytes",
-                                ),
-                                (
-                                    "backup_size",
-                                    f"📊 Backup: {backup_file.stat().st_size} bytes",
-                                ),
-                                ("reason", "📋 Significant change detected"),
-                                (
-                                    "timestamp",
-                                    f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')}",
-                                ),
-                            ],
-                            "💾",
-                        )
-                    # For periodic backups, just log silently (no spam)
-
-                except Exception as backup_error:
-                    log_error_with_traceback(
-                        "Failed to create playback state backup",
-                        backup_error,
-                        {"backup_file": str(backup_file)},
-                    )
-
-            # Atomic write to prevent corruption
-            temp_file = self.playback_state_file.with_suffix(".tmp")
-            try:
-                with open(temp_file, "w", encoding="utf-8") as f:
-                    json.dump(state, f, indent=2, ensure_ascii=False)
-                    f.flush()  # Ensure data is written to disk
-                    os.fsync(f.fileno())  # Force OS to write to disk
-
-                # Atomic rename (this is atomic on most filesystems)
-                temp_file.replace(self.playback_state_file)
-
-                # State saved silently - no logging to avoid spam during frequent saves
-                return True
-
-            except Exception as write_error:
-                # Clean up temp file if write failed
-                if temp_file.exists():
-                    try:
-                        temp_file.unlink()
-                    except:
-                        pass
-                raise write_error
-
-        except (IOError, OSError) as e:
-            log_error_with_traceback("File system error saving playback state", e)
-
-            # Try emergency save
-            try:
-                emergency_file = (
-                    self.data_dir
-                    / f"emergency_playback_{datetime.now().strftime('%Y%m%d_%I%M%S_%p')}.json"
-                )
-                emergency_data = {
-                    "emergency_save": True,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "playback_state": state,
-                    "error": str(e),
-                }
-                with open(emergency_file, "w", encoding="utf-8") as f:
-                    json.dump(emergency_data, f, indent=2)
-
+            # Only log if not silent
+            if not silent:
                 log_perfect_tree_section(
-                    "Emergency Playback Save Created",
+                    "Playback State Saved",
                     [
-                        ("emergency_file", f"🚨 Emergency save: {emergency_file.name}"),
-                        (
-                            "file_size",
-                            f"📊 Size: {emergency_file.stat().st_size} bytes",
-                        ),
-                        ("surah", f"📖 Surah: {current_surah}"),
-                        ("position", f"⏱️ Position: {current_position:.1f}s"),
-                        ("reciter", f"🎤 Reciter: {current_reciter}"),
-                        (
-                            "timestamp",
-                            f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')}",
-                        ),
-                        ("status", "✅ Playback state preserved"),
+                        ("current_surah", current_surah),
+                        ("current_position", f"{current_position:.1f}s"),
+                        ("current_reciter", current_reciter),
+                        ("status", "✅ State saved successfully"),
                     ],
-                    "🚨",
+                    "💾",
                 )
-            except Exception as emergency_error:
-                log_error_with_traceback(
-                    "CRITICAL: Emergency playback save also failed!",
-                    emergency_error,
-                )
-
-            return False
-        except (TypeError, ValueError) as e:
-            log_error_with_traceback("Data validation error saving playback state", e)
-            return False
+            return True
         except Exception as e:
-            log_error_with_traceback("Unexpected error saving playback state", e)
+            log_error_with_traceback("Error saving playback state", e)
             return False
 
     def load_playback_state(self) -> Dict[str, Any]:
@@ -998,6 +848,41 @@ class StateManager:
             return self.save_bot_stats(increment_completed=True)
         except Exception as e:
             log_error_with_traceback("Error marking surah completion", e)
+            return False
+
+    def mark_disconnect(self) -> bool:
+        """
+        Mark bot disconnection in state.
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            # Save current state before disconnect
+            stats = self.load_bot_stats()
+            stats["last_disconnect"] = datetime.now(timezone.utc).isoformat()
+
+            # Create emergency backup
+            backup_name = f"emergency_disconnect_{int(time.time())}"
+            self.backup_state(backup_name)
+
+            # Save updated stats
+            with open(self.bot_stats_file, "w", encoding="utf-8") as f:
+                json.dump(stats, f, indent=2)
+
+            log_perfect_tree_section(
+                "Bot Disconnect Marked",
+                [
+                    ("timestamp", datetime.now(timezone.utc).isoformat()),
+                    ("backup_created", backup_name),
+                    ("status", "✅ Disconnect event recorded"),
+                ],
+                "🔌",
+            )
+            return True
+
+        except Exception as e:
+            log_error_with_traceback("Error marking disconnect", e)
             return False
 
     def get_resume_info(self) -> Dict[str, Any]:

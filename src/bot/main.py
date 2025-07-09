@@ -631,11 +631,16 @@ def validate_configuration():
         # External Dependencies Validation
         # =============================================================================
         try:
-            rp_validation = validate_rich_presence_dependencies(FFMPEG_PATH)
-            warnings.extend(rp_validation["warnings"])
-
-            if rp_validation.get("errors"):
-                warnings.extend(rp_validation["errors"])
+            rp_validation = validate_rich_presence_dependencies()
+            if isinstance(rp_validation, bool):
+                # Function returns bool, not dict - create appropriate response
+                if not rp_validation:
+                    warnings.append("Rich Presence dependencies validation failed")
+            else:
+                # Handle dict response if it exists
+                warnings.extend(rp_validation.get("warnings", []))
+                if rp_validation.get("errors"):
+                    warnings.extend(rp_validation["errors"])
 
         except Exception as e:
             log_error_with_traceback("Error validating Rich Presence dependencies", e)
@@ -759,7 +764,7 @@ async def on_ready():
         # Initialize Rich Presence Manager
         log_spacing()
         try:
-            rich_presence = RichPresenceManager(bot, FFMPEG_PATH)
+            rich_presence = RichPresenceManager(bot, "data")
             log_perfect_tree_section(
                 "Rich Presence Manager Initialization",
                 [
@@ -858,34 +863,45 @@ async def on_ready():
 
         for attempt in range(max_retries):
             try:
-                # Check if already connected to avoid conflicts
+                # Clean up any existing voice connections first
                 existing_voice_client = guild.voice_client
-                if existing_voice_client and existing_voice_client.is_connected():
+                if existing_voice_client:
                     log_perfect_tree_section(
-                        f"Voice Connection - Attempt {attempt + 1}",
+                        f"Voice Cleanup - Attempt {attempt + 1}",
                         [
-                            (
-                                "status",
-                                "✅ Already connected, using existing connection",
-                            ),
-                            ("connection_type", "Existing"),
-                            ("channel", channel.name),
+                            ("status", "🧹 Cleaning up existing voice connection"),
+                            ("connection_state", "Disconnecting previous session"),
+                            ("reason", "Ensuring clean connection"),
                         ],
-                        "🎤",
+                        "🧹",
                     )
-                    voice_client = existing_voice_client
-                else:
-                    voice_client = await channel.connect(reconnect=False, timeout=60)
-                    log_perfect_tree_section(
-                        f"Voice Connection - Attempt {attempt + 1}",
-                        [
-                            ("status", "✅ New connection established"),
-                            ("connection_type", "New"),
-                            ("channel", channel.name),
-                            ("timeout", "60s"),
-                        ],
-                        "🎤",
-                    )
+                    try:
+                        await existing_voice_client.disconnect(force=True)
+                        await asyncio.sleep(
+                            2
+                        )  # Give Discord time to process disconnection
+                    except Exception as cleanup_error:
+                        log_perfect_tree_section(
+                            f"Voice Cleanup Warning - Attempt {attempt + 1}",
+                            [
+                                ("status", "⚠️ Cleanup had issues but continuing"),
+                                ("error", str(cleanup_error)),
+                            ],
+                            "⚠️",
+                        )
+
+                # Now establish fresh connection
+                voice_client = await channel.connect(reconnect=False, timeout=60)
+                log_perfect_tree_section(
+                    f"Voice Connection - Attempt {attempt + 1}",
+                    [
+                        ("status", "✅ Fresh connection established"),
+                        ("connection_type", "New"),
+                        ("channel", channel.name),
+                        ("timeout", "60s"),
+                    ],
+                    "🎤",
+                )
 
                 # =============================================================================
                 # Audio System Setup
@@ -949,8 +965,8 @@ async def on_ready():
                 # =============================================================================
                 log_spacing()
                 try:
-                    if DAILY_VERSE_CHANNEL_ID and DEVELOPER_ID:
-                        setup_daily_verses(bot, DAILY_VERSE_CHANNEL_ID, DEVELOPER_ID)
+                    if DAILY_VERSE_CHANNEL_ID:
+                        await setup_daily_verses(bot, DAILY_VERSE_CHANNEL_ID)
                         log_perfect_tree_section(
                             "Daily Verses System",
                             [
@@ -999,12 +1015,16 @@ async def on_ready():
                 try:
                     from src.commands import (
                         setup_credits_command,
+                        setup_interval_command,
                         setup_leaderboard_command,
+                        setup_question_command,
                         setup_verse_command,
                     )
 
                     await setup_credits_command(bot)
+                    await setup_interval_command(bot)
                     await setup_leaderboard_command(bot)
+                    await setup_question_command(bot)
                     await setup_verse_command(bot)
 
                     # Sync commands to Discord with force sync
@@ -1013,7 +1033,10 @@ async def on_ready():
                         "Slash Commands Sync",
                         [
                             ("status", "✅ Slash commands synced successfully"),
-                            ("available_commands", "/credits, /leaderboard, /verse"),
+                            (
+                                "available_commands",
+                                "/credits, /interval, /leaderboard, /question, /verse",
+                            ),
                             ("sync_method", "Discord Tree API"),
                         ],
                         "⚡",
@@ -1210,21 +1233,58 @@ async def on_ready():
 
                 break  # Success, exit retry loop
 
-            except discord.errors.ClientException as e:
+            except discord.errors.ClientException as client_error:
                 log_perfect_tree_section(
                     f"Connection Error - Attempt {attempt + 1}",
                     [
                         ("error_type", "Discord Client Exception"),
-                        ("error_message", str(e)),
+                        ("error_message", str(client_error)),
                         ("attempt", f"{attempt + 1}/{max_retries}"),
                     ],
                     "❌",
                 )
-                if "already connected" in str(e).lower():
-                    # Handle already connected case
+
+                # Handle different error types
+                if "already connected" in str(client_error).lower():
+                    # Use existing connection
                     voice_client = guild.voice_client
-                    if voice_client:
+                    if voice_client and voice_client.is_connected():
                         break
+                elif "4006" in str(client_error):
+                    # Session invalid - force disconnect and retry
+                    try:
+                        if guild.voice_client:
+                            await guild.voice_client.disconnect(force=True)
+                            await asyncio.sleep(3)
+                    except:
+                        pass
+
+                if attempt < max_retries - 1:
+                    log_perfect_tree_section(
+                        "Connection Retry",
+                        [
+                            ("status", f"Waiting {retry_delay} seconds before retry"),
+                            ("next_attempt", f"{attempt + 2}/{max_retries}"),
+                            ("retry_delay", f"{retry_delay}s"),
+                        ],
+                        "🔄",
+                    )
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                else:
+                    log_discord_error(
+                        "on_ready", client_error, GUILD_ID, TARGET_CHANNEL_ID
+                    )
+                    log_perfect_tree_section(
+                        "Connection Failed",
+                        [
+                            ("status", "❌ All connection attempts failed"),
+                            ("total_attempts", max_retries),
+                            ("final_result", "Bot startup failed"),
+                        ],
+                        "💥",
+                    )
+                    return
 
             except asyncio.TimeoutError:
                 log_perfect_tree_section(
@@ -1237,42 +1297,43 @@ async def on_ready():
                     "❌",
                 )
 
-            except Exception as e:
+            except Exception as other_error:
                 log_perfect_tree_section(
                     f"Connection Error - Attempt {attempt + 1}",
                     [
-                        ("error_type", type(e).__name__),
-                        ("error_message", str(e)),
+                        ("error_type", type(other_error).__name__),
+                        ("error_message", str(other_error)),
                         ("attempt", f"{attempt + 1}/{max_retries}"),
                     ],
                     "❌",
                 )
 
-            # Handle retry logic
-            if attempt < max_retries - 1:
-                log_perfect_tree_section(
-                    "Connection Retry",
-                    [
-                        ("status", f"Waiting {retry_delay} seconds before retry"),
-                        ("next_attempt", f"{attempt + 2}/{max_retries}"),
-                        ("retry_delay", f"{retry_delay}s"),
-                    ],
-                    "🔄",
-                )
-                await asyncio.sleep(retry_delay)
-                retry_delay *= 2  # Exponential backoff
-            else:
-                log_discord_error("on_ready", e, GUILD_ID, TARGET_CHANNEL_ID)
-                log_perfect_tree_section(
-                    "Connection Failed",
-                    [
-                        ("status", "❌ All connection attempts failed"),
-                        ("total_attempts", max_retries),
-                        ("final_result", "Bot startup failed"),
-                    ],
-                    "💥",
-                )
-                return
+                if attempt < max_retries - 1:
+                    log_perfect_tree_section(
+                        "Connection Retry",
+                        [
+                            ("status", f"Waiting {retry_delay} seconds before retry"),
+                            ("next_attempt", f"{attempt + 2}/{max_retries}"),
+                            ("retry_delay", f"{retry_delay}s"),
+                        ],
+                        "🔄",
+                    )
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                else:
+                    log_discord_error(
+                        "on_ready", other_error, GUILD_ID, TARGET_CHANNEL_ID
+                    )
+                    log_perfect_tree_section(
+                        "Connection Failed",
+                        [
+                            ("status", "❌ All connection attempts failed"),
+                            ("total_attempts", max_retries),
+                            ("final_result", "Bot startup failed"),
+                        ],
+                        "💥",
+                    )
+                    return
 
     except Exception as e:
         log_critical_error("Fatal error in on_ready event", e)
@@ -1356,8 +1417,18 @@ async def play_audio(voice_client):
 
                         # Start Rich Presence tracking
                         if rich_presence:
-                            await rich_presence.start_track(
-                                surah_number, audio_file, "Saad Al Ghamdi"
+                            from src.utils.surah_mapper import get_surah_name
+
+                            surah_name = get_surah_name(surah_number)
+
+                            rich_presence.update_presence_with_template(
+                                "listening",
+                                {
+                                    "surah": surah_name,
+                                    "verse": "1",
+                                    "total": "Unknown",
+                                    "reciter": "Saad Al Ghamdi",
+                                },
                             )
 
                     else:
@@ -1398,13 +1469,13 @@ async def play_audio(voice_client):
 
                 # Stop Rich Presence for this track
                 if rich_presence:
-                    await rich_presence.stop_track()
+                    rich_presence.clear_presence()
 
             except Exception as e:
                 log_error_with_traceback(f"Error playing {filename}", e)
                 # Stop Rich Presence on error
                 if rich_presence:
-                    await rich_presence.stop_track()
+                    rich_presence.clear_presence()
                 continue
 
         log_perfect_tree_section(
@@ -1419,7 +1490,7 @@ async def play_audio(voice_client):
         log_async_error("play_audio", e, f"Audio folder: {AUDIO_FOLDER}")
         # Stop Rich Presence on error
         if rich_presence:
-            await rich_presence.stop_track()
+            rich_presence.clear_presence()
 
 
 # =============================================================================

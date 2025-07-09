@@ -141,260 +141,200 @@ class ListeningStatsManager:
                     if missing_keys:
                         raise ValueError(f"Missing required keys: {missing_keys}")
 
-                    # Load user stats
+                    # Load user stats with improved error handling
                     for user_id_str, user_data in data.get("users", {}).items():
                         try:
                             user_id = int(user_id_str)
+                            if not isinstance(user_data, dict):
+                                raise ValueError(
+                                    f"User data for {user_id} is not a dictionary"
+                                )
                             self.users[user_id] = UserStats.from_dict(user_data)
-                        except (ValueError, KeyError) as user_error:
+                        except (ValueError, KeyError, TypeError) as user_error:
                             log_error_with_traceback(
                                 f"Failed to load user {user_id_str}",
                                 user_error,
-                                {"user_data": user_data},
+                                {
+                                    "user_data": str(user_data)[:200]
+                                },  # Limit data length in logs
                             )
-                            continue  # Skip corrupted user data but continue loading others
+                            continue
 
-                    # Load active sessions
+                    # Load active sessions with improved error handling
                     for user_id_str, session_data in data.get(
                         "active_sessions", {}
                     ).items():
                         try:
                             user_id = int(user_id_str)
+                            if not isinstance(session_data, dict):
+                                raise ValueError(
+                                    f"Session data for {user_id} is not a dictionary"
+                                )
                             self.active_sessions[user_id] = ActiveSession.from_dict(
                                 session_data
                             )
-                        except (ValueError, KeyError) as session_error:
+                        except (ValueError, KeyError, TypeError) as session_error:
                             log_error_with_traceback(
-                                f"Failed to load session for user {user_id_str}",
+                                f"Failed to load active session for {user_id_str}",
                                 session_error,
-                                {"session_data": session_data},
+                                {"session_data": str(session_data)[:200]},
                             )
-                            continue  # Skip corrupted session but continue
+                            continue
 
-                    # Load total stats
+                    # Load total stats with validation
                     total_stats = data.get("total_stats", {})
-                    self.total_listening_time = total_stats.get(
-                        "total_listening_time", 0.0
-                    )
-                    self.total_sessions = total_stats.get("total_sessions", 0)
-                    self.last_updated = total_stats.get("last_updated")
+                    if not isinstance(total_stats, dict):
+                        raise ValueError("Total stats is not a dictionary")
 
-                    log_perfect_tree_section(
-                        "Listening Stats - Loaded Successfully",
-                        [
-                            ("users_loaded", f"✅ {len(self.users)} users loaded"),
-                            (
-                                "active_sessions",
-                                f"✅ {len(self.active_sessions)} active sessions",
-                            ),
-                            (
-                                "total_time",
-                                f"✅ Total listening time: {self.format_time(self.total_listening_time)}",
-                            ),
-                            (
-                                "total_sessions",
-                                f"✅ Total sessions: {self.total_sessions}",
-                            ),
-                            (
-                                "file_size",
-                                f"📊 File size: {STATS_FILE.stat().st_size} bytes",
-                            ),
-                            (
-                                "last_updated",
-                                f"🕒 Last updated: {self.last_updated or 'Unknown'}",
-                            ),
-                        ],
-                        "📊",
+                    self.total_listening_time = float(
+                        total_stats.get("total_listening_time", 0.0)
                     )
+                    self.total_sessions = int(total_stats.get("total_sessions", 0))
 
-                except (json.JSONDecodeError, ValueError, KeyError) as main_error:
+                    # Update last loaded timestamp
+                    self.last_updated = datetime.now(timezone.utc)
+
+                except (
+                    json.JSONDecodeError,
+                    ValueError,
+                    KeyError,
+                    TypeError,
+                ) as main_error:
                     log_error_with_traceback(
                         "Main stats file corrupted, attempting backup recovery",
                         main_error,
                         {"main_file": str(STATS_FILE)},
                     )
 
-                    # Try to load from backup (now in temp directory)
+                    # Try to load from backup with same improved error handling
                     backup_file = TEMP_BACKUP_DIR / f"{STATS_FILE.stem}.backup"
                     if backup_file.exists():
                         try:
                             with open(backup_file, "r", encoding="utf-8") as f:
                                 backup_data = json.load(f)
 
-                            # Load from backup using same logic
+                            if not isinstance(backup_data, dict):
+                                raise ValueError("Backup data is not a dictionary")
+
+                            # Load from backup using same validation logic
                             for user_id_str, user_data in backup_data.get(
                                 "users", {}
                             ).items():
                                 try:
                                     user_id = int(user_id_str)
+                                    if not isinstance(user_data, dict):
+                                        raise ValueError(
+                                            f"Backup user data for {user_id} is not a dictionary"
+                                        )
                                     self.users[user_id] = UserStats.from_dict(user_data)
-                                except:
+                                except (
+                                    ValueError,
+                                    KeyError,
+                                    TypeError,
+                                ) as backup_user_error:
+                                    log_error_with_traceback(
+                                        f"Failed to load user from backup {user_id_str}",
+                                        backup_user_error,
+                                        {"user_data": str(user_data)[:200]},
+                                    )
                                     continue
 
+                            # Load backup sessions with validation
                             for user_id_str, session_data in backup_data.get(
                                 "active_sessions", {}
                             ).items():
                                 try:
                                     user_id = int(user_id_str)
+                                    if not isinstance(session_data, dict):
+                                        raise ValueError(
+                                            f"Backup session data for {user_id} is not a dictionary"
+                                        )
                                     self.active_sessions[user_id] = (
                                         ActiveSession.from_dict(session_data)
                                     )
-                                except:
+                                except (
+                                    ValueError,
+                                    KeyError,
+                                    TypeError,
+                                ) as backup_session_error:
+                                    log_error_with_traceback(
+                                        f"Failed to load session from backup {user_id_str}",
+                                        backup_session_error,
+                                        {"session_data": str(session_data)[:200]},
+                                    )
                                     continue
 
+                            # Load backup total stats with validation
                             total_stats = backup_data.get("total_stats", {})
-                            self.total_listening_time = total_stats.get(
-                                "total_listening_time", 0.0
+                            if not isinstance(total_stats, dict):
+                                raise ValueError(
+                                    "Backup total stats is not a dictionary"
+                                )
+
+                            self.total_listening_time = float(
+                                total_stats.get("total_listening_time", 0.0)
                             )
-                            self.total_sessions = total_stats.get("total_sessions", 0)
-                            self.last_updated = total_stats.get("last_updated")
+                            self.total_sessions = int(
+                                total_stats.get("total_sessions", 0)
+                            )
 
                             log_perfect_tree_section(
-                                "Backup Recovery Successful",
+                                "Stats Recovery",
                                 [
-                                    (
-                                        "recovery_source",
-                                        f"💾 Recovered from: {backup_file.name}",
-                                    ),
-                                    (
-                                        "users_recovered",
-                                        f"✅ {len(self.users)} users recovered",
-                                    ),
-                                    (
-                                        "active_sessions",
-                                        f"✅ {len(self.active_sessions)} active sessions recovered",
-                                    ),
-                                    (
-                                        "total_time",
-                                        f"✅ Total time recovered: {self.format_time(self.total_listening_time)}",
-                                    ),
-                                    (
-                                        "action_needed",
-                                        "⚠️ Main file will be regenerated on next save",
-                                    ),
+                                    ("status", "✅ Successfully recovered from backup"),
+                                    ("users_loaded", len(self.users)),
+                                    ("active_sessions", len(self.active_sessions)),
                                 ],
                                 "🔄",
                             )
 
-                            # Immediately save to regenerate main file
-                            self.save_stats()
-
-                        except Exception as backup_error:
+                        except (
+                            json.JSONDecodeError,
+                            ValueError,
+                            KeyError,
+                            TypeError,
+                        ) as backup_error:
                             log_error_with_traceback(
-                                "Backup recovery also failed, checking for emergency backups",
+                                "Both main and backup files corrupted, initializing fresh state",
                                 backup_error,
                                 {"backup_file": str(backup_file)},
                             )
-
-                            # Try emergency backups
-                            emergency_files = list(
-                                DATA_DIR.glob("emergency_backup_*.json")
-                            )
-                            if emergency_files:
-                                # Sort by modification time, newest first
-                                emergency_files.sort(
-                                    key=lambda f: f.stat().st_mtime, reverse=True
-                                )
-                                latest_emergency = emergency_files[0]
-
-                                try:
-                                    with open(
-                                        latest_emergency, "r", encoding="utf-8"
-                                    ) as f:
-                                        emergency_data = json.load(f)
-
-                                    # Load from emergency backup
-                                    for user_id_str, user_data in emergency_data.get(
-                                        "users", {}
-                                    ).items():
-                                        try:
-                                            user_id = int(user_id_str)
-                                            self.users[user_id] = UserStats.from_dict(
-                                                user_data
-                                            )
-                                        except:
-                                            continue
-
-                                    emergency_stats = emergency_data.get(
-                                        "total_stats", {}
-                                    )
-                                    self.total_listening_time = emergency_stats.get(
-                                        "total_listening_time", 0.0
-                                    )
-                                    self.total_sessions = emergency_stats.get(
-                                        "total_sessions", 0
-                                    )
-
-                                    log_perfect_tree_section(
-                                        "Emergency Recovery Successful",
-                                        [
-                                            (
-                                                "recovery_source",
-                                                f"🚨 Recovered from: {latest_emergency.name}",
-                                            ),
-                                            (
-                                                "users_recovered",
-                                                f"✅ {len(self.users)} users recovered",
-                                            ),
-                                            (
-                                                "total_time",
-                                                f"✅ Total time recovered: {self.format_time(self.total_listening_time)}",
-                                            ),
-                                            (
-                                                "emergency_files_found",
-                                                f"📁 {len(emergency_files)} emergency backups available",
-                                            ),
-                                        ],
-                                        "🚨",
-                                    )
-
-                                    # Save to regenerate main file
-                                    self.save_stats()
-
-                                except Exception as emergency_error:
-                                    log_error_with_traceback(
-                                        "All recovery attempts failed, starting fresh",
-                                        emergency_error,
-                                    )
-                                    # Continue with fresh start
-                            else:
-                                log_perfect_tree_section(
-                                    "No Recovery Options Available",
-                                    [
-                                        (
-                                            "status",
-                                            "⚠️ No backup or emergency files found",
-                                        ),
-                                        ("action", "🆕 Starting with fresh statistics"),
-                                    ],
-                                    "⚠️",
-                                )
+                            self._initialize_fresh_state()
                     else:
-                        log_perfect_tree_section(
-                            "No Backup Available",
-                            [
-                                ("status", "⚠️ No backup file found"),
-                                ("action", "🆕 Starting with fresh statistics"),
-                            ],
-                            "⚠️",
+                        log_error_with_traceback(
+                            "No backup file found, initializing fresh state",
+                            main_error,
+                            {"attempted_backup": str(backup_file)},
                         )
+                        self._initialize_fresh_state()
             else:
-                log_perfect_tree_section(
-                    "Listening Stats - New File",
-                    [
-                        ("status", "📊 No existing stats file found"),
-                        ("action", "✅ Starting with fresh statistics"),
-                    ],
-                    "📊",
-                )
+                # No stats file exists, initialize fresh state
+                self._initialize_fresh_state()
 
         except Exception as e:
             log_error_with_traceback(
-                "Critical error during stats loading",
+                "Unexpected error in load_stats",
                 e,
                 {"stats_file": str(STATS_FILE)},
             )
-            # Continue with empty stats rather than crashing
+            self._initialize_fresh_state()
+
+    def _initialize_fresh_state(self) -> None:
+        """Initialize a fresh state when no valid data is available"""
+        self.users = {}
+        self.active_sessions = {}
+        self.total_listening_time = 0.0
+        self.total_sessions = 0
+        self.last_updated = datetime.now(timezone.utc)
+
+        log_perfect_tree_section(
+            "Fresh State Initialization",
+            [
+                ("status", "✅ Initialized fresh listening stats"),
+                ("timestamp", self.last_updated.isoformat()),
+            ],
+            "🆕",
+        )
 
     def save_stats(self) -> None:
         """Save listening statistics to file with atomic writes and backup protection"""
