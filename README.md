@@ -18,6 +18,44 @@ _Built with ❤️ for the Muslim Ummah - Shared as-is for educational purposes_
 
 ---
 
+## 📝 Version History
+
+### Latest Release: v3.0.0 (2025-07-08)
+
+Major release with complete quiz system overhaul, leaderboard improvements, enhanced daily verses, and robust error handling.
+
+**Key Features:**
+
+- 📝 Dynamic quiz system with real-time updates
+- 🏆 Points-based leaderboard with streaks
+- 📊 Enhanced daily verses scheduling
+- 🛡️ Comprehensive error handling
+- 🎨 Polished UI/UX across all features
+
+### Previous Versions
+
+#### v2.3.2 (2025-01-07)
+
+- ✨ Enhanced credits command spacing and readability
+- 📱 Improved visual separators in embeds
+- 🎨 Maintained clean, professional design
+
+#### v2.3.1 (2025-01-07)
+
+- 📖 Fixed truncated verses in daily verse database
+- ✅ Complete Arabic text and translations
+- 🔍 Eliminated truncation issues
+
+#### v2.3.0 (2025-01-07)
+
+- ⚡ Fixed command registration and timing
+- 🕐 Added EST timezone support
+- 👤 Enhanced embed styling with profile pictures
+
+[View Full Changelog](CHANGELOG.md)
+
+---
+
 ## ⚠️ No Support Policy
 
 > **🚨 CRITICAL NOTICE: "TAKE AS IT IS" PROJECT**
@@ -247,23 +285,7 @@ QuranBot/
    TARGET_CHANNEL_ID=your_voice_channel_id_here
    CONTROL_PANEL_CHANNEL_ID=your_control_panel_channel_id_here
    ADMIN_USER_ID=your_discord_user_id_here
-
-   # Optional Settings
-   AUDIO_FOLDER=audio
-   DEFAULT_RECITER=Saad Al Ghamdi
-   FFMPEG_PATH=auto-detect
    ```
-
-4. **Bot Permissions**
-
-   Your bot needs these permissions:
-
-   - Connect to voice channels
-   - Speak in voice channels
-   - Send messages
-   - Read message history
-   - Manage messages (for control panel)
-   - Use external emojis
 
 ## 🎵 Audio Setup
 
