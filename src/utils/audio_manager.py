@@ -216,7 +216,8 @@ class AudioManager:
                         current_time = time.time()
                         elapsed_time = current_time - self.track_start_time
 
-                        # Update current position
+                        # Update current position for state saving
+                        # Note: track_start_time already accounts for resumed position
                         self.current_position = elapsed_time
 
                         # Update rich presence with new time
@@ -1009,8 +1010,18 @@ class AudioManager:
     def _get_playback_time_display(self) -> str:
         """Get formatted playback time display like control panel"""
         try:
-            # Use actual current position for real-time tracking
-            current_time_seconds = self.current_position
+            # Calculate real-time position based on track start time
+            current_time_seconds = 0.0
+
+            if self.is_playing and self.track_start_time:
+                import time
+
+                current_time = time.time()
+                # This calculation already accounts for resumed position
+                current_time_seconds = current_time - self.track_start_time
+            else:
+                # Use saved position when not playing
+                current_time_seconds = self.current_position
 
             # For total time, use track-based progression through the Quran
             if self.current_audio_files and len(self.current_audio_files) > 0:
