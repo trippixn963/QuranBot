@@ -13,9 +13,13 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union
 
 import discord
+import pytz
 from discord.ui import Button, View
 
 from .tree_log import log_error_with_traceback, log_perfect_tree_section
+
+# Global scheduler task
+_quiz_scheduler_task = None
 
 # =============================================================================
 # Configuration
@@ -26,6 +30,7 @@ DATA_DIR = Path("data")
 QUIZ_DATA_FILE = DATA_DIR / "quiz_data.json"
 QUIZ_STATS_FILE = DATA_DIR / "quiz_stats.json"
 RECENT_QUESTIONS_FILE = DATA_DIR / "recent_questions.json"
+QUIZ_STATE_FILE = DATA_DIR / "quiz_state.json"
 
 # Quiz configuration
 QUIZ_DELAY_MINUTES = 1  # Delay after verse before quiz
@@ -62,6 +67,7 @@ class QuizManager:
         self.user_scores: Dict[int, Dict] = {}
         self.state_file = self.data_dir / "quiz_state.json"
         self.scores_file = self.data_dir / "quiz_scores.json"
+        self.last_sent_time = None
 
         # Create data directory if it doesn't exist
         self.data_dir.mkdir(parents=True, exist_ok=True)
@@ -380,6 +386,11 @@ class QuizManager:
                 "questions": self.questions,
                 "user_scores": self.user_scores,
             }
+
+            # Add last_sent_time if it exists
+            if self.last_sent_time:
+                state["last_sent_time"] = self.last_sent_time.isoformat()
+
             with open(self.state_file, "w", encoding="utf-8") as f:
                 json.dump(state, f, indent=2)
 
@@ -388,6 +399,14 @@ class QuizManager:
                 [
                     ("total_questions", len(self.questions)),
                     ("total_users", len(self.user_scores)),
+                    (
+                        "last_sent",
+                        (
+                            self.last_sent_time.strftime("%H:%M:%S")
+                            if self.last_sent_time
+                            else "Never"
+                        ),
+                    ),
                     ("status", "✅ State saved successfully"),
                 ],
                 "💾",
@@ -406,11 +425,37 @@ class QuizManager:
                     self.questions = state.get("questions", [])
                     self.user_scores = state.get("user_scores", {})
 
+                    # Handle last_sent_time with timezone
+                    if state.get("last_sent_time"):
+                        try:
+                            # Try to parse as ISO format first
+                            self.last_sent_time = datetime.fromisoformat(
+                                state["last_sent_time"]
+                            )
+                            # Ensure it's UTC timezone
+                            if self.last_sent_time.tzinfo is None:
+                                self.last_sent_time = self.last_sent_time.replace(
+                                    tzinfo=pytz.UTC
+                                )
+                        except ValueError:
+                            # Fallback for old format
+                            self.last_sent_time = None
+                    else:
+                        self.last_sent_time = None
+
             log_perfect_tree_section(
                 "Quiz State Loaded",
                 [
                     ("total_questions", len(self.questions)),
                     ("total_users", len(self.user_scores)),
+                    (
+                        "last_sent",
+                        (
+                            self.last_sent_time.strftime("%H:%M:%S")
+                            if self.last_sent_time
+                            else "Never"
+                        ),
+                    ),
                     ("status", "✅ State loaded successfully"),
                 ],
                 "📥",
@@ -419,3 +464,331 @@ class QuizManager:
         except Exception as e:
             log_error_with_traceback("Error loading quiz state", e)
             return False
+
+    def get_interval_hours(self) -> float:
+        """Get the current question interval in hours from config"""
+        try:
+            # Use the same file path as the interval command
+            quiz_config_file = Path("data/quiz_state.json")
+            if quiz_config_file.exists():
+                with open(quiz_config_file, "r") as f:
+                    data = json.load(f)
+                    return data.get("schedule_config", {}).get(
+                        "send_interval_hours", 3.0
+                    )
+            return 3.0  # Default 3 hours
+        except Exception as e:
+            log_error_with_traceback("Error loading question interval config", e)
+            return 3.0
+
+    def should_send_question(self) -> bool:
+        """Check if it's time to send a question based on custom interval"""
+        try:
+            interval_hours = self.get_interval_hours()
+
+            if not self.last_sent_time:
+                return True  # Send immediately if never sent
+
+            current_time = datetime.now(pytz.UTC)
+            time_diff = current_time - self.last_sent_time
+            interval_seconds = interval_hours * 3600
+
+            return time_diff.total_seconds() >= interval_seconds
+        except Exception as e:
+            log_error_with_traceback("Error checking question send time", e)
+            return True
+
+    def update_last_sent_time(self):
+        """Update the last sent time to now"""
+        try:
+            self.last_sent_time = datetime.now(pytz.UTC)
+            self.save_state()
+        except Exception as e:
+            log_error_with_traceback("Error updating last sent time", e)
+
+    def load_default_questions(self) -> None:
+        """Load default sample questions if no questions exist"""
+        try:
+            if len(self.questions) > 0:
+                return  # Already have questions
+
+            # Sample Islamic quiz questions
+            default_questions = [
+                {
+                    "question": "How many chapters (surahs) are there in the Quran?",
+                    "options": ["114", "116", "112", "118"],
+                    "correct_answer": 0,
+                    "difficulty": "easy",
+                    "category": "general",
+                },
+                {
+                    "question": "What is the first chapter of the Quran called?",
+                    "options": ["Al-Baqarah", "Al-Fatihah", "An-Nas", "Al-Ikhlas"],
+                    "correct_answer": 1,
+                    "difficulty": "easy",
+                    "category": "surah_names",
+                },
+                {
+                    "question": "Which prophet is mentioned most frequently in the Quran?",
+                    "options": [
+                        "Prophet Muhammad (PBUH)",
+                        "Prophet Ibrahim (PBUH)",
+                        "Prophet Musa (PBUH)",
+                        "Prophet Isa (PBUH)",
+                    ],
+                    "correct_answer": 2,
+                    "difficulty": "medium",
+                    "category": "prophets",
+                },
+                {
+                    "question": "What does 'Bismillah' mean?",
+                    "options": [
+                        "In the name of Allah",
+                        "Praise be to Allah",
+                        "Allah is great",
+                        "There is no god but Allah",
+                    ],
+                    "correct_answer": 0,
+                    "difficulty": "easy",
+                    "category": "vocabulary",
+                },
+                {
+                    "question": "Which surah is known as the 'Heart of the Quran'?",
+                    "options": ["Al-Fatihah", "Yaseen", "Al-Baqarah", "Al-Ikhlas"],
+                    "correct_answer": 1,
+                    "difficulty": "medium",
+                    "category": "surah_names",
+                },
+            ]
+
+            # Add each question
+            for q in default_questions:
+                success, error = self.add_question(
+                    q["question"],
+                    q["options"],
+                    q["correct_answer"],
+                    q["difficulty"],
+                    q["category"],
+                )
+                if not success:
+                    log_error_with_traceback(
+                        f"Failed to add default question: {error}", None
+                    )
+
+            # Save the state with new questions
+            self.save_state()
+
+            log_perfect_tree_section(
+                "Default Questions Loaded",
+                [
+                    ("questions_added", str(len(default_questions))),
+                    ("status", "✅ Sample questions loaded successfully"),
+                ],
+                "📚",
+            )
+
+        except Exception as e:
+            log_error_with_traceback("Error loading default questions", e)
+
+
+# Global quiz manager instance
+quiz_manager = None
+
+
+async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
+    """
+    Check if it's time for a scheduled question based on custom interval and send if needed.
+
+    Args:
+        bot: Discord bot instance
+        channel_id: Channel ID for question posts
+    """
+    try:
+        if not quiz_manager:
+            return
+
+        if quiz_manager.should_send_question():
+            # Get new question
+            question = quiz_manager.get_random_question()
+            if question:
+                # Get channel
+                channel = bot.get_channel(channel_id)
+                if channel:
+                    # Create embed
+                    embed = discord.Embed(
+                        title="📚 Scheduled Islamic Quiz",
+                        description=question["question"],
+                        color=0x3498DB,
+                    )
+
+                    # Add options as fields
+                    options_text = ""
+                    for i, option in enumerate(question["options"]):
+                        options_text += f"{chr(65 + i)}. {option}\n"
+
+                    embed.add_field(
+                        name="Options",
+                        value=options_text,
+                        inline=False,
+                    )
+
+                    embed.add_field(
+                        name="Difficulty",
+                        value=question["difficulty"].title(),
+                        inline=True,
+                    )
+
+                    embed.add_field(
+                        name="Category",
+                        value=question["category"].replace("_", " ").title(),
+                        inline=True,
+                    )
+
+                    # Add footer with next question time
+                    interval_hours = quiz_manager.get_interval_hours()
+                    if interval_hours < 1:
+                        interval_text = f"{int(interval_hours * 60)}m"
+                    else:
+                        interval_text = f"{interval_hours:.1f}h"
+
+                    embed.set_footer(
+                        text=f"Next question in: {interval_text} (Custom interval)"
+                    )
+
+                    # Send message
+                    message = await channel.send(embed=embed)
+
+                    # Add reaction options
+                    try:
+                        reactions = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫"]
+                        for i in range(len(question["options"])):
+                            await message.add_reaction(reactions[i])
+                    except Exception:
+                        pass  # Non-critical if reactions fail
+
+                    # Update last sent time
+                    quiz_manager.update_last_sent_time()
+
+                    log_perfect_tree_section(
+                        "Scheduled Question Posted",
+                        [
+                            ("difficulty", question["difficulty"]),
+                            ("category", question["category"]),
+                            ("channel", str(channel_id)),
+                            ("interval", f"{interval_hours}h"),
+                            ("next_in", interval_text),
+                        ],
+                        "📬",
+                    )
+
+    except Exception as e:
+        log_error_with_traceback("Error checking and sending scheduled question", e)
+
+
+async def quiz_scheduler_loop(bot, channel_id: int) -> None:
+    """
+    Background task that checks for scheduled questions every 30 seconds.
+
+    Args:
+        bot: Discord bot instance
+        channel_id: Channel ID for question posts
+    """
+    log_perfect_tree_section(
+        "Quiz Scheduler - Started",
+        [
+            ("status", "🔄 Quiz scheduler running"),
+            ("check_interval", "30 seconds"),
+            ("channel_id", str(channel_id)),
+        ],
+        "⏰",
+    )
+
+    while True:
+        try:
+            await asyncio.sleep(30)  # Check every 30 seconds
+            await check_and_send_scheduled_question(bot, channel_id)
+        except asyncio.CancelledError:
+            log_perfect_tree_section(
+                "Quiz Scheduler - Stopped",
+                [
+                    ("status", "🛑 Quiz scheduler stopped"),
+                    ("reason", "Task cancelled"),
+                ],
+                "⏰",
+            )
+            break
+        except Exception as e:
+            log_error_with_traceback("Error in quiz scheduler loop", e)
+            await asyncio.sleep(30)  # Wait before retrying
+
+
+def start_quiz_scheduler(bot, channel_id: int) -> None:
+    """
+    Start the background quiz scheduler.
+
+    Args:
+        bot: Discord bot instance
+        channel_id: Channel ID for question posts
+    """
+    global _quiz_scheduler_task
+
+    try:
+        # Cancel existing task if running
+        if _quiz_scheduler_task and not _quiz_scheduler_task.done():
+            _quiz_scheduler_task.cancel()
+
+        # Start new scheduler task
+        _quiz_scheduler_task = asyncio.create_task(quiz_scheduler_loop(bot, channel_id))
+
+        log_perfect_tree_section(
+            "Quiz Scheduler - Initialized",
+            [
+                ("status", "✅ Quiz scheduler started"),
+                ("channel_id", str(channel_id)),
+                ("check_frequency", "Every 30 seconds"),
+                ("task_id", f"🆔 {id(_quiz_scheduler_task)}"),
+            ],
+            "⏰",
+        )
+
+    except Exception as e:
+        log_error_with_traceback("Failed to start quiz scheduler", e)
+
+
+async def setup_quiz_system(bot, channel_id: int) -> None:
+    """
+    Set up the quiz system with custom interval scheduling.
+
+    Args:
+        bot: Discord bot instance
+        channel_id: Channel ID for question posts
+    """
+    global quiz_manager
+
+    try:
+        # Initialize manager if needed
+        if quiz_manager is None:
+            quiz_manager = QuizManager(Path("data"))
+
+        # Load default questions if none exist
+        quiz_manager.load_default_questions()
+
+        # Start the custom interval scheduler
+        start_quiz_scheduler(bot, channel_id)
+
+        # Log successful setup
+        interval_hours = quiz_manager.get_interval_hours()
+        log_perfect_tree_section(
+            "Quiz System Setup",
+            [
+                ("status", "✅ System initialized"),
+                ("channel", str(channel_id)),
+                ("questions_loaded", str(len(quiz_manager.questions))),
+                ("custom_interval", f"{interval_hours}h"),
+                ("scheduler", "✅ Custom interval scheduler started"),
+            ],
+            "📚",
+        )
+
+    except Exception as e:
+        log_error_with_traceback("Error setting up quiz system", e)

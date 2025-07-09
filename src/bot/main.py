@@ -43,6 +43,11 @@ import logging
 from src.utils.daily_verses import setup_daily_verses
 
 # =============================================================================
+# Import Quiz Manager
+# =============================================================================
+from src.utils.quiz_manager import setup_quiz_system
+
+# =============================================================================
 # Import Version Information
 # =============================================================================
 from src.version import BOT_NAME, BOT_VERSION
@@ -1003,6 +1008,52 @@ async def on_ready():
                         [
                             ("status", "⚠️ Daily verses system failed to start"),
                             ("impact", "No automated verse sending"),
+                            ("action", "Check logs for details"),
+                        ],
+                        "⚠️",
+                    )
+
+                # =============================================================================
+                # Quiz System Setup - MUST BE AFTER DAILY VERSES SETUP
+                # =============================================================================
+                log_spacing()
+                try:
+                    if DAILY_VERSE_CHANNEL_ID:
+                        await setup_quiz_system(bot, DAILY_VERSE_CHANNEL_ID)
+                        log_perfect_tree_section(
+                            "Quiz System",
+                            [
+                                ("status", "✅ Quiz system started"),
+                                ("channel_id", str(DAILY_VERSE_CHANNEL_ID)),
+                                ("developer_id", str(DEVELOPER_ID)),
+                                ("schedule", "Every 3 hours"),
+                                ("features", "🧠 Auto quiz reaction, bot thumbnail"),
+                            ],
+                            "🧠",
+                        )
+                    else:
+                        missing_vars = []
+                        if not DAILY_VERSE_CHANNEL_ID:
+                            missing_vars.append("DAILY_VERSE_CHANNEL_ID")
+                        if not DEVELOPER_ID:
+                            missing_vars.append("DEVELOPER_ID")
+
+                        log_perfect_tree_section(
+                            "Quiz System",
+                            [
+                                ("status", "⚠️ Quiz system disabled"),
+                                ("missing_vars", ", ".join(missing_vars)),
+                                ("impact", "No automated quiz sending"),
+                            ],
+                            "⚠️",
+                        )
+                except Exception as quiz_error:
+                    log_error_with_traceback("Failed to start quiz system", quiz_error)
+                    log_perfect_tree_section(
+                        "Quiz System Warning",
+                        [
+                            ("status", "⚠️ Quiz system failed to start"),
+                            ("impact", "No automated quiz sending"),
                             ("action", "Check logs for details"),
                         ],
                         "⚠️",
