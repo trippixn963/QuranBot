@@ -45,10 +45,14 @@ class QuizView(discord.ui.View):
             "E": discord.ButtonStyle.success,  # Green (fallback)
             "F": discord.ButtonStyle.primary,  # Blue (fallback)
         }
-        choices = question_data.get("choices", {})
 
-        for letter in choice_letters:
-            if letter in choices:
+        # Get options from question data (it's a list, not a dict)
+        options = question_data.get("options", [])
+
+        # Create buttons for each option
+        for i, option in enumerate(options):
+            if i < len(choice_letters):
+                letter = choice_letters[i]
                 style = button_styles.get(letter, discord.ButtonStyle.secondary)
                 button = QuizButton(letter, letter == correct_answer, style)
                 self.add_item(button)
