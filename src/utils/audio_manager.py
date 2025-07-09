@@ -71,6 +71,13 @@ class AudioManager:
         # Playback task
         self.playback_task: Optional[asyncio.Task] = None
         self.position_save_task: Optional[asyncio.Task] = None
+        self.position_tracking_task: Optional[asyncio.Task] = (
+            None  # New task for real-time position tracking
+        )
+
+        # Position tracking state
+        self.track_start_time = None  # When current track started playing
+        self.track_pause_time = None  # When track was paused (if any)
 
         # Available reciters (based on audio folder structure)
         self.available_reciters = self._discover_reciters()
@@ -191,6 +198,68 @@ class AudioManager:
             )
         except Exception as e:
             log_error_with_traceback("Critical error in position save loop", e)
+
+    async def _position_tracking_loop(self):
+        """Track playback position and update UI every 15 seconds"""
+        try:
+            while True:
+                await asyncio.sleep(15)  # Update every 15 seconds
+
+                if self.is_playing and self.track_start_time:
+                    try:
+                        # Calculate current position based on elapsed time
+                        import time
+
+                        current_time = time.time()
+                        elapsed_time = current_time - self.track_start_time
+
+                        # Update current position
+                        self.current_position = elapsed_time
+
+                        # Update rich presence with new time
+                        if self.rich_presence:
+                            from src.utils.surah_mapper import (
+                                get_surah_info,
+                                get_surah_name,
+                            )
+
+                            surah_name = get_surah_name(self.current_surah)
+                            surah_info = get_surah_info(self.current_surah)
+                            verse_count = (
+                                str(surah_info.verses) if surah_info else "Unknown"
+                            )
+                            surah_emoji = surah_info.emoji if surah_info else "📖"
+
+                            self.rich_presence.update_presence_with_template(
+                                "listening",
+                                {
+                                    "emoji": surah_emoji,
+                                    "surah": surah_name,
+                                    "verse": "1",  # Could be enhanced with actual verse tracking
+                                    "total": verse_count,
+                                    "reciter": self.current_reciter,
+                                    "playback_time": self._get_playback_time_display(),
+                                },
+                            )
+
+                        # Update control panel
+                        if self.control_panel_view:
+                            await self.control_panel_view.update_panel()
+
+                    except Exception as e:
+                        log_error_with_traceback("Error in position tracking loop", e)
+
+        except asyncio.CancelledError:
+            log_perfect_tree_section(
+                "Audio Manager - Position Tracking Stopped",
+                [
+                    ("status", "🛑 Position tracking stopped"),
+                    ("reason", "Task cancelled"),
+                ],
+                "⏱️",
+            )
+        except Exception as e:
+            log_error_with_traceback("Critical error in position tracking loop", e)
 
     def _discover_reciters(self) -> List[str]:
         """Discover available reciters from audio folder structure"""
@@ -538,6 +607,10 @@ class AudioManager:
             if self.position_save_task and not self.position_save_task.done():
                 self.position_save_task.cancel()
 
+            # Stop position tracking task
+            if self.position_tracking_task and not self.position_tracking_task.done():
+                self.position_tracking_task.cancel()
+
             if self.playback_task and not self.playback_task.done():
                 self.playback_task.cancel()
                 try:
@@ -584,6 +657,17 @@ class AudioManager:
                 self.voice_client.pause()
                 self.is_paused = True
 
+                # Store pause time to maintain accurate position tracking
+                import time
+
+                self.track_pause_time = time.time()
+
+                # Update current position based on elapsed time before pause
+                if self.track_start_time:
+                    self.current_position = (
+                        self.track_pause_time - self.track_start_time
+                    )
+
                 # Update control panel
                 if self.control_panel_view:
                     try:
@@ -610,6 +694,14 @@ class AudioManager:
             if self.voice_client and self.voice_client.is_paused():
                 self.voice_client.resume()
                 self.is_paused = False
+
+                # Adjust track start time to account for pause duration
+                if self.track_pause_time and self.track_start_time:
+                    import time
+
+                    pause_duration = time.time() - self.track_pause_time
+                    self.track_start_time += pause_duration  # Shift start time forward
+                    self.track_pause_time = None  # Clear pause time
 
                 # Update control panel
                 if self.control_panel_view:
@@ -1141,6 +1233,22 @@ class AudioManager:
                             self.is_playing = True
                             self.is_paused = False
 
+                            # Set track start time for position tracking
+                            import time
+
+                            self.track_start_time = time.time() - (
+                                self.current_position if should_resume else 0
+                            )
+
+                            # Start position tracking task
+                            if (
+                                not self.position_tracking_task
+                                or self.position_tracking_task.done()
+                            ):
+                                self.position_tracking_task = asyncio.create_task(
+                                    self._position_tracking_loop()
+                                )
+
                             # Update control panel
                             if self.control_panel_view:
                                 try:
@@ -1234,6 +1342,7 @@ class AudioManager:
 
                     # Reset position for next track
                     self.current_position = 0.0
+                    self.track_start_time = None  # Reset track timing for next track
 
                     # Handle loop mode for individual surah
                     if self.is_loop_enabled:
