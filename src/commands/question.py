@@ -820,10 +820,12 @@ async def question_slash_command(interaction: discord.Interaction):
             color=0x3498DB,
         )
 
+        # Get the question text (it's a simple string, not a dict)
+        question_text = question.get("question", "Question not available")
+
         # Add Arabic section with moon emoji and code block formatting
-        arabic_question = question.get("question", {}).get(
-            "arabic", "من هو أول الأنبياء ؟"
-        )
+        # Since we only have English questions in the current format, use a placeholder for Arabic
+        arabic_question = "سؤال إسلامي"  # "Islamic Question" in Arabic
         embed.add_field(
             name="🌙 Arabic",
             value=f"```\n{arabic_question}\n```",
@@ -831,12 +833,9 @@ async def question_slash_command(interaction: discord.Interaction):
         )
 
         # Add Translation section with scroll emoji and code block formatting
-        english_question = question.get("question", {}).get(
-            "english", question.get("question", "Question not available")
-        )
         embed.add_field(
             name="📜 Translation",
-            value=f"```\n{english_question}\n```",
+            value=f"```\n{question_text}\n```",
             inline=False,
         )
 
@@ -850,8 +849,12 @@ async def question_slash_command(interaction: discord.Interaction):
         # Don't add "Answered by" field initially - it will be added dynamically when users answer
 
         # Add difficulty with stars
-        difficulty_level = question.get("difficulty", 3)
-        difficulty_stars = "⭐" * difficulty_level
+        difficulty = question.get("difficulty", "medium")
+        # Map difficulty strings to star counts
+        difficulty_stars = {"easy": "⭐", "medium": "⭐⭐", "hard": "⭐⭐⭐"}.get(
+            difficulty, "⭐⭐"
+        )
+
         embed.add_field(
             name="Difficulty",
             value=difficulty_stars,
@@ -871,24 +874,15 @@ async def question_slash_command(interaction: discord.Interaction):
         # Add choices section
         choices_text = ""
         choice_letters = ["A", "B", "C", "D", "E", "F"]
-        choices = question.get("choices", {})
 
-        for letter in choice_letters:
-            if letter in choices:
-                choice_data = choices[letter]
-                if isinstance(choice_data, dict):
-                    # New format with Arabic and English - put Arabic under English
-                    english_text = choice_data.get("english", f"Option {letter}")
-                    arabic_text = choice_data.get("arabic", "")
-                    if arabic_text:
-                        choices_text += (
-                            f"**{letter}:** {english_text}\n    {arabic_text}\n\n"
-                        )
-                    else:
-                        choices_text += f"**{letter}:** {english_text}\n\n"
-                else:
-                    # Old format with just text
-                    choices_text += f"**{letter}:** {choice_data}\n\n"
+        # Get options from question (it's a list, not a dict)
+        options = question.get("options", [])
+
+        # Build choices text from the options list
+        for i, option in enumerate(options):
+            if i < len(choice_letters):
+                letter = choice_letters[i]
+                choices_text += f"**{letter}:** {option}\n\n"
 
         embed.add_field(
             name="Choices",
@@ -922,8 +916,16 @@ async def question_slash_command(interaction: discord.Interaction):
             )
             embed.set_footer(text="Created by حَـــــنَـــــا")
 
+        # Convert correct_answer from integer index to letter
+        correct_answer_index = question.get("correct_answer", 0)
+        correct_answer_letter = (
+            choice_letters[correct_answer_index]
+            if correct_answer_index < len(choice_letters)
+            else "A"
+        )
+
         # Send the quiz with buttons
-        view = QuizView(question.get("correct_answer", "A"), question)
+        view = QuizView(correct_answer_letter, question)
         view.original_embed = embed  # Store original embed
         message = await channel.send(embed=embed, view=view)
         view.message = message  # Store message reference for results
