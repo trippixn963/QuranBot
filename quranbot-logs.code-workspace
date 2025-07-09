@@ -1,0 +1,124 @@
+{
+    "folders": [
+        {
+            "name": "📊 QuranBot Logs",
+            "path": "./vps_logs"
+        },
+        {
+            "name": "🤖 QuranBot Source",
+            "path": "."
+        }
+    ],
+    "settings": {
+        "files.associations": {
+            "*.log": "log",
+            "*.txt": "plaintext"
+        },
+        "files.watcherExclude": {
+            "**/vps_logs/**": false
+        },
+        "files.autoSave": "off",
+        "editor.wordWrap": "on",
+        "editor.fontSize": 13,
+        "workbench.colorTheme": "Default Dark+",
+        "terminal.integrated.cwd": "${workspaceFolder}",
+        "explorer.sortOrder": "modified",
+        "files.exclude": {
+            "**/.git": true,
+            "**/.DS_Store": true,
+            "**/node_modules": true,
+            "**/__pycache__": true,
+            "**/.venv": true
+        }
+    },
+    "extensions": {
+        "recommendations": [
+            "ms-python.python",
+            "emilast.LogFileHighlighter",
+            "ms-vscode.vscode-json"
+        ]
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "🔄 Sync Logs Once",
+                "type": "shell",
+                "command": "./sync_logs.sh once",
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "📊 View Log Stats",
+                "type": "shell",
+                "command": "./sync_logs.sh stats",
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "🎯 Start Log Daemon",
+                "type": "shell",
+                "command": "./sync_logs.sh daemon",
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "⏹️ Stop Log Daemon",
+                "type": "shell",
+                "command": "./sync_logs.sh stop",
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "🔴 Live Log Stream",
+                "type": "shell",
+                "command": "./sync_logs.sh live",
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": true,
+                    "panel": "dedicated"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "🤖 QuranBot Status",
+                "type": "shell",
+                "command": "./manage_quranbot.sh status",
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                },
+                "problemMatcher": []
+            }
+        ]
+    }
+}

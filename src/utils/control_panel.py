@@ -25,7 +25,7 @@ from .tree_log import (
 # =============================================================================
 
 SURAHS_PER_PAGE = 10
-UPDATE_INTERVAL = 15  # Increased from 5 to 15 seconds to prevent rate limiting
+UPDATE_INTERVAL = 2  # Reduced from 15 to 2 seconds for faster response
 
 
 # =============================================================================
@@ -597,6 +597,15 @@ class SurahSelect(Select):
             if hasattr(self.view, "audio_manager") and self.view.audio_manager:
                 await self.view.audio_manager.jump_to_surah(selected_surah)
 
+            # Immediately update the panel to show the change
+            if hasattr(self.view, "update_panel"):
+                try:
+                    await self.view.update_panel()
+                except Exception as e:
+                    log_error_with_traceback(
+                        "Error updating panel after surah selection", e
+                    )
+
             await interaction.response.defer()
 
         except Exception as e:
@@ -705,6 +714,15 @@ class ReciterSelect(Select):
             if hasattr(self.view, "audio_manager") and self.view.audio_manager:
                 await self.view.audio_manager.switch_reciter(selected_reciter)
 
+            # Immediately update the panel to show the change
+            if hasattr(self.view, "update_panel"):
+                try:
+                    await self.view.update_panel()
+                except Exception as e:
+                    log_error_with_traceback(
+                        "Error updating panel after reciter selection", e
+                    )
+
             await interaction.response.defer()
 
         except Exception as e:
@@ -774,12 +792,12 @@ class SimpleControlPanelView(View):
             return "just now"
 
     def start_updates(self):
-        """Start the 15-second update task"""
+        """Start the 2-second update task"""
         if not self.update_task or self.update_task.done():
             self.update_task = asyncio.create_task(self._update_loop())
 
     async def _update_loop(self):
-        """Update the panel every 15 seconds"""
+        """Update the panel every 2 seconds"""
         while True:
             try:
                 await asyncio.sleep(UPDATE_INTERVAL)
@@ -1146,6 +1164,15 @@ class SimpleControlPanelView(View):
             if self.audio_manager:
                 await self.audio_manager.skip_to_previous()
 
+            # Immediately update the panel to show the change
+            if hasattr(self, "update_panel"):
+                try:
+                    await self.update_panel()
+                except Exception as e:
+                    log_error_with_traceback(
+                        "Error updating panel after previous surah", e
+                    )
+
             await interaction.response.defer()
         except Exception as e:
             log_error_with_traceback("Error skipping to previous", e)
@@ -1261,6 +1288,13 @@ class SimpleControlPanelView(View):
 
             if self.audio_manager:
                 await self.audio_manager.skip_to_next()
+
+            # Immediately update the panel to show the change
+            if hasattr(self, "update_panel"):
+                try:
+                    await self.update_panel()
+                except Exception as e:
+                    log_error_with_traceback("Error updating panel after next surah", e)
 
             await interaction.response.defer()
         except Exception as e:
