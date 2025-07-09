@@ -88,6 +88,7 @@ class RichPresenceManager:
         state: str,
         activity_type: str = "playing",
         start_time: Optional[datetime] = None,
+        silent: bool = False,
     ) -> bool:
         """Update Discord rich presence"""
         try:
@@ -138,19 +139,21 @@ class RichPresenceManager:
             self.current_status = status
             self.current_details = details
             self.current_state = state
-            self.save_state()
+            self.save_state(silent=silent)
 
-            log_perfect_tree_section(
-                "Rich Presence Updated",
-                [
-                    ("status", status),
-                    ("details", details),
-                    ("state", state),
-                    ("activity", activity_type),
-                    ("status", "✅ Updated successfully"),
-                ],
-                "🎮",
-            )
+            # Only log if not silent
+            if not silent:
+                log_perfect_tree_section(
+                    "Rich Presence Updated",
+                    [
+                        ("status", status),
+                        ("details", details),
+                        ("state", state),
+                        ("activity", activity_type),
+                        ("status", "✅ Updated successfully"),
+                    ],
+                    "🎮",
+                )
             return True
         except Exception as e:
             log_error_with_traceback("Error updating rich presence", e)
@@ -161,6 +164,7 @@ class RichPresenceManager:
         template_name: str,
         data: Dict[str, str],
         start_time: Optional[datetime] = None,
+        silent: bool = False,
     ) -> bool:
         """Update presence using a predefined template"""
         try:
@@ -184,6 +188,7 @@ class RichPresenceManager:
                     "listening" if template_name == "listening" else "playing"
                 ),
                 start_time=start_time,
+                silent=silent,
             )
         except Exception as e:
             log_error_with_traceback("Error updating presence with template", e)
@@ -276,7 +281,7 @@ class RichPresenceManager:
             log_error_with_traceback("Error getting elapsed time", e)
             return None
 
-    def save_state(self) -> bool:
+    def save_state(self, silent: bool = False) -> bool:
         """Save current state to file"""
         try:
             state = {
@@ -290,14 +295,16 @@ class RichPresenceManager:
             with open(self.state_file, "w", encoding="utf-8") as f:
                 json.dump(state, f, indent=2)
 
-            log_perfect_tree_section(
-                "Rich Presence State Saved",
-                [
-                    ("enabled", "ON" if self.is_enabled else "OFF"),
-                    ("status", "✅ State saved successfully"),
-                ],
-                "💾",
-            )
+            # Only log if not silent
+            if not silent:
+                log_perfect_tree_section(
+                    "Rich Presence State Saved",
+                    [
+                        ("enabled", "ON" if self.is_enabled else "OFF"),
+                        ("status", "✅ State saved successfully"),
+                    ],
+                    "💾",
+                )
             return True
         except Exception as e:
             log_error_with_traceback("Error saving rich presence state", e)

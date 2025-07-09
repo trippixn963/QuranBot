@@ -202,8 +202,11 @@ class AudioManager:
     async def _position_tracking_loop(self):
         """Track playback position and update UI every 15 seconds"""
         try:
+            update_counter = 0  # Counter to control status logging frequency
+
             while True:
                 await asyncio.sleep(15)  # Update every 15 seconds
+                update_counter += 1
 
                 if self.is_playing and self.track_start_time:
                     try:
@@ -230,6 +233,9 @@ class AudioManager:
                             )
                             surah_emoji = surah_info.emoji if surah_info else "📖"
 
+                            # Log status every 5 minutes (20 updates * 15 seconds = 300 seconds = 5 minutes)
+                            should_log_status = update_counter >= 20
+
                             self.rich_presence.update_presence_with_template(
                                 "listening",
                                 {
@@ -240,7 +246,12 @@ class AudioManager:
                                     "reciter": self.current_reciter,
                                     "playback_time": self._get_playback_time_display(),
                                 },
+                                silent=not should_log_status,  # Log every 5 minutes, silent otherwise
                             )
+
+                            # Reset counter after logging status
+                            if should_log_status:
+                                update_counter = 0
 
                         # Update control panel
                         if self.control_panel_view:
@@ -1213,9 +1224,9 @@ class AudioManager:
                             # Set track start time for position tracking
                             import time
 
-                            self.track_start_time = time.time() - (
-                                self.current_position if should_resume else 0
-                            )
+                            # Always account for current position when setting track start time
+                            # This ensures position tracking works correctly on resume
+                            self.track_start_time = time.time() - self.current_position
 
                             # Start position tracking task
                             if (
