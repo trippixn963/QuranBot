@@ -452,37 +452,59 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
                 # Get channel
                 channel = bot.get_channel(channel_id)
                 if channel:
-                    # Create embed
+                    # Get surah name and Arabic name from the verse data
+                    surah_name = verse.get("surah_name", f"Surah {verse['surah']}")
+                    arabic_name = verse.get("arabic_name", "")
+
+                    # Format the title like in the screenshot
+                    if arabic_name:
+                        title = f"📖 Daily Verse - {surah_name} ({arabic_name})"
+                    else:
+                        title = f"📖 Daily Verse - {surah_name}"
+
+                    # Create embed with green color like in screenshot
                     embed = discord.Embed(
-                        title=f"Daily Verse - Surah {verse['surah']}, Verse {verse['verse']}",
-                        description=verse["text"],
-                        color=0x2ECC71,
+                        title=title,
+                        color=0x2ECC71,  # Green color matching screenshot
                     )
+
+                    # Add Ayah number as description
+                    embed.description = f"Ayah {verse.get('ayah', verse['verse'])}"
+
+                    # Add Arabic section with moon emoji
                     embed.add_field(
-                        name="Translation",
+                        name="🌙 Arabic",
+                        value=verse.get("arabic", verse["text"]),
+                        inline=False,
+                    )
+
+                    # Add Translation section with scroll emoji
+                    embed.add_field(
+                        name="📝 Translation",
                         value=verse["translation"],
                         inline=False,
                     )
-                    embed.add_field(
-                        name="Transliteration",
-                        value=verse["transliteration"],
-                        inline=False,
-                    )
 
-                    # Add footer with next verse time
-                    next_verse = daily_verse_manager.get_time_until_next_verse()
+                    # Set footer with creator information like in screenshot
                     embed.set_footer(
-                        text=f"Next verse in: {next_verse.days}d {next_verse.seconds//3600}h {(next_verse.seconds//60)%60}m"
+                        text="created by حَـــــنَّـــــا",
+                        icon_url=bot.user.avatar.url if bot.user.avatar else None,
                     )
 
                     # Send message
-                    await channel.send(embed=embed)
+                    message = await channel.send(embed=embed)
+
+                    # Add dua reaction
+                    try:
+                        await message.add_reaction("🤲")
+                    except Exception:
+                        pass  # Non-critical if reaction fails
 
                     log_perfect_tree_section(
                         "Daily Verse Posted",
                         [
                             ("surah", str(verse["surah"])),
-                            ("verse", str(verse["verse"])),
+                            ("verse", str(verse.get("ayah", verse["verse"]))),
                             ("channel", str(channel_id)),
                         ],
                         "📬",
@@ -511,32 +533,43 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
                 # Get channel
                 channel = bot.get_channel(channel_id)
                 if channel:
-                    # Create embed
+                    # Get surah name and Arabic name from the verse data
+                    surah_name = verse.get("surah_name", f"Surah {verse['surah']}")
+                    arabic_name = verse.get("arabic_name", "")
+
+                    # Format the title like in the screenshot
+                    if arabic_name:
+                        title = f"📖 Daily Verse - {surah_name} ({arabic_name})"
+                    else:
+                        title = f"📖 Daily Verse - {surah_name}"
+
+                    # Create embed with green color like in screenshot
                     embed = discord.Embed(
-                        title=f"Scheduled Verse - Surah {verse['surah']}, Verse {verse['verse']}",
-                        description=verse["text"],
-                        color=0x2ECC71,
+                        title=title,
+                        color=0x2ECC71,  # Green color matching screenshot
                     )
+
+                    # Add Ayah number as description
+                    embed.description = f"Ayah {verse.get('ayah', verse['verse'])}"
+
+                    # Add Arabic section with moon emoji
                     embed.add_field(
-                        name="Translation",
+                        name="🌙 Arabic",
+                        value=verse.get("arabic", verse["text"]),
+                        inline=False,
+                    )
+
+                    # Add Translation section with scroll emoji
+                    embed.add_field(
+                        name="📝 Translation",
                         value=verse["translation"],
                         inline=False,
                     )
-                    embed.add_field(
-                        name="Transliteration",
-                        value=verse["transliteration"],
-                        inline=False,
-                    )
 
-                    # Add footer with next verse time
-                    interval_hours = daily_verse_manager.get_interval_hours()
-                    if interval_hours < 1:
-                        interval_text = f"{int(interval_hours * 60)}m"
-                    else:
-                        interval_text = f"{interval_hours:.1f}h"
-
+                    # Set footer with creator information like in screenshot
                     embed.set_footer(
-                        text=f"Next verse in: {interval_text} (Custom interval)"
+                        text="created by حَـــــنَّـــــا",
+                        icon_url=bot.user.avatar.url if bot.user.avatar else None,
                     )
 
                     # Send message
@@ -555,10 +588,12 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
                         "Scheduled Verse Posted",
                         [
                             ("surah", str(verse["surah"])),
-                            ("verse", str(verse["verse"])),
+                            ("verse", str(verse.get("ayah", verse["verse"]))),
                             ("channel", str(channel_id)),
-                            ("interval", f"{interval_hours}h"),
-                            ("next_in", interval_text),
+                            (
+                                "interval",
+                                f"{daily_verse_manager.get_interval_hours()}h",
+                            ),
                         ],
                         "📬",
                     )
