@@ -156,14 +156,7 @@ class QuizView(discord.ui.View):
         if self.responses:
             answered_users = []
             for user_id in self.responses.keys():
-                try:
-                    user = self.message.guild.get_member(user_id)
-                    if user:
-                        answered_users.append(user.display_name)
-                    else:
-                        answered_users.append(f"<@{user_id}>")
-                except Exception:
-                    answered_users.append(f"<@{user_id}>")
+                answered_users.append(f"<@{user_id}>")
             answered_text = " | ".join(answered_users)
 
             # Find if "Answered by" field exists and update it, or add it
@@ -840,10 +833,10 @@ async def question_slash_command(interaction: discord.Interaction):
             inline=False,
         )
 
-        # Add English section with book emoji
+        # Add English section with book emoji and code block formatting
         embed.add_field(
             name="📖 English Question",
-            value=f"**{english_question}**",
+            value=f"```{english_question}```",
             inline=False,
         )
 
