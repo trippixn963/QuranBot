@@ -35,16 +35,17 @@ If applicable, add screenshots to help explain your problem.
 
 **Desktop (please complete the following information):**
 
-- OS: [e.g. Windows 10, macOS 12.0, Ubuntu 20.04]
-- Python Version: [e.g. 3.9, 3.10, 3.11]
-- QuranBot Version: [e.g. 2.2.0]
-- Discord.py Version: [e.g. 2.3.0]
+- OS: [e.g. Windows 10, macOS 13.0, Ubuntu 22.04]
+- Python Version: [e.g. 3.9, 3.10, 3.11, 3.12]
+- QuranBot Version: [e.g. 3.4.0]
+- Discord.py Version: [e.g. 2.6.0a]
 
 **Bot Environment:**
 
-- Hosting Platform: [e.g. Local, VPS, Heroku]
+- Hosting Platform: [e.g. Local, VPS, Cloud]
 - Voice Channel: [e.g. Yes/No]
 - Number of Users: [e.g. 1, 5, 50+]
+- Commands Affected: [e.g. /question, /verse, audio playback]
 
 ## 📋 Additional Context
 
@@ -66,5 +67,6 @@ If you have ideas on how to fix the bug, please describe them here.
 
 - [ ] I have searched for existing issues
 - [ ] I have provided all required information
-- [ ] I have tested this with the latest version
+- [ ] I have tested this with the latest version (3.4.0)
 - [ ] I have included relevant logs/screenshots
+- [ ] I have checked the [documentation](https://github.com/trippixn963/QuranBot/blob/master/README.md)

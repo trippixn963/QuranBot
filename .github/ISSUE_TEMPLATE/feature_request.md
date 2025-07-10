@@ -45,6 +45,7 @@ Any technical details or considerations:
 - API changes needed: [Yes/No]
 - Breaking changes: [Yes/No]
 - Performance impact: [Low/Medium/High]
+- Discord.py compatibility: [2.6.0a compatible]
 
 ## 📊 Priority
 
@@ -61,18 +62,20 @@ Who would benefit from this feature?
 
 - [ ] All users
 - [ ] Server administrators
-- [ ] Power users
-- [ ] New users
+- [ ] Islamic communities
+- [ ] Quiz participants
+- [ ] Audio listeners
 - [ ] Developers
 
 ## 📈 Success Metrics
 
 How would you measure the success of this feature?
 
-- [ ] User adoption rate
-- [ ] User satisfaction
+- [ ] User engagement increase
+- [ ] Community growth
 - [ ] Performance improvement
 - [ ] Error reduction
+- [ ] Islamic knowledge sharing
 - [ ] Other: [Specify]
 
 ## 🔗 Related Issues
@@ -90,12 +93,10 @@ Link any related issues or discussions:
 - [ ] I have described the proposed solution
 - [ ] I have considered alternative approaches
 - [ ] I have provided use cases
+- [ ] I understand this is an open-source project
 
-**⚠️ NOTICE: This is a "take as it is" project with NO SUPPORT**
-This repository is provided as-is for educational and reference purposes. Feature requests may not be implemented.
+**🕌 Islamic Community Focus**
+Please consider how this feature would benefit the Muslim Ummah and Islamic communities using QuranBot.
 
-**Additional context**
-Add any other context or screenshots about the feature request here.
-
-**Implementation Notes**
-If you're a developer, feel free to include technical details about how this could be implemented.
+**🛠️ Implementation Notes**
+If you're a developer, feel free to include technical details about how this could be implemented or submit a pull request.
