@@ -37,6 +37,10 @@ class DailyVerseManager:
         self.verse_pool = []
         self.last_sent_time = None
 
+        # Recent verses tracking to avoid duplicates
+        self.recent_verses: List[str] = []  # Store verse IDs (surah:verse format)
+        self.max_recent_verses = 20  # Track last 20 verses
+
         # Create data directory if it doesn't exist
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
@@ -187,14 +191,42 @@ class DailyVerseManager:
             return None
 
     def get_random_verse(self) -> Optional[Dict]:
-        """Get a random verse from the pool"""
+        """Get a random verse from the pool, avoiding recently sent verses"""
         try:
             if not self.verse_pool:
                 return None
 
-            verse = random.choice(self.verse_pool)
+            # Filter out recently sent verses
+            available_verses = [
+                v
+                for v in self.verse_pool
+                if f"{v['surah']}:{v['verse']}" not in self.recent_verses
+            ]
+
+            # If no verses available (all recent), reset recent list and use all
+            if not available_verses:
+                log_perfect_tree_section(
+                    "Daily Verses - Recent Reset",
+                    [
+                        ("reason", "All verses recently sent"),
+                        ("recent_count", len(self.recent_verses)),
+                        ("action", "🔄 Resetting recent verses list"),
+                        ("available_after_reset", len(self.verse_pool)),
+                    ],
+                    "🔄",
+                )
+                self.recent_verses = []
+                available_verses = self.verse_pool
+
+            # Select random verse
+            verse = random.choice(available_verses)
             verse["timestamp"] = datetime.now(pytz.UTC).timestamp()
             self.current_verse = verse
+
+            # Track this verse as recently sent
+            verse_id = f"{verse['surah']}:{verse['verse']}"
+            self.add_to_recent_verses(verse_id)
+
             self.save_state()
 
             log_perfect_tree_section(
@@ -202,6 +234,9 @@ class DailyVerseManager:
                 [
                     ("surah", verse["surah"]),
                     ("verse", verse["verse"]),
+                    ("verse_id", verse_id),
+                    ("recent_count", len(self.recent_verses)),
+                    ("available_count", len(available_verses)),
                     ("status", "✅ Selected successfully"),
                 ],
                 "🎲",
@@ -211,6 +246,45 @@ class DailyVerseManager:
             log_error_with_traceback("Error getting random verse", e)
             return None
 
+    def add_to_recent_verses(self, verse_id: str) -> None:
+        """Add a verse ID to the recent verses list"""
+        try:
+            # Add to beginning of list
+            if verse_id in self.recent_verses:
+                self.recent_verses.remove(verse_id)
+
+            self.recent_verses.insert(0, verse_id)
+
+            # Keep only the most recent verses
+            if len(self.recent_verses) > self.max_recent_verses:
+                self.recent_verses = self.recent_verses[: self.max_recent_verses]
+
+            # Save state to persist recent verses
+            self.save_state()
+
+        except Exception as e:
+            log_error_with_traceback("Error adding to recent verses", e)
+
+    def get_recent_verses_info(self) -> Dict:
+        """Get information about recently sent verses"""
+        try:
+            return {
+                "recent_count": len(self.recent_verses),
+                "max_recent": self.max_recent_verses,
+                "recent_ids": self.recent_verses.copy(),
+                "total_verses": len(self.verse_pool),
+                "available_verses": len(
+                    [
+                        v
+                        for v in self.verse_pool
+                        if f"{v['surah']}:{v['verse']}" not in self.recent_verses
+                    ]
+                ),
+            }
+        except Exception as e:
+            log_error_with_traceback("Error getting recent verses info", e)
+            return {}
+
     def save_state(self) -> bool:
         """Save current state to file"""
         try:
@@ -219,6 +293,9 @@ class DailyVerseManager:
                 state_data["current_verse"] = self.current_verse
             if self.last_sent_time:
                 state_data["last_sent_time"] = self.last_sent_time.timestamp()
+
+            # Add recent verses tracking
+            state_data["recent_verses"] = self.recent_verses
 
             with open(self.state_file, "w", encoding="utf-8") as f:
                 json.dump(state_data, f, indent=2)
@@ -234,6 +311,7 @@ class DailyVerseManager:
                         "verse",
                         self.current_verse["verse"] if self.current_verse else "None",
                     ),
+                    ("recent_verses", len(self.recent_verses)),
                     (
                         "last_sent",
                         (
@@ -262,6 +340,7 @@ class DailyVerseManager:
                 if isinstance(data, dict) and "current_verse" in data:
                     # New format
                     self.current_verse = data.get("current_verse")
+                    self.recent_verses = data.get("recent_verses", [])
                     if data.get("last_sent_time"):
                         self.last_sent_time = datetime.fromtimestamp(
                             data["last_sent_time"], tz=pytz.UTC
@@ -269,6 +348,7 @@ class DailyVerseManager:
                 else:
                     # Old format - data is the verse directly
                     self.current_verse = data
+                    self.recent_verses = []
                     self.last_sent_time = None
 
                 log_perfect_tree_section(
@@ -290,6 +370,7 @@ class DailyVerseManager:
                                 else "None"
                             ),
                         ),
+                        ("recent_verses", len(self.recent_verses)),
                         (
                             "last_sent",
                             (

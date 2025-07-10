@@ -69,6 +69,10 @@ class QuizManager:
         self.scores_file = self.data_dir / "quiz_scores.json"
         self.last_sent_time = None
 
+        # Recent questions tracking to avoid duplicates
+        self.recent_questions: List[str] = []  # Store question IDs
+        self.max_recent_questions = 15  # Track last 15 questions
+
         # Create data directory if it doesn't exist
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
@@ -266,7 +270,7 @@ class QuizManager:
     def get_random_question(
         self, difficulty: Optional[str] = None, category: Optional[str] = None
     ) -> Optional[Dict]:
-        """Get a random quiz question"""
+        """Get a random quiz question, avoiding recently asked questions"""
         try:
             filtered_questions = self.questions
 
@@ -283,10 +287,92 @@ class QuizManager:
             if not filtered_questions:
                 return None
 
-            return random.choice(filtered_questions)
+            # Filter out recently asked questions
+            available_questions = [
+                q
+                for q in filtered_questions
+                if q.get("id", str(hash(str(q)))) not in self.recent_questions
+            ]
+
+            # If no questions available (all recent), reset recent list and use all
+            if not available_questions:
+                log_perfect_tree_section(
+                    "Quiz Questions - Recent Reset",
+                    [
+                        ("reason", "All questions recently asked"),
+                        ("recent_count", len(self.recent_questions)),
+                        ("action", "🔄 Resetting recent questions list"),
+                        ("available_after_reset", len(filtered_questions)),
+                    ],
+                    "🔄",
+                )
+                self.recent_questions = []
+                available_questions = filtered_questions
+
+            # Select random question
+            selected_question = random.choice(available_questions)
+
+            # Track this question as recently asked
+            question_id = selected_question.get("id", str(hash(str(selected_question))))
+            self.add_to_recent_questions(question_id)
+
+            log_perfect_tree_section(
+                "Quiz Question - Selected",
+                [
+                    ("question_id", question_id),
+                    ("category", selected_question.get("category", "unknown")),
+                    ("difficulty", selected_question.get("difficulty", "unknown")),
+                    ("recent_count", len(self.recent_questions)),
+                    ("available_count", len(available_questions)),
+                ],
+                "🎯",
+            )
+
+            return selected_question
         except Exception as e:
             log_error_with_traceback("Error getting random question", e)
             return None
+
+    def add_to_recent_questions(self, question_id: str) -> None:
+        """Add a question ID to the recent questions list"""
+        try:
+            # Add to beginning of list
+            if question_id in self.recent_questions:
+                self.recent_questions.remove(question_id)
+
+            self.recent_questions.insert(0, question_id)
+
+            # Keep only the most recent questions
+            if len(self.recent_questions) > self.max_recent_questions:
+                self.recent_questions = self.recent_questions[
+                    : self.max_recent_questions
+                ]
+
+            # Save state to persist recent questions
+            self.save_state()
+
+        except Exception as e:
+            log_error_with_traceback("Error adding to recent questions", e)
+
+    def get_recent_questions_info(self) -> Dict:
+        """Get information about recently asked questions"""
+        try:
+            return {
+                "recent_count": len(self.recent_questions),
+                "max_recent": self.max_recent_questions,
+                "recent_ids": self.recent_questions.copy(),
+                "total_questions": len(self.questions),
+                "available_questions": len(
+                    [
+                        q
+                        for q in self.questions
+                        if q.get("id", str(hash(str(q)))) not in self.recent_questions
+                    ]
+                ),
+            }
+        except Exception as e:
+            log_error_with_traceback("Error getting recent questions info", e)
+            return {}
 
     def check_answer(self, answer_index: int, question: Dict) -> bool:
         """Check if the provided answer is correct"""
@@ -385,6 +471,7 @@ class QuizManager:
             state = {
                 "questions": self.questions,
                 "user_scores": self.user_scores,
+                "recent_questions": self.recent_questions,  # Add recent questions tracking
             }
 
             # Add last_sent_time if it exists
@@ -399,6 +486,7 @@ class QuizManager:
                 [
                     ("total_questions", len(self.questions)),
                     ("total_users", len(self.user_scores)),
+                    ("recent_questions", len(self.recent_questions)),
                     (
                         "last_sent",
                         (
@@ -426,12 +514,13 @@ class QuizManager:
                     if "questions" in quiz_data:
                         self.questions = quiz_data["questions"]
 
-            # Then load user scores and timing from state file
+            # Then load user scores, timing, and recent questions from state file
             if self.state_file.exists():
                 with open(self.state_file, "r", encoding="utf-8") as f:
                     state = json.load(f)
-                    # Only load user scores and timing, not questions
+                    # Only load user scores, timing, and recent questions, not questions
                     self.user_scores = state.get("user_scores", {})
+                    self.recent_questions = state.get("recent_questions", [])
 
                     # Handle last_sent_time with timezone
                     if state.get("last_sent_time"):
@@ -456,6 +545,7 @@ class QuizManager:
                 [
                     ("total_questions", len(self.questions)),
                     ("total_users", len(self.user_scores)),
+                    ("recent_questions", len(self.recent_questions)),
                     (
                         "last_sent",
                         (
@@ -466,7 +556,7 @@ class QuizManager:
                     ),
                     ("status", "✅ State loaded successfully"),
                 ],
-                "📥",
+                "💾",
             )
             return True
         except Exception as e:
