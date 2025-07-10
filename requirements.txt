@@ -20,7 +20,7 @@ python-dotenv==1.0.1
 zipfile-deflate64==0.2.0
 
 # Scheduling
-schedule==1.2.0
+schedule==1.2.2
 
 # Rich Text Processing
 rich==13.7.1
