@@ -423,9 +423,9 @@ class ListeningStatsManager:
                                         raise ValueError(
                                             f"Backup session data for {user_id} is not a dictionary"
                                         )
-                                    self.active_sessions[user_id] = (
-                                        ActiveSession.from_dict(session_data)
-                                    )
+                                    self.active_sessions[
+                                        user_id
+                                    ] = ActiveSession.from_dict(session_data)
                                 except (
                                     ValueError,
                                     KeyError,

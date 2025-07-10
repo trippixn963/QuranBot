@@ -130,9 +130,9 @@ class AudioManager:
         # Playback task
         self.playback_task: Optional[asyncio.Task] = None
         self.position_save_task: Optional[asyncio.Task] = None
-        self.position_tracking_task: Optional[asyncio.Task] = (
-            None  # New task for real-time position tracking
-        )
+        self.position_tracking_task: Optional[
+            asyncio.Task
+        ] = None  # New task for real-time position tracking
 
         # Position tracking state
         self.track_start_time = None  # When current track started playing
@@ -1585,9 +1585,9 @@ class AudioManager:
 
             # Use the exact same time calculation as rich presence
             # This ensures both control panel and rich presence show identical times
-            status["current_time"] = (
-                self.current_position
-            )  # Use actual current position
+            status[
+                "current_time"
+            ] = self.current_position  # Use actual current position
 
             # Get the real duration of the current MP3 file
             status["total_time"] = self._get_current_file_duration()

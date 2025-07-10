@@ -1436,7 +1436,10 @@ async def create_control_panel(
                         log_perfect_tree_section(
                             "Control Panel - Delete HTTP Error",
                             [
-                                ("status", f"⚠️ HTTP {e.status} error deleting message"),
+                                (
+                                    "status",
+                                    f"⚠️ HTTP {e.status} error deleting message",
+                                ),
                                 ("message_id", str(message.id)),
                                 ("action", "Skipping message"),
                             ],
