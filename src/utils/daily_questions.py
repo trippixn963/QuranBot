@@ -1,8 +1,36 @@
 #!/usr/bin/env python3
 # =============================================================================
-# QuranBot - Daily Questions Manager
+# QuranBot - Daily Questions Manager (Open Source Edition)
 # =============================================================================
-# Manages daily Quran-related questions and user interactions
+# This is an open source project provided AS-IS without official support.
+# Feel free to use, modify, and learn from this code under the license terms.
+#
+# Purpose:
+# Enterprise-grade daily quiz system for Discord bots with question pool
+# management, scheduling, and state persistence. Originally designed for
+# Quranic knowledge but adaptable for any educational content.
+#
+# Key Features:
+# - Question pool management
+# - Anti-duplicate protection
+# - Answer validation
+# - History tracking
+# - State persistence
+# - Timezone support
+#
+# Technical Implementation:
+# - JSON-based state storage
+# - Timezone-aware scheduling
+# - Error handling and logging
+# - Atomic file operations
+#
+# File Structure:
+# /data/
+#   daily_questions.json  - Current state and pool
+#   question_history.json - Past questions log
+#
+# Required Dependencies:
+# - pytz: Timezone handling
 # =============================================================================
 
 import json
@@ -18,21 +46,85 @@ from .tree_log import log_error_with_traceback, log_perfect_tree_section
 
 
 class DailyQuestionManager:
-    """Manages daily Quran-related questions and user interactions"""
+    """
+    Enterprise-grade daily quiz system for Discord bots.
+
+    This is an open source component that can be used as a reference for
+    implementing educational quiz systems in any Discord bot project.
+
+    Key Features:
+    - Question pool management
+    - Anti-duplicate protection
+    - Answer validation
+    - History tracking
+    - State persistence
+
+    Question Management:
+    1. Question Pool:
+       - Dynamic question storage
+       - Validation on input
+       - Anti-duplicate system
+
+    2. Scheduling:
+       - Daily question rotation
+       - Timezone support
+       - Configurable timing
+
+    3. History Tracking:
+       - Recent question memory
+       - Answer statistics
+       - Performance metrics
+
+    Implementation Notes:
+    - Uses JSON for data storage
+    - Implements atomic saves
+    - Handles timezone conversion
+    - Provides error recovery
+
+    Usage Example:
+    ```python
+    manager = DailyQuestionManager(data_dir="data")
+
+    # Add a question
+    manager.add_question_to_pool(
+        question="What is the first surah?",
+        options=["Al-Fatiha", "Al-Baqarah", "Al-Ikhlas"],
+        correct_answer=0,
+        explanation="Al-Fatiha is the opening chapter"
+    )
+
+    # Get today's question
+    question = manager.get_current_question()
+
+    # Check an answer
+    is_correct = manager.check_answer(answer_index=0)
+    ```
+    """
 
     def __init__(self, data_dir: Union[str, Path]):
-        """Initialize the daily question manager"""
+        """
+        Initialize the daily question manager.
+
+        Args:
+            data_dir: Directory for data storage
+
+        Implementation Notes:
+        - Creates required directories
+        - Loads existing state
+        - Initializes question pool
+        - Sets up history tracking
+        """
         self.data_dir = Path(data_dir)
-        self.questions_pool: List[Dict] = []
-        self.current_question: Optional[Dict] = None
-        self.question_history: List[Dict] = []
+        self.questions_pool: List[Dict] = []  # Available questions
+        self.current_question: Optional[Dict] = None  # Active question
+        self.question_history: List[Dict] = []  # Past questions
         self.state_file = self.data_dir / "daily_questions.json"
         self.history_file = self.data_dir / "question_history.json"
 
-        # Create data directory if it doesn't exist
+        # Ensure data storage exists
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
-        # Load existing state
+        # Initialize state
         self.load_state()
 
     def add_question_to_pool(

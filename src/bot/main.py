@@ -1,7 +1,21 @@
 # =============================================================================
-# QuranBot - Minimal Discord Audio Bot
+# QuranBot - Discord Audio Bot (Open Source Edition)
 # =============================================================================
-# Simple Discord bot that connects to voice channels and plays Quran audio
+# This is an open source project provided AS-IS without official support.
+# Feel free to use, modify, and learn from this code under the license terms.
+#
+# Core Features:
+# - Voice channel audio playback of Quranic recitations
+# - Automatic audio management and state persistence
+# - Rich presence integration with Discord
+# - Comprehensive logging and error handling
+# - Control panel for bot management
+#
+# Technical Implementation:
+# - Built on discord.py library
+# - Asynchronous audio handling
+# - Event-driven architecture
+# - Modular component design
 # =============================================================================
 
 import asyncio
@@ -16,6 +30,15 @@ from aiohttp.client_exceptions import ClientConnectionResetError
 # =============================================================================
 # Environment Configuration
 # =============================================================================
+# Loads environment variables from .env file in config directory
+# Required Variables:
+# - DISCORD_TOKEN: Your bot's Discord token
+# - GUILD_ID: Your Discord server ID
+# - CONTROL_CHANNEL: Channel ID for bot control panel
+# Optional Variables:
+# - LOG_CHANNEL: Channel ID for logging (if not set, logs to console only)
+# - BACKUP_INTERVAL: Interval in hours between backups (default: 24)
+# =============================================================================
 from dotenv import load_dotenv
 
 # Load environment variables from the correct path
@@ -27,6 +50,12 @@ import os
 # =============================================================================
 # Import Tree Logging Functions
 # =============================================================================
+# Custom logging system that provides:
+# - Hierarchical log organization
+# - Multi-destination logging (console, file, Discord)
+# - Structured error reporting
+# - Activity tracking and statistics
+# =============================================================================
 import sys
 
 # Add parent directory to path for imports
@@ -34,6 +63,13 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 # =============================================================================
 # Discord Logging Configuration
+# =============================================================================
+# Configures Discord's internal logging system to integrate with our tree logger
+# Provides detailed tracking of:
+# - Voice connection states
+# - Gateway events
+# - Client operations
+# - Error conditions
 # =============================================================================
 import logging
 
@@ -116,21 +152,27 @@ class DiscordTreeHandler(logging.Handler):
     """
     Custom logging handler that formats Discord logs in tree-style format.
 
-    This handler intercepts Discord.py log messages and reformats them using
-    the QuranBot tree logging system for consistent visual presentation.
-    It filters out verbose messages and maps Discord log levels to appropriate
-    tree logging functions.
+    This is an open source component that can be used as a reference for
+    implementing custom Discord.py logging handlers.
 
-    Features:
-    - Filters out heartbeat and other verbose Discord messages
-    - Maps Discord modules to appropriate tree logging categories
-    - Preserves log levels while using tree formatting
-    - Writes formatted logs to both console and file systems
+    Key Features:
+    - Converts Discord.py logs into hierarchical tree format
+    - Filters unnecessary verbose messages
+    - Categorizes logs by Discord subsystem
+    - Provides consistent formatting across all log sources
+    - Supports both console and file output
 
-    Discord Modules Handled:
-    - voice_state: Voice connection status and changes
-    - gateway: Discord gateway connection events
-    - client: Discord client authentication and status
+    Implementation Notes:
+    - Extends logging.Handler for seamless Discord.py integration
+    - Uses custom tree logging for visual consistency
+    - Implements smart filtering to reduce log noise
+    - Provides separate handlers for different Discord components
+
+    Usage:
+    1. Create an instance of DiscordTreeHandler
+    2. Add it to your Discord client's logger
+    3. Configure log levels as needed
+    4. Logs will automatically format in tree style
     """
 
     def emit(self, record):

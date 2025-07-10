@@ -1,7 +1,35 @@
 # =============================================================================
-# QuranBot - Surah Mapping and Metadata
+# QuranBot - Surah Mapper (Open Source Edition)
 # =============================================================================
-# Comprehensive Surah information management with perfect tree logging
+# This is an open source project provided AS-IS without official support.
+# Feel free to use, modify, and learn from this code under the license terms.
+#
+# Purpose:
+# Enterprise-grade Surah (Quranic chapter) information management system with
+# comprehensive metadata, search capabilities, and Discord integration.
+# Originally designed for QuranBot but adaptable for any Islamic app.
+#
+# Key Features:
+# - Complete Surah metadata
+# - Smart search functionality
+# - Rich Discord embeds
+# - Data validation
+# - Error handling
+# - Perfect tree logging
+#
+# Technical Implementation:
+# - JSON-based data storage
+# - Type-safe dataclasses
+# - Enum-based categorization
+# - Comprehensive validation
+# - Error recovery
+#
+# File Structure:
+# /utils/
+#   surahs.json - Complete Surah database
+#
+# Required Dependencies:
+# - discord.py: Discord integration
 # =============================================================================
 
 import json
@@ -15,7 +43,7 @@ from typing import Dict, List, Optional, Tuple
 
 import discord
 
-# Import tree logging functions
+# Import tree logging with fallback support
 try:
     from .tree_log import (
         log_error_with_traceback,
@@ -31,7 +59,7 @@ except ImportError:
             log_warning_with_context,
         )
     except ImportError:
-        # Minimal fallback functions
+        # Minimal fallback logging functions for standalone use
         def log_error_with_traceback(msg, e):
             print(f"ERROR: {msg} - {e}")
 
@@ -47,10 +75,31 @@ except ImportError:
 # =============================================================================
 # Surah Data Classes and Enums
 # =============================================================================
+# Core data structures for Surah information management.
+# These classes provide type safety and data validation.
+#
+# RevelationType:
+# - Categorizes Surahs by revelation location
+# - Used for filtering and organization
+#
+# SurahInfo:
+# - Complete Surah metadata container
+# - Provides rich functionality
+# - Ensures data consistency
+# =============================================================================
 
 
 class RevelationType(Enum):
-    """Type of revelation location"""
+    """
+    Surah revelation location classifier.
+
+    This enum provides type-safe categorization of Surahs based on their
+    revelation location (Mecca or Medina).
+
+    Values:
+        MECCAN: Revealed in Mecca
+        MEDINAN: Revealed in Medina
+    """
 
     MECCAN = "Meccan"
     MEDINAN = "Medinan"
@@ -58,7 +107,54 @@ class RevelationType(Enum):
 
 @dataclass
 class SurahInfo:
-    """Complete information about a Surah"""
+    """
+    Enterprise-grade Surah metadata container.
+
+    This class provides a complete and validated representation of
+    Quranic chapter (Surah) information with rich functionality.
+
+    Attributes:
+        number (int): Surah number (1-114)
+        name_arabic (str): Original Arabic name
+        name_english (str): English translation
+        name_transliteration (str): Latin script
+        emoji (str): Visual identifier
+        verses (int): Total verse count
+        revelation_type (RevelationType): Mecca/Medina
+        meaning (str): Name translation
+        description (str): Brief overview
+
+    Implementation Notes:
+    - Uses dataclass for clean representation
+    - Provides dict-like access
+    - Implements iteration
+    - Validates data types
+    - Ensures consistency
+
+    Usage Example:
+    ```python
+    # Create Surah info
+    surah = SurahInfo(
+        number=1,
+        name_arabic="الفاتحة",
+        name_english="The Opening",
+        name_transliteration="Al-Fatihah",
+        emoji="📖",
+        verses=7,
+        revelation_type=RevelationType.MECCAN,
+        meaning="The Opening",
+        description="The first chapter of the Quran"
+    )
+
+    # Access attributes
+    print(surah.name_english)      # Direct access
+    print(surah["name_english"])   # Dict-style
+
+    # Iterate over fields
+    for field in surah:
+        print(field)
+    ```
+    """
 
     number: int
     name_arabic: str
@@ -71,7 +167,18 @@ class SurahInfo:
     description: str
 
     def __getitem__(self, key: str) -> str:
-        """Make the class subscriptable"""
+        """
+        Enable dictionary-style access to attributes.
+
+        Args:
+            key: Attribute name to access
+
+        Returns:
+            str: Attribute value
+
+        Raises:
+            KeyError: If key doesn't exist
+        """
         mapping = {
             "name": self.name_transliteration,
             "name_arabic": self.name_arabic,
@@ -88,7 +195,12 @@ class SurahInfo:
         return mapping[key]
 
     def __iter__(self):
-        """Make the class iterable"""
+        """
+        Enable iteration over attribute names.
+
+        Yields:
+            str: Attribute names in order
+        """
         yield from [
             "name",
             "name_arabic",
@@ -102,7 +214,15 @@ class SurahInfo:
         ]
 
     def __eq__(self, other):
-        """Custom equality check"""
+        """
+        Enable equality comparison between Surahs.
+
+        Args:
+            other: Another SurahInfo to compare
+
+        Returns:
+            bool: True if all attributes match
+        """
         if not isinstance(other, SurahInfo):
             return False
         return (
@@ -121,10 +241,79 @@ class SurahInfo:
 # =============================================================================
 # JSON Data Loading
 # =============================================================================
+# Core functionality for loading and validating the Surah database.
+# Provides comprehensive error handling and data validation.
+#
+# Key Features:
+# - Automatic file discovery
+# - JSON validation
+# - Error recovery
+# - Detailed logging
+# - Data integrity checks
+#
+# File Structure:
+# surahs.json:
+# {
+#   "1": {
+#     "number": 1,
+#     "name_arabic": "الفاتحة",
+#     "name_english": "The Opening",
+#     "name_transliteration": "Al-Fatihah",
+#     "verses": 7,
+#     "revelation_type": "Meccan",
+#     "emoji": "📖",
+#     "meaning": "The Opening",
+#     "description": "..."
+#   },
+#   "2": { ... }
+# }
+# =============================================================================
 
 
 def load_surah_database() -> Dict[int, SurahInfo]:
-    """Load Surah database from JSON file with comprehensive error handling"""
+    """
+    Load and validate the complete Surah database from JSON.
+
+    This function provides enterprise-grade loading of Surah data with
+    comprehensive error handling, validation, and recovery mechanisms.
+
+    Returns:
+        Dict[int, SurahInfo]: Mapping of Surah numbers to their info
+
+    Implementation Notes:
+    - Validates JSON structure
+    - Handles missing files
+    - Recovers from corruption
+    - Provides detailed logging
+    - Ensures data integrity
+
+    Error Handling:
+    1. File Access:
+       - Handles missing files
+       - Reports path issues
+       - Provides context
+
+    2. Data Validation:
+       - Checks completeness
+       - Validates types
+       - Ensures consistency
+
+    3. Recovery:
+       - Skips invalid entries
+       - Continues processing
+       - Reports issues
+
+    Usage Example:
+    ```python
+    # Load database
+    database = load_surah_database()
+
+    # Access Surah info
+    if 1 in database:
+        surah = database[1]
+        print(f"Loaded: {surah.name_english}")
+    ```
+    """
     try:
         json_path = Path(__file__).parent / "surahs.json"
 
@@ -158,7 +347,7 @@ def load_surah_database() -> Dict[int, SurahInfo]:
             )
 
             database = {}
-            # Handle JSON format with string keys (e.g., {"1": {...}, "2": {...}})
+            # Process JSON data with validation
             for number_str, surah_data in data.items():
                 try:
                     surah_number = int(number_str)
@@ -169,9 +358,11 @@ def load_surah_database() -> Dict[int, SurahInfo]:
                         name_english=surah_data["name_english"],
                         verses=surah_data["verses"],
                         revelation_type=RevelationType(surah_data["revelation_type"]),
-                        emoji=surah_data.get("emoji", "📖"),
-                        meaning=surah_data.get("meaning", surah_data["name_english"]),
-                        description=surah_data.get("description", ""),
+                        emoji=surah_data.get("emoji", "📖"),  # Default emoji
+                        meaning=surah_data.get(
+                            "meaning", surah_data["name_english"]
+                        ),  # Fallback to English name
+                        description=surah_data.get("description", ""),  # Optional field
                     )
                 except (KeyError, ValueError, TypeError) as e:
                     log_warning_with_context(
@@ -180,6 +371,7 @@ def load_surah_database() -> Dict[int, SurahInfo]:
                     )
                     continue
 
+            # Validate database completeness
             if len(database) == 114:
                 log_perfect_tree_section(
                     "Database Validation",

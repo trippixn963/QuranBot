@@ -1,7 +1,37 @@
 # =============================================================================
-# QuranBot - Backup Manager
+# QuranBot - Backup Manager (Open Source Edition)
 # =============================================================================
-# Centralized backup system for all data files with EST-scheduled ZIP backups
+# This is an open source project provided AS-IS without official support.
+# Feel free to use, modify, and learn from this code under the license terms.
+#
+# Purpose:
+# Enterprise-grade backup system for Discord bots with automatic file discovery,
+# scheduled backups, and comprehensive error handling. Originally designed for
+# QuranBot but adaptable for any Python application.
+#
+# Key Features:
+# - Dynamic file discovery
+# - Scheduled ZIP backups
+# - Timezone-aware naming
+# - Automatic cleanup
+# - Progress tracking
+# - Error recovery
+#
+# Technical Implementation:
+# - Async/await for non-blocking backups
+# - ZIP compression with deflate
+# - Atomic file operations
+# - Pattern-based file matching
+# - Error handling and logging
+#
+# File Structure:
+# /data/          - Source data directory
+# /backup/        - Backup storage
+#   /temp/        - Temporary backup staging
+#
+# Required Dependencies:
+# - zipfile: ZIP file handling
+# - pathlib: Cross-platform paths
 # =============================================================================
 
 import asyncio
@@ -21,36 +51,51 @@ EST = timezone(timedelta(hours=-5))
 # =============================================================================
 # Configuration
 # =============================================================================
+# Core settings that control backup behavior and file selection.
+# Modify these values to adjust the backup system's behavior.
+#
+# Directory Structure:
+# - DATA_DIR: Source data location
+# - BACKUP_DIR: Backup archive storage
+# - TEMP_BACKUP_DIR: Temporary staging area
+#
+# File Selection:
+# - DATA_FILE_PATTERNS: Files to include
+# - EXCLUDE_PATTERNS: Files to ignore
+#
+# Scheduling:
+# - BACKUP_INTERVAL_HOURS: Hours between backups
+# - EST timezone for consistent naming
+# =============================================================================
 
-# Directory paths
+# Directory paths with Path objects for cross-platform compatibility
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 BACKUP_DIR = Path(__file__).parent.parent.parent / "backup"
-TEMP_BACKUP_DIR = BACKUP_DIR / "temp"  # For .backup files to keep data/ clean
+TEMP_BACKUP_DIR = BACKUP_DIR / "temp"  # Staging area for clean backups
 
-# Dynamic data file discovery (automatically finds all JSON files)
-# This makes the backup system future-proof for new data files
+# File discovery patterns for automatic backup
 DATA_FILE_PATTERNS = [
-    "*.json",  # All JSON data files
-    "*.db",  # Database files
-    "*.sqlite",  # SQLite databases
-    "*.txt",  # Text data files
-    "*.csv",  # CSV data files
+    "*.json",  # Configuration and state
+    "*.db",  # SQLite databases
+    "*.sqlite",  # Alternative SQLite extension
+    "*.txt",  # Plain text data
+    "*.csv",  # Structured data exports
 ]
 
-# Files to exclude from backup (temporary/cache files)
+# Exclusion patterns for temporary and cache files
 EXCLUDE_PATTERNS = [
-    "*.tmp",
-    "*.temp",
-    "*.cache",
-    "*.log",
-    "*_temp_*",
-    "*_cache_*",
+    "*.tmp",  # Temporary files
+    "*.temp",  # Alternative temp extension
+    "*.cache",  # Cache files
+    "*.log",  # Log files (backed up separately)
+    "*_temp_*",  # Files with temp in name
+    "*_cache_*",  # Files with cache in name
 ]
 
-# Backup configuration
-BACKUP_INTERVAL_HOURS = 1
-_last_backup_time = None
-_backup_task = None
+# Backup scheduling configuration
+BACKUP_INTERVAL_HOURS = 1  # Time between backups
+_last_backup_time = None  # Last successful backup
+_backup_task = None  # Scheduler task reference
 
 
 # =============================================================================
@@ -60,19 +105,55 @@ _backup_task = None
 
 class BackupManager:
     """
-    Dynamic backup system for QuranBot's data files.
+    Enterprise-grade backup system for Python applications.
 
-    Automatically discovers and backs up all data files in the data directory:
-    - JSON files (*.json) - Configuration and state data
-    - Database files (*.db, *.sqlite) - User data and statistics
-    - Text files (*.txt) - Log files and configuration
-    - CSV files (*.csv) - Exported data and reports
+    This is an open source component that can be used as a reference for
+    implementing backup systems in any Python project. It provides automatic
+    file discovery, scheduled backups, and comprehensive error handling.
 
-    Features:
-    - Dynamic file discovery (future-proof for new data files)
-    - Clean data directory (no .backup files cluttering data/)
-    - Automatic exclusion of temporary and cache files
-    - EST-scheduled ZIP backups with intuitive naming
+    Key Features:
+    - Dynamic file discovery
+    - Scheduled backups
+    - Progress tracking
+    - Error recovery
+    - Cleanup routines
+
+    File Management:
+    1. Discovery:
+       - Pattern-based matching
+       - Automatic exclusions
+       - Future-proof design
+
+    2. Backup Process:
+       - ZIP compression
+       - Atomic operations
+       - Progress tracking
+       - Error handling
+
+    3. Maintenance:
+       - Automatic cleanup
+       - Status reporting
+       - Error recovery
+
+    Implementation Notes:
+    - Uses async/await
+    - Implements atomic saves
+    - Provides progress tracking
+    - Handles errors gracefully
+
+    Usage Example:
+    ```python
+    manager = BackupManager()
+
+    # Start automatic backups
+    manager.start_backup_scheduler()
+
+    # Manual backup
+    await manager.create_hourly_backup()
+
+    # Cleanup old backups
+    manager.cleanup_old_backups(keep_count=5)
+    ```
     """
 
     def __init__(self):

@@ -1,8 +1,34 @@
 # =============================================================================
-# QuranBot - Verse Command
+# QuranBot - Verse Command (Open Source Edition)
 # =============================================================================
-# Manual verse command that sends a daily verse and resets the timer
-# Admin-only command for controlling daily verse system
+# This is an open source project provided AS-IS without official support.
+# Feel free to use, modify, and learn from this code under the license terms.
+#
+# Purpose:
+# Administrative Discord slash command for manual control of the daily verse
+# system. Demonstrates proper command structure, permission handling, and
+# error management in Discord.py applications.
+#
+# Key Features:
+# - Slash command implementation
+# - Admin-only access control
+# - Rich embed responses
+# - Comprehensive error handling
+# - Detailed logging
+# - State management integration
+#
+# Technical Implementation:
+# - Uses discord.py's app_commands
+# - Environment-based configuration
+# - Asynchronous execution
+# - Modular component design
+#
+# Required Permissions:
+# - Bot must have permission to send messages and embeds
+# - User must be configured as admin in environment
+#
+# Environment Variables:
+# - DEVELOPER_ID: Discord ID of bot administrator
 # =============================================================================
 
 import asyncio
@@ -16,9 +42,22 @@ from discord.ext import commands
 from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
 
 
-# Get the daily verses manager through a function instead of global import
 def get_daily_verses_manager():
-    """Get the daily verses manager instance"""
+    """
+    Safely retrieve the daily verses manager instance.
+
+    This function demonstrates proper error handling and dependency
+    management in a Discord bot context. It uses lazy loading to
+    prevent circular imports and provides graceful fallback.
+
+    Returns:
+        Optional[DailyVersesManager]: The manager instance or None if error
+
+    Implementation Notes:
+    - Uses lazy imports to prevent circular dependencies
+    - Provides comprehensive error logging
+    - Returns None instead of raising exceptions
+    """
     try:
         from src.utils.daily_verses import daily_verse_manager
 
@@ -33,7 +72,36 @@ def get_daily_verses_manager():
     description="Send a daily verse manually and reset the 3-hour timer (Admin only)",
 )
 async def verse_slash_command(interaction: discord.Interaction):
-    """Send a daily verse manually and reset the 3-hour timer"""
+    """
+    Administrative command to manually trigger daily verse delivery.
+
+    This is an open source implementation demonstrating proper Discord
+    slash command structure with permission handling, error management,
+    and user feedback.
+
+    Features:
+    - Admin-only access control
+    - Rich embed responses
+    - Comprehensive error handling
+    - Detailed logging
+    - State validation
+
+    Flow:
+    1. Validate system configuration
+    2. Check user permissions
+    3. Verify verse system state
+    4. Execute verse delivery
+    5. Update timers and state
+
+    Error Handling:
+    - Configuration errors
+    - Permission issues
+    - System state problems
+    - Runtime exceptions
+
+    Usage:
+    /verse - Manually trigger verse delivery (admin only)
+    """
 
     # Log command initiation
     log_perfect_tree_section(

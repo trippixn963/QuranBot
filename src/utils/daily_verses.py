@@ -1,8 +1,39 @@
 #!/usr/bin/env python3
 # =============================================================================
-# QuranBot - Daily Verses Manager
+# QuranBot - Daily Verses Manager (Open Source Edition)
 # =============================================================================
-# Manages daily Quran verses and user interactions
+# This is an open source project provided AS-IS without official support.
+# Feel free to use, modify, and learn from this code under the license terms.
+#
+# Purpose:
+# Enterprise-grade daily content delivery system for Discord bots with
+# scheduling, user interaction tracking, and state management. Originally
+# designed for Quranic verses but adaptable for any daily content.
+#
+# Key Features:
+# - Automated content scheduling
+# - Anti-duplicate protection
+# - User interaction tracking
+# - Rich embed messages
+# - Reaction monitoring
+# - State persistence
+#
+# Technical Implementation:
+# - Async/await for Discord operations
+# - JSON-based state storage
+# - Timezone-aware scheduling
+# - Error handling and logging
+# - Modular component design
+#
+# File Structure:
+# /data/
+#   daily_verse_state.json    - Current state
+#   daily_verses_pool.json    - Content pool
+#   daily_verses_state.json   - Schedule config
+#
+# Required Dependencies:
+# - discord.py: Discord API wrapper
+# - pytz: Timezone handling
 # =============================================================================
 
 import asyncio
@@ -18,33 +49,97 @@ import pytz
 
 from .tree_log import log_error_with_traceback, log_perfect_tree_section
 
-# Global scheduler task
+# Global scheduler task reference
 _verse_scheduler_task = None
 
 
 class DailyVerseManager:
-    """Manages daily Quran verses and user interactions"""
+    """
+    Enterprise-grade daily content delivery system for Discord bots.
+
+    This is an open source component that can be used as a reference for
+    implementing scheduled content delivery in any Discord bot project.
+
+    Key Features:
+    - Content pool management
+    - Scheduled delivery
+    - Anti-duplicate protection
+    - User interaction tracking
+    - State persistence
+    - Rich embed messages
+
+    Content Management:
+    1. Content Pool:
+       - JSON-based storage
+       - Validation on input
+       - Duplicate prevention
+
+    2. Scheduling:
+       - Configurable intervals
+       - Timezone support
+       - State tracking
+
+    3. User Interaction:
+       - Reaction monitoring
+       - Statistics tracking
+       - Error handling
+
+    Implementation Notes:
+    - Uses JSON for data storage
+    - Implements atomic saves
+    - Handles timezone conversion
+    - Supports custom scheduling
+    - Provides error recovery
+
+    Usage Example:
+    ```python
+    manager = DailyVerseManager(data_dir="data")
+
+    # Add content
+    manager.add_verse(
+        surah=1,
+        verse=1,
+        text="Example text",
+        translation="Example translation",
+        transliteration="Example transliteration"
+    )
+
+    # Start scheduler
+    start_verse_scheduler(bot, channel_id)
+    ```
+    """
 
     def __init__(self, data_dir: Union[str, Path]):
-        """Initialize the daily verse manager"""
+        """
+        Initialize the daily content manager.
+
+        Args:
+            data_dir: Directory for data storage
+
+        Implementation Notes:
+        - Creates required directories
+        - Loads existing state
+        - Initializes tracking systems
+        - Sets up anti-duplicate protection
+        """
         self.data_dir = Path(data_dir)
         self.state_file = self.data_dir / "daily_verse_state.json"
         self.verses_file = self.data_dir / "daily_verses_pool.json"
-        self.verses_state_file = (
-            self.data_dir / "daily_verses_state.json"
-        )  # For interval config
-        self.current_verse = None
-        self.verse_pool = []
-        self.last_sent_time = None
+        self.verses_state_file = self.data_dir / "daily_verses_state.json"
 
-        # Recent verses tracking to avoid duplicates
-        self.recent_verses: List[str] = []  # Store verse IDs (surah:verse format)
-        self.max_recent_verses = 20  # Track last 20 verses
+        # Current state tracking
+        self.current_verse = None  # Currently active verse
+        self.verse_pool = []  # Available content pool
+        self.last_sent_time = None  # Last delivery timestamp
 
-        # Create data directory if it doesn't exist
+        # Anti-duplicate system
+        self.recent_verses: List[str] = []  # Track recent IDs
+        self.max_recent_verses = 20  # Anti-duplicate buffer size
+
+        # Ensure data storage exists
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
-        # Load existing state and verses
+        # Initialize state
         self.load_state()
         self.load_verses()
 

@@ -1,8 +1,40 @@
 # =============================================================================
-# QuranBot - State Manager
+# QuranBot - State Manager (Open Source Edition)
 # =============================================================================
-# Handles saving and loading bot state to persist playback position
-# across restarts and shutdowns with bulletproof data protection
+# This is an open source project provided AS-IS without official support.
+# Feel free to use, modify, and learn from this code under the license terms.
+#
+# Purpose:
+# Enterprise-grade state persistence system for Discord bots, providing robust
+# data protection, automatic backups, and corruption recovery. Originally
+# designed for QuranBot but usable in any Discord bot project.
+#
+# Key Features:
+# - Atomic state writes preventing corruption
+# - Automatic backup creation and rotation
+# - Corruption detection and recovery
+# - Session tracking and statistics
+# - Environment-based configuration
+# - Silent operation mode for high-frequency saves
+#
+# Technical Implementation:
+# - JSON-based state storage
+# - UTC timestamp synchronization
+# - Backup rotation with configurable retention
+# - Data integrity verification
+# - Emergency backup system
+#
+# File Structure:
+# /data/
+#   playback_state.json     - Current state
+#   bot_stats.json         - Usage statistics
+# /backup/
+#   temp/                  - Temporary backup storage
+#   YYYY-MM-DD/           - Daily backup archives
+#
+# Required Dependencies:
+# - pytz: Timezone handling
+# - python-dotenv: Environment configuration
 # =============================================================================
 
 import json
@@ -18,43 +50,65 @@ from dotenv import load_dotenv
 
 from .tree_log import log_error_with_traceback, log_perfect_tree_section
 
-# Load environment variables
+# Load environment variables from standardized location
 env_path = os.path.join(os.path.dirname(__file__), "..", "..", "config", ".env")
 load_dotenv(env_path)
 
 
 class StateManager:
     """
-    Manages bot state persistence across restarts and shutdowns with bulletproof protection.
+    Enterprise-grade state persistence manager for Discord bots.
 
-    The StateManager handles saving and loading of playback state and bot statistics
-    to ensure continuity across bot restarts. It provides robust error handling,
-    atomic writes, backup creation, and automatic fallback to default values when
-    state files are corrupted.
+    This is an open source component that can be used as a reference for
+    implementing robust state management in any Discord bot project.
 
-    Features:
-    - Playback state persistence (current surah, position, reciter settings)
-    - Bot statistics tracking (sessions, runtime, completed surahs)
-    - Atomic writes to prevent corruption during saves
-    - Automatic backup creation before each save
-    - Emergency save mechanisms for critical data protection
-    - Corruption detection and automatic recovery
-    - Environment-based default configuration
-    - Silent operation to prevent log spam during frequent saves
+    Key Features:
+    - Atomic state writes with corruption prevention
+    - Automatic backup creation and rotation
+    - Session statistics and analytics
+    - Data integrity verification
+    - Emergency backup system
+    - Silent operation mode
 
-    State Files:
-    - playback_state.json: Current playback position and settings
-    - playback_state.json.backup: Automatic backup of playback state
-    - bot_stats.json: Long-term bot usage statistics
-    - bot_stats.json.backup: Automatic backup of bot statistics
-    - emergency_backup_*.json: Emergency backup files
-    - emergency_session_*.json: Individual session emergency logs
+    State Structure:
+    1. Playback State:
+       - Current playback position
+       - Selected reciter and surah
+       - Playback mode settings
+       - Session metadata
 
-    Args:
-        data_dir: Directory to store state files (default: "data")
-        default_reciter: Default reciter name for new sessions
-        default_shuffle: Default shuffle setting for new sessions
-        default_loop: Default loop setting for new sessions
+    2. Bot Statistics:
+       - Total runtime and sessions
+       - Usage patterns
+       - Favorite content
+       - Performance metrics
+
+    Implementation Notes:
+    - Uses atomic writes to prevent corruption
+    - Maintains backup rotation system
+    - Verifies data integrity on load
+    - Provides automatic recovery
+    - Supports high-frequency saves
+
+    Usage Example:
+    ```python
+    state_manager = StateManager(
+        data_dir="data",
+        default_reciter="Reciter Name",
+        default_shuffle=False,
+        default_loop=False
+    )
+
+    # Save state
+    state_manager.save_playback_state(
+        current_surah=1,
+        current_position=0.0,
+        current_reciter="Reciter Name"
+    )
+
+    # Load state
+    state = state_manager.load_playback_state()
+    ```
     """
 
     def __init__(

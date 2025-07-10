@@ -1,8 +1,37 @@
 #!/usr/bin/env python3
 # =============================================================================
-# QuranBot - Rich Presence Manager
+# QuranBot - Rich Presence Manager (Open Source Edition)
 # =============================================================================
-# Manages Discord rich presence functionality
+# This is an open source project provided AS-IS without official support.
+# Feel free to use, modify, and learn from this code under the license terms.
+#
+# Purpose:
+# Professional Discord rich presence system with template support, state
+# management, and error handling. Originally designed for QuranBot but
+# adaptable for any Discord bot project.
+#
+# Key Features:
+# - Template-based presence updates
+# - State persistence across restarts
+# - Activity type management
+# - Elapsed time tracking
+# - Comprehensive error handling
+# - Silent operation mode
+#
+# Technical Implementation:
+# - Async/await for Discord operations
+# - JSON-based state storage
+# - Template string formatting
+# - Timezone-aware timing
+# - Fallback mechanisms
+#
+# File Structure:
+# /data/
+#   rich_presence_state.json - Persistent state storage
+#
+# Required Dependencies:
+# - discord.py: Discord API wrapper
+# - pytz: Timezone handling
 # =============================================================================
 
 import json
@@ -17,7 +46,21 @@ from .tree_log import log_error_with_traceback, log_perfect_tree_section
 
 
 def validate_rich_presence_dependencies() -> bool:
-    """Validate that all required dependencies for rich presence are available"""
+    """
+    Validate that all required dependencies for rich presence are available.
+
+    This function demonstrates proper dependency validation in a Discord bot
+    context. It ensures all required packages are installed before attempting
+    to use rich presence features.
+
+    Returns:
+        bool: True if all dependencies are available, False otherwise
+
+    Implementation Notes:
+    - Checks for discord.py installation
+    - Provides detailed error logging
+    - Safe to call multiple times
+    """
     try:
         import discord
 
@@ -31,7 +74,74 @@ def validate_rich_presence_dependencies() -> bool:
 
 
 class RichPresenceManager:
-    """Manages Discord rich presence functionality"""
+    """
+    Professional Discord rich presence system with templates.
+
+    This is an open source component that can be used as a reference for
+    implementing rich presence management in any Discord bot project.
+
+    Key Features:
+    - Template-based presence updates
+    - Activity type management
+    - State persistence
+    - Elapsed time tracking
+    - Error handling
+    - Silent operation mode
+
+    Activity Types:
+    - playing: Standard game activity
+    - streaming: Streaming status
+    - listening: Audio content
+    - watching: Viewing content
+    - competing: Competition status
+
+    Templates Available:
+    1. Listening Template:
+       - Status: {emoji} {surah} ・ {playback_time}
+       - Details: Verse {verse} of {total}
+       - State: Recited by {reciter}
+
+    2. Reading Template:
+       - Status: Reading Quran
+       - Details: {surah} - Verse {verse}
+       - State: Translation by {translator}
+
+    3. Quiz Template:
+       - Status: Taking a Quiz
+       - Details: Score: {score}
+       - State: Rank: {rank}
+
+    Implementation Notes:
+    - Uses Discord's Activity system
+    - Implements template formatting
+    - Provides state persistence
+    - Handles connection issues
+    - Supports silent updates
+
+    Usage Example:
+    ```python
+    presence = RichPresenceManager(client, data_dir="data")
+
+    # Using a template
+    presence.update_presence_with_template(
+        "listening",
+        {
+            "surah": "Al-Fatiha",
+            "verse": "1",
+            "total": "7",
+            "reciter": "Example"
+        }
+    )
+
+    # Direct update
+    presence.update_presence(
+        status="Custom Status",
+        details="More Info",
+        state="Additional Details",
+        activity_type="playing"
+    )
+    ```
+    """
 
     ACTIVITY_TYPES = {
         "playing": discord.ActivityType.playing,

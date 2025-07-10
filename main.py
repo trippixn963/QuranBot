@@ -1,8 +1,19 @@
 # =============================================================================
-# QuranBot - Main Entry Point
+# QuranBot - Main Entry Point (Open Source Edition)
 # =============================================================================
-# Primary entry point for the QuranBot Discord application
-# Handles instance management, bot initialization, and graceful shutdown
+# This is an open source project provided AS-IS without official support.
+# Feel free to use, modify, and learn from this code under the license terms.
+#
+# Purpose:
+# - Primary entry point for the QuranBot Discord application
+# - Handles instance management, bot initialization, and graceful shutdown
+# - Demonstrates professional Discord bot architecture and best practices
+#
+# Key Features:
+# - Automatic instance detection and management
+# - Graceful shutdown and error handling
+# - Comprehensive logging and state management
+# - Process isolation and safety checks
 # =============================================================================
 
 import os
@@ -13,11 +24,13 @@ from pathlib import Path
 
 import psutil
 
-# Add src directory to Python path for imports
+# Configure Python path to allow imports from src/
+# This ensures consistent imports regardless of how the bot is launched
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root / "src"))
 
-# Import bot components
+# Import core bot components
+# The bot token should be configured in your environment variables
 from bot.main import DISCORD_TOKEN, bot
 from src.utils.tree_log import (
     log_critical_error,
@@ -31,11 +44,20 @@ from src.utils.tree_log import (
     log_user_interaction,
 )
 
-# Import version from centralized version module
+# Version information is centralized in version.py for consistency
 from src.version import BOT_NAME, BOT_VERSION
 
 # =============================================================================
 # Instance Detection and Management
+# =============================================================================
+# This section handles multiple bot instance detection and management.
+# It's crucial for preventing conflicts and ensuring clean bot operation.
+#
+# Key Capabilities:
+# - Detects other running QuranBot instances
+# - Automatically terminates conflicting instances
+# - Provides detailed logging of instance management
+# - Ensures only one bot instance runs per directory
 # =============================================================================
 
 
@@ -244,6 +266,21 @@ def stop_existing_instances(bot_processes):
 # =============================================================================
 # Bot Initialization and Startup
 # =============================================================================
+# This section manages the bot's lifecycle from startup to shutdown.
+#
+# Implementation Details:
+# - Initializes core bot systems and dependencies
+# - Handles Discord connection management
+# - Provides comprehensive error handling
+# - Manages graceful shutdowns (both user-triggered and automatic)
+# - Maintains state persistence across sessions
+#
+# Error Handling:
+# - Catches and logs all runtime errors
+# - Handles Discord-specific connection issues
+# - Provides detailed crash reports for debugging
+# - Ensures clean shutdown even during errors
+# =============================================================================
 
 
 def initialize_bot():
@@ -392,6 +429,21 @@ def initialize_bot():
 
 # =============================================================================
 # Main Entry Point
+# =============================================================================
+# Primary execution entry point for QuranBot
+#
+# Startup Flow:
+# 1. Initialize logging system with unique run ID
+# 2. Perform instance detection and conflict resolution
+# 3. Initialize bot systems and establish Discord connection
+# 4. Monitor for shutdown triggers or errors
+# 5. Perform graceful shutdown and cleanup
+#
+# Usage:
+# - Run directly: python main.py
+# - Environment Setup: Ensure DISCORD_TOKEN is set
+# - Dependencies: See requirements.txt for necessary packages
+# - Logs: Check logs/ directory for detailed operation logs
 # =============================================================================
 
 

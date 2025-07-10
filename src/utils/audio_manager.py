@@ -1,7 +1,32 @@
 # =============================================================================
-# QuranBot - Audio Manager
+# QuranBot - Audio Manager (Open Source Edition)
 # =============================================================================
-# Manages audio playback state and controls for integration with control panel
+# This is an open source project provided AS-IS without official support.
+# Feel free to use, modify, and learn from this code under the license terms.
+#
+# Purpose:
+# Advanced audio playback system for Discord voice channels with state management
+# and control panel integration. Handles Quranic audio with multiple reciters.
+#
+# Key Features:
+# - Multi-reciter support with dynamic discovery
+# - State persistence across bot restarts
+# - Precise playback position tracking
+# - Shuffle and loop functionality
+# - Control panel integration
+# - Rich presence updates
+#
+# Technical Implementation:
+# - Uses FFmpeg for audio processing
+# - Async/await for non-blocking operations
+# - Mutagen for MP3 metadata handling
+# - State persistence with JSON storage
+# - Event-driven architecture
+#
+# Required Dependencies:
+# - discord.py: Discord API wrapper
+# - mutagen: MP3 metadata reading
+# - FFmpeg: Audio processing (path configurable)
 # =============================================================================
 
 import asyncio
@@ -12,7 +37,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 import discord
-from mutagen.mp3 import MP3  # Add mutagen for getting MP3 duration
+from mutagen.mp3 import MP3  # For MP3 duration detection
 
 from .state_manager import state_manager
 from .surah_mapper import (
@@ -31,7 +56,39 @@ from .tree_log import (
 
 
 class AudioManager:
-    """Manages audio playback state and controls"""
+    """
+    Advanced audio playback manager for Discord voice channels.
+
+    This is an open source component that can be used as a reference for
+    implementing Discord audio playback systems with state management.
+
+    Key Features:
+    - Multi-reciter audio support with dynamic discovery
+    - Persistent playback state across bot restarts
+    - Precise position tracking and resumption
+    - Shuffle and loop mode support
+    - Integration with control panel and rich presence
+    - Comprehensive error handling and logging
+
+    Configuration:
+    - ffmpeg_path: Path to FFmpeg executable
+    - audio_base_folder: Root folder for audio files
+    - default_reciter: Default reciter name
+    - default_shuffle: Initial shuffle state
+    - default_loop: Initial loop state
+
+    Audio File Structure:
+    /audio_base_folder/
+        /reciter_name/
+            /surah_number.mp3
+
+    Implementation Notes:
+    - Uses FFmpeg for reliable audio processing
+    - Implements position tracking for accurate resumption
+    - Handles Discord voice state changes gracefully
+    - Provides comprehensive playback controls
+    - Maintains state persistence with JSON storage
+    """
 
     def __init__(
         self,

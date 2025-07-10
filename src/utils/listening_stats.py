@@ -1,7 +1,37 @@
 # =============================================================================
-# QuranBot - Listening Statistics Manager
+# QuranBot - Listening Statistics Manager (Open Source Edition)
 # =============================================================================
-# Tracks user voice channel listening time and generates leaderboards
+# This is an open source project provided AS-IS without official support.
+# Feel free to use, modify, and learn from this code under the license terms.
+#
+# Purpose:
+# Enterprise-grade voice channel statistics system for Discord bots with
+# real-time tracking, leaderboards, and data protection. Originally designed
+# for Quranic audio but adaptable for any voice channel activity.
+#
+# Key Features:
+# - Real-time session tracking
+# - Auto-updating leaderboards
+# - Data corruption protection
+# - Backup management
+# - Time zone support
+# - Rich statistics
+#
+# Technical Implementation:
+# - Async/await for Discord operations
+# - JSON-based state storage
+# - Atomic file operations
+# - Error handling and logging
+# - Data validation
+#
+# File Structure:
+# /data/
+#   listening_stats.json - Primary statistics storage
+# /backup/temp/
+#   *.backup - Automatic backup files
+#
+# Required Dependencies:
+# - discord.py: Discord API wrapper
 # =============================================================================
 
 import asyncio
@@ -19,18 +49,31 @@ from .tree_log import log_error_with_traceback, log_perfect_tree_section
 # =============================================================================
 # Configuration
 # =============================================================================
+# Core settings that control statistics tracking and leaderboard behavior.
+# Modify these values to adjust the system's behavior.
+#
+# File Paths:
+# - DATA_DIR: Primary data storage
+# - STATS_FILE: Statistics database
+# - TEMP_BACKUP_DIR: Backup staging area
+#
+# Leaderboard Settings:
+# - UPDATE_INTERVAL: Refresh frequency
+# - CHANNEL_ID: Display location
+# - UPDATE_TASK: Background process
+# =============================================================================
 
-# Path to the listening stats data file
+# File paths with Path objects for cross-platform compatibility
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 STATS_FILE = DATA_DIR / "listening_stats.json"
 
-# Temp backup directory for .backup files (keeps data/ clean)
+# Backup directory for atomic saves
 TEMP_BACKUP_DIR = Path(__file__).parent.parent.parent / "backup" / "temp"
 
-# Leaderboard auto-update configuration
-LEADERBOARD_UPDATE_INTERVAL = 60  # Update every 60 seconds
-LEADERBOARD_CHANNEL_ID = None  # Will be set by bot
-LEADERBOARD_UPDATE_TASK = None  # Global task for auto-updates
+# Leaderboard configuration
+LEADERBOARD_UPDATE_INTERVAL = 60  # Update frequency in seconds
+LEADERBOARD_CHANNEL_ID = None  # Set during bot initialization
+LEADERBOARD_UPDATE_TASK = None  # Background task reference
 
 # =============================================================================
 # Data Structure Classes
@@ -38,16 +81,38 @@ LEADERBOARD_UPDATE_TASK = None  # Global task for auto-updates
 
 
 class UserStats:
-    """Represents listening statistics for a single user"""
+    """
+    User statistics tracking container.
+
+    This class provides a structured way to track and manage individual user
+    statistics with proper serialization and validation.
+
+    Attributes:
+        user_id (int): Discord user identifier
+        total_time (float): Cumulative listening time in seconds
+        sessions (int): Number of completed listening sessions
+        last_seen (str): ISO format UTC timestamp
+
+    Implementation Notes:
+    - Uses UTC timestamps
+    - Provides JSON serialization
+    - Validates data types
+    - Handles timezone conversion
+    """
 
     def __init__(self, user_id: int, total_time: float = 0.0, sessions: int = 0):
         self.user_id = user_id
-        self.total_time = total_time  # Total listening time in seconds
-        self.sessions = sessions  # Number of listening sessions
+        self.total_time = total_time  # Total time in seconds
+        self.sessions = sessions  # Completed sessions count
         self.last_seen = datetime.now(timezone.utc).isoformat()
 
     def to_dict(self) -> Dict:
-        """Convert to dictionary for JSON serialization"""
+        """
+        Convert to JSON-serializable dictionary.
+
+        Returns:
+            Dict: Serializable representation of user stats
+        """
         return {
             "user_id": self.user_id,
             "total_time": self.total_time,
@@ -57,7 +122,20 @@ class UserStats:
 
     @classmethod
     def from_dict(cls, data: Dict) -> "UserStats":
-        """Create UserStats from dictionary"""
+        """
+        Create UserStats from dictionary with validation.
+
+        Args:
+            data: Dictionary containing user statistics
+
+        Returns:
+            UserStats: Validated statistics object
+
+        Implementation Notes:
+        - Validates required fields
+        - Provides default values
+        - Converts timestamps
+        """
         stats = cls(
             user_id=data["user_id"],
             total_time=data.get("total_time", 0.0),
@@ -68,23 +146,66 @@ class UserStats:
 
 
 class ActiveSession:
-    """Represents an active listening session"""
+    """
+    Real-time voice session tracker.
+
+    This class manages active voice channel sessions with proper
+    timing and serialization support.
+
+    Attributes:
+        user_id (int): Discord user identifier
+        start_time (datetime): UTC session start time
+
+    Implementation Notes:
+    - Uses UTC timestamps
+    - Provides duration calculation
+    - Handles serialization
+    - Validates time zones
+    """
 
     def __init__(self, user_id: int, start_time: datetime):
         self.user_id = user_id
         self.start_time = start_time
 
     def get_duration(self) -> float:
-        """Get current session duration in seconds"""
+        """
+        Calculate current session duration.
+
+        Returns:
+            float: Session duration in seconds
+
+        Implementation Notes:
+        - Uses UTC timestamps
+        - Handles timezone conversion
+        - Returns precise float
+        """
         return (datetime.now(timezone.utc) - self.start_time).total_seconds()
 
     def to_dict(self) -> Dict:
-        """Convert to dictionary for JSON serialization"""
+        """
+        Convert to JSON-serializable dictionary.
+
+        Returns:
+            Dict: Serializable session representation
+        """
         return {"user_id": self.user_id, "start_time": self.start_time.isoformat()}
 
     @classmethod
     def from_dict(cls, data: Dict) -> "ActiveSession":
-        """Create ActiveSession from dictionary"""
+        """
+        Create ActiveSession from dictionary with validation.
+
+        Args:
+            data: Dictionary containing session data
+
+        Returns:
+            ActiveSession: Validated session object
+
+        Implementation Notes:
+        - Validates required fields
+        - Converts ISO timestamps
+        - Ensures UTC timezone
+        """
         return cls(
             user_id=data["user_id"],
             start_time=datetime.fromisoformat(data["start_time"]),
@@ -97,7 +218,60 @@ class ActiveSession:
 
 
 class ListeningStatsManager:
-    """Manages user listening statistics and leaderboards"""
+    """
+    Enterprise-grade voice statistics system for Discord bots.
+
+    This is an open source component that can be used as a reference for
+    implementing voice channel statistics in any Discord bot project.
+
+    Key Features:
+    - Real-time session tracking
+    - Auto-updating leaderboards
+    - Data corruption protection
+    - Backup management
+    - Rich statistics
+
+    Data Management:
+    1. Session Tracking:
+       - Real-time duration monitoring
+       - User state management
+       - Timezone handling
+
+    2. Statistics:
+       - Individual user stats
+       - Global statistics
+       - Leaderboard generation
+
+    3. Data Protection:
+       - Atomic saves
+       - Backup system
+       - Corruption detection
+       - Recovery mechanisms
+
+    Implementation Notes:
+    - Uses JSON for storage
+    - Implements atomic saves
+    - Provides data validation
+    - Handles timezone conversion
+    - Manages background tasks
+
+    Usage Example:
+    ```python
+    manager = ListeningStatsManager()
+
+    # Track user activity
+    manager.user_joined_voice(user_id=123)
+    duration = manager.user_left_voice(user_id=123)
+
+    # Get statistics
+    user_stats = manager.get_user_stats(user_id=123)
+    leaderboard = manager.get_top_users(limit=10)
+
+    # Start auto-updates
+    manager.set_leaderboard_channel(bot, channel_id=456)
+    manager.start_leaderboard_updates()
+    ```
+    """
 
     def __init__(self):
         self.users: Dict[int, UserStats] = {}

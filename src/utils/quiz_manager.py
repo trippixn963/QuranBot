@@ -1,8 +1,42 @@
 #!/usr/bin/env python3
 # =============================================================================
-# QuranBot - Quiz Manager
+# QuranBot - Quiz Manager (Open Source Edition)
 # =============================================================================
-# Manages the Islamic quiz system that follows daily verses
+# This is an open source project provided AS-IS without official support.
+# Feel free to use, modify, and learn from this code under the license terms.
+#
+# Purpose:
+# Enterprise-grade quiz system for Discord bots with comprehensive validation,
+# scheduling, and state management. Originally designed for Islamic knowledge
+# quizzes but adaptable for any educational content.
+#
+# Key Features:
+# - Automated quiz scheduling
+# - Question pool management
+# - User score tracking
+# - Leaderboard system
+# - Anti-duplicate protection
+# - Comprehensive validation
+# - State persistence
+#
+# Technical Implementation:
+# - Async/await for non-blocking operations
+# - JSON-based state storage
+# - Discord UI components integration
+# - Timezone-aware scheduling
+# - Error handling and logging
+#
+# File Structure:
+# /data/
+#   quiz_data.json      - Question pool
+#   quiz_stats.json     - Usage statistics
+#   quiz_state.json     - Current state
+#   quiz_scores.json    - User scores
+#   recent_questions.json - Anti-duplicate tracking
+#
+# Required Dependencies:
+# - discord.py: Discord API wrapper
+# - pytz: Timezone handling
 # =============================================================================
 
 import asyncio
@@ -18,47 +52,120 @@ from discord.ui import Button, View
 
 from .tree_log import log_error_with_traceback, log_perfect_tree_section
 
-# Global scheduler task
+# Global scheduler task reference
 _quiz_scheduler_task = None
 
 # =============================================================================
 # Configuration
 # =============================================================================
+# Core settings that control quiz behavior and validation rules.
+# Modify these values to adjust the quiz system's behavior.
+#
+# File Paths:
+# - All data files stored in /data directory
+# - Separate files for different data types
+# - JSON format for easy manual editing
+#
+# Timing Settings:
+# - QUIZ_DELAY_MINUTES: Wait time after verse
+# - QUIZ_INTERVAL_HOURS: Time between quizzes
+# - Timezone-aware scheduling (UTC/EST)
+#
+# Question Pool Management:
+# - MAX_RECENT_QUESTIONS: Anti-duplicate buffer size
+# - MIN_DIFFICULTY: Minimum question complexity
+# - Configurable categories and difficulties
+# =============================================================================
 
-# Path to quiz data files
+# Data file paths with Path objects for cross-platform compatibility
 DATA_DIR = Path("data")
 QUIZ_DATA_FILE = DATA_DIR / "quiz_data.json"
 QUIZ_STATS_FILE = DATA_DIR / "quiz_stats.json"
 RECENT_QUESTIONS_FILE = DATA_DIR / "recent_questions.json"
 QUIZ_STATE_FILE = DATA_DIR / "quiz_state.json"
 
-# Quiz configuration
+# Quiz timing and frequency configuration
 QUIZ_DELAY_MINUTES = 1  # Delay after verse before quiz
 QUIZ_INTERVAL_HOURS = 3  # Hours between quizzes
-MAX_RECENT_QUESTIONS = 50  # Maximum number of questions to track as "recent"
-MIN_DIFFICULTY = 3  # Minimum difficulty for questions (1-5 scale)
+MAX_RECENT_QUESTIONS = 50  # Anti-duplicate buffer size
+MIN_DIFFICULTY = 3  # Minimum difficulty (1-5 scale)
 
-# Constants for validation
+# Validation constraints for question content
 MIN_QUESTION_LENGTH = 10
 MAX_QUESTION_LENGTH = 500
 MIN_OPTIONS = 2
 MAX_OPTIONS = 6
 MIN_OPTION_LENGTH = 1
 MAX_OPTION_LENGTH = 200
+
+# Valid categories and difficulty levels
 VALID_DIFFICULTIES = {"easy", "medium", "hard"}
 VALID_CATEGORIES = {
-    "general",
-    "surah_names",
-    "verse_meanings",
-    "prophets",
-    "history",
-    "rules",
-    "vocabulary",
+    "general",  # General Islamic knowledge
+    "surah_names",  # Names and attributes of surahs
+    "verse_meanings",  # Understanding verse contexts
+    "prophets",  # Stories of the prophets
+    "history",  # Islamic history
+    "rules",  # Islamic rules and guidelines
+    "vocabulary",  # Arabic vocabulary
 }
 
 
 class QuizManager:
-    """Manages Quran-related quiz functionality with comprehensive validation"""
+    """
+    Enterprise-grade quiz system for Discord bots.
+
+    This is an open source component that can be used as a reference for
+    implementing educational quiz systems in Discord bots.
+
+    Key Features:
+    - Question pool management with validation
+    - User score tracking and leaderboards
+    - Scheduled quiz delivery
+    - Anti-duplicate protection
+    - State persistence
+    - Comprehensive error handling
+
+    Data Management:
+    1. Questions:
+       - Validated content and structure
+       - Categorized by topic and difficulty
+       - Anti-duplicate tracking
+
+    2. User Data:
+       - Score tracking
+       - Performance statistics
+       - Participation history
+
+    3. System State:
+       - Quiz schedule tracking
+       - Runtime statistics
+       - Configuration state
+
+    Implementation Notes:
+    - Uses JSON for data storage
+    - Implements atomic saves
+    - Provides data validation
+    - Handles timezone conversion
+    - Supports custom scheduling
+
+    Usage Example:
+    ```python
+    quiz_manager = QuizManager(data_dir="data")
+
+    # Add a question
+    success, error = quiz_manager.add_question(
+        question="What is the first surah?",
+        options=["Al-Fatiha", "Al-Baqarah", "Al-Ikhlas"],
+        correct_answer=0,
+        difficulty="easy",
+        category="general"
+    )
+
+    # Schedule quizzes
+    start_quiz_scheduler(bot, channel_id)
+    ```
+    """
 
     def __init__(self, data_dir: Union[str, Path]):
         """Initialize the quiz manager"""
@@ -513,6 +620,8 @@ class QuizManager:
                     quiz_data = json.load(f)
                     if "questions" in quiz_data:
                         self.questions = quiz_data["questions"]
+                        # Clean up corrupted questions after loading
+                        self._clean_corrupted_questions()
 
             # Then load user scores, timing, and recent questions from state file
             if self.state_file.exists():
@@ -562,6 +671,102 @@ class QuizManager:
         except Exception as e:
             log_error_with_traceback("Error loading quiz state", e)
             return False
+
+    def _clean_corrupted_questions(self) -> None:
+        """Remove corrupted questions that are missing required fields"""
+        try:
+            original_count = len(self.questions)
+            valid_questions = []
+            corrupted_count = 0
+
+            required_fields = ["question", "options", "difficulty", "category"]
+
+            for i, question in enumerate(self.questions):
+                try:
+                    # Check if question is a dictionary
+                    if not isinstance(question, dict):
+                        corrupted_count += 1
+                        log_error_with_traceback(
+                            f"Question {i} is not a dictionary: {type(question).__name__}",
+                            None,
+                        )
+                        continue
+
+                    # Check for required fields
+                    missing_fields = [
+                        field for field in required_fields if field not in question
+                    ]
+                    if missing_fields:
+                        corrupted_count += 1
+                        log_error_with_traceback(
+                            f"Question {i} missing required fields: {missing_fields}",
+                            None,
+                            {
+                                "question_data": str(question)[:200],
+                                "missing_fields": missing_fields,
+                            },
+                        )
+                        continue
+
+                    # Validate options field
+                    if (
+                        not isinstance(question["options"], list)
+                        or len(question["options"]) == 0
+                    ):
+                        corrupted_count += 1
+                        log_error_with_traceback(
+                            f"Question {i} has invalid options field",
+                            None,
+                            {
+                                "question_data": str(question)[:200],
+                                "options_type": type(
+                                    question.get("options", None)
+                                ).__name__,
+                                "options_value": str(question.get("options", None))[
+                                    :100
+                                ],
+                            },
+                        )
+                        continue
+
+                    # Question is valid
+                    valid_questions.append(question)
+
+                except Exception as e:
+                    corrupted_count += 1
+                    log_error_with_traceback(f"Error validating question {i}", e)
+                    continue
+
+            # Update questions list
+            self.questions = valid_questions
+
+            # Log cleanup results
+            if corrupted_count > 0:
+                log_perfect_tree_section(
+                    "Quiz Data Cleanup",
+                    [
+                        ("original_questions", original_count),
+                        ("corrupted_removed", corrupted_count),
+                        ("valid_questions", len(valid_questions)),
+                        ("status", "🧹 Corrupted questions removed"),
+                    ],
+                    "🧹",
+                )
+
+                # Save cleaned data
+                self.save_state()
+            else:
+                log_perfect_tree_section(
+                    "Quiz Data Validation",
+                    [
+                        ("total_questions", len(self.questions)),
+                        ("status", "✅ All questions valid"),
+                    ],
+                    "✅",
+                )
+
+        except Exception as e:
+            log_error_with_traceback("Error cleaning corrupted questions", e)
 
     def get_interval_hours(self) -> float:
         """Get the current question interval in hours from config"""
@@ -720,6 +925,48 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
             # Get new question
             question = quiz_manager.get_random_question()
             if question:
+                # Validate question data before processing
+                if not isinstance(question, dict):
+                    log_error_with_traceback(
+                        "Invalid question format: not a dictionary", None
+                    )
+                    return
+
+                # Check for required fields
+                required_fields = ["question", "options", "difficulty", "category"]
+                missing_fields = [
+                    field for field in required_fields if field not in question
+                ]
+
+                if missing_fields:
+                    log_error_with_traceback(
+                        f"Question missing required fields: {missing_fields}",
+                        None,
+                        {
+                            "question_data": str(question)[:200],
+                            "missing_fields": missing_fields,
+                        },
+                    )
+                    return
+
+                # Validate options field specifically
+                if (
+                    not isinstance(question["options"], list)
+                    or len(question["options"]) == 0
+                ):
+                    log_error_with_traceback(
+                        "Question has invalid or empty options field",
+                        None,
+                        {
+                            "question_data": str(question)[:200],
+                            "options_type": type(
+                                question.get("options", None)
+                            ).__name__,
+                            "options_value": str(question.get("options", None))[:100],
+                        },
+                    )
+                    return
+
                 # Get channel
                 channel = bot.get_channel(channel_id)
                 if channel:
