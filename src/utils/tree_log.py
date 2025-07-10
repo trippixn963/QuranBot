@@ -27,11 +27,7 @@
 #
 # Log Structure:
 # /logs/
-#   /YYYY-MM-DD/
-#     general.log    - Main log file
-#     errors.log     - Error-specific logs
-#     activity.log   - User activity tracking
-#     discord.log    - Discord-specific events
+#   YYYY-MM-DD.log    - Single daily log file (all events)
 #
 # Required Dependencies:
 # - pytz: Timezone handling
@@ -128,10 +124,10 @@ class TreeLogger:
         self.current_datetime_iso = self._get_current_datetime_iso()
 
     def _setup_log_directories(self):
-        """Create log directory structure for today."""
+        """Create simple log directory structure for single daily log files."""
         try:
-            log_date = self._get_log_date()
-            log_dir = Path(f"logs/{log_date}")
+            # Simple logs directory - no date subdirectories
+            log_dir = Path("logs")
             log_dir.mkdir(parents=True, exist_ok=True)
             return log_dir
         except Exception as e:
@@ -836,3 +832,139 @@ class TreeLogger:
             action_line = f"└─ action: {action_description}"
             print(f"{timestamp} {action_line}")
             self._write_to_log_files(action_line, "ERROR", "user_interaction")
+
+    def _write_to_log_files(self, message: str, level: str, category: str) -> None:
+        """
+        Write log message to a single log file per day.
+
+        This method consolidates all logging into one file per day as requested,
+        eliminating the multiple log files that were causing confusion.
+
+        Args:
+            message: The log message to write
+            level: Log level (INFO, ERROR, WARNING, etc.)
+            category: Category of the log (for context, but not used for file separation)
+        """
+        try:
+            if not self.log_dir:
+                return
+
+            # Single log file per day - exactly what the user requested
+            log_file = self.log_dir / f"{self._get_log_date()}.log"
+
+            # Create timestamp for the log entry
+            timestamp = self._get_timestamp()
+
+            # Format the log entry with level and category for context
+            if message.strip():  # Only add level/category info for non-empty messages
+                log_entry = f"{timestamp} [{level}] {message}\n"
+            else:
+                log_entry = "\n"  # Just a blank line for spacing
+
+            # Write to the single log file
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.write(log_entry)
+                f.flush()  # Ensure immediate write
+
+        except Exception as e:
+            # Fallback to console if file writing fails
+            print(f"LOG_ERROR: Failed to write to log file: {e}")
+
+
+# =============================================================================
+# Global Logger Instance and Standalone Functions
+# =============================================================================
+# Create a global logger instance for use throughout the application.
+# This provides both class-based and function-based interfaces.
+#
+# The standalone functions are provided for backward compatibility and
+# convenience, allowing direct imports without instantiating the logger.
+# =============================================================================
+
+# Global logger instance
+_global_logger = TreeLogger()
+
+
+# Standalone functions for backward compatibility and convenience
+def log_perfect_tree_section(title, items, emoji="🎯", nested_groups=None):
+    """Standalone function for logging perfect tree sections."""
+    _global_logger.log_perfect_tree_section(title, items, emoji, nested_groups)
+
+
+def log_error_with_traceback(message, exception=None, level="ERROR"):
+    """Standalone function for logging errors with tracebacks."""
+    _global_logger.log_error_with_traceback(message, exception, level)
+
+
+def log_critical_error(message, exception=None):
+    """Standalone function for logging critical errors."""
+    _global_logger.log_critical_error(message, exception)
+
+
+def log_warning_with_context(message, context=None):
+    """Standalone function for logging warnings with context."""
+    _global_logger.log_warning_with_context(message, context)
+
+
+def log_async_error(function_name, exception, additional_context=None):
+    """Standalone function for logging async errors."""
+    _global_logger.log_async_error(function_name, exception, additional_context)
+
+
+def log_discord_error(event_name, exception, guild_id=None, channel_id=None):
+    """Standalone function for logging Discord errors."""
+    _global_logger.log_discord_error(event_name, exception, guild_id, channel_id)
+
+
+def log_spacing():
+    """Standalone function for adding spacing."""
+    _global_logger.log_spacing()
+
+
+def log_status(message, status="INFO", emoji="📍"):
+    """Standalone function for logging status messages."""
+    _global_logger.log_status(message, status, emoji)
+
+
+def log_progress(current, total, emoji="🎶"):
+    """Standalone function for logging progress."""
+    _global_logger.log_progress(current, total, emoji)
+
+
+def log_user_interaction(
+    interaction_type, user_name, user_id, action_description, details=None
+):
+    """Standalone function for logging user interactions."""
+    _global_logger.log_user_interaction(
+        interaction_type, user_name, user_id, action_description, details
+    )
+
+
+def log_voice_activity_tree(user_name, activity_type, details):
+    """Standalone function for logging voice activity."""
+    _global_logger.log_voice_activity_tree(user_name, activity_type, details)
+
+
+def log_run_separator():
+    """Standalone function for logging run separators."""
+    _global_logger.log_run_separator()
+
+
+def log_run_header(bot_name, version, run_id=None):
+    """Standalone function for logging run headers."""
+    return _global_logger.log_run_header(bot_name, version, run_id)
+
+
+def log_run_end(run_id, reason="Normal shutdown"):
+    """Standalone function for logging run ends."""
+    _global_logger.log_run_end(run_id, reason)
+
+
+def write_to_log_files(message: str, level: str, category: str) -> None:
+    """
+    Standalone function for writing to log files.
+
+    This is the main function used throughout the codebase for logging.
+    Now consolidates all logs into a single file per day.
+    """
+    _global_logger._write_to_log_files(message, level, category)
