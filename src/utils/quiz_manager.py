@@ -679,8 +679,14 @@ class QuizManager:
             valid_questions = []
             corrupted_count = 0
 
-            # Required fields for both formats
-            base_required_fields = ["question", "difficulty", "category"]
+            # Required fields for complex format only
+            required_fields = [
+                "question",
+                "choices",
+                "correct_answer",
+                "difficulty",
+                "category",
+            ]
 
             for i, question in enumerate(self.questions):
                 try:
@@ -693,9 +699,9 @@ class QuizManager:
                         )
                         continue
 
-                    # Check for base required fields
+                    # Check for required fields
                     missing_fields = [
-                        field for field in base_required_fields if field not in question
+                        field for field in required_fields if field not in question
                     ]
                     if missing_fields:
                         corrupted_count += 1
@@ -709,75 +715,23 @@ class QuizManager:
                         )
                         continue
 
-                    # Check for either 'options' (simple format) or 'choices' (complex format)
-                    has_options = "options" in question
-                    has_choices = "choices" in question
-
-                    if not has_options and not has_choices:
+                    # Validate choices field (complex format only)
+                    if (
+                        not isinstance(question["choices"], dict)
+                        or len(question["choices"]) == 0
+                    ):
                         corrupted_count += 1
                         log_error_with_traceback(
-                            f"Question {i} missing both 'options' and 'choices' fields",
+                            f"Question {i} has invalid choices field",
                             None,
                             {
                                 "question_data": str(question)[:200],
-                                "available_fields": list(question.keys()),
-                            },
-                        )
-                        continue
-
-                    # Validate options field (simple format)
-                    if has_options:
-                        if (
-                            not isinstance(question["options"], list)
-                            or len(question["options"]) == 0
-                        ):
-                            corrupted_count += 1
-                            log_error_with_traceback(
-                                f"Question {i} has invalid options field",
-                                None,
-                                {
-                                    "question_data": str(question)[:200],
-                                    "options_type": type(
-                                        question.get("options", None)
-                                    ).__name__,
-                                    "options_value": str(question.get("options", None))[
-                                        :100
-                                    ],
-                                },
-                            )
-                            continue
-
-                    # Validate choices field (complex format)
-                    if has_choices:
-                        if (
-                            not isinstance(question["choices"], dict)
-                            or len(question["choices"]) == 0
-                        ):
-                            corrupted_count += 1
-                            log_error_with_traceback(
-                                f"Question {i} has invalid choices field",
-                                None,
-                                {
-                                    "question_data": str(question)[:200],
-                                    "choices_type": type(
-                                        question.get("choices", None)
-                                    ).__name__,
-                                    "choices_value": str(question.get("choices", None))[
-                                        :100
-                                    ],
-                                },
-                            )
-                            continue
-
-                    # Check for correct_answer field
-                    if "correct_answer" not in question:
-                        corrupted_count += 1
-                        log_error_with_traceback(
-                            f"Question {i} missing 'correct_answer' field",
-                            None,
-                            {
-                                "question_data": str(question)[:200],
-                                "available_fields": list(question.keys()),
+                                "choices_type": type(
+                                    question.get("choices", None)
+                                ).__name__,
+                                "choices_value": str(question.get("choices", None))[
+                                    :100
+                                ],
                             },
                         )
                         continue
