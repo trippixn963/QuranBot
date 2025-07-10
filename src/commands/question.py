@@ -89,8 +89,8 @@ class QuizView(discord.ui.View):
                 await asyncio.sleep(1)
                 self.remaining_time -= 1
 
-                # Log every 10 seconds for debugging
-                if self.remaining_time % 10 == 0:
+                # Update every 5 seconds for smoother progress bar
+                if self.remaining_time % 5 == 0:
                     elapsed = (
                         datetime.now(timezone.utc) - self.start_time
                     ).total_seconds()
@@ -103,6 +103,10 @@ class QuizView(discord.ui.View):
                         ],
                         "⏱️",
                     )
+                    await self.update_question_embed(update_timer=True)
+
+                # Time warnings at specific intervals
+                elif self.remaining_time in [30, 20, 10, 5]:
                     await self.update_question_embed(update_timer=True)
 
             # Time's up - trigger timeout
@@ -185,12 +189,47 @@ class QuizView(discord.ui.View):
         # Only update timer display if explicitly requested (from timer countdown)
         if update_timer:
             remaining_time = self.remaining_time
+
+            # Create visual progress bar
+            total_time = 60
+            progress_percentage = remaining_time / total_time
+            bar_length = 20
+            filled_length = int(bar_length * progress_percentage)
+            empty_length = bar_length - filled_length
+
+            # Different progress bar styles based on remaining time
+            if remaining_time > 30:
+                # Green progress bar (more than 30 seconds)
+                progress_bar = "🟩" * filled_length + "⬜" * empty_length
+                timer_emoji = "⏰"
+            elif remaining_time > 10:
+                # Yellow progress bar (10-30 seconds)
+                progress_bar = "🟨" * filled_length + "⬜" * empty_length
+                timer_emoji = "⏰"
+            else:
+                # Red progress bar (less than 10 seconds)
+                progress_bar = "🟥" * filled_length + "⬜" * empty_length
+                timer_emoji = "⚠️"
+
+            # Time warning messages
+            if remaining_time == 30:
+                warning_text = f"\n⏰ **30 seconds remaining**"
+            elif remaining_time == 20:
+                warning_text = f"\n⏰ **20 seconds remaining**"
+            elif remaining_time == 10:
+                warning_text = f"\n⚠️ **10 seconds left!**"
+            elif remaining_time == 5:
+                warning_text = f"\n🚨 **5 seconds left!**"
+            else:
+                warning_text = ""
+
+            # Update timer field
             for i, field in enumerate(embed.fields):
                 if "You have" in field.name and "seconds" in field.name:
                     embed.set_field_at(
                         i,
-                        name=f"⏰ You have {remaining_time} seconds to answer",
-                        value="",
+                        name=f"{timer_emoji} You have {remaining_time} seconds to answer",
+                        value=f"{progress_bar}{warning_text}",
                         inline=False,
                     )
                     break
@@ -840,10 +879,11 @@ async def question_slash_command(interaction: discord.Interaction):
             inline=False,
         )
 
-        # Add timer with clock emoji
+        # Add timer with clock emoji and initial progress bar
+        initial_progress_bar = "🟩" * 20  # Full green bar at start
         embed.add_field(
             name="⏰ You have 60 seconds to answer",
-            value="",
+            value=initial_progress_bar,
             inline=False,
         )
 
