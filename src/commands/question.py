@@ -978,7 +978,8 @@ async def question_slash_command(interaction: discord.Interaction):
                 admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
                 if admin_user and admin_user.avatar:
                     embed.set_footer(
-                        text="Created by حَـــــنَـــــا", icon_url=admin_user.avatar.url
+                        text="Created by حَـــــنَـــــا",
+                        icon_url=admin_user.avatar.url,
                     )
                 else:
                     embed.set_footer(text="Created by حَـــــنَـــــا")
