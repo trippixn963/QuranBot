@@ -11,7 +11,7 @@ QuranBot uses a **centralized version and author management system** to ensure c
 All version and author information is centralized in `src/version.py`:
 
 ```python
-__version__ = "2.0.0"
+__version__ = "3.5.0"
 __author__ = "John (Discord: Trippixn)"
 BOT_NAME = "QuranBot"
 ```
@@ -37,13 +37,13 @@ The update tool provides comprehensive management:
 
 ```bash
 # Update version only
-python tools/update_version.py 2.1.0
+python tools/update_version.py 3.6.0
 
 # Update author only
 python tools/update_version.py --author "John (Discord: Trippixn)"
 
 # Update both version and author
-python tools/update_version.py 2.1.0 --author "John Smith"
+python tools/update_version.py 3.6.0 --author "John Smith"
 
 # Verify consistency
 python tools/update_version.py --verify-only
@@ -62,7 +62,7 @@ python tools/update_version.py --verify-only
 1. **Update Version:**
 
    ```bash
-   python tools/update_version.py 2.1.0
+   python tools/update_version.py 3.6.0
    ```
 
 2. **Verify Changes:**
@@ -80,8 +80,8 @@ python tools/update_version.py --verify-only
 4. **Commit and Deploy:**
    ```bash
    git add .
-   git commit -m "Bump version to 2.1.0"
-   git push origin main
+   git commit -m "Bump version to 3.6.0"
+   git push origin master
    ```
 
 ### Author Updates
@@ -136,7 +136,7 @@ main.py                   # Imports BOT_VERSION, BOT_NAME
 from src.version import __version__, __author__, BOT_NAME
 
 print(f"{BOT_NAME} v{__version__} by {__author__}")
-# Output: QuranBot v2.0.0 by John (Discord: Trippixn)
+# Output: QuranBot v3.5.0 by John (Discord: Trippixn)
 ```
 
 ## Benefits
@@ -193,7 +193,7 @@ If versions or authors are inconsistent:
 
 2. **Force Update:**
    ```bash
-   python tools/update_version.py 2.0.0 --author "John (Discord: Trippixn)"
+   python tools/update_version.py 3.5.0 --author "John (Discord: Trippixn)"
    ```
 
 ## Migration Notes
@@ -214,6 +214,7 @@ If versions or authors are inconsistent:
 - 🔧 Automated update tool handles all changes
 - ✅ Comprehensive verification ensures consistency
 - 📦 Professional version management system active
+- 🚀 Current version: v3.5.0 with admin answer key system
 
 ## Best Practices
 

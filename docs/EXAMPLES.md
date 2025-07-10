@@ -1,6 +1,6 @@
 # 📚 QuranBot Examples & Use Cases
 
-This document provides comprehensive examples, code snippets, and real-world use cases for QuranBot.
+This document provides comprehensive examples, code snippets, and real-world use cases for QuranBot v3.5.0.
 
 ## 🚀 Quick Start Examples
 
@@ -16,7 +16,7 @@ pip install -r requirements.txt
 
 # Configure environment
 cp config/.env.example config/.env
-# Edit config/.env with your Discord token
+# Edit config/.env with your Discord settings
 
 # Run the bot
 python main.py
@@ -27,12 +27,19 @@ python main.py
 ```env
 # config/.env
 DISCORD_TOKEN=your_discord_bot_token_here
-FFMPEG_PATH=/usr/local/bin/ffmpeg
+ADMIN_USER_ID=123456789012345678
+TARGET_CHANNEL_ID=123456789012345678
+PANEL_CHANNEL_ID=123456789012345678
+LOGS_CHANNEL_ID=123456789012345678
+DAILY_VERSE_CHANNEL_ID=123456789012345678
+DEVELOPER_ID=123456789012345678
+GUILD_ID=123456789012345678
+PANEL_ACCESS_ROLE_ID=123456789012345678
+FFMPEG_PATH=/opt/homebrew/bin/ffmpeg
 DEFAULT_RECITER=Saad Al Ghamdi
 DEFAULT_LOOP=true
 DEFAULT_SHUFFLE=false
-LOG_LEVEL=INFO
-BACKUP_INTERVAL=3600
+QUIZ_TIMEOUT=60
 ```
 
 ## 🎵 Audio Management Examples
@@ -205,44 +212,209 @@ def analyze_daily_logs(date_str):
 
 ## 🎯 Advanced Integration Examples
 
-### 1. Discord Bot Integration
+### 1. Admin Answer Key System
 
 ```python
-# Example: Full Discord bot integration
+# Example: Admin answer key implementation
 import discord
 from discord.ext import commands
-from utils.audio_manager import AudioManager
+import os
 
-class QuranBot(commands.Bot):
-    def __init__(self):
-        intents = discord.Intents.default()
-        intents.message_content = True
-        intents.voice_states = True
+class QuizSystem:
+    def __init__(self, bot):
+        self.bot = bot
+        self.admin_user_id = int(os.getenv('ADMIN_USER_ID', '0'))
 
-        super().__init__(command_prefix='!', intents=intents)
-        self.audio_manager = AudioManager()
+    async def send_admin_answer_key(self, question_data):
+        """Send correct answer to admin via DM"""
+        if self.admin_user_id == 0:
+            return
+        
+        try:
+            admin_user = await self.bot.fetch_user(self.admin_user_id)
+            correct_answer = question_data['correct_answer']
+            
+            embed = discord.Embed(
+                title="🔑 Admin Answer Key",
+                description=f"**Correct Answer:** {correct_answer}",
+                color=0x00ff00
+            )
+            embed.add_field(
+                name="Question",
+                value=question_data['question'],
+                inline=False
+            )
+            
+            await admin_user.send(embed=embed)
+            
+        except Exception as e:
+            print(f"Failed to send admin answer key: {e}")
 
-    async def on_ready(self):
-        print(f'{self.user} is ready!')
-        await self.audio_manager.initialize()
+    async def post_quiz_question(self, channel, question_data):
+        """Post quiz question and send admin answer key"""
+        # Send admin answer key first
+        await self.send_admin_answer_key(question_data)
+        
+        # Then post public question
+        embed = discord.Embed(
+            title="📚 Quiz Question",
+            description=question_data['question'],
+            color=0x0099ff
+        )
+        
+        # Add choices
+        for i, choice in enumerate(question_data['choices'], 1):
+            embed.add_field(
+                name=f"Choice {i}",
+                value=choice,
+                inline=False
+            )
+        
+        await channel.send(embed=embed)
+```
 
-    @commands.command(name='play')
-    async def play_surah(self, ctx, surah_number: int):
-        """Play a specific surah"""
-        if 1 <= surah_number <= 114:
-            await self.audio_manager.play_surah(surah_number)
-            await ctx.send(f"Playing Surah {surah_number}")
+### 2. Enhanced Quiz System with Progress Bar
+
+```python
+# Example: Visual progress bar implementation
+import discord
+import asyncio
+from datetime import datetime, timedelta
+
+class VisualQuizTimer:
+    def __init__(self, timeout_seconds=60):
+        self.timeout_seconds = timeout_seconds
+        self.blocks = 20
+        
+    def create_progress_bar(self, remaining_seconds):
+        """Create visual progress bar with color coding"""
+        progress = remaining_seconds / self.timeout_seconds
+        filled_blocks = int(progress * self.blocks)
+        
+        # Color coding based on remaining time
+        if remaining_seconds > 30:
+            block_emoji = "🟩"  # Green
+        elif remaining_seconds > 10:
+            block_emoji = "🟨"  # Yellow
         else:
-            await ctx.send("Invalid surah number (1-114)")
+            block_emoji = "🟥"  # Red
+            
+        empty_emoji = "⬜"
+        
+        bar = block_emoji * filled_blocks + empty_emoji * (self.blocks - filled_blocks)
+        return f"⏱️ {bar} {remaining_seconds}s"
+    
+    async def update_quiz_timer(self, message, question_embed):
+        """Update quiz timer with visual progress"""
+        for remaining in range(self.timeout_seconds, 0, -5):
+            # Update progress bar
+            progress_bar = self.create_progress_bar(remaining)
+            
+            # Update embed
+            updated_embed = question_embed.copy()
+            updated_embed.add_field(
+                name="⏰ Time Remaining",
+                value=progress_bar,
+                inline=False
+            )
+            
+            # Add time warnings
+            if remaining == 30:
+                updated_embed.add_field(
+                    name="⏰ Warning",
+                    value="30 seconds remaining",
+                    inline=False
+                )
+            elif remaining == 10:
+                updated_embed.add_field(
+                    name="⚠️ Warning",
+                    value="10 seconds left!",
+                    inline=False
+                )
+            elif remaining == 5:
+                updated_embed.add_field(
+                    name="🚨 Final Warning",
+                    value="5 seconds left!",
+                    inline=False
+                )
+            
+            await message.edit(embed=updated_embed)
+            await asyncio.sleep(5)
+```
 
-    @commands.command(name='reciter')
-    async def change_reciter(self, ctx, *, reciter_name: str):
-        """Change the current reciter"""
-        success = self.audio_manager.change_reciter(reciter_name)
-        if success:
-            await ctx.send(f"Changed reciter to {reciter_name}")
+### 3. Paginated Leaderboard System
+
+```python
+# Example: Paginated leaderboard implementation
+import discord
+from discord.ext import commands
+
+class LeaderboardView(discord.ui.View):
+    def __init__(self, bot, leaderboard_data, user_id):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.leaderboard_data = leaderboard_data
+        self.user_id = user_id
+        self.current_page = 0
+        self.items_per_page = 5
+        self.total_pages = (len(leaderboard_data) + self.items_per_page - 1) // self.items_per_page
+        
+    async def create_embed(self, page=0):
+        """Create leaderboard embed for specific page"""
+        start_idx = page * self.items_per_page
+        end_idx = start_idx + self.items_per_page
+        page_data = self.leaderboard_data[start_idx:end_idx]
+        
+        embed = discord.Embed(
+            title="🏆 Quiz Leaderboard",
+            color=0xffd700
+        )
+        
+        # Add bot thumbnail
+        if self.bot.user.avatar:
+            embed.set_thumbnail(url=self.bot.user.avatar.url)
+        
+        # Add leaderboard entries
+        for i, entry in enumerate(page_data):
+            rank = start_idx + i + 1
+            medal = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉" if rank == 3 else f"{rank}."
+            
+            embed.add_field(
+                name=f"{medal} {entry['username']}",
+                value=f"Points: {entry['points']} | Streak: {entry['streak']}",
+                inline=False
+            )
+        
+        # Add page footer
+        embed.set_footer(text=f"Page {page + 1} of {self.total_pages}")
+        
+        return embed
+    
+    @discord.ui.button(label="⬅️", style=discord.ButtonStyle.primary)
+    async def previous_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("You can't control this leaderboard!", ephemeral=True)
+            return
+            
+        if self.current_page > 0:
+            self.current_page -= 1
+            embed = await self.create_embed(self.current_page)
+            await interaction.response.edit_message(embed=embed, view=self)
         else:
-            await ctx.send("Reciter not found")
+            await interaction.response.defer()
+    
+    @discord.ui.button(label="➡️", style=discord.ButtonStyle.primary)
+    async def next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("You can't control this leaderboard!", ephemeral=True)
+            return
+            
+        if self.current_page < self.total_pages - 1:
+            self.current_page += 1
+            embed = await self.create_embed(self.current_page)
+            await interaction.response.edit_message(embed=embed, view=self)
+        else:
+            await interaction.response.defer()
 ```
 
 ### 2. Web Dashboard Integration

@@ -1,6 +1,6 @@
 # 🌟 QuranBot Feature Showcase
 
-Welcome to the comprehensive feature showcase for QuranBot! This document provides detailed demonstrations of all features with screenshots, examples, and use cases.
+Welcome to the comprehensive feature showcase for QuranBot v3.5.0! This document provides detailed demonstrations of all features with screenshots, examples, and use cases.
 
 ## 🎵 Audio Streaming Features
 
@@ -398,40 +398,157 @@ Comprehensive analytics for community engagement.
 └─ engagement_score: 8.7/10
 ```
 
+## 🎯 New Features in v3.5.0
+
+### 🔑 Admin Answer Key System
+
+Revolutionary admin support system for quiz moderation.
+
+**Admin Features:**
+
+- 🔐 **Private DM System**: Admin receives correct answers before quiz starts
+- 🎯 **Moderation Support**: Admin can participate while knowing answers
+- ⚙️ **Environment Configuration**: Configurable via `ADMIN_USER_ID`
+- 🔒 **Secure Delivery**: Private answer delivery without affecting public quiz
+
+**Admin DM Example:**
+
+```
+🔑 Admin Answer Key
+
+Question: Which surah is known as "The Opening"?
+Correct Answer: Al-Fatiha
+
+This message is private - only you can see it.
+The public quiz is now starting!
+```
+
+### 🎨 Enhanced Quiz System
+
+Visual progress bars and time warnings for better user experience.
+
+**Visual Features:**
+
+- 📊 **20-Block Progress Bar**: Visual countdown with color coding
+- 🟩 **Green Blocks**: More than 30 seconds remaining
+- 🟨 **Yellow Blocks**: 10-30 seconds remaining  
+- 🟥 **Red Blocks**: Less than 10 seconds remaining
+- ⏰ **Time Warnings**: Automatic warnings at 30s, 20s, 10s, 5s
+
+**Progress Bar Demo:**
+
+```
+⏱️ 🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜ 45s
+
+⏱️ 🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 25s
+⏰ 30 seconds remaining
+
+⏱️ 🟥🟥🟥🟥⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 8s
+🚨 5 seconds left!
+```
+
+### 🏆 Paginated Leaderboard
+
+Advanced leaderboard system with navigation and enhanced visuals.
+
+**Leaderboard Features:**
+
+- 📄 **Pagination**: Shows 5 users per page across 6 pages
+- ⬅️➡️ **Navigation**: Left/right arrow buttons
+- 🥇🥈🥉 **Medal System**: Top 3 positions highlighted
+- 👤 **User Control**: Only command user can navigate
+- ⏱️ **5-Minute Timeout**: Automatic button deactivation
+- 🖼️ **Visual Enhancement**: Bot thumbnail and admin footer
+
+**Leaderboard Example:**
+
+```
+🏆 Quiz Leaderboard
+
+🥇 Ahmed
+Points: 45 | Streak: 8 | Listening: 2h 15m
+
+🥈 Fatima  
+Points: 38 | Streak: 5 | Listening: 1h 45m
+
+🥉 Omar
+Points: 32 | Streak: 3 | Listening: 3h 20m
+
+4. Aisha
+Points: 28 | Streak: 2 | Listening: 1h 10m
+
+5. Hassan
+Points: 25 | Streak: 4 | Listening: 2h 30m
+
+[⬅️ Previous] [➡️ Next]
+Page 1 of 6
+```
+
+### 📖 Enhanced Verse System
+
+Comprehensive reaction monitoring and user interaction tracking.
+
+**Verse Features:**
+
+- 🤲 **Authorized Reactions**: Tracks dua reactions (🤲) 
+- 🚫 **Unauthorized Cleanup**: Automatically removes unauthorized reactions
+- 📝 **Interaction Logging**: Detailed logging of all reactions
+- 🕐 **EST Timestamps**: Readable timestamps for all interactions
+- 👤 **Username Display**: Shows actual usernames in logs
+
+**Verse Reaction Log:**
+
+```
+[01/10 11:30 AM EST] 📖 Verse Reaction Monitoring
+├─ user: Ahmed (123456789) - 🤲 Authorized dua reaction
+├─ verse: Daily Verse - Surah Al-Fatiha
+├─ action: ✅ Reaction allowed
+└─ status: Logged authorized interaction
+
+[01/10 11:31 AM EST] 📖 Verse Reaction Monitoring  
+├─ user: BadUser (987654321) - ❌ Unauthorized reaction
+├─ verse: Daily Verse - Surah Al-Fatiha
+├─ action: 🗑️ Reaction removed automatically
+└─ status: Logged unauthorized attempt
+```
+
 ## 🎯 Use Cases & Examples
 
 ### 🏠 Home Server Setup
 
-Perfect for family Discord servers.
+Perfect for family Discord servers with enhanced quiz features.
 
 **Family Server Features:**
 
 - 📅 **Scheduled Recitation**: Daily Quran sessions
-- 👨‍👩‍👧‍👦 **Family Controls**: Parent-friendly interface
-- 📚 **Educational Mode**: Surah information display
+- 👨‍👩‍👧‍👦 **Family Controls**: Parent-friendly interface with admin features
+- 📚 **Educational Quizzes**: Interactive learning with progress tracking
 - 🔄 **Automatic Scheduling**: Ramadan special schedules
+- 🏆 **Family Leaderboard**: Track family member progress
 
 ### 🕌 Mosque Community
 
-Ideal for mosque Discord communities.
+Ideal for mosque Discord communities with admin moderation.
 
 **Mosque Features:**
 
 - 🕌 **Prayer Time Integration**: Coordinate with prayer times
-- 📖 **Study Sessions**: Focused surah study
-- 🎓 **Educational Content**: Verse explanations
-- 👥 **Community Engagement**: Shared listening experiences
+- 📖 **Study Sessions**: Focused surah study with quizzes
+- 🎓 **Educational Content**: Verse explanations and reactions
+- 👥 **Community Engagement**: Shared listening and quiz experiences
+- 🔑 **Imam Controls**: Admin answer keys for religious leaders
 
 ### 🎓 Educational Use
 
-Perfect for Islamic education servers.
+Perfect for Islamic education servers with comprehensive tracking.
 
 **Educational Features:**
 
-- 📚 **Curriculum Support**: Structured learning paths
-- 🎯 **Progress Tracking**: Student progress monitoring
-- 📝 **Study Materials**: Integrated resources
-- 👨‍🏫 **Teacher Controls**: Instructor management tools
+- 📚 **Curriculum Support**: Structured learning paths with quizzes
+- 🎯 **Progress Tracking**: Student progress monitoring via leaderboards
+- 📝 **Study Materials**: Integrated resources with verse reactions
+- 👨‍🏫 **Teacher Controls**: Instructor management tools and admin features
+- 📊 **Analytics**: Comprehensive user interaction logging
 
 ---
 
