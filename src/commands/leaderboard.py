@@ -1,7 +1,7 @@
 # =============================================================================
-# QuranBot - Leaderboard Command
+# QuranBot - Leaderboard Command (Cog)
 # =============================================================================
-# Displays quiz points leaderboard with pagination
+# Displays quiz points leaderboard with pagination using Discord.py Cogs
 # =============================================================================
 
 import json
@@ -10,6 +10,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import discord
+from discord import app_commands
+from discord.ext import commands
 
 from src.utils.listening_stats import format_listening_time, get_user_listening_stats
 from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
@@ -185,120 +187,165 @@ class LeaderboardView(discord.ui.View):
 
 
 # =============================================================================
-# Slash Command Implementation
+# Leaderboard Cog
 # =============================================================================
 
 
-@discord.app_commands.command(
-    name="leaderboard",
-    description="Display the quiz points leaderboard",
-)
-async def leaderboard_command(interaction: discord.Interaction):
-    """Display the quiz points leaderboard with pagination"""
-    try:
-        # Load fresh quiz stats from file each time
+class LeaderboardCog(commands.Cog):
+    """Leaderboard command cog for displaying quiz points leaderboard"""
+
+    def __init__(self, bot):
+        self.bot = bot
+
+    @app_commands.command(
+        name="leaderboard",
+        description="Display the quiz points leaderboard",
+    )
+    async def leaderboard(self, interaction: discord.Interaction):
+        """Display the quiz points leaderboard with pagination"""
         try:
-            if QUIZ_STATS_FILE.exists():
-                with open(QUIZ_STATS_FILE, "r", encoding="utf-8") as f:
-                    quiz_stats = json.load(f)
-            else:
+            # Load fresh quiz stats from file each time
+            try:
+                if QUIZ_STATS_FILE.exists():
+                    with open(QUIZ_STATS_FILE, "r", encoding="utf-8") as f:
+                        quiz_stats = json.load(f)
+                else:
+                    quiz_stats = {"user_scores": {}}
+            except Exception as e:
+                log_error_with_traceback("Error loading quiz stats for leaderboard", e)
                 quiz_stats = {"user_scores": {}}
-        except Exception as e:
-            log_error_with_traceback("Error loading quiz stats for leaderboard", e)
-            quiz_stats = {"user_scores": {}}
 
-        user_scores = quiz_stats.get("user_scores", {})
+            user_scores = quiz_stats.get("user_scores", {})
 
-        # Sort users by points (primary) and correct answers (secondary)
-        sorted_users = sorted(
-            user_scores.items(),
-            key=lambda x: (x[1]["points"], x[1].get("correct", 0)),
-            reverse=True,
-        )[
-            :30
-        ]  # Top 30 users
+            # Sort users by points (primary) and correct answers (secondary)
+            sorted_users = sorted(
+                user_scores.items(),
+                key=lambda x: (x[1]["points"], x[1].get("correct", 0)),
+                reverse=True,
+            )[:30]
 
-        if not sorted_users:
-            # No users to display
-            embed = discord.Embed(
-                title="🏆 QuranBot Leaderboard",
-                description="*No quiz data available yet. Answer some questions to appear on the leaderboard!*",
-                color=0x00D4AA,
-            )
+            if not sorted_users:
+                # No users to display
+                embed = discord.Embed(
+                    title="🏆 QuranBot Leaderboard",
+                    description="*No quiz data available yet. Answer some questions to appear on the leaderboard!*",
+                    color=0x00D4AA,
+                )
 
-            # Set bot profile picture as thumbnail
-            try:
-                if interaction.client.user and interaction.client.user.avatar:
-                    embed.set_thumbnail(url=interaction.client.user.avatar.url)
-            except Exception:
-                pass
+                # Set bot profile picture as thumbnail
+                try:
+                    if interaction.client.user and interaction.client.user.avatar:
+                        embed.set_thumbnail(url=interaction.client.user.avatar.url)
+                except Exception:
+                    pass
 
-            # Set footer with admin profile picture
-            try:
-                developer_id = int(os.getenv("DEVELOPER_ID", 0))
-                if developer_id:
-                    admin_user = await interaction.client.fetch_user(developer_id)
-                    if admin_user and admin_user.avatar:
-                        embed.set_footer(
-                            text="created by حَـــــنَـــــا",
-                            icon_url=admin_user.avatar.url,
-                        )
+                # Set footer with admin profile picture
+                try:
+                    developer_id = int(os.getenv("DEVELOPER_ID", 0))
+                    if developer_id:
+                        admin_user = await interaction.client.fetch_user(developer_id)
+                        if admin_user and admin_user.avatar:
+                            embed.set_footer(
+                                text="created by حَـــــنَـــــا",
+                                icon_url=admin_user.avatar.url,
+                            )
+                        else:
+                            embed.set_footer(text="created by حَـــــنَـــــا")
                     else:
                         embed.set_footer(text="created by حَـــــنَـــــا")
-                else:
+                except Exception:
                     embed.set_footer(text="created by حَـــــنَـــــا")
-            except Exception:
-                embed.set_footer(text="created by حَـــــنَـــــا")
 
-            await interaction.response.send_message(embed=embed)
-            return
+                await interaction.response.send_message(embed=embed)
+                return
 
-        # Create paginated view
-        view = LeaderboardView(sorted_users, interaction.user, interaction.client)
-        embed = await view.create_embed()
+            # Create paginated view
+            view = LeaderboardView(sorted_users, interaction.user, interaction.client)
+            embed = await view.create_embed()
 
-        await interaction.response.send_message(embed=embed, view=view)
+            await interaction.response.send_message(embed=embed, view=view)
 
-        # Log command usage
+            # Log successful leaderboard display
+            log_perfect_tree_section(
+                "Leaderboard Command - Success",
+                [
+                    (
+                        "user",
+                        f"{interaction.user.display_name} ({interaction.user.id})",
+                    ),
+                    ("total_users", len(sorted_users)),
+                    ("pages", view.max_pages),
+                    ("status", "✅ Leaderboard displayed successfully"),
+                ],
+                "🏆",
+            )
+
+        except Exception as e:
+            log_error_with_traceback("Error in leaderboard command", e)
+            error_embed = discord.Embed(
+                title="❌ Error",
+                description="An error occurred while loading the leaderboard. Please try again later.",
+                color=0xFF6B6B,
+            )
+            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+
+
+# =============================================================================
+# Cog Setup
+# =============================================================================
+
+
+async def setup(bot):
+    """Set up the Leaderboard cog"""
+    try:
         log_perfect_tree_section(
-            "Leaderboard Command - Success",
+            "Leaderboard Cog Setup - Starting",
             [
-                ("user", interaction.user.display_name),
-                ("user_id", interaction.user.id),
-                ("channel", interaction.channel.name if interaction.channel else "DM"),
-                ("total_users", len(sorted_users)),
-                ("pages", view.max_pages),
-                ("users_per_page", 5),
+                ("cog_name", "LeaderboardCog"),
+                ("command_name", "/leaderboard"),
+                ("status", "🔄 Initializing leaderboard cog setup"),
+            ],
+            "🚀",
+        )
+
+        await bot.add_cog(LeaderboardCog(bot))
+
+        log_perfect_tree_section(
+            "Leaderboard Cog Setup - Complete",
+            [
+                ("status", "✅ Leaderboard cog loaded successfully"),
+                ("cog_name", "LeaderboardCog"),
+                ("command_name", "/leaderboard"),
+                ("description", "Display quiz points leaderboard"),
+                ("permission_level", "🌐 Public command"),
+                ("features", "📄 30 users, 5 per page, navigation buttons"),
             ],
             "🏆",
         )
 
-    except Exception as e:
-        log_error_with_traceback("Error in leaderboard command", e)
-        try:
-            await interaction.response.send_message(
-                "❌ Error generating leaderboard. Please try again.", ephemeral=True
-            )
-        except:
-            await interaction.followup.send(
-                "❌ Error generating leaderboard. Please try again.", ephemeral=True
-            )
+    except Exception as setup_error:
+        log_error_with_traceback("Failed to set up leaderboard cog", setup_error)
+
+        log_perfect_tree_section(
+            "Leaderboard Cog Setup - Failed",
+            [
+                ("error_type", type(setup_error).__name__),
+                ("status", "❌ Failed to load leaderboard cog"),
+                ("impact", "🚨 /leaderboard command will not be available"),
+            ],
+            "💥",
+        )
+
+        # Re-raise the exception to ensure the bot startup process is aware of the failure
+        raise
 
 
-async def setup_leaderboard_command(bot):
-    """Set up the leaderboard command"""
-    # Add the slash command to the bot's command tree
-    bot.tree.add_command(leaderboard_command)
+# =============================================================================
+# Export Functions (for backward compatibility)
+# =============================================================================
 
-    log_perfect_tree_section(
-        "Leaderboard Command Setup",
-        [
-            ("status", "✅ Leaderboard command loaded successfully"),
-            ("command_name", "/leaderboard"),
-            ("command_type", "Slash command with pagination"),
-            ("description", "Display quiz points leaderboard"),
-            ("permission_level", "🌐 Public command"),
-            ("features", "📄 30 users, 5 per page, navigation buttons"),
-        ],
-        "🏆",
-    )
+__all__ = [
+    "LeaderboardCog",
+    "LeaderboardView",
+    "setup",
+]

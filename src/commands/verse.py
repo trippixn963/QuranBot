@@ -1,5 +1,5 @@
 # =============================================================================
-# QuranBot - Verse Command (Open Source Edition)
+# QuranBot - Verse Command (Cog)
 # =============================================================================
 # This is an open source project provided AS-IS without official support.
 # Feel free to use, modify, and learn from this code under the license terms.
@@ -18,7 +18,7 @@
 # - State management integration
 #
 # Technical Implementation:
-# - Uses discord.py's app_commands
+# - Uses discord.py's app_commands with Cogs
 # - Environment-based configuration
 # - Asynchronous execution
 # - Modular component design
@@ -38,6 +38,7 @@ from typing import Optional
 
 import discord
 import pytz
+from discord import app_commands
 from discord.ext import commands
 
 from src.utils.tree_log import (
@@ -72,668 +73,565 @@ def get_daily_verses_manager():
         return None
 
 
-@discord.app_commands.command(
-    name="verse",
-    description="Send a daily verse manually and reset the 3-hour timer (Admin only)",
-)
-async def verse_slash_command(interaction: discord.Interaction):
-    """
-    Administrative command to manually trigger daily verse delivery.
+# =============================================================================
+# Verse Cog
+# =============================================================================
 
-    This is an open source implementation demonstrating proper Discord
-    slash command structure with permission handling, error management,
-    and user feedback.
 
-    Features:
-    - Admin-only access control
-    - Rich embed responses
-    - Comprehensive error handling
-    - Detailed logging
-    - State validation
+class VerseCog(commands.Cog):
+    """Verse command cog for manual daily verse delivery"""
 
-    Flow:
-    1. Validate system configuration
-    2. Check user permissions
-    3. Verify verse system state
-    4. Execute verse delivery
-    5. Update timers and state
+    def __init__(self, bot):
+        self.bot = bot
 
-    Error Handling:
-    - Configuration errors
-    - Permission issues
-    - System state problems
-    - Runtime exceptions
-
-    Usage:
-    /verse - Manually trigger verse delivery (admin only)
-    """
-
-    # Log command initiation
-    log_perfect_tree_section(
-        "Verse Command - Initiated",
-        [
-            ("user", f"{interaction.user.display_name} ({interaction.user.id})"),
-            ("guild", f"{interaction.guild.name}" if interaction.guild else "DM"),
-            (
-                "channel",
-                (
-                    f"#{interaction.channel.name}"
-                    if hasattr(interaction.channel, "name")
-                    else "DM"
-                ),
-            ),
-            ("timestamp", datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-            ("status", "🔄 Starting verse command execution"),
-        ],
-        "📖",
+    @app_commands.command(
+        name="verse",
+        description="Send a daily verse manually and reset the 3-hour timer (Admin only)",
     )
+    async def verse(self, interaction: discord.Interaction):
+        """
+        Administrative command to manually trigger daily verse delivery.
 
-    try:
-        # Get the daily verses manager with error handling
-        daily_verses_manager = get_daily_verses_manager()
-        if not daily_verses_manager:
-            log_perfect_tree_section(
-                "Verse Command - Critical Error",
-                [
-                    ("error", "❌ Failed to get daily_verses_manager"),
-                    (
-                        "user",
-                        f"{interaction.user.display_name} ({interaction.user.id})",
-                    ),
-                    ("status", "🚨 Command execution aborted"),
-                ],
-                "⚠️",
-            )
+        This is an open source implementation demonstrating proper Discord
+        slash command structure with permission handling, error management,
+        and user feedback.
 
-            error_embed = discord.Embed(
-                title="❌ System Error",
-                description="Critical system error: Daily verses manager unavailable. Please contact the administrator.",
-                color=0xFF6B6B,
-            )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True)
-            return
+        Features:
+        - Admin-only access control
+        - Rich embed responses
+        - Comprehensive error handling
+        - Detailed logging
+        - State validation
 
-        # Get developer ID from environment with error handling
-        try:
-            DEVELOPER_ID = int(os.getenv("DEVELOPER_ID") or "0")
-            if DEVELOPER_ID == 0:
-                raise ValueError("DEVELOPER_ID not set in environment")
-        except (ValueError, TypeError) as e:
-            log_error_with_traceback("Failed to get DEVELOPER_ID from environment", e)
+        Flow:
+        1. Validate system configuration
+        2. Check user permissions
+        3. Verify verse system state
+        4. Execute verse delivery
+        5. Update timers and state
 
-            log_perfect_tree_section(
-                "Verse Command - Configuration Error",
-                [
-                    ("error", "❌ DEVELOPER_ID not configured"),
-                    (
-                        "user",
-                        f"{interaction.user.display_name} ({interaction.user.id})",
-                    ),
-                    ("status", "🚨 Command execution aborted"),
-                ],
-                "⚠️",
-            )
+        Error Handling:
+        - Configuration errors
+        - Permission issues
+        - System state problems
+        - Runtime exceptions
 
-            error_embed = discord.Embed(
-                title="❌ Configuration Error",
-                description="Bot configuration error: Developer ID not set. Please contact the administrator.",
-                color=0xFF6B6B,
-            )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True)
-            return
+        Usage:
+        /verse - Manually trigger verse delivery (admin only)
+        """
 
-        # Check if user is the developer/admin
-        if interaction.user.id != DEVELOPER_ID:
-            log_perfect_tree_section(
-                "Verse Command - Permission Denied",
-                [
-                    (
-                        "user",
-                        f"{interaction.user.display_name} ({interaction.user.id})",
-                    ),
-                    ("required_id", str(DEVELOPER_ID)),
-                    ("status", "❌ Unauthorized access attempt"),
-                    ("action", "🚫 Command execution denied"),
-                ],
-                "🔒",
-            )
-
-            embed = discord.Embed(
-                title="❌ Permission Denied",
-                description="This command is only available to the bot administrator.",
-                color=0xFF6B6B,
-            )
-
-            # Set footer with admin profile picture with error handling
-            try:
-                admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
-                if admin_user and admin_user.avatar:
-                    embed.set_footer(
-                        text="Created by حَـــــنَـــــا",
-                        icon_url=admin_user.avatar.url,
-                    )
-                else:
-                    embed.set_footer(text="Created by حَـــــنَـــــا")
-            except Exception as avatar_error:
-                log_error_with_traceback(
-                    "Failed to fetch admin avatar for permission denied message",
-                    avatar_error,
-                )
-                embed.set_footer(text="Created by حَـــــنَـــــا")
-
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
-
-        # Log successful authentication
+        # Log command initiation
         log_perfect_tree_section(
-            "Verse Command - Authentication Success",
+            "Verse Command - Initiated",
             [
                 ("user", f"{interaction.user.display_name} ({interaction.user.id})"),
-                ("permission_level", "🔓 Admin verified"),
-                ("status", "✅ Authentication passed"),
-            ],
-            "🔐",
-        )
-
-        # Check if daily verses system is configured
-        if not daily_verses_manager.verse_pool:
-            log_perfect_tree_section(
-                "Verse Command - System Not Configured",
-                [
-                    (
-                        "verse_pool",
-                        f"❌ Empty ({len(daily_verses_manager.verse_pool)} verses)",
-                    ),
-                    ("status", "🚨 Daily verses system not properly configured"),
-                ],
-                "⚠️",
-            )
-
-            embed = discord.Embed(
-                title="❌ Daily Verses Not Configured",
-                description="The daily verses system is not properly configured. No verses are available in the pool.",
-                color=0xFF6B6B,
-            )
-
-            # Set footer with admin profile picture with error handling
-            try:
-                admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
-                if admin_user and admin_user.avatar:
-                    embed.set_footer(
-                        text="Created by حَـــــنَـــــا",
-                        icon_url=admin_user.avatar.url,
-                    )
-                else:
-                    embed.set_footer(text="Created by حَـــــنَـــــا")
-            except Exception as avatar_error:
-                log_error_with_traceback(
-                    "Failed to fetch admin avatar for configuration error message",
-                    avatar_error,
-                )
-                embed.set_footer(text="Created by حَـــــنَـــــا")
-
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
-
-        # Get a random verse from the daily verses manager
-        try:
-            verse = daily_verses_manager.get_random_verse()
-        except Exception as e:
-            log_error_with_traceback(
-                "Failed to get random verse from daily verses manager", e
-            )
-            verse = None
-
-        # Check if we got a verse
-        if not verse:
-            log_perfect_tree_section(
-                "Verse Command - No Verses Available",
-                [
-                    (
-                        "pool_size",
-                        f"📊 Pool size: {len(daily_verses_manager.verse_pool)}",
-                    ),
-                    ("status", "❌ No verses available"),
-                ],
-                "📚",
-            )
-
-            embed = discord.Embed(
-                title="❌ No Verses Available",
-                description="The daily verses system is not properly configured or has no verses available.",
-                color=0xFF0000,
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
-
-        # Get channel for sending verse
-        try:
-            DAILY_VERSE_CHANNEL_ID = int(os.getenv("DAILY_VERSE_CHANNEL_ID") or "0")
-            if DAILY_VERSE_CHANNEL_ID == 0:
-                await interaction.response.send_message(
-                    "❌ Daily verse channel not configured. Please set DAILY_VERSE_CHANNEL_ID in environment.",
-                    ephemeral=True,
-                )
-                return
-
-            channel = interaction.client.get_channel(DAILY_VERSE_CHANNEL_ID)
-            if not channel:
-                await interaction.response.send_message(
-                    f"❌ Could not find daily verse channel with ID {DAILY_VERSE_CHANNEL_ID}.",
-                    ephemeral=True,
-                )
-                return
-        except Exception as e:
-            log_error_with_traceback("Failed to get daily verse channel", e)
-            await interaction.response.send_message(
-                "❌ Failed to access daily verse channel.", ephemeral=True
-            )
-            return
-
-        # Extract verse information with proper field names
-        surah_number = verse.get("surah", "Unknown")
-        ayah_number = verse.get("ayah", verse.get("verse", "Unknown"))
-
-        # Get surah name from surah mapper
-        try:
-            from src.utils.surah_mapper import get_surah_name
-
-            surah_name = get_surah_name(surah_number)
-        except Exception:
-            surah_name = f"Surah {surah_number}"
-
-        # Update last sent verse
-        try:
-            daily_verses_manager.save_state()
-        except Exception as e:
-            log_error_with_traceback("Failed to update last sent verse", e)
-
-        # Calculate next automatic verse time
-        current_time = datetime.now(timezone.utc).astimezone(
-            timezone(timedelta(hours=-5))
-        )  # EST
-        next_auto_time = current_time + timedelta(hours=3)  # Default 3 hour interval
-        hours_until_next = 3
-
-        log_perfect_tree_section(
-            "Verse Command - Next Timer Calculated",
-            [
+                ("guild", f"{interaction.guild.name}" if interaction.guild else "DM"),
                 (
-                    "current_time",
-                    f"{current_time.strftime('%Y-%m-%d %I:%M:%S %p')} EST",
+                    "channel",
+                    (
+                        f"#{interaction.channel.name}"
+                        if hasattr(interaction.channel, "name")
+                        else "DM"
+                    ),
                 ),
-                (
-                    "next_auto_time",
-                    f"{next_auto_time.strftime('%Y-%m-%d %I:%M:%S %p')} EST",
-                ),
-                ("hours_until_next", f"{hours_until_next}"),
-                ("status", "✅ Next automatic verse time calculated"),
-            ],
-            "🕐",
-        )
-
-        # Send confirmation message to user
-        try:
-            confirmation_embed = discord.Embed(
-                title="📖 Verse Sent Successfully",
-                description=f"**{surah_name} ({surah_number}:{ayah_number})** has been sent to {channel.mention}",
-                color=0x2ECC71,
-            )
-            confirmation_embed.add_field(
-                name="⏰ Next Automatic Verse",
-                value=f"In approximately **{hours_until_next} hours** at {next_auto_time.strftime('%I:%M %p')} EST",
-                inline=False,
-            )
-            await interaction.response.send_message(
-                embed=confirmation_embed, ephemeral=True
-            )
-        except Exception as e:
-            log_error_with_traceback("Failed to send confirmation message to user", e)
-            await interaction.response.send_message(
-                "✅ Verse sent successfully!", ephemeral=True
-            )
-
-        # Create and send verse embed
-        try:
-            embed = discord.Embed(
-                title=f"📖 Daily Verse - {surah_name}",
-                description=f"Ayah {ayah_number}",
-                color=0x2ECC71,
-            )
-
-            # Add bot's profile picture as thumbnail
-            if interaction.client.user and interaction.client.user.avatar:
-                embed.set_thumbnail(url=interaction.client.user.avatar.url)
-            elif interaction.client.user:
-                # Fallback to default avatar if no custom avatar
-                embed.set_thumbnail(url=interaction.client.user.default_avatar.url)
-
-            # Add Arabic section with code block formatting
-            embed.add_field(
-                name="🌙 Arabic",
-                value=f"```\n{verse.get('arabic', verse['text'])}\n```",
-                inline=False,
-            )
-
-            # Add Translation section with code block formatting
-            embed.add_field(
-                name="📝 Translation",
-                value=f"```\n{verse['translation']}\n```",
-                inline=False,
-            )
-
-            # Set footer with creator information
-            try:
-                DEVELOPER_ID = int(os.getenv("DEVELOPER_ID") or "0")
-                if DEVELOPER_ID != 0:
-                    admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
-                    if admin_user and admin_user.avatar:
-                        embed.set_footer(
-                            text="created by حَـــــنَّـــــا",
-                            icon_url=admin_user.avatar.url,
-                        )
-                    else:
-                        embed.set_footer(text="created by حَـــــنَّـــــا")
-                else:
-                    embed.set_footer(text="created by حَـــــنَّـــــا")
-            except Exception as e:
-                log_error_with_traceback("Failed to set footer with admin avatar", e)
-                embed.set_footer(text="created by حَـــــنَّـــــا")
-
-            # Send message
-            message = await channel.send(embed=embed)
-
-            # Add dua reaction
-            try:
-                await message.add_reaction("🤲")
-
-                # Monitor reactions to remove unwanted ones
-                def check_reaction(reaction, user):
-                    return (
-                        reaction.message.id == message.id
-                        and str(reaction.emoji) != "🤲"
-                        and not user.bot
-                    )
-
-                # Monitor for allowed dua reactions
-                def check_dua_reaction(reaction, user):
-                    return (
-                        reaction.message.id == message.id
-                        and str(reaction.emoji) == "🤲"
-                        and not user.bot
-                    )
-
-                # Set up reaction monitoring in background
-                async def monitor_reactions():
-                    try:
-                        while True:
-                            reaction, user = await interaction.client.wait_for(
-                                "reaction_add",
-                                timeout=3600,  # Monitor for 1 hour
-                                check=check_reaction,
-                            )
-
-                            # Log user interaction for unwanted reaction
-                            log_user_interaction(
-                                interaction_type="verse_reaction_removed",
-                                user_name=user.display_name,
-                                user_id=user.id,
-                                action_description=f"Added unauthorized reaction '{reaction.emoji}' to verse, removed automatically",
-                                details={
-                                    "reaction_emoji": str(reaction.emoji),
-                                    "allowed_emoji": "🤲",
-                                    "surah": surah_name,
-                                    "ayah": ayah_number,
-                                    "reaction_time": datetime.now(
-                                        pytz.timezone("US/Eastern")
-                                    ).strftime("%m/%d %I:%M %p EST"),
-                                },
-                            )
-
-                            # Remove the unwanted reaction
-                            await reaction.remove(user)
-                    except asyncio.TimeoutError:
-                        pass  # Stop monitoring after timeout
-                    except Exception:
-                        pass  # Ignore any other errors
-
-                # Monitor for dua reactions in background
-                async def monitor_dua_reactions():
-                    try:
-                        while True:
-                            reaction, user = await interaction.client.wait_for(
-                                "reaction_add",
-                                timeout=3600,  # Monitor for 1 hour
-                                check=check_dua_reaction,
-                            )
-
-                            # Log user interaction for dua reaction
-                            log_user_interaction(
-                                interaction_type="verse_dua_reaction",
-                                user_name=user.display_name,
-                                user_id=user.id,
-                                action_description=f"Added dua reaction 🤲 to verse",
-                                details={
-                                    "reaction_emoji": "🤲",
-                                    "surah": surah_name,
-                                    "ayah": ayah_number,
-                                    "reaction_time": datetime.now(
-                                        pytz.timezone("US/Eastern")
-                                    ).strftime("%m/%d %I:%M %p EST"),
-                                },
-                            )
-
-                    except asyncio.TimeoutError:
-                        pass  # Stop monitoring after timeout
-                    except Exception:
-                        pass  # Ignore any other errors
-
-                # Start monitoring tasks in background
-                asyncio.create_task(monitor_reactions())
-                asyncio.create_task(monitor_dua_reactions())
-
-            except Exception as e:
-                log_error_with_traceback(
-                    "Failed to add dua reaction or set up monitoring", e
-                )
-
-        except Exception as e:
-            log_error_with_traceback("Failed to create or send verse embed", e)
-            await interaction.followup.send(
-                "❌ Failed to send verse embed.", ephemeral=True
-            )
-            return
-
-        # Log success
-        log_perfect_tree_section(
-            "Verse Command - Success",
-            [
-                ("user", f"{interaction.user.display_name} ({interaction.user.id})"),
-                ("surah", f"{surah_name} ({surah_number}:{ayah_number})"),
-                ("channel", f"{channel.name} ({channel.id})"),
-                ("status", "✅ Verse sent successfully"),
+                ("timestamp", datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+                ("status", "🔄 Starting verse command execution"),
             ],
             "📖",
         )
 
-    except discord.errors.NotFound as not_found_error:
-        log_error_with_traceback(
-            "Discord entity not found during verse command execution", not_found_error
-        )
-
-        log_perfect_tree_section(
-            "Verse Command - Discord Not Found Error",
-            [
-                ("error_type", "discord.errors.NotFound"),
-                ("user", f"{interaction.user.display_name} ({interaction.user.id})"),
-                ("status", "❌ Discord entity not found"),
-            ],
-            "🔍",
-        )
-
-        error_embed = discord.Embed(
-            title="❌ Discord Error",
-            description="A Discord entity (user, channel, message, etc.) could not be found. Please check the configuration.",
-            color=0xFF6B6B,
-        )
-        error_embed.set_footer(text="Created by حَـــــنَـــــا")
-
-        # Handle both responded and unresponded interactions
         try:
-            if interaction.response.is_done():
-                await interaction.followup.send(embed=error_embed, ephemeral=True)
-            else:
+            # Get the daily verses manager with error handling
+            daily_verses_manager = get_daily_verses_manager()
+            if not daily_verses_manager:
+                log_perfect_tree_section(
+                    "Verse Command - Critical Error",
+                    [
+                        ("error", "❌ Failed to get daily_verses_manager"),
+                        (
+                            "user",
+                            f"{interaction.user.display_name} ({interaction.user.id})",
+                        ),
+                        ("status", "🚨 Command execution aborted"),
+                    ],
+                    "⚠️",
+                )
+
+                error_embed = discord.Embed(
+                    title="❌ System Error",
+                    description="Critical system error: Daily verses manager unavailable. Please contact the administrator.",
+                    color=0xFF6B6B,
+                )
                 await interaction.response.send_message(
                     embed=error_embed, ephemeral=True
                 )
-        except Exception as response_error:
-            log_error_with_traceback(
-                "Failed to send Discord not found error message", response_error
-            )
+                return
 
-    except discord.errors.Forbidden as forbidden_error:
-        log_error_with_traceback(
-            "Discord permission denied during verse command execution", forbidden_error
-        )
+            # Get developer ID from environment with error handling
+            try:
+                DEVELOPER_ID = int(os.getenv("DEVELOPER_ID") or "0")
+                if DEVELOPER_ID == 0:
+                    raise ValueError("DEVELOPER_ID not set in environment")
+            except (ValueError, TypeError) as e:
+                log_error_with_traceback(
+                    "Failed to get DEVELOPER_ID from environment", e
+                )
 
-        log_perfect_tree_section(
-            "Verse Command - Discord Permission Error",
-            [
-                ("error_type", "discord.errors.Forbidden"),
-                ("user", f"{interaction.user.display_name} ({interaction.user.id})"),
-                ("status", "❌ Bot lacks required permissions"),
-            ],
-            "🚫",
-        )
+                log_perfect_tree_section(
+                    "Verse Command - Configuration Error",
+                    [
+                        ("error", "❌ DEVELOPER_ID not configured"),
+                        (
+                            "user",
+                            f"{interaction.user.display_name} ({interaction.user.id})",
+                        ),
+                        ("status", "🚨 Command execution aborted"),
+                    ],
+                    "⚠️",
+                )
 
-        error_embed = discord.Embed(
-            title="❌ Permission Error",
-            description="The bot lacks the required permissions to complete this action. Please check bot permissions.",
-            color=0xFF6B6B,
-        )
-        error_embed.set_footer(text="Created by حَـــــنَـــــا")
-
-        # Handle both responded and unresponded interactions
-        try:
-            if interaction.response.is_done():
-                await interaction.followup.send(embed=error_embed, ephemeral=True)
-            else:
+                error_embed = discord.Embed(
+                    title="❌ Configuration Error",
+                    description="Bot configuration error: Developer ID not set. Please contact the administrator.",
+                    color=0xFF6B6B,
+                )
                 await interaction.response.send_message(
                     embed=error_embed, ephemeral=True
                 )
-        except Exception as response_error:
-            log_error_with_traceback(
-                "Failed to send Discord permission error message", response_error
+                return
+
+            # Check if user is the developer/admin
+            if interaction.user.id != DEVELOPER_ID:
+                log_perfect_tree_section(
+                    "Verse Command - Permission Denied",
+                    [
+                        (
+                            "user",
+                            f"{interaction.user.display_name} ({interaction.user.id})",
+                        ),
+                        ("required_id", str(DEVELOPER_ID)),
+                        ("status", "❌ Unauthorized access attempt"),
+                        ("action", "🚫 Command execution denied"),
+                    ],
+                    "🔒",
+                )
+
+                embed = discord.Embed(
+                    title="❌ Permission Denied",
+                    description="This command is only available to the bot administrator.",
+                    color=0xFF6B6B,
+                )
+
+                # Set footer with admin profile picture with error handling
+                try:
+                    admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
+                    if admin_user and admin_user.avatar:
+                        embed.set_footer(
+                            text="Created by حَـــــنَـــــا",
+                            icon_url=admin_user.avatar.url,
+                        )
+                    else:
+                        embed.set_footer(text="Created by حَـــــنَـــــا")
+                except Exception as avatar_error:
+                    log_error_with_traceback(
+                        "Failed to fetch admin avatar for permission denied message",
+                        avatar_error,
+                    )
+                    embed.set_footer(text="Created by حَـــــنَـــــا")
+
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+                return
+
+            # Log authorized access
+            log_perfect_tree_section(
+                "Verse Command - Authorized Access",
+                [
+                    (
+                        "user",
+                        f"{interaction.user.display_name} ({interaction.user.id})",
+                    ),
+                    ("permission_level", "✅ Administrator"),
+                    ("status", "🔓 Access granted"),
+                    ("action", "🚀 Proceeding with verse delivery"),
+                ],
+                "🔓",
             )
 
-    except discord.errors.HTTPException as http_error:
-        log_error_with_traceback(
-            "Discord HTTP error during verse command execution", http_error
-        )
+            # Send a quick acknowledgment to the user
+            await interaction.response.send_message(
+                "📖 Processing your verse command...", ephemeral=True
+            )
 
-        log_perfect_tree_section(
-            "Verse Command - Discord HTTP Error",
-            [
-                ("error_type", "discord.errors.HTTPException"),
-                ("user", f"{interaction.user.display_name} ({interaction.user.id})"),
-                ("status", "❌ Discord API error"),
-            ],
-            "🌐",
-        )
+            # Get the daily verse channel
+            try:
+                DAILY_VERSE_CHANNEL_ID = int(os.getenv("DAILY_VERSE_CHANNEL_ID") or "0")
+                if DAILY_VERSE_CHANNEL_ID == 0:
+                    raise ValueError("DAILY_VERSE_CHANNEL_ID not set in environment")
 
-        error_embed = discord.Embed(
-            title="❌ Discord API Error",
-            description="A Discord API error occurred. Please try again later.",
-            color=0xFF6B6B,
-        )
-        error_embed.set_footer(text="Created by حَـــــنَـــــا")
+                channel = interaction.client.get_channel(DAILY_VERSE_CHANNEL_ID)
+                if not channel:
+                    channel = await interaction.client.fetch_channel(
+                        DAILY_VERSE_CHANNEL_ID
+                    )
 
-        # Handle both responded and unresponded interactions
-        try:
-            if interaction.response.is_done():
+                if not channel:
+                    raise ValueError(f"Channel {DAILY_VERSE_CHANNEL_ID} not found")
+
+            except Exception as e:
+                log_error_with_traceback("Failed to get daily verse channel", e)
+
+                error_embed = discord.Embed(
+                    title="❌ Channel Error",
+                    description="Could not find the daily verse channel. Please check the bot configuration.",
+                    color=0xFF6B6B,
+                )
                 await interaction.followup.send(embed=error_embed, ephemeral=True)
-            else:
-                await interaction.response.send_message(
-                    embed=error_embed, ephemeral=True
+                return
+
+            # Get a random verse from the manager
+            verse_data = daily_verses_manager.get_random_verse()
+
+            if not verse_data:
+                log_perfect_tree_section(
+                    "Verse Command - No Verses Available",
+                    [
+                        ("error", "❌ No verses available"),
+                        ("status", "🚨 Command execution failed"),
+                    ],
+                    "⚠️",
                 )
-        except Exception as response_error:
-            log_error_with_traceback(
-                "Failed to send Discord HTTP error message", response_error
-            )
 
-    except Exception as e:
-        log_error_with_traceback("Unexpected error in manual verse command", e)
-
-        log_perfect_tree_section(
-            "Verse Command - Unexpected Error",
-            [
-                ("error_type", type(e).__name__),
-                ("user", f"{interaction.user.display_name} ({interaction.user.id})"),
-                ("status", "❌ Unexpected error occurred"),
-                ("impact", "🚨 Command execution failed"),
-            ],
-            "💥",
-        )
-
-        error_embed = discord.Embed(
-            title="❌ Unexpected Error",
-            description="An unexpected error occurred while processing the verse command. Please check the logs for details.",
-            color=0xFF6B6B,
-        )
-
-        # Set footer with admin profile picture with error handling
-        try:
-            DEVELOPER_ID = int(os.getenv("DEVELOPER_ID") or "0")
-            admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
-            if admin_user and admin_user.avatar:
-                error_embed.set_footer(
-                    text="Created by حَـــــنَـــــا", icon_url=admin_user.avatar.url
+                error_embed = discord.Embed(
+                    title="❌ No Verses Available",
+                    description="No verses are currently available in the system.",
+                    color=0xFF6B6B,
                 )
-            else:
-                error_embed.set_footer(text="Created by حَـــــنَـــــا")
-        except Exception as avatar_error:
-            log_error_with_traceback(
-                "Failed to fetch admin avatar for unexpected error message",
-                avatar_error,
-            )
-            error_embed.set_footer(text="Created by حَـــــنَـــــا")
-
-        # Handle both responded and unresponded interactions
-        try:
-            if interaction.response.is_done():
                 await interaction.followup.send(embed=error_embed, ephemeral=True)
-            else:
-                await interaction.response.send_message(
-                    embed=error_embed, ephemeral=True
-                )
-        except Exception as response_error:
-            log_error_with_traceback(
-                "Failed to send unexpected error message", response_error
+                return
+
+            # Update the last sent time to reset the timer
+            try:
+                daily_verses_manager.update_last_sent_time()
+            except Exception as e:
+                log_error_with_traceback("Failed to update last sent verse", e)
+
+            # Log verse selection
+            log_perfect_tree_section(
+                "Verse Command - Verse Selected",
+                [
+                    ("verse_id", verse_data.get("id", "Unknown")),
+                    ("surah", verse_data.get("surah", "Unknown")),
+                    ("verse_number", verse_data.get("verse_number", "Unknown")),
+                    ("status", "✅ Verse selected successfully"),
+                ],
+                "📖",
             )
 
+            # Create the verse embed (matching the old format)
+            embed = discord.Embed(
+                title="📖 Daily Verse",
+                description=f"**{verse_data.get('surah', 'Unknown Surah')} - Verse {verse_data.get('verse_number', 'Unknown')}**",
+                color=0x00D4AA,
+            )
 
-async def setup_verse_command(bot):
-    """Set up the verse command with comprehensive error handling and logging"""
+            # Add Arabic text with moon emoji and code block formatting
+            arabic_text = verse_data.get("arabic", "Arabic text not available")
+            embed.add_field(
+                name="🌙 Arabic",
+                value=f"```{arabic_text}```",
+                inline=False,
+            )
+
+            # Add English translation with book emoji and code block formatting
+            english_text = verse_data.get(
+                "english", "English translation not available"
+            )
+            embed.add_field(
+                name="📚 English Translation",
+                value=f"```{english_text}```",
+                inline=False,
+            )
+
+            # Add context or additional information if available
+            if verse_data.get("context"):
+                embed.add_field(
+                    name="📝 Context",
+                    value=verse_data["context"],
+                    inline=False,
+                )
+
+            # Set bot profile picture as thumbnail
+            try:
+                if interaction.client.user and interaction.client.user.avatar:
+                    embed.set_thumbnail(url=interaction.client.user.avatar.url)
+            except Exception:
+                pass  # Continue without thumbnail if it fails
+
+            # Set footer with admin profile picture
+            try:
+                admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
+                if admin_user and admin_user.avatar:
+                    embed.set_footer(
+                        text="Created by حَـــــنَـــــا",
+                        icon_url=admin_user.avatar.url,
+                    )
+                else:
+                    embed.set_footer(text="Created by حَـــــنَـــــا")
+            except Exception as avatar_error:
+                log_error_with_traceback(
+                    "Failed to set footer with admin avatar", avatar_error
+                )
+                embed.set_footer(text="Created by حَـــــنَـــــا")
+
+            # Send the verse to the channel
+            try:
+                message = await channel.send(embed=embed)
+
+                # Add reaction emojis for user interaction
+                await message.add_reaction("🤲")  # Dua emoji
+                await message.add_reaction("❤️")  # Heart emoji
+                await message.add_reaction("🔖")  # Bookmark emoji
+
+                # Monitor reactions for user interaction tracking
+                async def monitor_reactions():
+                    """Monitor reactions for user interaction logging"""
+                    try:
+
+                        def check_reaction(reaction, user):
+                            return (
+                                reaction.message.id == message.id
+                                and not user.bot
+                                and str(reaction.emoji) in ["🤲", "❤️", "🔖"]
+                            )
+
+                        def check_dua_reaction(reaction, user):
+                            return (
+                                reaction.message.id == message.id
+                                and not user.bot
+                                and str(reaction.emoji) == "🤲"
+                            )
+
+                        async def monitor_reactions():
+                            """Monitor general reactions"""
+                            try:
+                                while True:
+                                    reaction, user = await interaction.client.wait_for(
+                                        "reaction_add",
+                                        check=check_reaction,
+                                        timeout=3600,
+                                    )  # 1 hour timeout
+
+                                    # Log user interaction
+                                    log_user_interaction(
+                                        interaction_type="verse_reaction",
+                                        user_name=user.display_name,
+                                        user_id=user.id,
+                                        action_description=f"Reacted with {reaction.emoji} to daily verse",
+                                        details={
+                                            "reaction": str(reaction.emoji),
+                                            "verse_id": verse_data.get("id", "Unknown"),
+                                            "surah": verse_data.get("surah", "Unknown"),
+                                            "verse_number": verse_data.get(
+                                                "verse_number", "Unknown"
+                                            ),
+                                            "message_id": message.id,
+                                            "channel_id": channel.id,
+                                        },
+                                    )
+
+                            except asyncio.TimeoutError:
+                                # Timeout reached, stop monitoring
+                                pass
+                            except Exception as e:
+                                log_error_with_traceback(
+                                    "Error monitoring verse reactions", e
+                                )
+
+                        async def monitor_dua_reactions():
+                            """Monitor dua reactions specifically"""
+                            try:
+                                while True:
+                                    reaction, user = await interaction.client.wait_for(
+                                        "reaction_add",
+                                        check=check_dua_reaction,
+                                        timeout=3600,
+                                    )  # 1 hour timeout
+
+                                    # Log dua interaction
+                                    log_user_interaction(
+                                        interaction_type="dua_reaction",
+                                        user_name=user.display_name,
+                                        user_id=user.id,
+                                        action_description="Made dua (🤲) on daily verse",
+                                        details={
+                                            "reaction": "🤲",
+                                            "verse_id": verse_data.get("id", "Unknown"),
+                                            "surah": verse_data.get("surah", "Unknown"),
+                                            "verse_number": verse_data.get(
+                                                "verse_number", "Unknown"
+                                            ),
+                                            "message_id": message.id,
+                                            "channel_id": channel.id,
+                                            "spiritual_activity": "dua_made",
+                                        },
+                                    )
+
+                            except asyncio.TimeoutError:
+                                # Timeout reached, stop monitoring
+                                pass
+                            except Exception as e:
+                                log_error_with_traceback(
+                                    "Error monitoring dua reactions", e
+                                )
+
+                        # Start monitoring tasks
+                        asyncio.create_task(monitor_reactions())
+                        asyncio.create_task(monitor_dua_reactions())
+
+                    except Exception as e:
+                        log_error_with_traceback(
+                            "Error in reaction monitoring setup", e
+                        )
+
+                # Start reaction monitoring
+                asyncio.create_task(monitor_reactions())
+
+                # Send confirmation to the user
+                try:
+                    success_embed = discord.Embed(
+                        title="✅ Verse Sent Successfully",
+                        description=f"Daily verse has been sent to {channel.mention}.\n\n**Verse Details:**\n• Surah: {verse_data.get('surah', 'Unknown')}\n• Verse: {verse_data.get('verse_number', 'Unknown')}\n• Timer: Reset to 3 hours",
+                        color=0x00D4AA,
+                    )
+                    await interaction.followup.send(embed=success_embed, ephemeral=True)
+                except Exception as e:
+                    log_error_with_traceback(
+                        "Failed to send confirmation message to user", e
+                    )
+
+                # Log successful verse delivery
+                log_perfect_tree_section(
+                    "Verse Command - Success",
+                    [
+                        (
+                            "user",
+                            f"{interaction.user.display_name} ({interaction.user.id})",
+                        ),
+                        ("channel", f"#{channel.name}"),
+                        ("verse_id", verse_data.get("id", "Unknown")),
+                        ("surah", verse_data.get("surah", "Unknown")),
+                        ("verse_number", verse_data.get("verse_number", "Unknown")),
+                        ("message_id", message.id),
+                        ("reactions_added", "🤲 ❤️ 🔖"),
+                        ("timer_reset", "✅ 3 hours"),
+                        ("status", "✅ Verse delivered successfully"),
+                    ],
+                    "🏆",
+                )
+
+            except discord.Forbidden:
+                log_error_with_traceback(
+                    "Permission denied when sending verse to channel",
+                    Exception("Bot lacks permission to send messages in the channel"),
+                )
+                error_embed = discord.Embed(
+                    title="❌ Permission Error",
+                    description="Bot doesn't have permission to send messages in the daily verse channel.",
+                    color=0xFF6B6B,
+                )
+                await interaction.followup.send(embed=error_embed, ephemeral=True)
+
+            except Exception as e:
+                log_error_with_traceback("Failed to create or send verse embed", e)
+
+                log_perfect_tree_section(
+                    "Verse Command - Delivery Failed",
+                    [
+                        (
+                            "user",
+                            f"{interaction.user.display_name} ({interaction.user.id})",
+                        ),
+                        ("error", str(e)),
+                        ("status", "❌ Failed to deliver verse"),
+                    ],
+                    "💥",
+                )
+
+                error_embed = discord.Embed(
+                    title="❌ Delivery Error",
+                    description="Failed to send the verse. Please try again or contact the administrator.",
+                    color=0xFF6B6B,
+                )
+                await interaction.followup.send(embed=error_embed, ephemeral=True)
+
+        except discord.InteractionResponded:
+            # Interaction was already responded to, which is fine
+            log_error_with_traceback(
+                "Interaction already responded to in verse command",
+                Exception("Double response attempt"),
+            )
+
+        except Exception as e:
+            log_error_with_traceback("Error in verse command", e)
+
+            log_perfect_tree_section(
+                "Verse Command - Unexpected Error",
+                [
+                    (
+                        "user",
+                        f"{interaction.user.display_name} ({interaction.user.id})",
+                    ),
+                    ("error_type", type(e).__name__),
+                    ("error_message", str(e)),
+                    ("status", "❌ Command execution failed"),
+                ],
+                "💥",
+            )
+
+            try:
+                error_embed = discord.Embed(
+                    title="❌ Unexpected Error",
+                    description="An unexpected error occurred while processing the verse command. Please try again later.",
+                    color=0xFF6B6B,
+                )
+                if not interaction.response.is_done():
+                    await interaction.response.send_message(
+                        embed=error_embed, ephemeral=True
+                    )
+                else:
+                    await interaction.followup.send(embed=error_embed, ephemeral=True)
+            except Exception as response_error:
+                log_error_with_traceback(
+                    "Failed to send unexpected error message", response_error
+                )
+
+
+# =============================================================================
+# Cog Setup
+# =============================================================================
+
+
+async def setup(bot):
+    """Set up the Verse cog with comprehensive error handling and logging"""
     try:
         log_perfect_tree_section(
-            "Verse Command Setup - Starting",
+            "Verse Cog Setup - Starting",
             [
+                ("cog_name", "VerseCog"),
                 ("command_name", "/verse"),
-                ("command_type", "Discord Application Command"),
-                ("status", "🔄 Initializing verse command setup"),
+                ("status", "🔄 Initializing verse cog setup"),
             ],
             "🚀",
         )
 
-        # Add the slash command to the bot's command tree
-        bot.tree.add_command(verse_slash_command)
+        await bot.add_cog(VerseCog(bot))
 
         log_perfect_tree_section(
-            "Verse Command Setup - Complete",
+            "Verse Cog Setup - Complete",
             [
-                ("status", "✅ Verse command loaded successfully"),
+                ("status", "✅ Verse cog loaded successfully"),
+                ("cog_name", "VerseCog"),
                 ("command_name", "/verse"),
-                ("command_type", "Slash command only"),
                 ("description", "Send daily verse manually and reset timer"),
                 ("permission_level", "🔒 Admin only"),
                 ("error_handling", "✅ Comprehensive traceback and logging"),
@@ -743,13 +641,13 @@ async def setup_verse_command(bot):
         )
 
     except Exception as setup_error:
-        log_error_with_traceback("Failed to set up verse command", setup_error)
+        log_error_with_traceback("Failed to set up verse cog", setup_error)
 
         log_perfect_tree_section(
-            "Verse Command Setup - Failed",
+            "Verse Cog Setup - Failed",
             [
                 ("error_type", type(setup_error).__name__),
-                ("status", "❌ Failed to load verse command"),
+                ("status", "❌ Failed to load verse cog"),
                 ("impact", "🚨 /verse command will not be available"),
             ],
             "💥",
@@ -757,3 +655,14 @@ async def setup_verse_command(bot):
 
         # Re-raise the exception to ensure the bot startup process is aware of the failure
         raise
+
+
+# =============================================================================
+# Export Functions (for backward compatibility)
+# =============================================================================
+
+__all__ = [
+    "VerseCog",
+    "get_daily_verses_manager",
+    "setup",
+]
