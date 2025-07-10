@@ -960,6 +960,11 @@ def log_run_end(run_id, reason="Normal shutdown"):
     _global_logger.log_run_end(run_id, reason)
 
 
+def get_timestamp():
+    """Standalone function for getting formatted timestamps."""
+    return _global_logger._get_timestamp()
+
+
 def write_to_log_files(message: str, level: str, category: str) -> None:
     """
     Standalone function for writing to log files.
