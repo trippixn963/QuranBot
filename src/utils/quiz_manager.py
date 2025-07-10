@@ -517,9 +517,20 @@ class QuizManager:
     def load_default_questions(self) -> None:
         """Load default sample questions if no questions exist"""
         try:
+            # Check if we already have questions loaded from quiz_data.json
             if len(self.questions) > 0:
-                return  # Already have questions
+                log_perfect_tree_section(
+                    "Questions Already Loaded",
+                    [
+                        ("questions_count", str(len(self.questions))),
+                        ("source", "quiz_data.json (complex format)"),
+                        ("status", "✅ Using existing questions from quiz_data.json"),
+                    ],
+                    "📚",
+                )
+                return  # Already have questions from quiz_data.json
 
+            # Only load simple default questions if quiz_data.json is empty/missing
             # Sample Islamic quiz questions
             default_questions = [
                 {

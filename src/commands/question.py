@@ -46,13 +46,12 @@ class QuizView(discord.ui.View):
             "F": discord.ButtonStyle.primary,  # Blue (fallback)
         }
 
-        # Get options from question data (it's a list, not a dict)
-        options = question_data.get("options", [])
+        # Get choices from question data (complex structure with A, B, C, D keys)
+        choices = question_data.get("choices", {})
 
-        # Create buttons for each option
-        for i, option in enumerate(options):
-            if i < len(choice_letters):
-                letter = choice_letters[i]
+        # Create buttons for each choice
+        for letter in choice_letters:
+            if letter in choices:
                 style = button_styles.get(letter, discord.ButtonStyle.secondary)
                 button = QuizButton(letter, letter == correct_answer, style)
                 self.add_item(button)
@@ -824,22 +823,27 @@ async def question_slash_command(interaction: discord.Interaction):
             color=0x3498DB,
         )
 
-        # Get the question text (it's a simple string, not a dict)
-        question_text = question.get("question", "Question not available")
+        # Get the question text (handle both simple and complex formats)
+        if isinstance(question.get("question"), dict):
+            # Complex format with Arabic/English
+            arabic_question = question["question"].get("arabic", "سؤال إسلامي")
+            english_question = question["question"].get("english", "Islamic Question")
+        else:
+            # Simple format (fallback)
+            english_question = question.get("question", "Question not available")
+            arabic_question = "سؤال إسلامي"  # Default Arabic placeholder
 
         # Add Arabic section with moon emoji and code block formatting
-        # Since we only have English questions in the current format, use a placeholder for Arabic
-        arabic_question = "سؤال إسلامي"  # "Islamic Question" in Arabic
         embed.add_field(
-            name="🌙 Arabic",
-            value=f"```\n{arabic_question}\n```",
+            name="🌙 Arabic Question",
+            value=f"```{arabic_question}```",
             inline=False,
         )
 
-        # Add Translation section with scroll emoji and code block formatting
+        # Add English section with book emoji
         embed.add_field(
-            name="📜 Translation",
-            value=f"```\n{question_text}\n```",
+            name="📖 English Question",
+            value=f"**{english_question}**",
             inline=False,
         )
 
@@ -853,11 +857,16 @@ async def question_slash_command(interaction: discord.Interaction):
         # Don't add "Answered by" field initially - it will be added dynamically when users answer
 
         # Add difficulty with stars
-        difficulty = question.get("difficulty", "medium")
-        # Map difficulty strings to star counts
-        difficulty_stars = {"easy": "⭐", "medium": "⭐⭐", "hard": "⭐⭐⭐"}.get(
-            difficulty, "⭐⭐"
-        )
+        difficulty = question.get("difficulty", 3)
+        # Handle both number and string difficulties
+        if isinstance(difficulty, int):
+            # Number format (1-5)
+            difficulty_stars = "⭐" * min(difficulty, 5)
+        else:
+            # String format
+            difficulty_stars = {"easy": "⭐", "medium": "⭐⭐", "hard": "⭐⭐⭐"}.get(
+                str(difficulty).lower(), "⭐⭐"
+            )
 
         embed.add_field(
             name="Difficulty",
@@ -879,14 +888,25 @@ async def question_slash_command(interaction: discord.Interaction):
         choices_text = ""
         choice_letters = ["A", "B", "C", "D", "E", "F"]
 
-        # Get options from question (it's a list, not a dict)
-        options = question.get("options", [])
+        # Get choices from question (complex structure with A, B, C, D keys)
+        choices = question.get("choices", {})
 
-        # Build choices text from the options list
-        for i, option in enumerate(options):
-            if i < len(choice_letters):
-                letter = choice_letters[i]
-                choices_text += f"**{letter}:** {option}\n\n"
+        # Build choices text from the complex structure
+        for letter in choice_letters:
+            if letter in choices:
+                choice_data = choices[letter]
+                if isinstance(choice_data, dict):
+                    # Complex format with Arabic/English
+                    arabic_choice = choice_data.get("arabic", "")
+                    english_choice = choice_data.get("english", "")
+                    choices_text += f"**{letter}:** {english_choice}\n"
+                    if arabic_choice:
+                        choices_text += f"     `{arabic_choice}`\n\n"
+                    else:
+                        choices_text += "\n"
+                else:
+                    # Simple format fallback
+                    choices_text += f"**{letter}:** {choice_data}\n\n"
 
         embed.add_field(
             name="Choices",
@@ -920,13 +940,8 @@ async def question_slash_command(interaction: discord.Interaction):
             )
             embed.set_footer(text="Created by حَـــــنَـــــا")
 
-        # Convert correct_answer from integer index to letter
-        correct_answer_index = question.get("correct_answer", 0)
-        correct_answer_letter = (
-            choice_letters[correct_answer_index]
-            if correct_answer_index < len(choice_letters)
-            else "A"
-        )
+        # Get correct answer (already a letter in complex format)
+        correct_answer_letter = question.get("correct_answer", "A")
 
         # Send the quiz with buttons
         view = QuizView(correct_answer_letter, question)
