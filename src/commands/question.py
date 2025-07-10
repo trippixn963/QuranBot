@@ -163,23 +163,21 @@ class QuizView(discord.ui.View):
                 answered_users.append(f"<@{user_id}>")
             answered_text = " | ".join(answered_users)
 
-            # Find if "Answered by" field exists and update it, or add it
-            answered_field_index = None
+            # Find if "Answered by" field exists and update it
+            answered_field_found = False
             for i, field in enumerate(embed.fields):
                 if field.name == "👤 Answered by:":
-                    answered_field_index = i
+                    embed.set_field_at(
+                        i,
+                        name="👤 Answered by:",
+                        value=answered_text,
+                        inline=False,
+                    )
+                    answered_field_found = True
                     break
 
-            if answered_field_index is not None:
-                # Update existing field
-                embed.set_field_at(
-                    answered_field_index,
-                    name="👤 Answered by:",
-                    value=answered_text,
-                    inline=False,
-                )
-            else:
-                # Add new field after timer field
+            # If "Answered by" field doesn't exist, add it
+            if not answered_field_found:
                 embed.add_field(
                     name="👤 Answered by:",
                     value=answered_text,
@@ -223,16 +221,34 @@ class QuizView(discord.ui.View):
             else:
                 warning_text = ""
 
-            # Update timer field
+            # Update timer field - search for the timer field and update it
+            timer_field_found = False
             for i, field in enumerate(embed.fields):
-                if "You have" in field.name and "seconds" in field.name:
+                # Look for timer field by checking if it contains timer-related text
+                if ("seconds to answer" in field.name) or (
+                    "⏰" in field.name and "answer" in field.name
+                ):
                     embed.set_field_at(
                         i,
                         name=f"{timer_emoji} You have {remaining_time} seconds to answer",
                         value=f"{progress_bar}{warning_text}",
                         inline=False,
                     )
+                    timer_field_found = True
                     break
+
+            # If timer field wasn't found, log the issue for debugging
+            if not timer_field_found:
+                from src.utils.tree_log import log_error_with_traceback
+
+                log_error_with_traceback(
+                    "Timer field not found in embed",
+                    None,
+                    {
+                        "field_names": [field.name for field in embed.fields],
+                        "remaining_time": remaining_time,
+                    },
+                )
 
         # Update the message
         try:
