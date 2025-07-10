@@ -867,10 +867,18 @@ async def question_slash_command(interaction: discord.Interaction):
             inline=True,
         )
 
-        # Add topics
+        # Add topics (avoid duplicates between category and themes)
         themes = question.get("themes", ["General"])
         category = question.get("category", "general").replace("_", " ").title()
-        topics_text = f"{category} • {' • '.join(themes)}"
+
+        # Create a list of all topics and remove duplicates while preserving order
+        all_topics = [category] + themes
+        unique_topics = []
+        for topic in all_topics:
+            if topic not in unique_topics:
+                unique_topics.append(topic)
+
+        topics_text = " • ".join(unique_topics)
         embed.add_field(
             name="Topics",
             value=topics_text,
