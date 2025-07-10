@@ -23,7 +23,7 @@ zipfile-deflate64==0.2.0
 schedule==1.2.0
 
 # Rich Text Processing
-rich==13.7.1
+rich==14.0.0
 
 # Audio File Processing
 mutagen==1.47.0
