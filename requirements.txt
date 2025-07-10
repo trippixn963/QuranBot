@@ -11,7 +11,7 @@ aiohttp==3.12.13
 aiofiles==24.1.0
 
 # Time Zone Support
-pytz==2024.1
+pytz==2025.2
 
 # Environment Variables
 python-dotenv==1.0.1
