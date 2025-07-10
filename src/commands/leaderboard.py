@@ -182,7 +182,31 @@ async def leaderboard_command(interaction: discord.Interaction):
                 description="*No quiz data available yet. Answer some questions to appear on the leaderboard!*",
                 color=0x00D4AA,
             )
-            embed.set_footer(text="created by حَـــــنَـــــا")
+
+            # Set bot profile picture as thumbnail
+            try:
+                if interaction.client.user and interaction.client.user.avatar:
+                    embed.set_thumbnail(url=interaction.client.user.avatar.url)
+            except Exception:
+                pass
+
+            # Set footer with admin profile picture
+            try:
+                developer_id = int(os.getenv("DEVELOPER_ID", 0))
+                if developer_id:
+                    admin_user = await interaction.client.fetch_user(developer_id)
+                    if admin_user and admin_user.avatar:
+                        embed.set_footer(
+                            text="created by حَـــــنَـــــا",
+                            icon_url=admin_user.avatar.url,
+                        )
+                    else:
+                        embed.set_footer(text="created by حَـــــنَـــــا")
+                else:
+                    embed.set_footer(text="created by حَـــــنَـــــا")
+            except Exception:
+                embed.set_footer(text="created by حَـــــنَـــــا")
+
             await interaction.response.send_message(embed=embed)
             return
 
@@ -195,6 +219,32 @@ async def leaderboard_command(interaction: discord.Interaction):
             if interaction.client.user and interaction.client.user.avatar:
                 embed.set_thumbnail(url=interaction.client.user.avatar.url)
         except Exception:
+            pass
+
+        # Set footer with admin profile picture
+        try:
+            developer_id = int(os.getenv("DEVELOPER_ID", 0))
+            if developer_id:
+                admin_user = await interaction.client.fetch_user(developer_id)
+                if admin_user and admin_user.avatar:
+                    # Update footer to include admin icon while preserving page info
+                    current_footer = (
+                        embed.footer.text
+                        if embed.footer
+                        else "created by حَـــــنَـــــا"
+                    )
+                    embed.set_footer(
+                        text=current_footer,
+                        icon_url=admin_user.avatar.url,
+                    )
+                else:
+                    # Keep existing footer text if no admin avatar
+                    pass
+            else:
+                # Keep existing footer text if no developer ID
+                pass
+        except Exception:
+            # Keep existing footer text if error occurs
             pass
 
         await interaction.response.send_message(embed=embed, view=view)
