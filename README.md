@@ -2,11 +2,11 @@
 
 ![QuranBot Banner](<images/BANNER%20(ANIMATED).gif>)
 
-# 🕌 QuranBot v3.3.0
+# 🕌 QuranBot v3.4.0
 
 **Professional Discord Bot for 24/7 Quran Audio Streaming & Islamic Community Features**
 
-[![Version](https://img.shields.io/badge/version-3.3.0-blue.svg)](#)
+[![Version](https://img.shields.io/badge/version-3.4.0-blue.svg)](#)
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Test Coverage](https://img.shields.io/badge/coverage-80%25-brightgreen.svg)](#)

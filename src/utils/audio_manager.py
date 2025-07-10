@@ -225,10 +225,10 @@ class AudioManager:
                         current_time = self.current_position
                         total_time = 0  # Could be enhanced with audio file metadata
 
-                        # Save state silently most of the time, only log every 60 seconds
+                        # Save state silently most of the time, only log every 5 minutes
                         should_log = (
-                            save_counter >= 12
-                        )  # Log every 12th save (60 seconds)
+                            save_counter >= 60
+                        )  # Log every 60th save (5 minutes)
 
                         state_manager.save_playback_state(
                             current_surah=self.current_surah,
@@ -275,9 +275,14 @@ class AudioManager:
                         current_time = time.time()
                         elapsed_time = current_time - self.track_start_time
 
-                        # Update current position for state saving
-                        # Note: track_start_time already accounts for resumed position
-                        self.current_position = elapsed_time
+                        # Get track duration to ensure we don't exceed it
+                        track_duration = self._get_current_file_duration()
+
+                        # Ensure position doesn't exceed track duration
+                        if track_duration > 0:
+                            self.current_position = min(elapsed_time, track_duration)
+                        else:
+                            self.current_position = elapsed_time
 
                         # Update rich presence with new time
                         if self.rich_presence:
@@ -1106,7 +1111,10 @@ class AudioManager:
             # Get the real duration of the current MP3 file
             total_time_seconds = self._get_current_file_duration()
 
+            # Ensure current time doesn't exceed total time
             if total_time_seconds > 0:
+                current_time_seconds = min(current_time_seconds, total_time_seconds)
+
                 # Format both times
                 current_str = self._format_time(current_time_seconds)
                 total_str = self._format_time(total_time_seconds)
@@ -1134,45 +1142,51 @@ class AudioManager:
                         else None
                     )
                     if current_file:
-                        # Skip track completion check since get_audio_duration doesn't exist
-                        # This functionality can be enhanced later with proper audio duration detection
-                        duration = None
-                        if (
-                            False
-                        ):  # Disabled until proper duration detection is implemented
-                            # Track is complete or nearly complete - skip to next track
-                            log_perfect_tree_section(
-                                "Audio Playback - Track Complete on Startup",
-                                [
-                                    (
-                                        "current_position",
-                                        f"{self.current_position:.1f}s",
-                                    ),
-                                    ("track_duration", f"{duration:.1f}s"),
-                                    ("action", "Skipping to next track"),
-                                ],
-                                "⏭️",
-                            )
-                            should_resume = False
-                            self.current_position = 0
-                            self.current_file_index += 1
-                            if self.current_file_index >= len(self.current_audio_files):
-                                if self.is_loop_enabled:
-                                    self.current_file_index = 0
-                                else:
-                                    self.current_file_index = (
-                                        0  # Start over from beginning
-                                    )
+                        # Get actual duration using the existing method
+                        duration = self._get_current_file_duration()
+                        if duration > 0:
+                            # Check if track is complete or nearly complete (within 10 seconds of end)
+                            if self.current_position >= (duration - 10):
+                                # Track is complete or nearly complete - skip to next track
+                                log_perfect_tree_section(
+                                    "Audio Playback - Track Complete on Startup",
+                                    [
+                                        (
+                                            "current_position",
+                                            f"{self.current_position:.1f}s",
+                                        ),
+                                        ("track_duration", f"{duration:.1f}s"),
+                                        ("action", "Skipping to next track"),
+                                    ],
+                                    "⏭️",
+                                )
+                                should_resume = False
+                                self.current_position = 0
+                                self.current_file_index += 1
+                                if self.current_file_index >= len(
+                                    self.current_audio_files
+                                ):
+                                    if self.is_loop_enabled:
+                                        self.current_file_index = 0
+                                    else:
+                                        self.current_file_index = (
+                                            0  # Start over from beginning
+                                        )
 
-                            # Save the updated state to prevent this issue from recurring
-                            state_manager.save_playback_state(
-                                current_surah=self.current_surah,
-                                current_position=0,
-                                current_reciter=self.current_reciter,
-                                is_playing=False,
-                                loop_enabled=self.is_loop_enabled,
-                                shuffle_enabled=self.is_shuffle_enabled,
-                            )
+                                # Save the updated state to prevent this issue from recurring
+                                state_manager.save_playback_state(
+                                    current_surah=self.current_surah,
+                                    current_position=0,
+                                    current_reciter=self.current_reciter,
+                                    is_playing=False,
+                                    loop_enabled=self.is_loop_enabled,
+                                    shuffle_enabled=self.is_shuffle_enabled,
+                                )
+                            else:
+                                # Ensure position doesn't exceed track duration
+                                self.current_position = min(
+                                    self.current_position, duration
+                                )
                 except Exception as e:
                     log_error_with_traceback(
                         "Error checking track completion on startup", e
@@ -1281,6 +1295,29 @@ class AudioManager:
 
                     # Create and play audio source with resume capability
                     try:
+                        if should_resume and self.current_position > 0:
+                            # Validate resume position against track duration
+                            track_duration = self._get_current_file_duration()
+                            if (
+                                track_duration > 0
+                                and self.current_position >= track_duration
+                            ):
+                                # Position is beyond track duration - start from beginning
+                                log_perfect_tree_section(
+                                    "Audio Resume - Invalid Position",
+                                    [
+                                        (
+                                            "saved_position",
+                                            f"{self.current_position:.1f}s",
+                                        ),
+                                        ("track_duration", f"{track_duration:.1f}s"),
+                                        ("action", "Starting from beginning instead"),
+                                    ],
+                                    "⚠️",
+                                )
+                                self.current_position = 0.0
+                                should_resume = False
+
                         if should_resume and self.current_position > 0:
                             # Use FFmpeg to start from specific position
                             seek_options = f"-ss {self.current_position}"

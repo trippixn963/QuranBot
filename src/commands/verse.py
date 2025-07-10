@@ -37,9 +37,14 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import discord
+import pytz
 from discord.ext import commands
 
-from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
+from src.utils.tree_log import (
+    log_error_with_traceback,
+    log_perfect_tree_section,
+    log_user_interaction,
+)
 
 
 def get_daily_verses_manager():
@@ -448,6 +453,14 @@ async def verse_slash_command(interaction: discord.Interaction):
                         and not user.bot
                     )
 
+                # Monitor for allowed dua reactions
+                def check_dua_reaction(reaction, user):
+                    return (
+                        reaction.message.id == message.id
+                        and str(reaction.emoji) == "🤲"
+                        and not user.bot
+                    )
+
                 # Set up reaction monitoring in background
                 async def monitor_reactions():
                     try:
@@ -457,6 +470,24 @@ async def verse_slash_command(interaction: discord.Interaction):
                                 timeout=3600,  # Monitor for 1 hour
                                 check=check_reaction,
                             )
+
+                            # Log user interaction for unwanted reaction
+                            log_user_interaction(
+                                interaction_type="verse_reaction_removed",
+                                user_name=user.display_name,
+                                user_id=user.id,
+                                action_description=f"Added unauthorized reaction '{reaction.emoji}' to verse, removed automatically",
+                                details={
+                                    "reaction_emoji": str(reaction.emoji),
+                                    "allowed_emoji": "🤲",
+                                    "surah": surah_name,
+                                    "ayah": ayah_number,
+                                    "reaction_time": datetime.now(
+                                        pytz.timezone("US/Eastern")
+                                    ).strftime("%m/%d %I:%M %p EST"),
+                                },
+                            )
+
                             # Remove the unwanted reaction
                             await reaction.remove(user)
                     except asyncio.TimeoutError:
@@ -464,8 +495,40 @@ async def verse_slash_command(interaction: discord.Interaction):
                     except Exception:
                         pass  # Ignore any other errors
 
-                # Start monitoring task in background
+                # Monitor for dua reactions in background
+                async def monitor_dua_reactions():
+                    try:
+                        while True:
+                            reaction, user = await interaction.client.wait_for(
+                                "reaction_add",
+                                timeout=3600,  # Monitor for 1 hour
+                                check=check_dua_reaction,
+                            )
+
+                            # Log user interaction for dua reaction
+                            log_user_interaction(
+                                interaction_type="verse_dua_reaction",
+                                user_name=user.display_name,
+                                user_id=user.id,
+                                action_description=f"Added dua reaction 🤲 to verse",
+                                details={
+                                    "reaction_emoji": "🤲",
+                                    "surah": surah_name,
+                                    "ayah": ayah_number,
+                                    "reaction_time": datetime.now(
+                                        pytz.timezone("US/Eastern")
+                                    ).strftime("%m/%d %I:%M %p EST"),
+                                },
+                            )
+
+                    except asyncio.TimeoutError:
+                        pass  # Stop monitoring after timeout
+                    except Exception:
+                        pass  # Ignore any other errors
+
+                # Start monitoring tasks in background
                 asyncio.create_task(monitor_reactions())
+                asyncio.create_task(monitor_dua_reactions())
 
             except Exception as e:
                 log_error_with_traceback(

@@ -11,14 +11,25 @@ import os
 from datetime import datetime, timedelta, timezone
 
 import discord
+import pytz
 from discord import app_commands
 from discord.ext import commands
 
-from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
+from src.utils.tree_log import (
+    log_error_with_traceback,
+    log_perfect_tree_section,
+    log_user_interaction,
+)
 
-# Environment variables
-DEVELOPER_ID = int(os.getenv("DEVELOPER_ID", "259725211664908288"))
-DAILY_VERSE_CHANNEL_ID = int(os.getenv("DAILY_VERSE_CHANNEL_ID", "1389675580253016144"))
+# Environment variables with validation
+DEVELOPER_ID = int(os.getenv("DEVELOPER_ID", "0"))
+DAILY_VERSE_CHANNEL_ID = int(os.getenv("DAILY_VERSE_CHANNEL_ID", "0"))
+
+# Validate required environment variables
+if DEVELOPER_ID == 0:
+    raise ValueError("DEVELOPER_ID environment variable must be set")
+if DAILY_VERSE_CHANNEL_ID == 0:
+    raise ValueError("DAILY_VERSE_CHANNEL_ID environment variable must be set")
 
 
 class QuizView(discord.ui.View):
@@ -291,8 +302,37 @@ class QuizView(discord.ui.View):
             except:
                 pass
 
+        # Log quiz timeout for each user who participated
+        for user_id in self.responses.keys():
+            log_user_interaction(
+                interaction_type="quiz_timeout",
+                user_name="Unknown",  # Will be resolved when results are processed
+                user_id=user_id,
+                action_description="Quiz timer expired while user had submitted answer",
+                details={
+                    "user_answer": self.responses[user_id],
+                    "correct_answer": self.correct_answer,
+                    "quiz_duration": "60 seconds",
+                    "total_participants": len(self.responses),
+                },
+            )
+
         # Send results embed
         await self.send_results()
+
+        # Delete the original question embed after results are sent
+        try:
+            await self.message.delete()
+            log_perfect_tree_section(
+                "Quiz Cleanup",
+                [
+                    ("original_message", "✅ Question embed deleted"),
+                    ("cleanup_reason", "Timer expired, results sent"),
+                ],
+                "🧹",
+            )
+        except Exception as e:
+            log_error_with_traceback("Failed to delete original question embed", e)
 
         timeout_end = datetime.now(timezone.utc)
         timeout_duration = (timeout_end - timeout_start).total_seconds()
@@ -302,6 +342,7 @@ class QuizView(discord.ui.View):
             [
                 ("timeout_processing_time", f"{timeout_duration:.2f} seconds"),
                 ("results_sent", "✅ Results embed sent"),
+                ("question_deleted", "✅ Original question cleaned up"),
             ],
             "✅",
         )
@@ -435,6 +476,26 @@ class QuizView(discord.ui.View):
                     user_stats["best_streak"] = user_stats["current_streak"]
 
                 points_change = "+1 pt"
+
+                # Log user quiz result - correct answer
+                log_user_interaction(
+                    interaction_type="quiz_result_correct",
+                    user_name="Unknown",  # Will be updated below when we fetch user
+                    user_id=user_id,
+                    action_description=f"Answered quiz correctly with '{answer}'",
+                    details={
+                        "selected_answer": answer,
+                        "correct_answer": self.correct_answer,
+                        "is_correct": True,
+                        "points_earned": 1,
+                        "new_total_points": user_stats["points"],
+                        "current_streak": user_stats["current_streak"],
+                        "best_streak": user_stats["best_streak"],
+                        "total_questions_answered": user_stats["total_questions"],
+                        "total_correct_answers": user_stats["correct_answers"],
+                    },
+                )
+
                 log_perfect_tree_section(
                     "📊 Quiz Stats - User Update",
                     [
@@ -455,6 +516,26 @@ class QuizView(discord.ui.View):
                 user_stats["current_streak"] = 0  # Reset streak
 
                 points_change = "-1 pt"
+
+                # Log user quiz result - incorrect answer
+                log_user_interaction(
+                    interaction_type="quiz_result_incorrect",
+                    user_name="Unknown",  # Will be updated below when we fetch user
+                    user_id=user_id,
+                    action_description=f"Answered quiz incorrectly with '{answer}'",
+                    details={
+                        "selected_answer": answer,
+                        "correct_answer": self.correct_answer,
+                        "is_correct": False,
+                        "points_lost": 1,
+                        "new_total_points": user_stats["points"],
+                        "streak_reset": True,
+                        "previous_streak": user_stats["current_streak"],
+                        "total_questions_answered": user_stats["total_questions"],
+                        "total_correct_answers": user_stats["correct_answers"],
+                    },
+                )
+
                 log_perfect_tree_section(
                     "📊 Quiz Stats - User Update",
                     [
@@ -511,6 +592,22 @@ class QuizView(discord.ui.View):
                 is_correct = answer == self.correct_answer
                 user_name = user.display_name if user else "Unknown"
 
+                # Log user quiz results display
+                log_user_interaction(
+                    interaction_type="quiz_results_displayed",
+                    user_name=user_name,
+                    user_id=user_id,
+                    action_description="Quiz results displayed to user",
+                    details={
+                        "user_answer": answer,
+                        "correct_answer": self.correct_answer,
+                        "is_correct": is_correct,
+                        "user_found_in_guild": user is not None,
+                        "display_name": user_name,
+                        "total_participants": len(self.responses),
+                    },
+                )
+
                 log_perfect_tree_section(
                     "Quiz Results - User Answer Check",
                     [
@@ -541,12 +638,39 @@ class QuizView(discord.ui.View):
                 )
                 all_users.append(f"<@{user_id}> - ❌")
 
+        # Create readable user list for logging (with usernames)
+        log_items = [("total_users_processed", len(all_users))]
+
+        # Add embed format for reference
+        log_items.append(("users_for_embed", all_users))
+
+        # Add each user as a separate log item for clean vertical display
+        for i, (user_id, answer) in enumerate(self.responses.items(), 1):
+            try:
+                user = self.message.guild.get_member(user_id)
+                if not user:
+                    try:
+                        user = await self.message.guild.fetch_member(user_id)
+                    except:
+                        user = None
+
+                user_name = user.display_name if user else "Unknown User"
+                is_correct = answer == self.correct_answer
+
+                if is_correct:
+                    log_items.append(
+                        (f"user_{i}", f"{user_name} ({user_id}) - ✅ (+1 pt)")
+                    )
+                else:
+                    log_items.append(
+                        (f"user_{i}", f"{user_name} ({user_id}) - ❌ (-1 pt)")
+                    )
+            except:
+                log_items.append((f"user_{i}", f"Unknown User ({user_id}) - ❌"))
+
         log_perfect_tree_section(
             "Quiz Results - Final User List",
-            [
-                ("total_users_processed", len(all_users)),
-                ("users_list", all_users),
-            ],
+            log_items,
             "📋",
         )
 
@@ -647,8 +771,39 @@ class QuizButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         """Handle button click"""
+        # Log the button click interaction
+        log_user_interaction(
+            interaction_type="quiz_button_click",
+            user_name=interaction.user.display_name,
+            user_id=interaction.user.id,
+            action_description=f"Clicked quiz button '{self.letter}'",
+            details={
+                "button_letter": self.letter,
+                "is_correct_answer": self.is_correct,
+                "quiz_message_id": self.view.message.id if self.view.message else None,
+                "guild_id": interaction.guild_id if interaction.guild else None,
+                "channel_id": interaction.channel_id,
+                "response_time": datetime.now(pytz.timezone("US/Eastern")).strftime(
+                    "%m/%d %I:%M %p EST"
+                ),
+            },
+        )
+
         # Check if user already answered
         if interaction.user.id in self.view.responses:
+            # Log duplicate answer attempt
+            log_user_interaction(
+                interaction_type="quiz_duplicate_answer",
+                user_name=interaction.user.display_name,
+                user_id=interaction.user.id,
+                action_description="Attempted to answer quiz question again",
+                details={
+                    "original_answer": self.view.responses[interaction.user.id],
+                    "attempted_answer": self.letter,
+                    "total_responses": len(self.view.responses),
+                },
+            )
+
             # Create embed for already answered
             embed = discord.Embed(
                 title="⚠️ Already Answered",
@@ -660,6 +815,23 @@ class QuizButton(discord.ui.Button):
 
         # Store the user's response
         self.view.responses[interaction.user.id] = self.letter
+
+        # Log successful answer submission
+        log_user_interaction(
+            interaction_type="quiz_answer_submitted",
+            user_name=interaction.user.display_name,
+            user_id=interaction.user.id,
+            action_description=f"Successfully submitted answer '{self.letter}'",
+            details={
+                "selected_answer": self.letter,
+                "is_correct": self.is_correct,
+                "total_responses_now": len(self.view.responses),
+                "all_responses": str(self.view.responses),
+                "submission_time": datetime.now(pytz.timezone("US/Eastern")).strftime(
+                    "%m/%d %I:%M %p EST"
+                ),
+            },
+        )
 
         # Debug: Log the response storage
         from src.utils.tree_log import log_perfect_tree_section
@@ -676,21 +848,17 @@ class QuizButton(discord.ui.Button):
             "🐛",
         )
 
-        # Create embed confirmation
+        # Create response embed
         embed = discord.Embed(
             title="✅ Answer Recorded",
-            description=f"You selected **{self.letter}**. Results will be shown when the timer expires!",
+            description=f"Your answer **{self.letter}** has been recorded!\n\nWait for the timer to finish to see the results.",
             color=0x00D4AA,
         )
+
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-        # Update the original message to show who answered (no timer reduction)
-        try:
-            await self.view.update_question_embed()
-        except Exception as e:
-            from src.utils.tree_log import log_error_with_traceback
-
-            log_error_with_traceback("Failed to update question embed", e)
+        # Update the original message to show who has answered
+        await self.view.update_question_embed()
 
 
 # Get the daily verses manager through a function instead of global import
@@ -728,13 +896,30 @@ async def question_slash_command(interaction: discord.Interaction):
     Mirrors /verse command functionality
     """
     try:
+        # Log the command usage attempt
+        log_user_interaction(
+            interaction_type="slash_command",
+            user_name=interaction.user.display_name,
+            user_id=interaction.user.id,
+            action_description="Attempted to use /question command",
+            details={
+                "command": "question",
+                "guild_id": interaction.guild_id if interaction.guild else None,
+                "channel_id": interaction.channel_id,
+                "is_admin": interaction.user.id == DEVELOPER_ID,
+                "attempt_time": datetime.now(pytz.timezone("US/Eastern")).strftime(
+                    "%m/%d %I:%M %p EST"
+                ),
+            },
+        )
+
         # Get the daily verses manager with error handling
         daily_verses_manager = get_daily_verses_manager()
         if not daily_verses_manager:
             log_perfect_tree_section(
                 "Question Command - Critical Error",
                 [
-                    ("error", "❌ Failed to get daily_verses_manager"),
+                    ("error", "❌ daily_verses_manager not available"),
                     (
                         "user",
                         f"{interaction.user.display_name} ({interaction.user.id})",
@@ -754,6 +939,20 @@ async def question_slash_command(interaction: discord.Interaction):
 
         # Check if user is the developer/admin
         if interaction.user.id != DEVELOPER_ID:
+            # Log unauthorized access attempt
+            log_user_interaction(
+                interaction_type="unauthorized_command_attempt",
+                user_name=interaction.user.display_name,
+                user_id=interaction.user.id,
+                action_description="Attempted to use admin-only /question command",
+                details={
+                    "command": "question",
+                    "required_permission": "admin",
+                    "required_user_id": DEVELOPER_ID,
+                    "access_denied": True,
+                },
+            )
+
             log_perfect_tree_section(
                 "Question Command - Permission Denied",
                 [
@@ -792,6 +991,19 @@ async def question_slash_command(interaction: discord.Interaction):
 
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
+
+        # Log successful admin authentication
+        log_user_interaction(
+            interaction_type="admin_command_authenticated",
+            user_name=interaction.user.display_name,
+            user_id=interaction.user.id,
+            action_description="Successfully authenticated for /question command",
+            details={
+                "command": "question",
+                "permission_level": "admin",
+                "authentication_success": True,
+            },
+        )
 
         # Log successful authentication
         log_perfect_tree_section(
@@ -1009,6 +1221,76 @@ async def question_slash_command(interaction: discord.Interaction):
         # Start the custom timer
         await view.start_timer()
 
+        # Send admin DM with the correct answer
+        try:
+            admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
+            if admin_user:
+                # Create admin answer embed
+                admin_embed = discord.Embed(
+                    title="🔐 Admin Answer Key",
+                    description=f"**Quiz just posted in {channel.mention}**",
+                    color=0xFF6B35,
+                )
+
+                # Add question info
+                admin_embed.add_field(
+                    name="📖 Question",
+                    value=f"```{english_question}```",
+                    inline=False,
+                )
+
+                # Add correct answer with highlighting
+                correct_choice = question.get("choices", {}).get(
+                    correct_answer_letter, {}
+                )
+                if isinstance(correct_choice, dict):
+                    correct_text = correct_choice.get(
+                        "english", f"Option {correct_answer_letter}"
+                    )
+                    correct_arabic = correct_choice.get("arabic", "")
+
+                    answer_text = f"**{correct_answer_letter}:** {correct_text}"
+                    if correct_arabic:
+                        answer_text += f"\n`{correct_arabic}`"
+                else:
+                    answer_text = f"**{correct_answer_letter}:** {correct_choice}"
+
+                admin_embed.add_field(
+                    name="✅ Correct Answer",
+                    value=answer_text,
+                    inline=False,
+                )
+
+                # Add quiz details
+                admin_embed.add_field(
+                    name="📊 Quiz Info",
+                    value=f"**Category:** {question['category'].replace('_', ' ').title()}\n**Difficulty:** {difficulty_stars}\n**Message ID:** {message.id}",
+                    inline=False,
+                )
+
+                # Set footer
+                admin_embed.set_footer(text="🔒 Admin Only - Keep this private!")
+
+                # Send DM to admin
+                await admin_user.send(embed=admin_embed)
+
+                log_perfect_tree_section(
+                    "Admin Answer DM - Sent",
+                    [
+                        ("admin_id", str(DEVELOPER_ID)),
+                        ("correct_answer", correct_answer_letter),
+                        ("quiz_message_id", str(message.id)),
+                        ("status", "✅ Admin DM sent successfully"),
+                    ],
+                    "🔐",
+                )
+
+        except Exception as admin_dm_error:
+            log_error_with_traceback(
+                "Failed to send admin answer DM",
+                admin_dm_error,
+            )
+
         # Log button setup
         try:
             log_perfect_tree_section(
@@ -1077,6 +1359,26 @@ async def question_slash_command(interaction: discord.Interaction):
         )
 
         # Log the successful manual quiz sending
+        log_user_interaction(
+            interaction_type="manual_quiz_sent",
+            user_name=interaction.user.display_name,
+            user_id=interaction.user.id,
+            action_description="Successfully sent manual quiz question",
+            details={
+                "command": "question",
+                "quiz_message_id": str(message.id),
+                "channel_id": channel.id,
+                "channel_name": channel.name,
+                "question_category": question["category"],
+                "question_difficulty": question["difficulty"],
+                "correct_answer": correct_answer_letter,
+                "timer_reset_hours": interval_hours,
+                "next_auto_quiz": next_quiz_time.astimezone(
+                    pytz.timezone("US/Eastern")
+                ).strftime("%m/%d %I:%M %p EST"),
+            },
+        )
+
         log_perfect_tree_section(
             "Question Command - Execution Complete",
             [
@@ -1101,6 +1403,21 @@ async def question_slash_command(interaction: discord.Interaction):
         )
 
     except Exception as e:
+        # Log command error
+        log_user_interaction(
+            interaction_type="command_error",
+            user_name=interaction.user.display_name,
+            user_id=interaction.user.id,
+            action_description="Error occurred while processing /question command",
+            details={
+                "command": "question",
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "guild_id": interaction.guild_id if interaction.guild else None,
+                "channel_id": interaction.channel_id,
+            },
+        )
+
         log_error_with_traceback("Error in question command", e)
         error_embed = discord.Embed(
             title="❌ Error",

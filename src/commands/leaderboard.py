@@ -25,10 +25,11 @@ QUIZ_STATS_FILE = Path("data/quiz_stats.json")
 class LeaderboardView(discord.ui.View):
     """View for paginated leaderboard with navigation buttons"""
 
-    def __init__(self, sorted_users, interaction_user):
+    def __init__(self, sorted_users, interaction_user, bot_client):
         super().__init__(timeout=300)  # 5 minute timeout
         self.sorted_users = sorted_users
         self.interaction_user = interaction_user
+        self.bot_client = bot_client
         self.current_page = 0
         self.max_pages = (len(sorted_users) - 1) // 5 + 1  # 5 users per page
 
@@ -43,7 +44,7 @@ class LeaderboardView(discord.ui.View):
         # Right arrow button
         self.children[1].disabled = self.current_page >= self.max_pages - 1
 
-    def create_embed(self):
+    async def create_embed(self):
         """Create embed for current page"""
         # Calculate start and end indices for current page
         start_idx = self.current_page * 5
@@ -93,13 +94,55 @@ class LeaderboardView(discord.ui.View):
         else:
             embed.description = "*No quiz data available yet. Answer some questions to appear on the leaderboard!*"
 
-        # Add page indicator
-        if self.max_pages > 1:
-            embed.set_footer(
-                text=f"Page {self.current_page + 1} of {self.max_pages} • created by حَـــــنَـــــا"
-            )
-        else:
-            embed.set_footer(text="created by حَـــــنَـــــا")
+        # Set bot profile picture as thumbnail (preserve across all pages)
+        try:
+            if self.bot_client.user and self.bot_client.user.avatar:
+                embed.set_thumbnail(url=self.bot_client.user.avatar.url)
+            elif self.bot_client.user:
+                embed.set_thumbnail(url=self.bot_client.user.default_avatar.url)
+        except Exception:
+            pass
+
+        # Set footer with admin profile picture and page info (preserve across all pages)
+        try:
+            developer_id = int(os.getenv("DEVELOPER_ID", 0))
+            if developer_id:
+                admin_user = await self.bot_client.fetch_user(developer_id)
+                if admin_user and admin_user.avatar:
+                    # Include page indicator with admin footer
+                    if self.max_pages > 1:
+                        footer_text = f"Page {self.current_page + 1} of {self.max_pages} • created by حَـــــنَـــــا"
+                    else:
+                        footer_text = "created by حَـــــنَـــــا"
+
+                    embed.set_footer(
+                        text=footer_text,
+                        icon_url=admin_user.avatar.url,
+                    )
+                else:
+                    # No admin avatar, just text footer
+                    if self.max_pages > 1:
+                        embed.set_footer(
+                            text=f"Page {self.current_page + 1} of {self.max_pages} • created by حَـــــنَـــــا"
+                        )
+                    else:
+                        embed.set_footer(text="created by حَـــــنَـــــا")
+            else:
+                # No developer ID, just text footer
+                if self.max_pages > 1:
+                    embed.set_footer(
+                        text=f"Page {self.current_page + 1} of {self.max_pages} • created by حَـــــنَـــــا"
+                    )
+                else:
+                    embed.set_footer(text="created by حَـــــنَـــــا")
+        except Exception:
+            # Fallback to text-only footer
+            if self.max_pages > 1:
+                embed.set_footer(
+                    text=f"Page {self.current_page + 1} of {self.max_pages} • created by حَـــــنَـــــا"
+                )
+            else:
+                embed.set_footer(text="created by حَـــــنَـــــا")
 
         return embed
 
@@ -121,7 +164,7 @@ class LeaderboardView(discord.ui.View):
         if self.current_page > 0:
             self.current_page -= 1
             self.update_buttons()
-            embed = self.create_embed()
+            embed = await self.create_embed()
             await interaction.response.edit_message(embed=embed, view=self)
 
     @discord.ui.button(emoji="➡️", style=discord.ButtonStyle.primary)
@@ -132,7 +175,7 @@ class LeaderboardView(discord.ui.View):
         if self.current_page < self.max_pages - 1:
             self.current_page += 1
             self.update_buttons()
-            embed = self.create_embed()
+            embed = await self.create_embed()
             await interaction.response.edit_message(embed=embed, view=self)
 
     async def on_timeout(self):
@@ -211,41 +254,8 @@ async def leaderboard_command(interaction: discord.Interaction):
             return
 
         # Create paginated view
-        view = LeaderboardView(sorted_users, interaction.user)
-        embed = view.create_embed()
-
-        # Set bot profile picture as thumbnail
-        try:
-            if interaction.client.user and interaction.client.user.avatar:
-                embed.set_thumbnail(url=interaction.client.user.avatar.url)
-        except Exception:
-            pass
-
-        # Set footer with admin profile picture
-        try:
-            developer_id = int(os.getenv("DEVELOPER_ID", 0))
-            if developer_id:
-                admin_user = await interaction.client.fetch_user(developer_id)
-                if admin_user and admin_user.avatar:
-                    # Update footer to include admin icon while preserving page info
-                    current_footer = (
-                        embed.footer.text
-                        if embed.footer
-                        else "created by حَـــــنَـــــا"
-                    )
-                    embed.set_footer(
-                        text=current_footer,
-                        icon_url=admin_user.avatar.url,
-                    )
-                else:
-                    # Keep existing footer text if no admin avatar
-                    pass
-            else:
-                # Keep existing footer text if no developer ID
-                pass
-        except Exception:
-            # Keep existing footer text if error occurs
-            pass
+        view = LeaderboardView(sorted_users, interaction.user, interaction.client)
+        embed = await view.create_embed()
 
         await interaction.response.send_message(embed=embed, view=view)
 

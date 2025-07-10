@@ -1029,6 +1029,75 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                     except Exception:
                         pass  # Non-critical if reactions fail
 
+                    # Send admin DM with the correct answer
+                    try:
+                        import os
+
+                        DEVELOPER_ID = int(os.getenv("DEVELOPER_ID", "0"))
+                        if DEVELOPER_ID != 0:
+                            admin_user = await bot.fetch_user(DEVELOPER_ID)
+                            if admin_user:
+                                # Create admin answer embed
+                                admin_embed = discord.Embed(
+                                    title="🔐 Admin Answer Key (Scheduled)",
+                                    description=f"**Scheduled quiz just posted in {channel.mention}**",
+                                    color=0xFF6B35,
+                                )
+
+                                # Add question info
+                                admin_embed.add_field(
+                                    name="📖 Question",
+                                    value=f"```{question['question']}```",
+                                    inline=False,
+                                )
+
+                                # Add correct answer with highlighting
+                                correct_answer_index = question.get("correct_answer", 0)
+                                correct_answer_text = question["options"][
+                                    correct_answer_index
+                                ]
+                                correct_letter = chr(
+                                    65 + correct_answer_index
+                                )  # A, B, C, D...
+
+                                admin_embed.add_field(
+                                    name="✅ Correct Answer",
+                                    value=f"**{correct_letter}:** {correct_answer_text}",
+                                    inline=False,
+                                )
+
+                                # Add quiz details
+                                admin_embed.add_field(
+                                    name="📊 Quiz Info",
+                                    value=f"**Category:** {question['category'].replace('_', ' ').title()}\n**Difficulty:** {question['difficulty'].title()}\n**Message ID:** {message.id}",
+                                    inline=False,
+                                )
+
+                                # Set footer
+                                admin_embed.set_footer(
+                                    text="🔒 Admin Only - Keep this private!"
+                                )
+
+                                # Send DM to admin
+                                await admin_user.send(embed=admin_embed)
+
+                                log_perfect_tree_section(
+                                    "Admin Answer DM - Sent (Scheduled)",
+                                    [
+                                        ("admin_id", str(DEVELOPER_ID)),
+                                        ("correct_answer", correct_letter),
+                                        ("quiz_message_id", str(message.id)),
+                                        ("status", "✅ Admin DM sent successfully"),
+                                    ],
+                                    "🔐",
+                                )
+
+                    except Exception as admin_dm_error:
+                        log_error_with_traceback(
+                            "Failed to send admin answer DM for scheduled quiz",
+                            admin_dm_error,
+                        )
+
                     # Update last sent time
                     quiz_manager.update_last_sent_time()
 

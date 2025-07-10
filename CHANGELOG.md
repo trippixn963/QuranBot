@@ -5,6 +5,59 @@ All notable changes to QuranBot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.0] - 2025-07-10
+
+### Fixed
+
+#### 🎵 Audio Position Tracking System
+
+- **Position Bounds Checking**: Fixed audio position tracking to prevent current time from exceeding track duration
+- **Invalid Resume Prevention**: Added validation to prevent resuming from positions beyond track end
+- **Track Completion Detection**: Enabled proper checking for completed tracks on startup (within 10 seconds of end)
+- **Time Display Accuracy**: Fixed time display showing incorrect values like "2:13:35 / 1:57:34"
+
+#### 🔧 Audio Manager Improvements
+
+- **Resume Position Validation**: Added validation to ensure resume positions are within track duration limits
+- **Position Tracking Loop**: Enhanced position tracking with proper bounds checking every 15 seconds
+- **Playback Time Display**: Fixed `_get_playback_time_display()` to use proper bounds checking
+- **Track Duration Integration**: Improved integration with MP3 duration detection for accurate positioning
+
+#### 🎮 Quiz System Enhancements
+
+- **Admin Answer Key System**: Added private DM system for admin users to receive correct answers
+- **Perfect Logging**: Implemented comprehensive user interaction logging with EST timestamps
+- **Hardcoded ID Removal**: Replaced hardcoded Discord IDs with environment variable defaults
+- **Question Embed Cleanup**: Added automatic deletion of question embeds after timer expires
+
+#### 📊 Leaderboard System Improvements
+
+- **Pagination System**: Added pagination for leaderboard showing top 30 users with 5 per page
+- **Navigation Buttons**: Implemented left/right arrow navigation (⬅️➡️) with 5-minute timeout
+- **Visual Enhancements**: Restored bot profile picture thumbnail and admin footer across all pages
+- **User Access Control**: Added user-specific button access control for navigation
+
+#### 🕐 Timezone & Logging Enhancements
+
+- **EST Timezone Support**: Changed all timestamps from UTC to EST for better readability
+- **Username Logging**: Enhanced logs to show actual usernames instead of just user IDs
+- **Verse Reaction Logging**: Added comprehensive reaction monitoring for verse commands
+- **Playback State Frequency**: Reduced playback state logging from every minute to every 5 minutes
+
+### Enhanced
+
+- **🎯 User Experience**: More accurate audio position tracking and time displays
+- **📱 Visual Feedback**: Better progress indicators and countdown systems for quizzes
+- **🔍 Debug Information**: Improved logging with readable usernames and EST timestamps
+- **⚡ Performance**: Optimized position tracking and reduced unnecessary logging
+
+### Technical Improvements
+
+- **🎵 Audio Engine**: Robust position tracking with proper validation and bounds checking
+- **📊 State Management**: Enhanced state persistence with accurate position tracking
+- **🛡️ Error Handling**: Better error handling for invalid positions and track completion
+- **🔄 Real-time Updates**: Improved real-time position updates with proper time synchronization
+
 ## [3.3.0] - 2025-07-09
 
 ### Enhanced

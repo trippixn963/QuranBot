@@ -47,7 +47,11 @@ from typing import Dict, List, Optional, Union
 import discord
 import pytz
 
-from .tree_log import log_error_with_traceback, log_perfect_tree_section
+from .tree_log import (
+    log_error_with_traceback,
+    log_perfect_tree_section,
+    log_user_interaction,
+)
 
 # Global scheduler task reference
 _verse_scheduler_task = None
@@ -703,6 +707,14 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
                                 and not user.bot
                             )
 
+                        # Monitor for allowed dua reactions
+                        def check_dua_reaction(reaction, user):
+                            return (
+                                reaction.message.id == message.id
+                                and str(reaction.emoji) == "🤲"
+                                and not user.bot
+                            )
+
                         # Set up reaction monitoring in background
                         async def monitor_reactions():
                             try:
@@ -712,6 +724,24 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
                                         timeout=3600,  # Monitor for 1 hour
                                         check=check_reaction,
                                     )
+
+                                    # Log user interaction for unwanted reaction
+                                    log_user_interaction(
+                                        interaction_type="daily_verse_reaction_removed",
+                                        user_name=user.display_name,
+                                        user_id=user.id,
+                                        action_description=f"Added unauthorized reaction '{reaction.emoji}' to daily verse, removed automatically",
+                                        details={
+                                            "reaction_emoji": str(reaction.emoji),
+                                            "allowed_emoji": "🤲",
+                                            "surah": verse["surah"],
+                                            "ayah": verse.get("ayah", verse["verse"]),
+                                            "reaction_time": datetime.now(
+                                                pytz.timezone("US/Eastern")
+                                            ).strftime("%m/%d %I:%M %p EST"),
+                                        },
+                                    )
+
                                     # Remove unwanted reaction
                                     await reaction.remove(user)
                             except asyncio.TimeoutError:
@@ -719,8 +749,40 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
                             except Exception:
                                 pass  # Ignore errors in monitoring
 
-                        # Start monitoring task
+                        # Monitor for dua reactions in background
+                        async def monitor_dua_reactions():
+                            try:
+                                while True:
+                                    reaction, user = await bot.wait_for(
+                                        "reaction_add",
+                                        timeout=3600,  # Monitor for 1 hour
+                                        check=check_dua_reaction,
+                                    )
+
+                                    # Log user interaction for dua reaction
+                                    log_user_interaction(
+                                        interaction_type="daily_verse_dua_reaction",
+                                        user_name=user.display_name,
+                                        user_id=user.id,
+                                        action_description=f"Added dua reaction 🤲 to daily verse",
+                                        details={
+                                            "reaction_emoji": "🤲",
+                                            "surah": verse["surah"],
+                                            "ayah": verse.get("ayah", verse["verse"]),
+                                            "reaction_time": datetime.now(
+                                                pytz.timezone("US/Eastern")
+                                            ).strftime("%m/%d %I:%M %p EST"),
+                                        },
+                                    )
+
+                            except asyncio.TimeoutError:
+                                pass  # Stop monitoring after timeout
+                            except Exception:
+                                pass  # Ignore errors in monitoring
+
+                        # Start monitoring tasks
                         asyncio.create_task(monitor_reactions())
+                        asyncio.create_task(monitor_dua_reactions())
 
                     except Exception:
                         pass  # Non-critical if reaction fails
@@ -832,6 +894,14 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
                                 and not user.bot
                             )
 
+                        # Monitor for allowed dua reactions
+                        def check_dua_reaction(reaction, user):
+                            return (
+                                reaction.message.id == message.id
+                                and str(reaction.emoji) == "🤲"
+                                and not user.bot
+                            )
+
                         # Set up reaction monitoring in background
                         async def monitor_reactions():
                             try:
@@ -841,6 +911,24 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
                                         timeout=3600,  # Monitor for 1 hour
                                         check=check_reaction,
                                     )
+
+                                    # Log user interaction for unwanted reaction
+                                    log_user_interaction(
+                                        interaction_type="scheduled_verse_reaction_removed",
+                                        user_name=user.display_name,
+                                        user_id=user.id,
+                                        action_description=f"Added unauthorized reaction '{reaction.emoji}' to scheduled verse, removed automatically",
+                                        details={
+                                            "reaction_emoji": str(reaction.emoji),
+                                            "allowed_emoji": "🤲",
+                                            "surah": verse["surah"],
+                                            "ayah": verse.get("ayah", verse["verse"]),
+                                            "reaction_time": datetime.now(
+                                                pytz.timezone("US/Eastern")
+                                            ).strftime("%m/%d %I:%M %p EST"),
+                                        },
+                                    )
+
                                     # Remove unwanted reaction
                                     await reaction.remove(user)
                             except asyncio.TimeoutError:
@@ -848,8 +936,40 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
                             except Exception:
                                 pass  # Ignore errors in monitoring
 
-                        # Start monitoring task
+                        # Monitor for dua reactions in background
+                        async def monitor_dua_reactions():
+                            try:
+                                while True:
+                                    reaction, user = await bot.wait_for(
+                                        "reaction_add",
+                                        timeout=3600,  # Monitor for 1 hour
+                                        check=check_dua_reaction,
+                                    )
+
+                                    # Log user interaction for dua reaction
+                                    log_user_interaction(
+                                        interaction_type="scheduled_verse_dua_reaction",
+                                        user_name=user.display_name,
+                                        user_id=user.id,
+                                        action_description=f"Added dua reaction 🤲 to scheduled verse",
+                                        details={
+                                            "reaction_emoji": "🤲",
+                                            "surah": verse["surah"],
+                                            "ayah": verse.get("ayah", verse["verse"]),
+                                            "reaction_time": datetime.now(
+                                                pytz.timezone("US/Eastern")
+                                            ).strftime("%m/%d %I:%M %p EST"),
+                                        },
+                                    )
+
+                            except asyncio.TimeoutError:
+                                pass  # Stop monitoring after timeout
+                            except Exception:
+                                pass  # Ignore errors in monitoring
+
+                        # Start monitoring tasks
                         asyncio.create_task(monitor_reactions())
+                        asyncio.create_task(monitor_dua_reactions())
 
                     except Exception:
                         pass  # Non-critical if reaction fails
