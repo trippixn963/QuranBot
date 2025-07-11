@@ -69,9 +69,13 @@ class SurahSearchModal(Modal):
                     ],
                     "🔍",
                 )
-                await interaction.response.send_message(
-                    "❌ Please enter a search term!", ephemeral=True
+                embed = discord.Embed(
+                    title="❌ Empty Search Query",
+                    description="Please enter a search term!",
+                    color=0xFF6B6B,
                 )
+                embed.set_footer(text="Created by حَـــــنَّـــــا")
+                await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
 
             # Search for surahs
@@ -101,14 +105,18 @@ class SurahSearchModal(Modal):
                     ],
                     "🔍",
                 )
-                await interaction.response.send_message(
-                    f"❌ No surahs found for '{query}'. Try searching by:\n"
-                    f"• **Number**: 1-114 (e.g., '36')\n"
-                    f"• **English name**: 'Light', 'Cave', 'Elephant'\n"
-                    f"• **Transliterated name**: 'Al-Fatiha', 'Ya-Sin', 'An-Nur'\n"
-                    f"• **Arabic name**: 'الفاتحة', 'يس', 'النور'",
-                    ephemeral=True,
+                embed = discord.Embed(
+                    title="❌ No Results Found",
+                    description=f"No surahs found for '{query}'.",
+                    color=0xFF6B6B,
                 )
+                embed.add_field(
+                    name="💡 Try searching by:",
+                    value="• **Number**: 1-114 (e.g., '36')\n• **English name**: 'Light', 'Cave', 'Elephant'\n• **Transliterated name**: 'Al-Fatiha', 'Ya-Sin', 'An-Nur'\n• **Arabic name**: 'الفاتحة', 'يس', 'النور'",
+                    inline=False,
+                )
+                embed.set_footer(text="Created by حَـــــنَّـــــا")
+                await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
 
                 # If only one result, show confirmation
@@ -227,10 +235,13 @@ class SurahSearchModal(Modal):
 
         except Exception as e:
             log_error_with_traceback("Error in search modal submission", e)
-            await interaction.response.send_message(
-                "❌ An error occurred while searching. Please try again.",
-                ephemeral=True,
+            embed = discord.Embed(
+                title="❌ Search Error",
+                description="An error occurred while searching. Please try again.",
+                color=0xFF6B6B,
             )
+            embed.set_footer(text="Created by حَـــــنَّـــــا")
+            await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 # =============================================================================
@@ -302,9 +313,13 @@ class SearchResultsSelect(Select):
                     ],
                     "❌",
                 )
-                await interaction.response.send_message(
-                    "❌ Error loading surah information.", ephemeral=True
+                embed = discord.Embed(
+                    title="❌ Surah Loading Error",
+                    description="Error loading surah information.",
+                    color=0xFF6B6B,
                 )
+                embed.set_footer(text="Created by حَـــــنَّـــــا")
+                await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
 
             # Log successful selection
@@ -358,9 +373,13 @@ class SearchResultsSelect(Select):
 
         except Exception as e:
             log_error_with_traceback("Error in search results selection", e)
-            await interaction.response.send_message(
-                "❌ An error occurred while selecting the surah.", ephemeral=True
+            embed = discord.Embed(
+                title="❌ Selection Error",
+                description="An error occurred while selecting the surah.",
+                color=0xFF6B6B,
             )
+            embed.set_footer(text="Created by حَـــــنَّـــــا")
+            await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 # =============================================================================
@@ -587,6 +606,28 @@ class SurahSelect(Select):
                 },
             )
 
+            # Log to Discord with user profile picture
+            from src.utils.discord_logger import get_discord_logger
+            discord_logger = get_discord_logger()
+            if discord_logger:
+                try:
+                    user_avatar_url = interaction.user.avatar.url if interaction.user.avatar else interaction.user.default_avatar.url
+                    await discord_logger.log_user_interaction(
+                        "dropdown_surah",
+                        interaction.user.display_name,
+                        interaction.user.id,
+                        f"selected {surah_name} from the surah dropdown",
+                        {
+                            "Surah Number": str(selected_surah),
+                            "Surah Name": surah_name,
+                            "Page": str(self.page + 1),
+                            "Action": "Surah Selection"
+                        },
+                        user_avatar_url
+                    )
+                except:
+                    pass
+
             # Update last activity in parent view
             if hasattr(self.view, "_update_last_activity"):
                 self.view._update_last_activity(
@@ -703,6 +744,28 @@ class ReciterSelect(Select):
                     ),
                 },
             )
+
+            # Log to Discord with user profile picture
+            from src.utils.discord_logger import get_discord_logger
+            discord_logger = get_discord_logger()
+            if discord_logger:
+                try:
+                    user_avatar_url = interaction.user.avatar.url if interaction.user.avatar else interaction.user.default_avatar.url
+                    await discord_logger.log_user_interaction(
+                        "dropdown_reciter",
+                        interaction.user.display_name,
+                        interaction.user.id,
+                        f"selected reciter: {reciter_display}",
+                        {
+                            "Selected Reciter": selected_reciter,
+                            "Reciter Display": reciter_display,
+                            "Previous Reciter": getattr(self.view, "current_reciter", "Unknown"),
+                            "Action": "Reciter Selection"
+                        },
+                        user_avatar_url
+                    )
+                except:
+                    pass
 
             # Update last activity in parent view
             if hasattr(self.view, "_update_last_activity"):
@@ -1075,6 +1138,28 @@ class SimpleControlPanelView(View):
                     },
                 )
 
+                # Log to Discord with user profile picture
+                from src.utils.discord_logger import get_discord_logger
+                discord_logger = get_discord_logger()
+                if discord_logger:
+                    try:
+                        user_avatar_url = interaction.user.avatar.url if interaction.user.avatar else interaction.user.default_avatar.url
+                        await discord_logger.log_user_interaction(
+                            "button_navigation",
+                            interaction.user.display_name,
+                            interaction.user.id,
+                            f"navigated to previous surah page (page {self.current_page + 1})",
+                            {
+                                "Old Page": str(old_page + 1),
+                                "New Page": str(self.current_page + 1),
+                                "Direction": "Previous",
+                                "Action": "Page Navigation"
+                            },
+                            user_avatar_url
+                        )
+                    except:
+                        pass
+
                 self._update_last_activity(
                     interaction.user, "switched to previous page"
                 )
@@ -1130,6 +1215,26 @@ class SimpleControlPanelView(View):
                 action_description="Opened surah search modal",
                 details={"modal_type": "surah_search"},
             )
+
+            # Log to Discord with user profile picture
+            from src.utils.discord_logger import get_discord_logger
+            discord_logger = get_discord_logger()
+            if discord_logger:
+                try:
+                    user_avatar_url = interaction.user.avatar.url if interaction.user.avatar else interaction.user.default_avatar.url
+                    await discord_logger.log_user_interaction(
+                        "button_search",
+                        interaction.user.display_name,
+                        interaction.user.id,
+                        f"opened the surah search modal",
+                        {
+                            "Modal Type": "Surah Search",
+                            "Action": "Search Modal Opened"
+                        },
+                        user_avatar_url
+                    )
+                except:
+                    pass
 
             self._update_last_activity(interaction.user, "opened search modal")
 
@@ -1283,6 +1388,27 @@ class SimpleControlPanelView(View):
                     "audio_manager_available": self.audio_manager is not None,
                 },
             )
+
+            # Log to Discord with user profile picture
+            from src.utils.discord_logger import get_discord_logger
+            discord_logger = get_discord_logger()
+            if discord_logger:
+                try:
+                    user_avatar_url = interaction.user.avatar.url if interaction.user.avatar else interaction.user.default_avatar.url
+                    await discord_logger.log_user_interaction(
+                        "button_skip",
+                        interaction.user.display_name,
+                        interaction.user.id,
+                        f"skipped to the next surah",
+                        {
+                            "Direction": "Next",
+                            "Audio Manager": "Available" if self.audio_manager else "Not Available",
+                            "Action": "Skip Next"
+                        },
+                        user_avatar_url
+                    )
+                except:
+                    pass
 
             self._update_last_activity(interaction.user, "skipped to next surah")
 

@@ -980,6 +980,25 @@ class AudioManager:
                     "🎙️",
                 )
 
+                # Log reciter switch to Discord
+                from src.utils.discord_logger import get_discord_logger
+                discord_logger = get_discord_logger()
+                if discord_logger:
+                    try:
+                        await discord_logger.log_bot_activity(
+                            "reciter_switch",
+                            f"switched reciter from {old_reciter} to {reciter_name}",
+                            {
+                                "Previous Reciter": old_reciter,
+                                "New Reciter": reciter_name,
+                                "Current Surah": f"{self.current_surah}. {self._get_surah_name(self.current_surah)}",
+                                "Audio Files": f"{len(self.current_audio_files)} files loaded",
+                                "Action": "Automatic restart with new reciter"
+                            }
+                        )
+                    except:
+                        pass
+
                 # Restart playback
                 await self.start_playback()
             else:
@@ -1247,6 +1266,26 @@ class AudioManager:
                         self.current_file_index + 1, len(self.current_audio_files)
                     )
 
+                    # Log automatic surah start to Discord
+                    from src.utils.discord_logger import get_discord_logger
+                    discord_logger = get_discord_logger()
+                    if discord_logger:
+                        try:
+                            surah_name = self._get_surah_name(self.current_surah)
+                            await discord_logger.log_bot_activity(
+                                "surah_start",
+                                f"started playing {surah_name}",
+                                {
+                                    "Surah Number": str(self.current_surah),
+                                    "Surah Name": surah_name,
+                                    "Reciter": self.current_reciter,
+                                    "File Index": f"{self.current_file_index + 1}/{len(self.current_audio_files)}",
+                                    "Position": f"{self.current_position:.1f}s" if self.current_position > 0 else "From beginning"
+                                }
+                            )
+                        except:
+                            pass
+
                     if validate_surah_number(self.current_surah):
                         surah_display = get_surah_display(self.current_surah)
                         log_perfect_tree_section(
@@ -1509,6 +1548,25 @@ class AudioManager:
                                 "🔄",
                             )
 
+                            # Log 24/7 restart to Discord
+                            from src.utils.discord_logger import get_discord_logger
+                            discord_logger = get_discord_logger()
+                            if discord_logger:
+                                try:
+                                    await discord_logger.log_bot_activity(
+                                        "surah_switch",
+                                        f"completed all surahs, restarting from Al-Fatiha for 24/7 continuous playback",
+                                        {
+                                            "Playback Mode": "24/7 Continuous",
+                                            "Action": "Restart from beginning",
+                                            "Reason": "Completed all 114 surahs",
+                                            "Next Surah": "1. Al-Fatiha",
+                                            "Reciter": self.current_reciter
+                                        }
+                                    )
+                                except:
+                                    pass
+
                     # Update control panel after track change
                     if self.control_panel_view:
                         try:
@@ -1610,3 +1668,12 @@ class AudioManager:
                 "current_time": 0,
                 "total_time": 0,
             }
+
+    def _get_surah_name(self, surah_number: int) -> str:
+        """Get the name of a surah by its number"""
+        try:
+            from .surah_mapper import get_surah_info
+            surah_info = get_surah_info(surah_number)
+            return surah_info.name_transliteration if surah_info else f"Surah {surah_number}"
+        except Exception:
+            return f"Surah {surah_number}"

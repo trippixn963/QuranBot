@@ -258,9 +258,13 @@ class VerseCog(commands.Cog):
             )
 
             # Send a quick acknowledgment to the user
-            await interaction.response.send_message(
-                "📖 Processing your verse command...", ephemeral=True
+            ack_embed = discord.Embed(
+                title="📖 Processing Verse Command",
+                description="Processing your verse request...",
+                color=0x3498DB,
             )
+            ack_embed.set_footer(text="Created by حَـــــنَّـــــا")
+            await interaction.response.send_message(embed=ack_embed, ephemeral=True)
 
             # Get the daily verse channel
             try:
@@ -327,12 +331,23 @@ class VerseCog(commands.Cog):
                 "📖",
             )
 
-            # Create the verse embed (matching the old format)
+            # Create the verse embed (matching the proper format)
+            surah_name = verse_data.get("surah_name", f"Surah {verse_data.get('surah', 'Unknown')}")
+            arabic_name = verse_data.get("arabic_name", "")
+            
+            # Format the title like in the screenshot
+            if arabic_name:
+                title = f"📖 Daily Verse - {surah_name} ({arabic_name})"
+            else:
+                title = f"📖 Daily Verse - {surah_name}"
+
             embed = discord.Embed(
-                title="📖 Daily Verse",
-                description=f"**{verse_data.get('surah', 'Unknown Surah')} - Verse {verse_data.get('verse_number', 'Unknown')}**",
-                color=0x00D4AA,
+                title=title,
+                color=0x2ECC71,  # Green color matching screenshot
             )
+
+            # Add Ayah number as description
+            embed.description = f"Ayah {verse_data.get('ayah', verse_data.get('verse', 'Unknown'))}"
 
             # Add Arabic text with moon emoji and code block formatting
             arabic_text = verse_data.get("arabic", "Arabic text not available")
@@ -342,12 +357,10 @@ class VerseCog(commands.Cog):
                 inline=False,
             )
 
-            # Add English translation with book emoji and code block formatting
-            english_text = verse_data.get(
-                "english", "English translation not available"
-            )
+            # Add English translation with scroll emoji and code block formatting
+            english_text = verse_data.get("translation", "English translation not available")
             embed.add_field(
-                name="📚 English Translation",
+                name="📝 Translation",
                 value=f"```{english_text}```",
                 inline=False,
             )
@@ -387,120 +400,138 @@ class VerseCog(commands.Cog):
             try:
                 message = await channel.send(embed=embed)
 
-                # Add reaction emojis for user interaction
-                await message.add_reaction("🤲")  # Dua emoji
-                await message.add_reaction("❤️")  # Heart emoji
-                await message.add_reaction("🔖")  # Bookmark emoji
+                # Add only the dua emoji for user interaction
+                await message.add_reaction("🤲")  # Dua emoji only
 
-                # Monitor reactions for user interaction tracking
-                async def monitor_reactions():
-                    """Monitor reactions for user interaction logging"""
+                # Monitor reactions for user interaction tracking and removal of unauthorized reactions
+                def check_dua_reaction(reaction, user):
+                    return (
+                        reaction.message.id == message.id
+                        and not user.bot
+                        and str(reaction.emoji) == "🤲"
+                    )
+
+                def check_unauthorized_reaction(reaction, user):
+                    return (
+                        reaction.message.id == message.id
+                        and not user.bot
+                        and str(reaction.emoji) != "🤲"
+                    )
+
+                async def monitor_unauthorized_reactions():
+                    """Monitor and remove unauthorized reactions"""
                     try:
+                        while True:
+                            reaction, user = await interaction.client.wait_for(
+                                "reaction_add",
+                                check=check_unauthorized_reaction,
+                                timeout=3600,
+                            )  # 1 hour timeout
 
-                        def check_reaction(reaction, user):
-                            return (
-                                reaction.message.id == message.id
-                                and not user.bot
-                                and str(reaction.emoji) in ["🤲", "❤️", "🔖"]
+                            # Log unauthorized reaction removal
+                            log_user_interaction(
+                                interaction_type="verse_reaction_removed",
+                                user_name=user.display_name,
+                                user_id=user.id,
+                                action_description=f"Added unauthorized reaction '{reaction.emoji}' to daily verse, removed automatically",
+                                details={
+                                    "reaction_removed": str(reaction.emoji),
+                                    "allowed_reaction": "🤲",
+                                    "verse_id": verse_data.get("id", "Unknown"),
+                                    "surah": verse_data.get("surah", "Unknown"),
+                                    "verse_number": verse_data.get("ayah", verse_data.get("verse", "Unknown")),
+                                    "message_id": message.id,
+                                    "channel_id": channel.id,
+                                },
                             )
 
-                        def check_dua_reaction(reaction, user):
-                            return (
-                                reaction.message.id == message.id
-                                and not user.bot
-                                and str(reaction.emoji) == "🤲"
-                            )
-
-                        async def monitor_reactions():
-                            """Monitor general reactions"""
+                            # Remove the unauthorized reaction
                             try:
-                                while True:
-                                    reaction, user = await interaction.client.wait_for(
-                                        "reaction_add",
-                                        check=check_reaction,
-                                        timeout=3600,
-                                    )  # 1 hour timeout
-
-                                    # Log user interaction
-                                    log_user_interaction(
-                                        interaction_type="verse_reaction",
-                                        user_name=user.display_name,
-                                        user_id=user.id,
-                                        action_description=f"Reacted with {reaction.emoji} to daily verse",
-                                        details={
-                                            "reaction": str(reaction.emoji),
-                                            "verse_id": verse_data.get("id", "Unknown"),
-                                            "surah": verse_data.get("surah", "Unknown"),
-                                            "verse_number": verse_data.get(
-                                                "verse_number", "Unknown"
-                                            ),
-                                            "message_id": message.id,
-                                            "channel_id": channel.id,
-                                        },
-                                    )
-
-                            except asyncio.TimeoutError:
-                                # Timeout reached, stop monitoring
+                                await reaction.remove(user)
+                            except discord.Forbidden:
+                                # Bot doesn't have permission to remove reactions
                                 pass
-                            except Exception as e:
-                                log_error_with_traceback(
-                                    "Error monitoring verse reactions", e
-                                )
-
-                        async def monitor_dua_reactions():
-                            """Monitor dua reactions specifically"""
-                            try:
-                                while True:
-                                    reaction, user = await interaction.client.wait_for(
-                                        "reaction_add",
-                                        check=check_dua_reaction,
-                                        timeout=3600,
-                                    )  # 1 hour timeout
-
-                                    # Log dua interaction
-                                    log_user_interaction(
-                                        interaction_type="dua_reaction",
-                                        user_name=user.display_name,
-                                        user_id=user.id,
-                                        action_description="Made dua (🤲) on daily verse",
-                                        details={
-                                            "reaction": "🤲",
-                                            "verse_id": verse_data.get("id", "Unknown"),
-                                            "surah": verse_data.get("surah", "Unknown"),
-                                            "verse_number": verse_data.get(
-                                                "verse_number", "Unknown"
-                                            ),
-                                            "message_id": message.id,
-                                            "channel_id": channel.id,
-                                            "spiritual_activity": "dua_made",
-                                        },
-                                    )
-
-                            except asyncio.TimeoutError:
-                                # Timeout reached, stop monitoring
+                            except Exception:
+                                # Ignore other reaction removal errors
                                 pass
-                            except Exception as e:
-                                log_error_with_traceback(
-                                    "Error monitoring dua reactions", e
-                                )
 
-                        # Start monitoring tasks
-                        asyncio.create_task(monitor_reactions())
-                        asyncio.create_task(monitor_dua_reactions())
-
+                    except asyncio.TimeoutError:
+                        # Timeout reached, stop monitoring
+                        pass
                     except Exception as e:
                         log_error_with_traceback(
-                            "Error in reaction monitoring setup", e
+                            "Error monitoring unauthorized reactions", e
                         )
 
-                # Start reaction monitoring
-                asyncio.create_task(monitor_reactions())
+                async def monitor_dua_reactions():
+                    """Monitor dua reactions specifically"""
+                    try:
+                        while True:
+                            reaction, user = await interaction.client.wait_for(
+                                "reaction_add",
+                                check=check_dua_reaction,
+                                timeout=3600,
+                            )  # 1 hour timeout
+
+                            # Log dua interaction
+                            log_user_interaction(
+                                interaction_type="dua_reaction",
+                                user_name=user.display_name,
+                                user_id=user.id,
+                                action_description="Made dua (🤲) on daily verse",
+                                details={
+                                    "reaction": "🤲",
+                                    "verse_id": verse_data.get("id", "Unknown"),
+                                    "surah": verse_data.get("surah", "Unknown"),
+                                    "verse_number": verse_data.get("ayah", verse_data.get("verse", "Unknown")),
+                                    "message_id": message.id,
+                                    "channel_id": channel.id,
+                                    "spiritual_activity": "dua_made",
+                                },
+                            )
+
+                            # Log to Discord with user profile picture
+                            from src.utils.discord_logger import get_discord_logger
+                            discord_logger = get_discord_logger()
+                            if discord_logger:
+                                try:
+                                    user_avatar_url = user.avatar.url if user.avatar else user.default_avatar.url
+                                    await discord_logger.log_user_interaction(
+                                        "dua_reaction",
+                                        user.display_name,
+                                        user.id,
+                                        f"made dua (🤲) on daily verse",
+                                        {
+                                            "Reaction": "🤲",
+                                            "Verse ID": str(verse_data.get("id", "Unknown")),
+                                            "Surah": str(verse_data.get("surah", "Unknown")),
+                                            "Verse Number": str(verse_data.get("ayah", verse_data.get("verse", "Unknown"))),
+                                            "Message ID": str(message.id),
+                                            "Channel ID": str(channel.id),
+                                            "Spiritual Activity": "Dua Made"
+                                        },
+                                        user_avatar_url
+                                    )
+                                except:
+                                    pass
+
+                    except asyncio.TimeoutError:
+                        # Timeout reached, stop monitoring
+                        pass
+                    except Exception as e:
+                        log_error_with_traceback(
+                            "Error monitoring dua reactions", e
+                        )
+
+                # Start monitoring tasks
+                asyncio.create_task(monitor_unauthorized_reactions())
+                asyncio.create_task(monitor_dua_reactions())
 
                 # Send confirmation to the user
                 try:
                     success_embed = discord.Embed(
                         title="✅ Verse Sent Successfully",
-                        description=f"Daily verse has been sent to {channel.mention}.\n\n**Verse Details:**\n• Surah: {verse_data.get('surah', 'Unknown')}\n• Verse: {verse_data.get('verse_number', 'Unknown')}\n• Timer: Reset to 3 hours",
+                        description=f"Daily verse has been sent to {channel.mention}.\n\n**Verse Details:**\n• Surah: {verse_data.get('surah', 'Unknown')}\n• Verse: {verse_data.get('ayah', verse_data.get('verse', 'Unknown'))}\n• Timer: Reset to 3 hours",
                         color=0x00D4AA,
                     )
                     await interaction.followup.send(embed=success_embed, ephemeral=True)
@@ -520,14 +551,38 @@ class VerseCog(commands.Cog):
                         ("channel", f"#{channel.name}"),
                         ("verse_id", verse_data.get("id", "Unknown")),
                         ("surah", verse_data.get("surah", "Unknown")),
-                        ("verse_number", verse_data.get("verse_number", "Unknown")),
+                        ("verse_number", verse_data.get("ayah", verse_data.get("verse", "Unknown"))),
                         ("message_id", message.id),
-                        ("reactions_added", "🤲 ❤️ 🔖"),
+                        ("reactions_added", "🤲"),
                         ("timer_reset", "✅ 3 hours"),
                         ("status", "✅ Verse delivered successfully"),
                     ],
                     "🏆",
                 )
+
+                # Send success notification to Discord logger
+                from src.utils.discord_logger import get_discord_logger
+                discord_logger = get_discord_logger()
+                if discord_logger:
+                    try:
+                        await discord_logger.log_user_activity(
+                            f"Manual Verse Sent by {interaction.user.display_name}",
+                            f"📖 **Daily verse delivered manually**\n\n"
+                            f"**Verse Details:**\n"
+                            f"• Surah: {verse_data.get('surah', 'Unknown')}\n"
+                            f"• Verse: {verse_data.get('ayah', verse_data.get('verse', 'Unknown'))}\n"
+                            f"• Channel: {channel.mention}\n"
+                            f"• Reaction: 🤲 (dua emoji)\n\n"
+                            f"Daily verse timer has been reset to 3 hours.",
+                            {
+                                "Admin": interaction.user.display_name,
+                                "User ID": str(interaction.user.id),
+                                "Verse ID": str(verse_data.get("id", "Unknown")),
+                                "Message ID": str(message.id)
+                            }
+                        )
+                    except:
+                        pass
 
             except discord.Forbidden:
                 log_error_with_traceback(

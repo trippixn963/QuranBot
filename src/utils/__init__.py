@@ -81,6 +81,19 @@ from .tree_log import (
     write_to_log_files,
 )
 
+# Discord logging for VPS monitoring
+from .discord_logger import (
+    setup_discord_logger,
+    get_discord_logger,
+    discord_log_error,
+    discord_log_critical,
+    discord_log_warning,
+    discord_log_system,
+    discord_log_user,
+    discord_log_success,
+    discord_log_vps_status,
+)
+
 # Import listening stats utilities
 try:
     from .listening_stats import (

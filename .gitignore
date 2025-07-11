@@ -92,10 +92,16 @@ Thumbs.db
 
 # Logs and Runtime
 logs/
+vps_logs/  # Prevent VPS logs folder - all logs should go to logs/
 *.log
 *.log.*
 bot.log
 nohup.out
+
+# VPS Management - Allow VPS tools but ignore runtime files
+!vps/
+vps/web_dashboard/dashboard.log
+vps/web_dashboard/dashboard.pid
 
 # Audio Files (too large for git)
 audio/

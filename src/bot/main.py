@@ -25,6 +25,7 @@ import traceback
 from pathlib import Path
 
 import discord
+from discord.ext import commands
 from aiohttp.client_exceptions import ClientConnectionResetError
 
 # =============================================================================
@@ -102,6 +103,11 @@ from utils.backup_manager import start_backup_scheduler
 # Import Control Panel Manager
 # =============================================================================
 from utils.control_panel import setup_control_panel
+
+# =============================================================================
+# Import Discord Logger for VPS Monitoring
+# =============================================================================
+from utils.discord_logger import setup_discord_logger, get_discord_logger
 
 # =============================================================================
 # Import Listening Stats Manager
@@ -485,8 +491,8 @@ intents.message_content = True
 intents.voice_states = True
 intents.guilds = True
 
-bot = discord.Client(intents=intents)
-bot.tree = discord.app_commands.CommandTree(bot)
+bot = commands.Bot(command_prefix='!', intents=intents)
+# commands.Bot already has a command tree, no need to create another one
 
 # Bot metadata - imported from centralized version module
 # BOT_NAME and BOT_VERSION now imported from version module
@@ -499,6 +505,7 @@ GUILD_ID = int(os.getenv("GUILD_ID") or "0")
 PANEL_ACCESS_ROLE_ID = int(os.getenv("PANEL_ACCESS_ROLE_ID") or "1391500136366211243")
 DAILY_VERSE_CHANNEL_ID = int(os.getenv("DAILY_VERSE_CHANNEL_ID") or "0")
 DEVELOPER_ID = int(os.getenv("DEVELOPER_ID") or "0")
+LOGS_CHANNEL_ID = int(os.getenv("LOGS_CHANNEL_ID") or "0")  # VPS Discord logging
 FFMPEG_PATH = os.getenv("FFMPEG_PATH", "ffmpeg")
 AUDIO_FOLDER = "audio/Saad Al Ghamdi"
 
@@ -547,9 +554,20 @@ def validate_configuration():
             errors.append("DISCORD_TOKEN must be a string")
         elif len(DISCORD_TOKEN) < 50:
             warnings.append("DISCORD_TOKEN appears to be invalid (too short)")
-        elif not DISCORD_TOKEN.startswith(("Bot ", "Bearer ")):
-            # Discord tokens typically start with these prefixes
-            warnings.append("DISCORD_TOKEN format may be incorrect")
+        else:
+            # Modern Discord bot tokens have specific patterns
+            # They can be raw tokens or prefixed with "Bot "
+            token_to_check = DISCORD_TOKEN
+            if DISCORD_TOKEN.startswith("Bot "):
+                token_to_check = DISCORD_TOKEN[4:]  # Remove "Bot " prefix
+            elif DISCORD_TOKEN.startswith("Bearer "):
+                token_to_check = DISCORD_TOKEN[7:]  # Remove "Bearer " prefix
+            
+            # Discord tokens are typically 59+ characters long
+            # Modern tokens may have different patterns, so we'll be more lenient
+            if len(token_to_check) < 59:
+                warnings.append("DISCORD_TOKEN appears to be too short for a valid Discord token")
+            # Remove the character pattern check as it's too restrictive
 
         # =============================================================================
         # Server Configuration Validation
@@ -1107,18 +1125,18 @@ async def on_ready():
                 log_spacing()
                 try:
                     from src.commands import (
-                        setup_credits_command,
-                        setup_interval_command,
-                        setup_leaderboard_command,
-                        setup_question_command,
-                        setup_verse_command,
+                        setup_credits,
+                        setup_interval,
+                        setup_leaderboard,
+                        setup_question,
+                        setup_verse,
                     )
 
-                    await setup_credits_command(bot)
-                    await setup_interval_command(bot)
-                    await setup_leaderboard_command(bot)
-                    await setup_question_command(bot)
-                    await setup_verse_command(bot)
+                    await setup_credits(bot)
+                    await setup_interval(bot)
+                    await setup_leaderboard(bot)
+                    await setup_question(bot)
+                    await setup_verse(bot)
 
                     # Sync commands to Discord with force sync
                     await bot.tree.sync()
@@ -1317,8 +1335,61 @@ async def on_ready():
                         # Continue with bot startup even if this fails
 
                     # =============================================================================
+                    # Discord Logger Setup for VPS Monitoring
+                    # =============================================================================
+                    discord_logger = None
+                    if LOGS_CHANNEL_ID != 0:
+                        try:
+                            discord_logger = setup_discord_logger(bot, LOGS_CHANNEL_ID)
+                            await discord_logger.initialize()
+                            log_perfect_tree_section(
+                                "Discord Logger Setup",
+                                [
+                                    ("status", "✅ Discord logger initialized"),
+                                    ("log_channel_id", str(LOGS_CHANNEL_ID)),
+                                    ("monitoring", "Errors, warnings, and system events"),
+                                    ("rate_limit", "10 messages per minute per type"),
+                                ],
+                                "🔔",
+                            )
+                            
+
+                            
+                        except Exception as e:
+                            log_error_with_traceback("Error setting up Discord logger", e)
+                            log_perfect_tree_section(
+                                "Discord Logger Setup",
+                                [
+                                    ("status", "❌ Discord logger failed to initialize"),
+                                    ("error", str(e)),
+                                    ("impact", "VPS monitoring will use console logs only"),
+                                ],
+                                "⚠️",
+                            )
+                    else:
+                        log_perfect_tree_section(
+                            "Discord Logger Setup",
+                            [
+                                ("status", "⚠️ Discord logger disabled"),
+                                ("reason", "LOGS_CHANNEL_ID not configured"),
+                                ("impact", "VPS monitoring will use console logs only"),
+                            ],
+                            "⚠️",
+                        )
+
+                    # =============================================================================
                     # Bot Startup Complete
                     # =============================================================================
+                    log_perfect_tree_section(
+                        "Bot Initialization Complete",
+                        [
+                            ("status", "✅ Bot initialization successful"),
+                            ("audio_playback", "Started"),
+                            ("discord_logging", "✅ Enabled" if discord_logger and discord_logger.enabled else "❌ Disabled"),
+                            ("vps_monitoring", "✅ Ready" if discord_logger and discord_logger.enabled else "Console only"),
+                        ],
+                        "🎯",
+                    )
 
                 except Exception as e:
                     log_error_with_traceback("Error starting audio playback", e)
@@ -1430,6 +1501,23 @@ async def on_ready():
 
     except Exception as e:
         log_critical_error("Fatal error in on_ready event", e)
+        
+        # Send critical error to Discord if logger is available
+        discord_logger = get_discord_logger()
+        if discord_logger:
+            try:
+                await discord_logger.log_critical_error(
+                    "Fatal error in bot startup",
+                    e,
+                    {
+                        "Event": "on_ready",
+                        "Impact": "Bot startup failed",
+                        "Action": "Attempting graceful shutdown"
+                    }
+                )
+            except:
+                pass  # Don't let Discord logging errors crash the bot further
+        
         # Attempt graceful shutdown on critical error
         try:
             await bot.close()
@@ -1781,6 +1869,27 @@ async def on_voice_state_update(member, before, after):
                     },
                 )
 
+                # Log to Discord with user profile picture
+                discord_logger = get_discord_logger()
+                if discord_logger:
+                    try:
+                        user_avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
+                        await discord_logger.log_user_interaction(
+                            "voice_join",
+                            member.display_name,
+                            member.id,
+                            f"joined the Quran voice channel",
+                            {
+                                "Channel": after.channel.name,
+                                "Channel ID": str(after.channel.id),
+                                "Previous Channel": "None",
+                                "Activity": "Joined Quran voice channel"
+                            },
+                            user_avatar_url
+                        )
+                    except:
+                        pass
+
             # User joined Quran VC from a different voice channel
             elif (
                 before.channel
@@ -1803,6 +1912,27 @@ async def on_voice_state_update(member, before, after):
                     },
                 )
 
+                # Log to Discord with user profile picture
+                discord_logger = get_discord_logger()
+                if discord_logger:
+                    try:
+                        user_avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
+                        await discord_logger.log_user_interaction(
+                            "voice_move",
+                            member.display_name,
+                            member.id,
+                            f"moved to the Quran voice channel from {before.channel.name}",
+                            {
+                                "Channel": after.channel.name,
+                                "Channel ID": str(after.channel.id),
+                                "Previous Channel": before.channel.name,
+                                "Activity": "Moved to Quran voice channel"
+                            },
+                            user_avatar_url
+                        )
+                    except:
+                        pass
+
             # User left the Quran voice channel (to no VC or different VC)
             elif (
                 before.channel
@@ -1823,6 +1953,27 @@ async def on_voice_state_update(member, before, after):
                         "timestamp": f"{get_timestamp().strip('[]')}",
                     },
                 )
+
+                # Log to Discord with user profile picture
+                discord_logger = get_discord_logger()
+                if discord_logger:
+                    try:
+                        user_avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
+                        await discord_logger.log_user_interaction(
+                            "voice_leave",
+                            member.display_name,
+                            member.id,
+                            f"left the Quran voice channel",
+                            {
+                                "Channel": before.channel.name,
+                                "Channel ID": str(before.channel.id),
+                                "New Channel": "None",
+                                "Activity": "Left Quran voice channel"
+                            },
+                            user_avatar_url
+                        )
+                    except:
+                        pass
 
             # User left Quran VC to a different voice channel
             elif (
@@ -1846,6 +1997,27 @@ async def on_voice_state_update(member, before, after):
                     },
                 )
 
+                # Log to Discord with user profile picture
+                discord_logger = get_discord_logger()
+                if discord_logger:
+                    try:
+                        user_avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
+                        await discord_logger.log_user_interaction(
+                            "voice_move",
+                            member.display_name,
+                            member.id,
+                            f"left the Quran voice channel for {after.channel.name}",
+                            {
+                                "Previous Channel": before.channel.name,
+                                "New Channel": after.channel.name,
+                                "Channel ID": str(after.channel.id),
+                                "Activity": "Left Quran voice channel for another channel"
+                            },
+                            user_avatar_url
+                        )
+                    except:
+                        pass
+
             # User muted/unmuted or deafened/undeafened in the Quran voice channel
             elif (
                 before.channel
@@ -1868,6 +2040,27 @@ async def on_voice_state_update(member, before, after):
                         },
                     )
 
+                    # Log to Discord with user profile picture
+                    discord_logger = get_discord_logger()
+                    if discord_logger:
+                        try:
+                            user_avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
+                            await discord_logger.log_user_interaction(
+                                f"voice_{activity_type}",
+                                member.display_name,
+                                member.id,
+                                f"{'muted' if after.self_mute else 'unmuted'} themselves in the Quran voice channel",
+                                {
+                                    "Channel": after.channel.name,
+                                    "Channel ID": str(after.channel.id),
+                                    "Status Change": f"{'Muted' if after.self_mute else 'Unmuted'}",
+                                    "Type": "Self"
+                                },
+                                user_avatar_url
+                            )
+                        except:
+                            pass
+
                 if before.self_deaf != after.self_deaf:
                     activity_type = "deafen" if after.self_deaf else "undeafen"
                     log_voice_activity_tree(
@@ -1880,6 +2073,27 @@ async def on_voice_state_update(member, before, after):
                             "timestamp": f"{get_timestamp().strip('[]')}",
                         },
                     )
+
+                    # Log to Discord with user profile picture
+                    discord_logger = get_discord_logger()
+                    if discord_logger:
+                        try:
+                            user_avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
+                            await discord_logger.log_user_interaction(
+                                f"voice_{activity_type}",
+                                member.display_name,
+                                member.id,
+                                f"{'deafened' if after.self_deaf else 'undeafened'} themselves in the Quran voice channel",
+                                {
+                                    "Channel": after.channel.name,
+                                    "Channel ID": str(after.channel.id),
+                                    "Status Change": f"{'Deafened' if after.self_deaf else 'Undeafened'}",
+                                    "Type": "Self"
+                                },
+                                user_avatar_url
+                            )
+                        except:
+                            pass
 
                 # Log server-side mute/deafen changes
                 if before.mute != after.mute:
@@ -2143,11 +2357,58 @@ async def on_error(event, *args, **kwargs):
                     kwargs.get("guild_id"),
                     kwargs.get("channel_id"),
                 )
+                
+                # Send error to Discord logger
+                discord_logger = get_discord_logger()
+                if discord_logger:
+                    try:
+                        await discord_logger.log_error(
+                            f"Discord event error: {event}",
+                            exc_value,
+                            {
+                                "Event": event,
+                                "Guild ID": str(kwargs.get("guild_id", "Unknown")),
+                                "Channel ID": str(kwargs.get("channel_id", "Unknown")),
+                                "Error Type": type(exc_value).__name__
+                            }
+                        )
+                    except:
+                        pass  # Don't let Discord logging errors crash the bot further
         else:
             log_error_with_traceback(f"Unknown error in Discord event: {event}")
+            
+            # Send unknown error to Discord logger
+            discord_logger = get_discord_logger()
+            if discord_logger:
+                try:
+                    await discord_logger.log_error(
+                        f"Unknown error in Discord event: {event}",
+                        None,
+                        {
+                            "Event": event,
+                            "Error Type": "Unknown"
+                        }
+                    )
+                except:
+                    pass
 
     except Exception as e:
         log_critical_error("Error in error handler", e)
+        
+        # Send critical error to Discord logger
+        discord_logger = get_discord_logger()
+        if discord_logger:
+            try:
+                await discord_logger.log_critical_error(
+                    "Error in error handler",
+                    e,
+                    {
+                        "Context": "Main error handler failed",
+                        "Impact": "Error handling compromised"
+                    }
+                )
+            except:
+                pass
 
 
 async def _handle_voice_connection_error(exc_value, event, kwargs):
@@ -2313,6 +2574,24 @@ async def on_disconnect():
             "📡",
         )
 
+        # Send disconnect notification to Discord logger
+        discord_logger = get_discord_logger()
+        if discord_logger:
+            try:
+                await discord_logger.log_system_event(
+                    "Bot Disconnected",
+                    "🔌 **QuranBot has disconnected from Discord**\n\n"
+                    "This may be due to network issues, Discord maintenance, or server problems. "
+                    "The bot will attempt to reconnect automatically.",
+                    {
+                        "Disconnect Time": get_timestamp().strip("[]"),
+                        "Auto Reconnect": "Enabled",
+                        "State Management": "Active"
+                    }
+                )
+            except:
+                pass  # Don't let Discord logging errors interfere with disconnect handling
+
         # Clean up any active voice connections
         if bot.voice_clients:
             for voice_client in bot.voice_clients:
@@ -2339,6 +2618,21 @@ async def on_disconnect():
 
     except Exception as e:
         log_error_with_traceback("Error handling disconnect event", e)
+        
+        # Send error to Discord logger
+        discord_logger = get_discord_logger()
+        if discord_logger:
+            try:
+                await discord_logger.log_error(
+                    "Error handling disconnect event",
+                    e,
+                    {
+                        "Event": "on_disconnect", 
+                        "Impact": "Disconnect handling failed"
+                    }
+                )
+            except:
+                pass
 
 
 @bot.event
@@ -2370,6 +2664,23 @@ async def on_resumed():
             ],
             "🔄",
         )
+
+        # Send reconnection notification to Discord logger
+        discord_logger = get_discord_logger()
+        if discord_logger:
+            try:
+                await discord_logger.log_system_event(
+                    "Bot Reconnected",
+                    "🔄 **QuranBot has reconnected to Discord**\n\n"
+                    "Connection has been restored successfully. Audio playback will resume automatically.",
+                    {
+                        "Reconnect Time": get_timestamp().strip("[]"),
+                        "Voice Status": voice_status,
+                        "Auto Restart": "Attempting audio restart"
+                    }
+                )
+            except:
+                pass  # Don't let Discord logging errors interfere with reconnection
 
         # Automatically restart audio playback using intelligent logic
         if voice_clients:
@@ -2573,6 +2884,25 @@ async def auto_restart_audio_playback(voice_client=None) -> bool:
             ],
             "🎵",
         )
+
+        # Log voice reconnection to Discord
+        from src.utils.discord_logger import get_discord_logger
+        discord_logger = get_discord_logger()
+        if discord_logger:
+            try:
+                await discord_logger.log_bot_activity(
+                    "voice_reconnect",
+                    f"automatically restarted audio playback after voice reconnection",
+                    {
+                        "Resume Surah": f"{resume_info['surah']}. {resume_info.get('surah_name', 'Unknown')}",
+                        "Resume Position": f"{resume_info['position']:.1f}s",
+                        "Resume Reciter": resume_info["reciter"],
+                        "Action": "Auto-restart after reconnection",
+                        "Trigger": "Voice connection restored"
+                    }
+                )
+            except:
+                pass
 
         # Restart audio playback with resume position
         await audio_manager.start_playback(resume_position=True)

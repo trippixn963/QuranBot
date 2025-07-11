@@ -1,0 +1,36 @@
+[Unit]
+Description=QuranBot Web Dashboard (Independent)
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/QuranBot/vps/web_dashboard
+Environment=PATH=/opt/QuranBot/.venv/bin
+ExecStart=/opt/QuranBot/.venv/bin/python /opt/QuranBot/vps/web_dashboard/app.py
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=quranbot-dashboard
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/QuranBot
+
+# Resource limits
+LimitNOFILE=65536
+MemoryMax=256M
+CPUQuota=25%
+
+# Environment variables
+EnvironmentFile=-/opt/QuranBot/config/.env
+
+[Install]
+WantedBy=multi-user.target 

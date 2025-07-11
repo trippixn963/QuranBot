@@ -27,3 +27,4 @@ rich==13.7.1
 
 # Audio File Processing
 mutagen==1.47.0
+psutil>=5.9.0

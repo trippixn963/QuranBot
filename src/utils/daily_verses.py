@@ -161,6 +161,31 @@ class DailyVerseManager:
             log_error_with_traceback("Error loading verse interval config", e)
             return 3.0
 
+    def set_interval_hours(self, hours: float) -> bool:
+        """Set the verse interval in hours and save to config"""
+        try:
+            # Load existing config or create new one
+            config_data = {}
+            if self.verses_state_file.exists():
+                with open(self.verses_state_file, "r") as f:
+                    config_data = json.load(f)
+            
+            # Update the schedule config
+            if "schedule_config" not in config_data:
+                config_data["schedule_config"] = {}
+            
+            config_data["schedule_config"]["send_interval_hours"] = hours
+            config_data["schedule_config"]["last_updated"] = datetime.now(timezone.utc).isoformat()
+            
+            # Save the updated config
+            with open(self.verses_state_file, "w") as f:
+                json.dump(config_data, f, indent=2)
+            
+            return True
+        except Exception as e:
+            log_error_with_traceback("Error saving verse interval config", e)
+            return False
+
     def should_send_verse(self) -> bool:
         """Check if it's time to send a verse based on custom interval"""
         try:
@@ -531,13 +556,17 @@ class DailyVerseManager:
                                 "verse": verse_data.get(
                                     "ayah", verse_data.get("verse")
                                 ),  # Handle both field names
+                                "ayah": verse_data.get("ayah", verse_data.get("verse")),  # Keep ayah field
                                 "text": verse_data.get(
                                     "arabic", verse_data.get("text", "")
                                 ),
+                                "arabic": verse_data.get("arabic", verse_data.get("text", "")),  # Keep arabic field
                                 "translation": verse_data.get("translation", ""),
                                 "transliteration": verse_data.get(
                                     "transliteration", ""
                                 ),
+                                "surah_name": verse_data.get("surah_name", f"Surah {verse_data.get('surah', 'Unknown')}"),
+                                "arabic_name": verse_data.get("arabic_name", ""),
                             }
 
                             # Only add if we have the required fields
@@ -695,12 +724,12 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
                     # Send message
                     message = await channel.send(embed=embed)
 
-                    # Add dua reaction
+                    # Add only dua reaction
                     try:
                         await message.add_reaction("🤲")
 
                         # Monitor reactions to remove unwanted ones
-                        def check_reaction(reaction, user):
+                        def check_unauthorized_reaction(reaction, user):
                             return (
                                 reaction.message.id == message.id
                                 and str(reaction.emoji) != "🤲"
@@ -716,13 +745,13 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
                             )
 
                         # Set up reaction monitoring in background
-                        async def monitor_reactions():
+                        async def monitor_unauthorized_reactions():
                             try:
                                 while True:
                                     reaction, user = await bot.wait_for(
                                         "reaction_add",
                                         timeout=3600,  # Monitor for 1 hour
-                                        check=check_reaction,
+                                        check=check_unauthorized_reaction,
                                     )
 
                                     # Log user interaction for unwanted reaction
@@ -775,13 +804,36 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
                                         },
                                     )
 
+                                    # Log to Discord with user profile picture
+                                    from src.utils.discord_logger import get_discord_logger
+                                    discord_logger = get_discord_logger()
+                                    if discord_logger:
+                                        try:
+                                            user_avatar_url = user.avatar.url if user.avatar else user.default_avatar.url
+                                            await discord_logger.log_user_interaction(
+                                                "dua_reaction",
+                                                user.display_name,
+                                                user.id,
+                                                f"made dua (🤲) on daily verse",
+                                                {
+                                                    "Reaction": "🤲",
+                                                    "Surah": str(verse["surah"]),
+                                                    "Ayah": str(verse.get("ayah", verse["verse"])),
+                                                    "Reaction Time": datetime.now(pytz.timezone("US/Eastern")).strftime("%m/%d %I:%M %p EST"),
+                                                    "Verse Type": "Daily Verse"
+                                                },
+                                                user_avatar_url
+                                            )
+                                        except:
+                                            pass
+
                             except asyncio.TimeoutError:
                                 pass  # Stop monitoring after timeout
                             except Exception:
                                 pass  # Ignore errors in monitoring
 
                         # Start monitoring tasks
-                        asyncio.create_task(monitor_reactions())
+                        asyncio.create_task(monitor_unauthorized_reactions())
                         asyncio.create_task(monitor_dua_reactions())
 
                     except Exception:
@@ -796,6 +848,25 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
                         ],
                         "📬",
                     )
+
+                    # Log daily verse posting to Discord
+                    from src.utils.discord_logger import get_discord_logger
+                    discord_logger = get_discord_logger()
+                    if discord_logger:
+                        try:
+                            await discord_logger.log_bot_activity(
+                                "daily_verse",
+                                f"posted daily verse from {verse['surah']} (verse {verse.get('ayah', verse['verse'])})",
+                                {
+                                    "Surah": str(verse["surah"]),
+                                    "Verse": str(verse.get("ayah", verse["verse"])),
+                                    "Channel ID": str(channel_id),
+                                    "Verse Type": "Daily Verse",
+                                    "Action": "Automatic posting"
+                                }
+                            )
+                        except:
+                            pass
 
     except Exception as e:
         log_error_with_traceback("Error checking and posting verse", e)
@@ -887,7 +958,7 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
                         await message.add_reaction("🤲")
 
                         # Monitor reactions to remove unwanted ones
-                        def check_reaction(reaction, user):
+                        def check_unauthorized_reaction(reaction, user):
                             return (
                                 reaction.message.id == message.id
                                 and str(reaction.emoji) != "🤲"
@@ -903,13 +974,13 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
                             )
 
                         # Set up reaction monitoring in background
-                        async def monitor_reactions():
+                        async def monitor_unauthorized_reactions():
                             try:
                                 while True:
                                     reaction, user = await bot.wait_for(
                                         "reaction_add",
                                         timeout=3600,  # Monitor for 1 hour
-                                        check=check_reaction,
+                                        check=check_unauthorized_reaction,
                                     )
 
                                     # Log user interaction for unwanted reaction
@@ -962,13 +1033,36 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
                                         },
                                     )
 
+                                    # Log to Discord with user profile picture
+                                    from src.utils.discord_logger import get_discord_logger
+                                    discord_logger = get_discord_logger()
+                                    if discord_logger:
+                                        try:
+                                            user_avatar_url = user.avatar.url if user.avatar else user.default_avatar.url
+                                            await discord_logger.log_user_interaction(
+                                                "dua_reaction",
+                                                user.display_name,
+                                                user.id,
+                                                f"made dua (🤲) on scheduled verse",
+                                                {
+                                                    "Reaction": "🤲",
+                                                    "Surah": str(verse["surah"]),
+                                                    "Ayah": str(verse.get("ayah", verse["verse"])),
+                                                    "Reaction Time": datetime.now(pytz.timezone("US/Eastern")).strftime("%m/%d %I:%M %p EST"),
+                                                    "Verse Type": "Scheduled Verse"
+                                                },
+                                                user_avatar_url
+                                            )
+                                        except:
+                                            pass
+
                             except asyncio.TimeoutError:
                                 pass  # Stop monitoring after timeout
                             except Exception:
                                 pass  # Ignore errors in monitoring
 
                         # Start monitoring tasks
-                        asyncio.create_task(monitor_reactions())
+                        asyncio.create_task(monitor_unauthorized_reactions())
                         asyncio.create_task(monitor_dua_reactions())
 
                     except Exception:
@@ -990,6 +1084,26 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
                         ],
                         "📬",
                     )
+
+                    # Log scheduled verse posting to Discord
+                    from src.utils.discord_logger import get_discord_logger
+                    discord_logger = get_discord_logger()
+                    if discord_logger:
+                        try:
+                            await discord_logger.log_bot_activity(
+                                "scheduled_verse",
+                                f"posted scheduled verse from {verse['surah']} (verse {verse.get('ayah', verse['verse'])})",
+                                {
+                                    "Surah": str(verse["surah"]),
+                                    "Verse": str(verse.get("ayah", verse["verse"])),
+                                    "Channel ID": str(channel_id),
+                                    "Verse Type": "Scheduled Verse",
+                                    "Interval": f"{daily_verse_manager.get_interval_hours()}h",
+                                    "Action": "Automatic posting"
+                                }
+                            )
+                        except:
+                            pass
 
     except Exception as e:
         log_error_with_traceback("Error checking and sending scheduled verse", e)

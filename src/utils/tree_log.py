@@ -124,12 +124,18 @@ class TreeLogger:
         self.current_datetime_iso = self._get_current_datetime_iso()
 
     def _setup_log_directories(self):
-        """Create simple log directory structure for single daily log files."""
+        """Create log directory structure with date-based subdirectories and 3 log files."""
         try:
-            # Simple logs directory - no date subdirectories
-            log_dir = Path("logs")
-            log_dir.mkdir(parents=True, exist_ok=True)
-            return log_dir
+            # Create main logs directory
+            main_log_dir = Path("logs")
+            main_log_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Create today's date subdirectory
+            date_str = self._get_log_date()
+            date_log_dir = main_log_dir / date_str
+            date_log_dir.mkdir(parents=True, exist_ok=True)
+            
+            return date_log_dir
         except Exception as e:
             print(f"Warning: Could not create log directory: {e}")
             return None
@@ -835,22 +841,21 @@ class TreeLogger:
 
     def _write_to_log_files(self, message: str, level: str, category: str) -> None:
         """
-        Write log message to a single log file per day.
+        Write log message to 3 separate log files in date-based subdirectory.
 
-        This method consolidates all logging into one file per day as requested,
-        eliminating the multiple log files that were causing confusion.
+        Creates logs/YYYY-MM-DD/ directory with:
+        - logs.log: All log messages
+        - errors.log: Only ERROR and CRITICAL level messages
+        - logs.json: Structured JSON log entries
 
         Args:
             message: The log message to write
             level: Log level (INFO, ERROR, WARNING, etc.)
-            category: Category of the log (for context, but not used for file separation)
+            category: Category of the log (for context)
         """
         try:
             if not self.log_dir:
                 return
-
-            # Single log file per day - exactly what the user requested
-            log_file = self.log_dir / f"{self._get_log_date()}.log"
 
             # Create timestamp for the log entry
             timestamp = self._get_timestamp()
@@ -861,10 +866,35 @@ class TreeLogger:
             else:
                 log_entry = "\n"  # Just a blank line for spacing
 
-            # Write to the single log file
-            with open(log_file, "a", encoding="utf-8") as f:
+            # 1. Write to main logs.log file (all messages)
+            main_log_file = self.log_dir / "logs.log"
+            with open(main_log_file, "a", encoding="utf-8") as f:
                 f.write(log_entry)
-                f.flush()  # Ensure immediate write
+                f.flush()
+
+            # 2. Write to errors.log file (only ERROR and CRITICAL levels)
+            if level in ["ERROR", "CRITICAL", "WARNING"]:
+                error_log_file = self.log_dir / "errors.log"
+                with open(error_log_file, "a", encoding="utf-8") as f:
+                    f.write(log_entry)
+                    f.flush()
+
+            # 3. Write to logs.json file (structured JSON format)
+            if message.strip():  # Only write non-empty messages to JSON
+                json_log_file = self.log_dir / "logs.json"
+                json_entry = {
+                    "timestamp": timestamp,
+                    "level": level,
+                    "category": category,
+                    "message": message.strip(),
+                    "run_id": self.run_id,
+                    "iso_datetime": self.current_datetime_iso
+                }
+                
+                # Append JSON entry as a single line
+                with open(json_log_file, "a", encoding="utf-8") as f:
+                    f.write(json.dumps(json_entry) + "\n")
+                    f.flush()
 
         except Exception as e:
             # Fallback to console if file writing fails

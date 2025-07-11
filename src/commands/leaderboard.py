@@ -151,10 +151,13 @@ class LeaderboardView(discord.ui.View):
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         """Check if user can use the buttons"""
         if interaction.user.id != self.interaction_user.id:
-            await interaction.response.send_message(
-                "❌ You can only use buttons on your own leaderboard command.",
-                ephemeral=True,
+            embed = discord.Embed(
+                title="❌ Permission Denied",
+                description="You can only use buttons on your own leaderboard command.",
+                color=0xFF6B6B,
             )
+            embed.set_footer(text="Created by حَـــــنَّـــــا")
+            await interaction.response.send_message(embed=embed, ephemeral=True)
             return False
         return True
 
