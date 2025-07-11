@@ -23,6 +23,7 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional
+import pytz
 
 import psutil
 from flask import Flask, jsonify, render_template, request
@@ -35,6 +36,13 @@ app.config['SECRET_KEY'] = 'your-secret-key-change-this'
 BOT_DIR = "/opt/DiscordBots/QuranBot"
 BOT_SERVICE = "quranbot.service"
 LOG_DIR = Path(BOT_DIR) / "logs"
+
+# Timezone configuration - Eastern Standard Time
+EST = pytz.timezone('US/Eastern')
+
+def get_current_time_est():
+    """Get current time in Eastern Standard Time."""
+    return datetime.now(EST)
 
 class BotMonitor:
     """Monitor bot status and system resources."""
@@ -86,7 +94,7 @@ class BotMonitor:
                 'status_message': status_message,
                 'bot_stats': bot_stats,
                 'last_activity': last_activity,
-                'last_updated': datetime.now().isoformat()
+                'last_updated': get_current_time_est().isoformat()
             }
         except Exception as e:
             return {
@@ -95,7 +103,7 @@ class BotMonitor:
                 'status_message': f"Dashboard cannot determine bot status: {str(e)}",
                 'service_active': False,
                 'process_running': False,
-                'last_updated': datetime.now().isoformat()
+                'last_updated': get_current_time_est().isoformat()
             }
     
     def _find_bot_process(self) -> Optional[psutil.Process]:
@@ -202,13 +210,13 @@ class BotMonitor:
         """Get last bot activity information."""
         try:
             # Check for recent log activity
-            today = datetime.now().strftime("%Y-%m-%d")
+            today = get_current_time_est().strftime("%Y-%m-%d")
             log_file = self.log_dir / today / "logs.log"
             
             if log_file.exists():
                 # Get file modification time
-                mod_time = datetime.fromtimestamp(log_file.stat().st_mtime)
-                time_diff = datetime.now() - mod_time
+                mod_time = datetime.fromtimestamp(log_file.stat().st_mtime, EST)
+                time_diff = get_current_time_est() - mod_time
                 
                 # Read last few lines for activity
                 with open(log_file, 'r') as f:
@@ -262,7 +270,7 @@ class BotMonitor:
         """Get recent log entries."""
         try:
             # Get today's log file
-            today = datetime.now().strftime("%Y-%m-%d")
+            today = get_current_time_est().strftime("%Y-%m-%d")
             log_file = self.log_dir / today / "logs.log"
             
             if not log_file.exists():
@@ -279,7 +287,7 @@ class BotMonitor:
     def get_error_logs(self, lines: int = 20) -> List[str]:
         """Get recent error logs."""
         try:
-            today = datetime.now().strftime("%Y-%m-%d")
+            today = get_current_time_est().strftime("%Y-%m-%d")
             error_file = self.log_dir / today / "errors.log"
             
             if not error_file.exists():
@@ -459,7 +467,7 @@ class BotMonitor:
                     
                     # Count active users (activity in last 24 hours)
                     active_count = 0
-                    current_time = datetime.now()
+                    current_time = get_current_time_est()
                     for user_data in user_list:
                         try:
                             last_seen = datetime.fromisoformat(user_data['last_seen'].replace('Z', '+00:00'))
@@ -649,7 +657,7 @@ class BotMonitor:
                         'name': backup_file.name,
                         'size': stat.st_size,
                         'size_mb': round(stat.st_size / 1024 / 1024, 2),
-                        'created': datetime.fromtimestamp(stat.st_ctime).isoformat()
+                        'created': datetime.fromtimestamp(stat.st_ctime, EST).isoformat()
                     })
                 
                 # Sort by creation time
@@ -710,7 +718,7 @@ class BotMonitor:
                 'success': result.returncode == 0,
                 'output': result.stdout,
                 'error': result.stderr if result.stderr else None,
-                'timestamp': datetime.now().isoformat()
+                'timestamp': get_current_time_est().isoformat()
             }
         except Exception as e:
             return {'error': f"Error controlling bot: {str(e)}"}
@@ -816,7 +824,7 @@ def api_logs():
     lines = request.args.get('lines', 50, type=int)
     return jsonify({
         'logs': monitor.get_recent_logs(lines),
-        'timestamp': datetime.now().isoformat()
+        'timestamp': get_current_time_est().isoformat()
     })
 
 @app.route('/api/errors')
@@ -825,7 +833,7 @@ def api_errors():
     lines = request.args.get('lines', 20, type=int)
     return jsonify({
         'errors': monitor.get_error_logs(lines),
-        'timestamp': datetime.now().isoformat()
+        'timestamp': get_current_time_est().isoformat()
     })
 
 @app.route('/api/system')
@@ -912,7 +920,7 @@ def api_logs_search():
     """API endpoint for searching logs."""
     try:
         query = request.args.get('query', '')
-        date = request.args.get('date', datetime.now().strftime("%Y-%m-%d"))
+        date = request.args.get('date', get_current_time_est().strftime("%Y-%m-%d"))
         lines = request.args.get('lines', 100, type=int)
         
         if not query:
@@ -974,7 +982,7 @@ def api_health():
     try:
         health = {
             'status': 'healthy',
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': get_current_time_est().isoformat(),
             'components': {}
         }
         
