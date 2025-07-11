@@ -2,6 +2,11 @@
 
 A professional Discord bot that streams Quran recitations with interactive features, quizzes, and comprehensive VPS deployment tools.
 
+**Originally created for discord.gg/syria** - A community-focused Islamic Discord bot.
+
+> **⚠️ EDUCATIONAL PURPOSE ONLY**  
+> This project is provided "AS-IS" for educational purposes only. No official support, help, or maintenance is offered. Use at your own discretion.
+
 ![QuranBot Banner](images/BANNER%20(Still).png)
 
 ## ✨ Features
@@ -99,7 +104,6 @@ See [VPS_CONFIG_TEMPLATE.md](vps/VPS_CONFIG_TEMPLATE.md) for detailed configurat
 | Command | Description | Usage |
 |---------|-------------|-------|
 | `/verse` | Get a specific Quran verse | `/verse 2:255` |
-| `/daily-verse` | Get today's daily verse | `/daily-verse` |
 | `/question` | Start a Quran quiz | `/question` |
 | `/leaderboard` | View quiz rankings | `/leaderboard` |
 | `/interval` | Set daily verse timing | `/interval 6:00` |
