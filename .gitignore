@@ -3,14 +3,20 @@
 # =============================================================================
 
 # CRITICAL SECURITY: Environment and Configuration Files
-config/.env*
+config/.env
+config/.env.*
 src/config/.env*
-.env*
-*.env*
+.env
+.env.*
+*.env
 .env.local
 .env.production
 .env.staging
 .env.development
+
+# Allow example environment files
+!config/.env.example
+!.env.example
 
 # CRITICAL: Discord Bot Tokens and API Keys
 *token*
