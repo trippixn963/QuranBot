@@ -9,8 +9,8 @@
 
 A Discord bot designed to bring the beauty of Quranic recitation to Muslim communities worldwide. Stream high-quality Quran audio, engage with interactive Islamic knowledge quizzes, and strengthen your connection to the Holy Quran through technology.
 
-> **⚠️ EDUCATIONAL PURPOSE ONLY**  
-> This project is provided **AS-IS** for educational purposes only. **NO HELP, SUPPORT, OR MAINTENANCE** will be provided. Use at your own discretion for learning Islamic bot development.
+**🤲 Created by an Orthodox Christian**  
+This project was created by an Orthodox Christian developer (ME) who grew up in Syria surrounded by Muslim friends and community. Now owning a Syrian Discord server with over 2,500 members, this bot was originally developed to serve that community's needs. The project represents the beauty of interfaith friendship and collaboration, where technology bridges communities regardless of religious differences.
 
 **بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيم**  
 *In the name of Allah, the Most Gracious, the Most Merciful*
@@ -172,22 +172,22 @@ python -m pytest tests/test_integration.py    # Discord integration tests
 - **Real-time error tracking** with Discord notifications
 - **Performance monitoring** ensuring smooth Islamic content delivery
 
-## 🚀 Deployment Options for Islamic Communities
+## 🚀 Deployment Options
 
-### Option 1: Local Islamic Community
-- Run locally for small Islamic communities or testing
-- Perfect for local mosque or Islamic center Discord servers
+### Option 1: Local Development
+- Run locally for testing and small Discord servers
 - Easy setup and configuration
+- Perfect for learning and development
 
-### Option 2: Cloud Islamic Service
-- Deploy to any cloud provider serving the global Ummah
-- Scalable Islamic bot infrastructure
+### Option 2: Cloud Hosting
+- Deploy to any cloud provider (AWS, DigitalOcean, etc.)
+- Scalable infrastructure
 - Use Docker for containerized deployment
 
-### Option 3: Self-Hosted Islamic Service
+### Option 3: Self-Hosted
 - Host on your own server for complete control
-- Perfect for larger Islamic communities
-- Customize as needed for your specific requirements
+- Customize as needed for your requirements
+- Full administrative access
 
 ## 🛡️ Security - Protecting Islamic Communities
 
@@ -273,8 +273,6 @@ Originally created for **discord.gg/syria** - Building bridges within the global
 
 ### 🤲 A Note from the Creator
 
-*"And whoever does a good deed, We will increase for him good therein. Indeed, Allah is Forgiving and Appreciative."* - **Quran 42:23*
-
-This Islamic community project was created with love and respect for the Muslim Ummah by a Christian developer who believes in the beauty of interfaith collaboration and the power of technology to serve religious communities. May this tool benefit Muslim communities worldwide in their spiritual journey and strengthen bonds within the global Ummah.
+*"And whoever does a good deed, We will increase for him good therein. Indeed, Allah is Forgiving and Appreciative."* - **Quran 42:23**
 
 **Created with respect and admiration for the Islamic faith** 🤝 
