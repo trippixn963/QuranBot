@@ -1,5 +1,11 @@
 # 🕌 QuranBot - Discord Quran Audio Bot
 
+[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Discord.py](https://img.shields.io/badge/Discord.py-2.3+-5865F2.svg?style=for-the-badge&logo=discord&logoColor=white)](https://discordpy.readthedocs.io/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
+[![Version](https://img.shields.io/badge/Version-v3.5.0-orange.svg?style=for-the-badge)](https://github.com/trippixn963/QuranBot/releases)
+[![Status](https://img.shields.io/badge/Status-Educational-red.svg?style=for-the-badge)](README.md)
+
 A professional Discord bot that streams Quran recitations with interactive features, quizzes, and comprehensive VPS deployment tools.
 
 **Originally created for discord.gg/syria** - A community-focused Islamic Discord bot.
@@ -273,5 +279,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **v1.3.0** - Enhanced quiz system and leaderboards
 
 ---
+
+[![GitHub Stars](https://img.shields.io/github/stars/trippixn963/QuranBot?style=social)](https://github.com/trippixn963/QuranBot/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/trippixn963/QuranBot?style=social)](https://github.com/trippixn963/QuranBot/network/members)
+[![Discord Server](https://img.shields.io/badge/Discord-syria-7289DA?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/syria)
+[![VPS Ready](https://img.shields.io/badge/VPS-Ready-success?style=flat-square&logo=linux&logoColor=white)](vps/)
+[![Open Source](https://img.shields.io/badge/Open%20Source-%E2%9D%A4-ff69b4?style=flat-square)](https://opensource.org/)
 
 **Made with ❤️ for the Muslim community** 
