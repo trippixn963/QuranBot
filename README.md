@@ -4,63 +4,54 @@
 [![Discord.py](https://img.shields.io/badge/Discord.py-2.3+-5865F2.svg?style=for-the-badge&logo=discord&logoColor=white)](https://discordpy.readthedocs.io/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 [![Version](https://img.shields.io/badge/Version-v3.5.0-orange.svg?style=for-the-badge)](https://github.com/trippixn963/QuranBot/releases)
-[![Status](https://img.shields.io/badge/Status-Educational-red.svg?style=for-the-badge)](README.md)
 
-A professional Discord bot that streams Quran recitations with interactive features, quizzes, and comprehensive VPS deployment tools.
+*"And We have certainly made the Qur'an easy for remembrance, so is there any who will remember?"* - **Quran 54:17**
 
-**Originally created for discord.gg/syria** - A community-focused Islamic Discord bot.
+A professional Discord bot designed to bring the beauty of Quranic recitation to Muslim communities worldwide. Stream high-quality Quran audio, engage with interactive Islamic knowledge quizzes, and strengthen your connection to the Holy Quran through technology.
 
-> **⚠️ EDUCATIONAL PURPOSE ONLY**  
-> This project is provided "AS-IS" for educational purposes only. No official support, help, or maintenance is offered. Use at your own discretion.
+**بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيم**  
+*In the name of Allah, the Most Gracious, the Most Merciful*
 
 ![QuranBot Banner](images/BANNER%20(Still).png)
 
-## ✨ Features
+## 🌟 Islamic Features
 
-### 🎵 Audio Streaming
-- **High-quality Quran recitations** from multiple renowned reciters
-- **Continuous playback** with seamless transitions between surahs
-- **Voice channel integration** with automatic connection management
-- **Audio controls** (play, pause, skip, volume control)
+### 📿 Quranic Audio Experience
+- **Beautiful recitations** from renowned Qaris including Saad Al Ghamdi, Abdul Rahman Al-Sudais, and more
+- **Continuous Tilawah** with seamless transitions between Surahs
+- **Voice channel integration** for community listening experiences
+- **Multiple reciter support** to experience different Qira'at styles
 
-### 📖 Interactive Commands
-- **Daily verses** with automatic scheduling and beautiful embeds
-- **Quran quizzes** with multiple choice questions and leaderboards
-- **Verse lookup** with translation and recitation
-- **Listening statistics** and user engagement tracking
+### 📖 Islamic Knowledge & Learning
+- **Daily Ayah delivery** with automatic scheduling for consistent Islamic reminders
+- **Quranic knowledge quizzes** to test understanding of Islamic teachings
+- **Verse lookup system** with translations for deeper comprehension
+- **Interactive learning** designed to strengthen Islamic knowledge
 
-### 🏆 Gamification
-- **Quiz leaderboards** with scoring and rankings
-- **Listening time tracking** and user statistics
-- **Interactive challenges** and knowledge testing
-- **Progress tracking** across sessions
+### 🏆 Community Engagement
+- **Leaderboards** for Islamic quiz competitions
+- **Listening statistics** to track your Quranic engagement
+- **Community challenges** to encourage collective Islamic learning
+- **Progress tracking** for personal spiritual development
 
-### 🛠️ Professional Infrastructure
-- **Production-ready VPS deployment** with automated scripts
-- **Real-time web dashboard** for monitoring and control
-- **Comprehensive logging** with structured output
-- **Backup systems** with automatic data protection
-- **State persistence** across restarts and crashes
+### 🛠️ Professional Islamic Bot Infrastructure
+- **Comprehensive logging** with Islamic date support
+- **Backup systems** protecting your Islamic community data
+- **State persistence** ensuring uninterrupted service
+- **Error handling** for reliable Islamic content delivery
 
-### 🌐 VPS Management
-- **One-command deployment** to any VPS
-- **Web dashboard** accessible via browser
-- **Nginx configuration** for custom domains
-- **Systemd services** for 24/7 operation
-- **Log syncing** between VPS and local machine
-
-## 🚀 Quick Start
+## 🚀 Quick Start - Serving the Ummah
 
 ### Prerequisites
-- Python 3.9+
-- Discord Bot Token ([Get one here](https://discord.com/developers/applications))
-- VPS (optional, for 24/7 hosting)
+- Python 3.9+ 
+- Discord Bot Token ([Create one here](https://discord.com/developers/applications))
+- FFmpeg for audio processing
 
 ### Local Development
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/QuranBot.git
+git clone https://github.com/trippixn963/QuranBot.git
 cd QuranBot
 ```
 
@@ -71,219 +62,197 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-3. **Configure environment**
+3. **Configure for your Islamic community**
 ```bash
 cp config/.env.example config/.env
-# Edit config/.env with your Discord bot token
+# Edit config/.env with your Discord bot token and server settings
 ```
 
-4. **Run the bot**
+4. **Begin serving your community**
 ```bash
 python main.py
 ```
 
-### VPS Deployment
+## 📋 Islamic Commands
 
-For 24/7 hosting, deploy to your VPS:
+| Command | Islamic Purpose | Usage |
+|---------|----------------|-------|
+| `/verse` | Retrieve specific Quranic verses | `/verse 2:255` (Ayat al-Kursi) |
+| `/question` | Test Islamic knowledge | `/question` |
+| `/leaderboard` | View community Islamic quiz rankings | `/leaderboard` |
+| `/interval` | Schedule daily Islamic reminders | `/interval 6:00` |
+| `/credits` | Bot and Islamic acknowledgments | `/credits` |
 
-1. **Configure VPS settings**
-```bash
-export VPS_IP="your.vps.ip.address"
-export VPS_USER="root"
-```
-
-2. **Deploy to VPS**
-```bash
-cd vps/deployment
-./deploy-to-discordbots.sh
-```
-
-3. **Access web dashboard**
-```
-http://your.vps.ip.address:8080
-```
-
-See [VPS_CONFIG_TEMPLATE.md](vps/VPS_CONFIG_TEMPLATE.md) for detailed configuration.
-
-## 📋 Commands
-
-| Command | Description | Usage |
-|---------|-------------|-------|
-| `/verse` | Get a specific Quran verse | `/verse 2:255` |
-| `/question` | Start a Quran quiz | `/question` |
-| `/leaderboard` | View quiz rankings | `/leaderboard` |
-| `/interval` | Set daily verse timing | `/interval 6:00` |
-| `/credits` | Bot information | `/credits` |
-
-## 🏗️ Architecture
+## 🏗️ Architecture - Built for the Ummah
 
 ### Project Structure
 ```
 QuranBot/
-├── src/                    # Core bot source code
+├── src/                    # Core Islamic bot functionality
 │   ├── bot/               # Main bot initialization
-│   ├── commands/          # Discord slash commands
-│   └── utils/             # Utility modules
-├── vps/                   # VPS deployment tools
-│   ├── deployment/        # Deployment scripts
-│   ├── web_dashboard/     # Real-time monitoring
-│   ├── nginx/             # Web server configuration
-│   ├── scripts/           # Management utilities
-│   └── systemd/           # Service configurations
-├── config/                # Configuration files
-├── tests/                 # Unit tests
-├── audio/                 # Quran audio files
-├── images/                # Bot assets
-└── tools/                 # Development utilities
+│   ├── commands/          # Islamic Discord commands
+│   └── utils/             # Islamic utility modules
+├── config/                # Islamic community configuration
+├── tests/                 # Quality assurance tests
+├── docs/                  # Documentation
+├── audio/                 # Quranic recitation files
+├── images/                # Islamic bot assets
+└── tools/                 # Islamic development utilities
 ```
 
-### Key Components
+### Key Islamic Components
 
-- **Bot Core** (`src/bot/main.py`) - Main Discord bot logic
-- **Audio Manager** (`src/utils/audio_manager.py`) - Handles audio streaming
-- **Quiz System** (`src/utils/quiz_manager.py`) - Interactive quiz functionality
-- **State Management** (`src/utils/state_manager.py`) - Persistent data storage
-- **Web Dashboard** (`vps/web_dashboard/app.py`) - Real-time monitoring interface
+- **Bot Core** (`src/bot/main.py`) - Main Islamic Discord bot logic
+- **Audio Manager** (`src/utils/audio_manager.py`) - Quranic audio streaming
+- **Quiz System** (`src/utils/quiz_manager.py`) - Islamic knowledge testing
+- **State Management** (`src/utils/state_manager.py`) - Islamic data persistence
+- **Rich Presence** (`src/utils/rich_presence.py`) - Discord status integration
 
-## 🖥️ Web Dashboard
-
-The included web dashboard provides:
-
-- **Real-time bot monitoring** - Status, uptime, resource usage
-- **System metrics** - CPU, memory, disk usage with progress bars
-- **Log viewing** - Live log streaming and error tracking
-- **Bot controls** - Start, stop, restart functionality
-- **Statistics** - Usage analytics and performance metrics
-
-Access at: `http://your-vps-ip:8080`
-
-## 🔧 Configuration
+## 🔧 Islamic Community Configuration
 
 ### Environment Variables
 
-Create `config/.env` with:
+Configure for your Islamic community in `config/.env`:
 
 ```bash
-# Discord Configuration
+# Discord Configuration for Islamic Community
 DISCORD_TOKEN=your_bot_token_here
-GUILD_ID=your_guild_id_here
+GUILD_ID=your_islamic_server_id_here
 
-# Audio Configuration  
+# Quranic Audio Configuration  
 FFMPEG_PATH=/usr/bin/ffmpeg  # Linux: /usr/bin/ffmpeg, macOS: /opt/homebrew/bin/ffmpeg
 
-# Optional: Bot Customization
+# Islamic Bot Customization
 BOT_NAME=QuranBot
-BOT_VERSION=1.0.0
+BOT_VERSION=3.5.0
 ```
 
-### Audio Files
+### Quranic Audio Files
 
-Place Quran audio files in the `audio/` directory:
+Organize your Quranic recitations in the `audio/` directory:
 ```
 audio/
-├── Reciter Name/
+├── Saad Al Ghamdi/
 │   ├── 001.mp3  # Al-Fatihah
 │   ├── 002.mp3  # Al-Baqarah
 │   └── ...
+├── Abdul Rahman Al-Sudais/
+│   ├── 001.mp3  # Al-Fatihah
+│   └── ...
 ```
 
-## 🧪 Testing
+## 🧪 Quality Assurance - Serving Excellence
 
-Run the test suite:
+Run the comprehensive test suite:
 ```bash
 python -m pytest tests/
 ```
 
-Individual test modules:
+Test individual Islamic components:
 ```bash
-python -m pytest tests/test_audio_manager.py
-python -m pytest tests/test_quiz_manager.py
+python -m pytest tests/test_audio_manager.py  # Quranic audio tests
+python -m pytest tests/test_quiz_manager.py   # Islamic knowledge tests
+python -m pytest tests/test_integration.py    # Discord integration tests
 ```
 
-## 📊 Monitoring & Logging
+## 📊 Islamic Community Monitoring & Logging
 
-### Structured Logging
-- **Daily log files** in `logs/YYYY-MM-DD/`
-- **Error tracking** with full stack traces
-- **Performance metrics** and usage statistics
-- **Tree-style output** for easy reading
+### Structured Islamic Logging
+- **Daily log files** with Islamic date tracking in `logs/YYYY-MM-DD/`
+- **Error tracking** ensuring reliable Islamic service
+- **Islamic engagement metrics** and community statistics
+- **Beautiful tree-style output** for easy Islamic bot monitoring
 
-### Web Dashboard
-- **Real-time monitoring** of bot status
-- **System resource tracking** 
-- **Live log streaming**
-- **Interactive controls**
+### Log Management
+- **Automatic log rotation** preventing disk space issues
+- **Structured JSON logging** for easy analysis
+- **Real-time error tracking** with Discord notifications
+- **Performance monitoring** ensuring smooth Islamic content delivery
 
-### VPS Log Syncing
-```bash
-# Sync logs from VPS to local machine
-cd vps/scripts
-./sync_logs.sh
-```
+## 🚀 Deployment Options for Islamic Communities
 
-## 🚀 Deployment Options
+### Option 1: Local Islamic Community
+- Run locally for small Islamic communities or testing
+- Perfect for local mosque or Islamic center Discord servers
+- Easy setup and configuration
 
-### Option 1: Local Development
-- Run locally for testing and development
-- Suitable for small servers or testing
+### Option 2: Cloud Islamic Service
+- Deploy to any cloud provider serving the global Ummah
+- Scalable Islamic bot infrastructure
+- Use Docker for containerized deployment
 
-### Option 2: VPS Deployment
-- 24/7 hosting with automatic restarts
-- Web dashboard for monitoring
-- Production-ready with systemd services
+### Option 3: Self-Hosted Islamic Service
+- Host on your own server for complete control
+- Perfect for larger Islamic communities
+- Customize as needed for your specific requirements
 
-### Option 3: Cloud Hosting
-- Deploy to any cloud provider
-- Scalable and reliable
-- Use provided deployment scripts
+## 🛡️ Security - Protecting Islamic Communities
 
-## 🛡️ Security
+- **Environment variables** protecting sensitive Islamic community data
+- **Comprehensive .gitignore** preventing credential exposure
+- **Input validation** on all Islamic commands
+- **Error handling** ensuring stable Islamic service
+- **Backup encryption** protecting Islamic community data
 
-- **Environment variables** for sensitive data
-- **Comprehensive .gitignore** prevents credential leaks
-- **Input validation** on all user commands
-- **Error handling** prevents crashes and data exposure
-- **Backup encryption** for data protection
+## 🤝 Contributing to the Islamic Community
 
-## 🤝 Contributing
+Join our efforts to serve the Ummah:
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch (`git checkout -b feature/islamic-enhancement`)
+3. Commit your changes (`git commit -m 'Add Islamic feature for community benefit'`)
+4. Push to the branch (`git push origin feature/islamic-enhancement`)
+5. Open a Pull Request to benefit the global Muslim community
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## 🙏 Islamic Acknowledgments
 
-- **Quran audio** from various renowned reciters
-- **Discord.py** library for Discord integration
-- **FFmpeg** for audio processing
-- **Flask** for the web dashboard
-- **Community contributors** and testers
+**"And whoever does a good deed, We will increase for him good therein. Indeed, Allah is Forgiving and Appreciative."** - *Quran 42:23*
 
-## 📞 Support
+- **Quranic recitations** from renowned Qaris serving the Ummah
+- **Discord.py** library enabling Islamic community connections
+- **FFmpeg** for processing beautiful Quranic audio
+- **Muslim developers and contributors** strengthening the global Islamic community
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/QuranBot/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/QuranBot/discussions)
-- **Documentation**: See `/docs` folder for detailed guides
+## 📞 Islamic Community Support
 
-## 🔄 Version History
+- **Issues**: [GitHub Issues](https://github.com/trippixn963/QuranBot/issues) for technical Islamic bot support
+- **Discussions**: [GitHub Discussions](https://github.com/trippixn963/QuranBot/discussions) for Islamic community discussions
+- **Documentation**: [API Reference](docs/API_REFERENCE.md) for comprehensive command documentation
 
-- **v1.0.0** - Initial release with core features
-- **v1.1.0** - Added VPS deployment system
-- **v1.2.0** - Web dashboard and monitoring
-- **v1.3.0** - Enhanced quiz system and leaderboards
+## 🔄 Version History - Serving the Ummah
+
+- **v1.0.0** - Initial release serving Islamic communities
+- **v1.1.0** - Enhanced audio system for better Quranic experience
+- **v1.2.0** - Islamic community quiz system and leaderboards
+- **v1.3.0** - Advanced state management and logging
+- **v3.5.0** - Professional Islamic bot infrastructure with comprehensive testing
+
+## 📍 Community Attribution
+
+Originally created for **discord.gg/syria** - Building bridges within the global Islamic community.
+
+> **📚 Educational Purpose**  
+> This project is provided "AS-IS" for educational purposes, designed to help Muslim communities learn and implement Islamic Discord bot technology. No official support, help, or maintenance is offered. Use with the intention of benefiting the Ummah and at your own discretion.
 
 ---
 
 [![GitHub Stars](https://img.shields.io/github/stars/trippixn963/QuranBot?style=social)](https://github.com/trippixn963/QuranBot/stargazers)
 [![GitHub Forks](https://img.shields.io/github/forks/trippixn963/QuranBot?style=social)](https://github.com/trippixn963/QuranBot/network/members)
 [![Discord Server](https://img.shields.io/badge/Discord-syria-7289DA?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/syria)
-[![VPS Ready](https://img.shields.io/badge/VPS-Ready-success?style=flat-square&logo=linux&logoColor=white)](vps/)
 [![Open Source](https://img.shields.io/badge/Open%20Source-%E2%9D%A4-ff69b4?style=flat-square)](https://opensource.org/)
 
-**Made with ❤️ for the Muslim community** 
+**Made with ❤️ for the Muslim community**
+
+---
+
+### 🤲 A Note from the Creator
+
+*"And whoever does a good deed, We will increase for him good therein. Indeed, Allah is Forgiving and Appreciative."* - **Quran 42:23*
+
+This Islamic community project was created with love and respect for the Muslim Ummah by a Christian developer who believes in the beauty of interfaith collaboration and the power of technology to serve religious communities. May this tool benefit Muslim communities worldwide in their spiritual journey and strengthen bonds within the global Ummah.
+
+**Created with respect and admiration for the Islamic faith** 🤝 
