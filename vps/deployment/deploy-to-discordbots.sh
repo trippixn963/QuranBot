@@ -31,11 +31,11 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# VPS Configuration
-VPS_IP="159.89.90.90"
-VPS_USER="root"
-VPS_PATH="/opt/DiscordBots/QuranBot"
-LOCAL_PROJECT_PATH="/Users/johnhamwi/Developer/QuranBot"
+# VPS Configuration - CUSTOMIZE THESE FOR YOUR VPS
+VPS_IP="${VPS_IP:-YOUR_VPS_IP_HERE}"
+VPS_USER="${VPS_USER:-root}"
+VPS_PATH="${VPS_PATH:-/opt/DiscordBots/QuranBot}"
+LOCAL_PROJECT_PATH="${LOCAL_PROJECT_PATH:-$(pwd)}"
 
 log_info "Starting deployment to DiscordBots/QuranBot structure..."
 log_info "VPS: $VPS_USER@$VPS_IP"

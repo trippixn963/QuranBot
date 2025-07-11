@@ -19,7 +19,7 @@
 # =============================================================================
 
 # Configuration
-VPS_HOST="root@159.89.90.90"
+VPS_HOST="${VPS_HOST:-root@YOUR_VPS_IP_HERE}"
 VPS_LOG_PATH="/opt/DiscordBots/QuranBot/logs/"
 LOCAL_LOG_PATH="./logs/"
 SYNC_INTERVAL=30  # seconds between syncs in daemon mode

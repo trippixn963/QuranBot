@@ -161,3 +161,37 @@ deployment_config.json
 production.env
 staging.env
 local.env
+
+# Cleanup: Additional exclusions for GitHub release
+*.pid
+*_sync.pid
+vps_logs_sync.pid
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows specific
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
