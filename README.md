@@ -7,7 +7,10 @@
 
 *"And We have certainly made the Qur'an easy for remembrance, so is there any who will remember?"* - **Quran 54:17**
 
-A professional Discord bot designed to bring the beauty of Quranic recitation to Muslim communities worldwide. Stream high-quality Quran audio, engage with interactive Islamic knowledge quizzes, and strengthen your connection to the Holy Quran through technology.
+A Discord bot designed to bring the beauty of Quranic recitation to Muslim communities worldwide. Stream high-quality Quran audio, engage with interactive Islamic knowledge quizzes, and strengthen your connection to the Holy Quran through technology.
+
+> **⚠️ EDUCATIONAL PURPOSE ONLY**  
+> This project is provided **AS-IS** for educational purposes only. **NO HELP, SUPPORT, OR MAINTENANCE** will be provided. Use at your own discretion for learning Islamic bot development.
 
 **بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيم**  
 *In the name of Allah, the Most Gracious, the Most Merciful*
@@ -194,15 +197,17 @@ python -m pytest tests/test_integration.py    # Discord integration tests
 - **Error handling** ensuring stable Islamic service
 - **Backup encryption** protecting Islamic community data
 
-## 🤝 Contributing to the Islamic Community
+## 🤝 Educational Contributions
 
-Join our efforts to serve the Ummah:
+This is an educational project for learning purposes only:
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/islamic-enhancement`)
-3. Commit your changes (`git commit -m 'Add Islamic feature for community benefit'`)
-4. Push to the branch (`git push origin feature/islamic-enhancement`)
-5. Open a Pull Request to benefit the global Muslim community
+> **⚠️ NO SUPPORT**: Contributors work at their own discretion. No support or maintenance will be provided.
+
+1. Fork the repository for educational purposes
+2. Create a feature branch (`git checkout -b feature/educational-enhancement`)
+3. Commit your changes (`git commit -m 'Add educational feature for learning'`)
+4. Push to the branch (`git push origin feature/educational-enhancement`)
+5. Open a Pull Request for educational sharing (no support provided)
 
 ## 📄 License
 
@@ -217,26 +222,43 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **FFmpeg** for processing beautiful Quranic audio
 - **Muslim developers and contributors** strengthening the global Islamic community
 
-## 📞 Islamic Community Support
+## 📞 Community Resources
 
-- **Issues**: [GitHub Issues](https://github.com/trippixn963/QuranBot/issues) for technical Islamic bot support
-- **Discussions**: [GitHub Discussions](https://github.com/trippixn963/QuranBot/discussions) for Islamic community discussions
-- **Documentation**: [API Reference](docs/API_REFERENCE.md) for comprehensive command documentation
+> **⚠️ NO SUPPORT PROVIDED**: This is an educational project. No help, support, or maintenance will be provided.
 
-## 🔄 Version History - Serving the Ummah
+- **Issues**: [GitHub Issues](https://github.com/trippixn963/QuranBot/issues) for community discussions only (no support requests)
+- **Discussions**: [GitHub Discussions](https://github.com/trippixn963/QuranBot/discussions) for educational discussions only  
+- **Documentation**: [API Reference](docs/API_REFERENCE.md) for learning purposes only
 
-- **v1.0.0** - Initial release serving Islamic communities
-- **v1.1.0** - Enhanced audio system for better Quranic experience
-- **v1.2.0** - Islamic community quiz system and leaderboards
+## 🔄 Version History
+
+- **v3.5.0** - Clean educational release with comprehensive documentation and testing
+- **v3.3.0** - Enhanced bot infrastructure and monitoring capabilities  
+- **v3.1.0** - Advanced feature implementations and optimizations
+- **v3.0.0** - Major architecture overhaul and modernization
+- **v2.3.1** - Bug fixes and stability improvements
+- **v2.3.0** - Feature enhancements and performance updates
+- **v2.2.1** - Critical bug fixes and patches
+- **v2.2.0** - New functionality and system improvements
+- **v2.1.0** - Enhanced user experience and features
+- **v2.0.0** - Major version upgrade with significant changes
+- **v1.9.0** - Advanced features and optimizations
+- **v1.8.0** - System enhancements and new capabilities
+- **v1.7.x** - Multiple iterations with fixes and improvements (v1.7.0-v1.7.3)
+- **v1.6.x** - Feature additions and refinements (v1.6.0-v1.6.2)
+- **v1.4.0** - Significant feature development
 - **v1.3.0** - Advanced state management and logging
-- **v3.5.0** - Professional Islamic bot infrastructure with comprehensive testing
+- **v1.2.0** - Islamic community quiz system and leaderboards
+- **v1.1.x** - Enhanced audio system improvements (v1.1.0-v1.1.1)
+
+> **Note**: This is an educational project. Version history provided for learning purposes only.
 
 ## 📍 Community Attribution
 
 Originally created for **discord.gg/syria** - Building bridges within the global Islamic community.
 
-> **📚 Educational Purpose**  
-> This project is provided "AS-IS" for educational purposes, designed to help Muslim communities learn and implement Islamic Discord bot technology. No official support, help, or maintenance is offered. Use with the intention of benefiting the Ummah and at your own discretion.
+> **📚 EDUCATIONAL PURPOSE ONLY**  
+> This project is provided **"AS-IS"** for educational purposes only. **NO OFFICIAL SUPPORT, HELP, OR MAINTENANCE** will be provided. This is a learning resource for Islamic Discord bot development. Use entirely at your own risk and discretion.
 
 ---
 
