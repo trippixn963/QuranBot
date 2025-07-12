@@ -1381,6 +1381,67 @@ async def on_ready():
                         )
 
                     # =============================================================================
+                    # Integrated Log Sync Manager
+                    # =============================================================================
+                    log_spacing()
+                    try:
+                        from src.utils.log_sync_manager import start_integrated_log_sync
+                        
+                        # Get VPS host from environment
+                        vps_host = os.getenv("VPS_HOST")
+                        
+                        if vps_host:
+                            log_sync_manager = await start_integrated_log_sync(
+                                vps_host=vps_host,
+                                sync_interval=30  # 30 seconds
+                            )
+                            
+                            if log_sync_manager and log_sync_manager.is_running:
+                                log_perfect_tree_section(
+                                    "Integrated Log Sync",
+                                    [
+                                        ("status", "✅ Log sync integrated into bot"),
+                                        ("vps_host", vps_host),
+                                        ("sync_interval", "30 seconds"),
+                                        ("auto_start", "✅ Starts with bot"),
+                                        ("auto_stop", "✅ Stops with bot"),
+                                    ],
+                                    "📡",
+                                )
+                            else:
+                                log_perfect_tree_section(
+                                    "Integrated Log Sync",
+                                    [
+                                        ("status", "❌ Failed to start log sync"),
+                                        ("vps_host", vps_host),
+                                        ("impact", "Local logs won't sync automatically"),
+                                    ],
+                                    "📡",
+                                )
+                        else:
+                            log_perfect_tree_section(
+                                "Integrated Log Sync",
+                                [
+                                    ("status", "⚠️ Log sync disabled"),
+                                    ("reason", "VPS_HOST not configured in .env"),
+                                    ("impact", "Local logs won't sync automatically"),
+                                    ("note", "Set VPS_HOST=root@your.vps.ip to enable"),
+                                ],
+                                "📡",
+                            )
+                    except Exception as e:
+                        log_error_with_traceback("Error starting integrated log sync", e)
+                        log_perfect_tree_section(
+                            "Integrated Log Sync",
+                            [
+                                ("status", "❌ Log sync startup failed"),
+                                ("error", str(e)),
+                                ("impact", "Local logs won't sync automatically"),
+                            ],
+                            "📡",
+                        )
+
+                    # =============================================================================
                     # Bot Startup Complete
                     # =============================================================================
                     log_perfect_tree_section(
@@ -2811,12 +2872,20 @@ async def on_disconnect():
 
         # Mark disconnect in state manager
         state_manager.mark_disconnect()
+        
+        # Stop integrated log sync
+        try:
+            from src.utils.log_sync_manager import stop_integrated_log_sync
+            await stop_integrated_log_sync()
+        except Exception as e:
+            log_error_with_traceback("Error stopping integrated log sync", e)
 
         log_perfect_tree_section(
             "Discord Disconnect - Cleanup Complete",
             [
                 ("voice_cleanup", "✅ Voice connections cleaned up"),
                 ("state_marked", "✅ Disconnect marked in state manager"),
+                ("log_sync", "✅ Log sync stopped"),
                 ("awaiting_reconnect", "⏳ Waiting for automatic reconnection"),
             ],
             "🧹",
