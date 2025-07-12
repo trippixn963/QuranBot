@@ -1082,8 +1082,25 @@ def track_voice_leave(user_id: int) -> float:
 
 
 def get_user_listening_stats(user_id: int) -> Optional[UserStats]:
-    """Get listening statistics for a user"""
-    return listening_stats_manager.get_user_stats(user_id)
+    """Get listening statistics for a user (loads fresh data from file)"""
+    try:
+        # Load fresh data from file each time (like quiz stats)
+        if STATS_FILE.exists():
+            with open(STATS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            
+            users_data = data.get("users", {})
+            user_data = users_data.get(str(user_id))
+            
+            if user_data:
+                return UserStats.from_dict(user_data)
+        
+        return None
+    except Exception as e:
+        # Log error but don't crash - return None for missing data
+        from .tree_log import log_error_with_traceback
+        log_error_with_traceback(f"Error loading listening stats for user {user_id}", e)
+        return None
 
 
 def get_leaderboard_data() -> Dict:

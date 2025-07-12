@@ -175,7 +175,7 @@ class DailyVerseManager:
                 config_data["schedule_config"] = {}
             
             config_data["schedule_config"]["send_interval_hours"] = hours
-            config_data["schedule_config"]["last_updated"] = datetime.now(timezone.utc).isoformat()
+            config_data["schedule_config"]["last_updated"] = datetime.now(pytz.UTC).isoformat()
             
             # Save the updated config
             with open(self.verses_state_file, "w") as f:
@@ -453,6 +453,99 @@ class DailyVerseManager:
             log_error_with_traceback("Error saving verse state", e)
             return False
 
+    def record_dua_reaction(self, user_id: int, surah: int, verse: int) -> bool:
+        """Record a dua reaction for verse statistics"""
+        try:
+            # Load existing verse statistics
+            stats_data = {}
+            if self.verses_state_file.exists():
+                with open(self.verses_state_file, "r") as f:
+                    stats_data = json.load(f)
+            
+            # Initialize statistics if not exists
+            if "total_dua_reactions" not in stats_data:
+                stats_data["total_dua_reactions"] = 0
+            if "user_reactions" not in stats_data:
+                stats_data["user_reactions"] = {}
+            if "surah_stats" not in stats_data:
+                stats_data["surah_stats"] = {}
+            
+            # Update statistics
+            stats_data["total_dua_reactions"] += 1
+            
+            # Track user reactions
+            user_id_str = str(user_id)
+            if user_id_str not in stats_data["user_reactions"]:
+                stats_data["user_reactions"][user_id_str] = 0
+            stats_data["user_reactions"][user_id_str] += 1
+            
+            # Track surah statistics
+            surah_str = str(surah)
+            if surah_str not in stats_data["surah_stats"]:
+                stats_data["surah_stats"][surah_str] = {"reactions": 0, "verses_sent": 0}
+            stats_data["surah_stats"][surah_str]["reactions"] += 1
+            
+            # Update timestamp
+            stats_data["last_updated"] = datetime.now(pytz.UTC).isoformat()
+            
+            # Save updated statistics
+            with open(self.verses_state_file, "w") as f:
+                json.dump(stats_data, f, indent=2)
+            
+            log_perfect_tree_section(
+                "Verse Statistics Updated",
+                [
+                    ("user_id", user_id_str),
+                    ("surah", surah_str),
+                    ("verse", verse),
+                    ("total_reactions", stats_data["total_dua_reactions"]),
+                    ("user_reactions", stats_data["user_reactions"][user_id_str]),
+                    ("status", "✅ Dua reaction recorded"),
+                ],
+                "🤲",
+            )
+            
+            return True
+        except Exception as e:
+            log_error_with_traceback("Error recording dua reaction", e)
+            return False
+
+    def record_verse_sent(self, surah: int) -> bool:
+        """Record that a verse was sent for statistics"""
+        try:
+            # Load existing verse statistics
+            stats_data = {}
+            if self.verses_state_file.exists():
+                with open(self.verses_state_file, "r") as f:
+                    stats_data = json.load(f)
+            
+            # Initialize statistics if not exists
+            if "total_verses_sent" not in stats_data:
+                stats_data["total_verses_sent"] = 0
+            if "surah_stats" not in stats_data:
+                stats_data["surah_stats"] = {}
+            
+            # Update statistics
+            stats_data["total_verses_sent"] += 1
+            
+            # Track surah statistics
+            surah_str = str(surah)
+            if surah_str not in stats_data["surah_stats"]:
+                stats_data["surah_stats"][surah_str] = {"reactions": 0, "verses_sent": 0}
+            stats_data["surah_stats"][surah_str]["verses_sent"] += 1
+            
+            # Update timestamp
+            stats_data["last_updated"] = datetime.now(pytz.UTC).isoformat()
+            
+            # Save updated statistics
+            with open(self.verses_state_file, "w") as f:
+                json.dump(stats_data, f, indent=2)
+            
+            return True
+        except Exception as e:
+            log_error_with_traceback("Error recording verse sent", e)
+            return False
+
     def load_state(self) -> bool:
         """Load state from file"""
         try:
@@ -723,6 +816,9 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
 
                     # Send message
                     message = await channel.send(embed=embed)
+                    
+                    # Record verse sent in statistics
+                    daily_verse_manager.record_verse_sent(verse["surah"])
 
                     # Add only dua reaction
                     try:
@@ -786,6 +882,13 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
                                         "reaction_add",
                                         timeout=3600,  # Monitor for 1 hour
                                         check=check_dua_reaction,
+                                    )
+
+                                    # Record dua reaction in statistics
+                                    daily_verse_manager.record_dua_reaction(
+                                        user.id, 
+                                        verse["surah"], 
+                                        verse.get("ayah", verse["verse"])
                                     )
 
                                     # Log user interaction for dua reaction
@@ -1015,6 +1118,13 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
                                         "reaction_add",
                                         timeout=3600,  # Monitor for 1 hour
                                         check=check_dua_reaction,
+                                    )
+
+                                    # Record dua reaction in statistics
+                                    daily_verse_manager.record_dua_reaction(
+                                        user.id, 
+                                        verse["surah"], 
+                                        verse.get("ayah", verse["verse"])
                                     )
 
                                     # Log user interaction for dua reaction

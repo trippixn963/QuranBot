@@ -1,0 +1,36 @@
+[Unit]
+Description=QuranBot Discord Audio Bot
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/DiscordBots/QuranBot
+Environment=PATH=/opt/DiscordBots/QuranBot/.venv/bin
+ExecStart=/opt/DiscordBots/QuranBot/.venv/bin/python /opt/DiscordBots/QuranBot/main.py
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=quranbot
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/DiscordBots/QuranBot
+
+# Resource limits
+LimitNOFILE=65536
+MemoryMax=512M
+CPUQuota=50%
+
+# Environment variables (will be loaded from .env file)
+EnvironmentFile=-/opt/DiscordBots/QuranBot/config/.env
+
+[Install]
+WantedBy=multi-user.target 

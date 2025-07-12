@@ -399,6 +399,11 @@ class VerseCog(commands.Cog):
             # Send the verse to the channel
             try:
                 message = await channel.send(embed=embed)
+                
+                # Record verse sent in statistics
+                from src.utils.daily_verses import daily_verse_manager
+                if daily_verse_manager:
+                    daily_verse_manager.record_verse_sent(verse_data.get("surah", 1))
 
                 # Add only the dua emoji for user interaction
                 await message.add_reaction("🤲")  # Dua emoji only
@@ -489,6 +494,15 @@ class VerseCog(commands.Cog):
                                     "spiritual_activity": "dua_made",
                                 },
                             )
+
+                            # Record dua reaction in statistics
+                            from src.utils.daily_verses import daily_verse_manager
+                            if daily_verse_manager:
+                                daily_verse_manager.record_dua_reaction(
+                                    user.id, 
+                                    verse_data.get("surah", 1), 
+                                    verse_data.get("ayah", verse_data.get("verse", 1))
+                                )
 
                             # Log to Discord with user profile picture
                             from src.utils.discord_logger import get_discord_logger

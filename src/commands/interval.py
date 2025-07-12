@@ -221,11 +221,11 @@ def get_quiz_manager():
 def get_daily_verses_manager():
     """Get daily verses manager instance"""
     try:
-        from src.utils.daily_verses import daily_verses_manager
+        from src.utils.daily_verses import daily_verse_manager
 
-        return daily_verses_manager
+        return daily_verse_manager
     except Exception as e:
-        log_error_with_traceback("Failed to import daily_verses_manager", e)
+        log_error_with_traceback("Failed to import daily_verse_manager", e)
         return None
 
 

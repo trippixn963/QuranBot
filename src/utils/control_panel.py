@@ -1044,15 +1044,35 @@ class SimpleControlPanelView(View):
                 return
             except discord.HTTPException as e:
                 if e.status == 429:  # Rate limited
+                    retry_after = getattr(e, 'retry_after', 60)
                     log_perfect_tree_section(
                         "Control Panel - Rate Limited",
                         [
                             ("status", "⚠️ Update rate limited"),
                             ("http_status", "429"),
+                            ("retry_after", f"{retry_after}s"),
                             ("action", "Skipping this update"),
                         ],
                         "⏱️",
                     )
+                    
+                    # Send Discord notification about control panel rate limiting
+                    from src.utils.discord_logger import get_discord_logger
+                    discord_logger = get_discord_logger()
+                    if discord_logger:
+                        try:
+                            await discord_logger.log_rate_limit(
+                                event="control_panel_update",
+                                retry_after=retry_after,
+                                context={
+                                    "Component": "Control Panel",
+                                    "Action": "Panel Update",
+                                    "Impact": "Skipped update cycle"
+                                }
+                            )
+                        except Exception as log_error:
+                            log_error_with_traceback("Failed to send control panel rate limit notification", log_error)
+                    
                     return
                 else:
                     raise
@@ -1542,15 +1562,35 @@ async def create_control_panel(
                     )
                 except discord.HTTPException as e:
                     if e.status == 429:  # Rate limited
+                        retry_after = getattr(e, 'retry_after', 2)
                         log_perfect_tree_section(
                             "Control Panel - Delete Rate Limited",
                             [
                                 ("status", "⚠️ Rate limited while deleting messages"),
-                                ("action", "Waiting 2 seconds"),
+                                ("retry_after", f"{retry_after}s"),
+                                ("action", f"Waiting {retry_after} seconds"),
                             ],
                             "⏱️",
                         )
-                        await asyncio.sleep(2)
+                        
+                        # Send Discord notification about message deletion rate limiting
+                        from src.utils.discord_logger import get_discord_logger
+                        discord_logger = get_discord_logger()
+                        if discord_logger:
+                            try:
+                                await discord_logger.log_rate_limit(
+                                    event="control_panel_message_deletion",
+                                    retry_after=retry_after,
+                                    context={
+                                        "Component": "Control Panel",
+                                        "Action": "Message Deletion",
+                                        "Impact": "Cleanup delayed"
+                                    }
+                                )
+                            except Exception as log_error:
+                                log_error_with_traceback("Failed to send message deletion rate limit notification", log_error)
+                        
+                        await asyncio.sleep(retry_after)
                         # Try to delete the message again after rate limit
                         try:
                             await message.delete()
@@ -1642,16 +1682,36 @@ async def create_control_panel(
 
         except discord.HTTPException as e:
             if e.status == 429:  # Rate limited
+                retry_after = getattr(e, 'retry_after', 5)
                 log_perfect_tree_section(
                     "Control Panel - Rate Limited on Creation",
                     [
                         ("status", "⚠️ Rate limited while creating panel"),
-                        ("action", "Waiting 5 seconds and retrying"),
+                        ("retry_after", f"{retry_after}s"),
+                        ("action", f"Waiting {retry_after} seconds and retrying"),
                         ("http_status", "429"),
                     ],
                     "⏱️",
                 )
-                await asyncio.sleep(5)
+                
+                # Send Discord notification about panel creation rate limiting
+                from src.utils.discord_logger import get_discord_logger
+                discord_logger = get_discord_logger()
+                if discord_logger:
+                    try:
+                        await discord_logger.log_rate_limit(
+                            event="control_panel_creation",
+                            retry_after=retry_after,
+                            context={
+                                "Component": "Control Panel",
+                                "Action": "Panel Creation",
+                                "Impact": "Creation delayed"
+                            }
+                        )
+                    except Exception as log_error:
+                        log_error_with_traceback("Failed to send panel creation rate limit notification", log_error)
+                
+                await asyncio.sleep(retry_after)
                 # Try again after rate limit
                 message = await channel.send(embed=embed, view=view)
                 view.set_panel_message(message)

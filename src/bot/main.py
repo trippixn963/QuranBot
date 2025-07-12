@@ -23,6 +23,7 @@ import glob
 import os
 import traceback
 from pathlib import Path
+from datetime import datetime, timedelta
 
 import discord
 from discord.ext import commands
@@ -1857,6 +1858,13 @@ async def on_voice_state_update(member, before, after):
                 # Track listening time - user joined
                 track_voice_join(member.id)
 
+                # Cache user info for dashboard display
+                try:
+                    from src.utils.user_cache import cache_user_from_member
+                    cache_user_from_member(member)
+                except Exception:
+                    pass  # Fail silently to not interfere with voice operations
+
                 log_voice_activity_tree(
                     member.display_name,
                     "join",
@@ -2197,12 +2205,7 @@ async def _assign_panel_access_role(member, panel_role, channel):
             )
             return
 
-        # Assign the role
-        await member.add_roles(
-            panel_role, reason="Joined voice channel for panel access"
-        )
-
-        # Log the role assignment with perfect tree structure
+        # Log the assignment attempt
         log_perfect_tree_section(
             f"Panel Access Role Assignment - {member.display_name}",
             [
@@ -2212,12 +2215,61 @@ async def _assign_panel_access_role(member, panel_role, channel):
                 ("channel_id", str(channel.id)),
                 ("role", panel_role.name),
                 ("role_id", str(panel_role.id)),
-                ("action", "GRANTED"),
+                ("action", "ATTEMPTING"),
                 ("reason", "Joined voice channel"),
-                ("status", "✅ SUCCESS"),
+                ("status", "🔄 In progress..."),
             ],
             "🎤",
         )
+
+        # Assign the role with retry logic
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                await member.add_roles(
+                    panel_role, reason="Joined voice channel for panel access"
+                )
+                
+                # Verify the role was actually assigned
+                await member.reload()  # Refresh member data
+                if panel_role in member.roles:
+                    log_perfect_tree_section(
+                        f"Panel Access Role Assignment Success - {member.display_name}",
+                        [
+                            ("user", member.display_name),
+                            ("user_id", str(member.id)),
+                            ("action", "GRANTED"),
+                            ("attempt", f"{attempt + 1}/{max_retries}"),
+                            ("status", "✅ SUCCESS"),
+                        ],
+                        "✅",
+                    )
+                    return
+                else:
+                    # Role assignment appeared to succeed but role not found
+                    if attempt < max_retries - 1:
+                        await asyncio.sleep(1)  # Wait before retry
+                        continue
+                    else:
+                        raise Exception("Role assignment succeeded but role not found on member")
+                        
+            except discord.HTTPException as http_error:
+                if attempt < max_retries - 1:
+                    wait_time = 2 ** attempt  # Exponential backoff
+                    log_perfect_tree_section(
+                        f"Panel Access Role - Retry {attempt + 1}",
+                        [
+                            ("user", member.display_name),
+                            ("error", str(http_error)),
+                            ("retry_in", f"{wait_time}s"),
+                            ("attempt", f"{attempt + 1}/{max_retries}"),
+                        ],
+                        "🔄",
+                    )
+                    await asyncio.sleep(wait_time)
+                    continue
+                else:
+                    raise http_error
 
     except discord.Forbidden:
         log_perfect_tree_section(
@@ -2227,16 +2279,30 @@ async def _assign_panel_access_role(member, panel_role, channel):
                     "role_error",
                     f"❌ No permission to assign panel access role to {member.display_name}",
                 ),
+                ("user_id", str(member.id)),
+                ("role_id", str(panel_role.id)),
             ],
             "❌",
         )
     except discord.HTTPException as e:
-        log_error_with_traceback(
-            f"HTTP error assigning panel access role to {member.display_name}", e
+        log_perfect_tree_section(
+            "Panel Access Role - HTTP Error",
+            [
+                ("user", member.display_name),
+                ("error", str(e)),
+                ("status", "❌ FAILED after retries"),
+            ],
+            "❌",
         )
     except Exception as e:
-        log_error_with_traceback(
-            f"Unexpected error assigning panel access role to {member.display_name}", e
+        log_perfect_tree_section(
+            "Panel Access Role - Unexpected Error",
+            [
+                ("user", member.display_name),
+                ("error", str(e)),
+                ("status", "❌ FAILED"),
+            ],
+            "❌",
         )
 
 
@@ -2250,60 +2316,121 @@ async def _remove_panel_access_role(member, panel_role, channel):
         channel: Voice channel the user left
     """
     try:
+        # Refresh member data to get current roles
+        await member.reload()
+        
         # Check if user has the role
         if panel_role not in member.roles:
             log_perfect_tree_section(
                 "Panel Access Role - Not Assigned",
                 [
-                    (
-                        "role_skip",
-                        f"{member.display_name} doesn't have panel access role",
-                    ),
+                    ("user", member.display_name),
+                    ("user_id", str(member.id)),
+                    ("role_skip", f"{member.display_name} doesn't have panel access role"),
+                    ("reason", "Role was never assigned or already removed"),
+                    ("channel_left", channel.name),
                 ],
                 "ℹ️",
             )
             return
 
-        # Remove the role
-        await member.remove_roles(
-            panel_role, reason="Left voice channel, removing panel access"
-        )
-
-        # Log the role removal with perfect tree structure
+        # Log the removal attempt
         log_perfect_tree_section(
             f"Panel Access Role Removal - {member.display_name}",
             [
                 ("user", member.display_name),
                 ("user_id", str(member.id)),
                 ("channel", channel.name),
-                ("channel_id", str(channel.id)),
-                ("role", panel_role.name),
-                ("role_id", str(panel_role.id)),
-                ("action", "REVOKED"),
-                ("reason", "Left voice channel"),
-                ("status", "✅ SUCCESS"),
+                ("action", "ATTEMPTING"),
+                ("status", "🔄 Removing role..."),
             ],
             "👋",
         )
+
+        # Remove the role with retry logic
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                await member.remove_roles(
+                    panel_role, reason="Left voice channel, removing panel access"
+                )
+                
+                # Verify the role was actually removed
+                await member.reload()  # Refresh member data
+                if panel_role not in member.roles:
+                    log_perfect_tree_section(
+                        f"Panel Access Role Removal Success - {member.display_name}",
+                        [
+                            ("user", member.display_name),
+                            ("user_id", str(member.id)),
+                            ("channel", channel.name),
+                            ("channel_id", str(channel.id)),
+                            ("role", panel_role.name),
+                            ("role_id", str(panel_role.id)),
+                            ("action", "REVOKED"),
+                            ("reason", "Left voice channel"),
+                            ("attempt", f"{attempt + 1}/{max_retries}"),
+                            ("status", "✅ SUCCESS"),
+                        ],
+                        "✅",
+                    )
+                    return
+                else:
+                    # Role removal appeared to succeed but role still found
+                    if attempt < max_retries - 1:
+                        await asyncio.sleep(1)  # Wait before retry
+                        continue
+                    else:
+                        raise Exception("Role removal succeeded but role still found on member")
+                        
+            except discord.HTTPException as http_error:
+                if attempt < max_retries - 1:
+                    wait_time = 2 ** attempt  # Exponential backoff
+                    log_perfect_tree_section(
+                        f"Panel Access Role Removal - Retry {attempt + 1}",
+                        [
+                            ("user", member.display_name),
+                            ("error", str(http_error)),
+                            ("retry_in", f"{wait_time}s"),
+                            ("attempt", f"{attempt + 1}/{max_retries}"),
+                        ],
+                        "🔄",
+                    )
+                    await asyncio.sleep(wait_time)
+                    continue
+                else:
+                    raise http_error
 
     except discord.Forbidden:
         log_perfect_tree_section(
             "Panel Access Role - Permission Error",
             [
-                (
-                    "role_error",
-                    f"❌ No permission to remove panel access role from {member.display_name}",
-                ),
+                ("user", member.display_name),
+                ("user_id", str(member.id)),
+                ("role_error", f"❌ No permission to remove panel access role from {member.display_name}"),
+                ("role_id", str(panel_role.id)),
             ],
             "❌",
         )
     except discord.HTTPException as e:
-        log_error_with_traceback(
-            f"HTTP error removing panel access role from {member.display_name}", e
+        log_perfect_tree_section(
+            "Panel Access Role Removal - HTTP Error",
+            [
+                ("user", member.display_name),
+                ("error", str(e)),
+                ("status", "❌ FAILED after retries"),
+            ],
+            "❌",
         )
     except Exception as e:
-        log_error_with_traceback(
-            f"Unexpected error removing panel access role from {member.display_name}", e
+        log_perfect_tree_section(
+            "Panel Access Role Removal - Unexpected Error",
+            [
+                ("user", member.display_name),
+                ("error", str(e)),
+                ("status", "❌ FAILED"),
+            ],
+            "❌",
         )
 
 
@@ -2464,18 +2591,52 @@ async def _handle_http_error(exc_value, event, kwargs):
         status_code = getattr(exc_value, "status", None)
 
         if status_code == 429:
-            # Rate limiting
+            # Rate limiting - Enhanced with Discord notifications
+            retry_after = getattr(exc_value, "retry_after", 60)
+            
             log_perfect_tree_section(
                 "Discord API - Rate Limited",
                 [
-                    ("rate_limit", "Discord API rate limit encountered"),
-                    (
-                        "rate_limit_wait",
-                        f"Waiting {getattr(exc_value, 'retry_after', 60)} seconds",
-                    ),
+                    ("rate_limit", "🚨 Discord API rate limit encountered"),
+                    ("event", f"Event: {event}"),
+                    ("retry_after", f"Waiting {retry_after} seconds"),
+                    ("status_code", "429"),
+                    ("timestamp", get_timestamp().strip("[]")),
                 ],
                 "⏳",
             )
+            
+            # Send Discord notification about rate limiting
+            discord_logger = get_discord_logger()
+            if discord_logger:
+                try:
+                    # Create context information
+                    context = {
+                        "Status Code": "429",
+                        "Timestamp": get_timestamp().strip("[]"),
+                        "Error Message": str(exc_value)
+                    }
+                    
+                    # Add additional context from kwargs if available
+                    if kwargs:
+                        for key, value in kwargs.items():
+                            if len(str(value)) < 100:
+                                context[f"Context {key.title()}"] = str(value)
+                    
+                    # Extract endpoint from exception if available
+                    endpoint = getattr(exc_value, 'response', {}).get('url', None)
+                    if hasattr(exc_value, 'response') and hasattr(exc_value.response, 'url'):
+                        endpoint = str(exc_value.response.url)
+                    
+                    await discord_logger.log_rate_limit(
+                        event=event,
+                        retry_after=retry_after,
+                        endpoint=endpoint,
+                        context=context
+                    )
+                except Exception as log_error:
+                    # Don't let Discord logging errors interfere with error handling
+                    log_error_with_traceback("Failed to send rate limit notification to Discord", log_error)
 
         elif status_code == 403:
             # Forbidden - permissions issue
@@ -2483,9 +2644,31 @@ async def _handle_http_error(exc_value, event, kwargs):
                 "Discord API - Permissions Error",
                 [
                     ("permissions_error", "Bot lacks required permissions"),
+                    ("event", f"Event: {event}"),
+                    ("status_code", "403"),
                 ],
                 "❌",
             )
+            
+            # Send Discord notification for permissions issues
+            discord_logger = get_discord_logger()
+            if discord_logger:
+                try:
+                    context = {
+                        "Event": event,
+                        "Status Code": "403", 
+                        "Error Message": str(exc_value)
+                    }
+                    
+                    await discord_logger.log_error(
+                        f"❌ **Permissions Error**\n\n"
+                        f"The bot lacks required permissions for the `{event}` event. "
+                        f"Please check bot permissions in the server settings.",
+                        exc_value,
+                        context
+                    )
+                except Exception as log_error:
+                    log_error_with_traceback("Failed to send permissions error notification to Discord", log_error)
 
         elif status_code == 404:
             # Not found - channel/guild may have been deleted
@@ -2493,6 +2676,8 @@ async def _handle_http_error(exc_value, event, kwargs):
                 "Discord API - Not Found",
                 [
                     ("not_found", "Discord resource not found (deleted?)"),
+                    ("event", f"Event: {event}"),
+                    ("status_code", "404"),
                 ],
                 "❓",
             )
@@ -2500,6 +2685,25 @@ async def _handle_http_error(exc_value, event, kwargs):
         else:
             # Other HTTP errors
             log_error_with_traceback(f"Discord HTTP error {status_code}", exc_value)
+            
+            # Send Discord notification for other HTTP errors
+            discord_logger = get_discord_logger()
+            if discord_logger:
+                try:
+                    context = {
+                        "Event": event,
+                        "Status Code": str(status_code),
+                        "Error Message": str(exc_value)
+                    }
+                    
+                    await discord_logger.log_error(
+                        f"🌐 **Discord HTTP Error {status_code}**\n\n"
+                        f"An HTTP error occurred during the `{event}` event.",
+                        exc_value,
+                        context
+                    )
+                except Exception as log_error:
+                    log_error_with_traceback("Failed to send HTTP error notification to Discord", log_error)
 
     except Exception as e:
         log_error_with_traceback("Error handling HTTP error", e)

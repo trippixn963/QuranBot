@@ -524,7 +524,21 @@ class DiscordLogger:
             self.enabled = False
         except discord.errors.HTTPException as e:
             if e.status == 429:  # Rate limited by Discord
-                log_error_with_traceback("Discord API rate limited", e)
+                retry_after = getattr(e, 'retry_after', 60)
+                log_error_with_traceback(f"Discord API rate limited - waiting {retry_after}s", e)
+                
+                # Note: We can't use our own log_rate_limit method here as it would cause recursion
+                # Instead, we log to the console and local files only
+                log_perfect_tree_section(
+                    "Discord Logger - Rate Limited",
+                    [
+                        ("status", "🚨 Discord logger itself rate limited"),
+                        ("retry_after", f"{retry_after}s"),
+                        ("impact", "Discord notifications paused"),
+                        ("local_logging", "✅ Still active"),
+                    ],
+                    "⏳",
+                )
             else:
                 log_error_with_traceback("Discord HTTP error in logger", e)
         except Exception as e:
@@ -678,6 +692,98 @@ class DiscordLogger:
             fields=fields
         )
     
+    async def log_rate_limit(
+        self, 
+        event: str,
+        retry_after: float,
+        endpoint: Optional[str] = None,
+        context: Optional[Dict[str, str]] = None
+    ):
+        """
+        Log a Discord API rate limit event with detailed information.
+        
+        Args:
+            event: The event that triggered the rate limit
+            retry_after: Seconds to wait before retrying
+            endpoint: API endpoint that was rate limited (if known)
+            context: Additional context information
+        """
+        if not self.enabled:
+            return
+        
+        try:
+            # Calculate resume time in EST
+            est = pytz.timezone("US/Eastern")
+            now_est = datetime.now(est)
+            resume_time = now_est + timedelta(seconds=retry_after)
+            
+            description = (
+                f"🚨 **Discord API Rate Limit Triggered**\n\n"
+                f"**Event:** `{event}`\n"
+                f"**Wait Time:** {retry_after} seconds\n"
+                f"**Resume Time:** {resume_time.strftime('%I:%M:%S %p EST')}\n\n"
+                f"The bot will automatically resume operations after the rate limit period. "
+                f"This is a normal Discord API protection mechanism."
+            )
+            
+            fields = [
+                {
+                    "name": "⏰ Rate Limit Details",
+                    "value": f"**Retry After:** {retry_after}s\n**Status Code:** 429\n**Timestamp:** {self._get_timestamp()}",
+                    "inline": True
+                },
+                {
+                    "name": "🎯 Affected Event", 
+                    "value": f"**Event:** {event}\n**Auto Resume:** ✅ Yes\n**Manual Action:** ❌ None needed",
+                    "inline": True
+                }
+            ]
+            
+            if endpoint:
+                fields.append({
+                    "name": "🌐 API Endpoint",
+                    "value": f"`{endpoint}`",
+                    "inline": False
+                })
+            
+            if context:
+                context_text = []
+                for key, value in context.items():
+                    if len(str(value)) < 100:  # Avoid overly long context values
+                        context_text.append(f"**{key}:** {value}")
+                
+                if context_text:
+                    fields.append({
+                        "name": "📋 Additional Context",
+                        "value": "\n".join(context_text[:5]),  # Limit to 5 context items
+                        "inline": False
+                    })
+            
+            # Add rate limit statistics
+            try:
+                rate_limit_count = sum(
+                    sum(minute_counts.values()) 
+                    for minute_counts in self.rate_limit_cache.values()
+                )
+                fields.append({
+                    "name": "📊 Rate Limit Stats",
+                    "value": f"**Current Period:** {rate_limit_count} logs\n**Limit:** {self.max_logs_per_minute}/min\n**Status:** {'⚠️ Near Limit' if rate_limit_count > self.max_logs_per_minute * 0.8 else '✅ Normal'}",
+                    "inline": True
+                })
+            except:
+                pass
+            
+            await self._send_log_embed(
+                title="Rate Limit Detected",
+                description=description,
+                level="WARNING",
+                fields=fields,
+                footer=f"Rate limits help prevent API abuse • Bot will resume automatically"
+            )
+            
+        except Exception as e:
+            log_error_with_traceback("Error sending rate limit notification", e)
+
     async def log_warning(
         self, 
         warning_message: str, 

@@ -1,0 +1,36 @@
+[Unit]
+Description=QuranBot Web Dashboard (Independent)
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/DiscordBots/QuranBot/web_dashboard
+Environment=PATH=/opt/DiscordBots/QuranBot/.venv/bin
+ExecStart=/opt/DiscordBots/QuranBot/.venv/bin/python /opt/DiscordBots/QuranBot/web_dashboard/app.py
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=quranbot-dashboard
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/DiscordBots/QuranBot
+
+# Resource limits
+LimitNOFILE=65536
+MemoryMax=256M
+CPUQuota=25%
+
+# Environment variables
+EnvironmentFile=-/opt/DiscordBots/QuranBot/config/.env
+
+[Install]
+WantedBy=multi-user.target 

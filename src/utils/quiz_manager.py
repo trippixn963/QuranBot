@@ -464,6 +464,19 @@ class QuizView(discord.ui.View):
 
         # Add explanation if available
         explanation = self.question_data.get("explanation", {})
+        
+        # Debug: Log explanation data to help troubleshoot
+        log_perfect_tree_section(
+            "Quiz Results - Explanation Debug",
+            [
+                ("explanation_exists", "Yes" if explanation else "No"),
+                ("explanation_type", type(explanation).__name__),
+                ("explanation_content", str(explanation)[:200] if explanation else "None"),
+                ("question_data_keys", list(self.question_data.keys())),
+            ],
+            "🔍",
+        )
+        
         if explanation:
             # Add single spacing line before explanation
             results_embed.add_field(
@@ -552,6 +565,13 @@ class QuizButton(discord.ui.Button):
 
         # Record the response
         self.view.responses[interaction.user.id] = self.letter
+
+        # Cache user info for dashboard display
+        try:
+            from src.utils.user_cache import cache_user_from_interaction
+            cache_user_from_interaction(interaction)
+        except Exception:
+            pass  # Fail silently to not interfere with quiz operations
 
         # Log user interaction
         log_user_interaction(
@@ -1850,7 +1870,8 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                         "correct_answer": correct_answer,
                         "category": question.get("category", "general"),
                         "difficulty": difficulty_display,
-                        "id": question.get("id", "scheduled_quiz")
+                        "id": question.get("id", "scheduled_quiz"),
+                        "explanation": question.get("explanation", {})  # Include explanation for results
                     }
                     
                     # If it's a simple format, build choices dictionary for the view
