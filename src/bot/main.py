@@ -2294,7 +2294,8 @@ async def _assign_panel_access_role(member, panel_role, channel):
                 )
                 
                 # Verify the role was actually assigned
-                await member.reload()  # Refresh member data
+                # Refresh member data by fetching from guild
+                member = await member.guild.fetch_member(member.id)
                 if panel_role in member.roles:
                     log_perfect_tree_section(
                         f"Panel Access Role Assignment Success - {member.display_name}",
@@ -2380,7 +2381,8 @@ async def _remove_panel_access_role(member, panel_role, channel):
     """
     try:
         # Refresh member data to get current roles
-        await member.reload()
+        # Fetch fresh member data from guild
+        member = await member.guild.fetch_member(member.id)
         
         # Check if user has the role
         if panel_role not in member.roles:
@@ -2419,7 +2421,8 @@ async def _remove_panel_access_role(member, panel_role, channel):
                 )
                 
                 # Verify the role was actually removed
-                await member.reload()  # Refresh member data
+                # Refresh member data by fetching from guild
+                member = await member.guild.fetch_member(member.id)
                 if panel_role not in member.roles:
                     log_perfect_tree_section(
                         f"Panel Access Role Removal Success - {member.display_name}",

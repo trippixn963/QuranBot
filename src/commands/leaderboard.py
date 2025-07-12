@@ -86,7 +86,7 @@ class LeaderboardView(discord.ui.View):
             leaderboard_text += (
                 f"{position_display} <@{user_id}>\n"
                 f"Points: **{points}** • Streak: **{streak}** 🔥\n"
-                f"Listening Time: **{listening_time}**\n\n"
+                f"Listening Time: **{listening_time}** 🎧\n\n"
             )
 
         if leaderboard_text:
