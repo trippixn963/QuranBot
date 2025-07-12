@@ -860,16 +860,48 @@ class SimpleControlPanelView(View):
             self.update_task = asyncio.create_task(self._update_loop())
 
     async def _update_loop(self):
-        """Update the panel every 2 seconds"""
+        """Update the panel with smart intervals based on audio state"""
         while True:
             try:
-                await asyncio.sleep(UPDATE_INTERVAL)
+                # Determine smart update interval based on audio state
+                update_interval = self._get_smart_update_interval()
+                
+                await asyncio.sleep(update_interval)
                 if self.panel_message:
                     await self.update_panel()
             except asyncio.CancelledError:
                 break
             except Exception as e:
                 log_error_with_traceback("Error in update loop", e)
+    
+    def _get_smart_update_interval(self) -> int:
+        """Get smart update interval based on current audio state"""
+        try:
+            if not self.audio_manager:
+                return 30  # Fallback when no audio manager
+            
+            status = self.audio_manager.get_playback_status()
+            if not status:
+                return 30  # Fallback when no status
+            
+            is_playing = status.get("is_playing", False)
+            is_paused = status.get("is_paused", False)
+            current_time = status.get("current_time", 0)
+            total_time = status.get("total_time", 0)
+            
+            # Check if audio is finished (at max progress)
+            if total_time > 0 and current_time >= total_time - 1:  # Within 1 second of end
+                return 60  # Finished audio: 60 seconds (reduce rate limiting)
+            elif is_paused:
+                return 20  # Paused audio: 20 seconds  
+            elif is_playing:
+                return 10  # Active playback: 10 seconds
+            else:
+                return 30  # Fallback: 30 seconds
+                
+        except Exception as e:
+            log_error_with_traceback("Error calculating smart update interval", e)
+            return 30  # Safe fallback
 
     def _create_panel_embed(self) -> discord.Embed:
         """Create the control panel embed with current status"""
