@@ -507,6 +507,7 @@ PANEL_ACCESS_ROLE_ID = int(os.getenv("PANEL_ACCESS_ROLE_ID") or "139150013636621
 DAILY_VERSE_CHANNEL_ID = int(os.getenv("DAILY_VERSE_CHANNEL_ID") or "0")
 DEVELOPER_ID = int(os.getenv("DEVELOPER_ID") or "0")
 LOGS_CHANNEL_ID = int(os.getenv("LOGS_CHANNEL_ID") or "0")  # VPS Discord logging
+DASHBOARD_URL = os.getenv("DASHBOARD_URL", "")  # Dashboard URL for monitoring
 FFMPEG_PATH = os.getenv("FFMPEG_PATH", "ffmpeg")
 AUDIO_FOLDER = "audio/Saad Al Ghamdi"
 
@@ -1341,13 +1342,14 @@ async def on_ready():
                     discord_logger = None
                     if LOGS_CHANNEL_ID != 0:
                         try:
-                            discord_logger = setup_discord_logger(bot, LOGS_CHANNEL_ID)
+                            discord_logger = setup_discord_logger(bot, LOGS_CHANNEL_ID, DASHBOARD_URL)
                             await discord_logger.initialize()
                             log_perfect_tree_section(
                                 "Discord Logger Setup",
                                 [
                                     ("status", "✅ Discord logger initialized"),
                                     ("log_channel_id", str(LOGS_CHANNEL_ID)),
+                                    ("dashboard_url", DASHBOARD_URL if DASHBOARD_URL else "Not configured"),
                                     ("monitoring", "Errors, warnings, and system events"),
                                     ("rate_limit", "10 messages per minute per type"),
                                 ],

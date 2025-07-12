@@ -47,13 +47,14 @@ class DiscordLogger:
     - Graceful fallback when Discord is unavailable
     """
     
-    def __init__(self, bot: commands.Bot, log_channel_id: int):
+    def __init__(self, bot: commands.Bot, log_channel_id: int, dashboard_url: str = ""):
         """
         Initialize the Discord logger.
         
         Args:
             bot: Discord bot instance
             log_channel_id: ID of the Discord channel for logs
+            dashboard_url: Optional dashboard URL for monitoring
         """
         self.bot = bot
         self.log_channel_id = log_channel_id
@@ -61,6 +62,7 @@ class DiscordLogger:
         self.rate_limit_cache = {}
         self.max_logs_per_minute = 10
         self.enabled = True
+        self.dashboard_url = dashboard_url
         
         # User ID to ping for errors (John's Discord ID)
         self.owner_user_id = 155149108183695360  # John's Discord ID
@@ -226,6 +228,14 @@ class DiscordLogger:
                 value=status_data['current_surah'],
                 inline=True
             )
+            
+            # Add dashboard link if configured
+            if self.dashboard_url:
+                embed.add_field(
+                    name="🖥️ Dashboard",
+                    value=f"[View Dashboard]({self.dashboard_url})",
+                    inline=True
+                )
             
             # Add recent logs
             if recent_logs:
@@ -1178,19 +1188,20 @@ class DiscordLogger:
 _discord_logger: Optional[DiscordLogger] = None
 
 
-def setup_discord_logger(bot: commands.Bot, log_channel_id: int) -> DiscordLogger:
+def setup_discord_logger(bot: commands.Bot, log_channel_id: int, dashboard_url: str = "") -> DiscordLogger:
     """
     Set up the global Discord logger instance.
     
     Args:
         bot: Discord bot instance
         log_channel_id: ID of the Discord channel for logs
+        dashboard_url: Optional dashboard URL for monitoring
         
     Returns:
         DiscordLogger: The initialized Discord logger
     """
     global _discord_logger
-    _discord_logger = DiscordLogger(bot, log_channel_id)
+    _discord_logger = DiscordLogger(bot, log_channel_id, dashboard_url)
     return _discord_logger
 
 
