@@ -60,7 +60,7 @@ graph TB
     end
     
     subgraph "Infrastructure"
-        VPS[VPS Server]
+        SRV[Server Environment]
         WD[Web Dashboard]
         NGINX[Nginx Proxy]
     end
@@ -78,7 +78,7 @@ graph TB
     SM --> JSON
     AM --> AUDIO
     BM --> LOGS
-    VPS --> WD
+    SRV --> WD
     WD --> NGINX
 ```
 
@@ -446,7 +446,7 @@ class AtomicStateWriter:
             raise e
 ```
 
-### 5. Web Dashboard Architecture (`vps/web_dashboard/app.py`)
+### 5. Web Dashboard Architecture (Optional Component)
 
 #### Dashboard System Design
 
@@ -1068,7 +1068,7 @@ services:
       - monitoring
     
   dashboard:
-    build: ./vps/web_dashboard
+    build: ./web_dashboard
     ports:
       - "8080:8080"
     environment:
@@ -1096,7 +1096,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./vps/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
     depends_on:
       - dashboard
 
@@ -1151,7 +1151,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
-      - name: Deploy to VPS with Barakah
+      - name: Deploy with Blessings
         run: |
           echo "Deploying with Islamic principles of excellence and service"
           # Deployment script with Islamic mindfulness

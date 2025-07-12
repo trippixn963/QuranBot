@@ -512,13 +512,26 @@ class QuizView(discord.ui.View):
             results_embed.set_thumbnail(url=self.message.guild.me.avatar.url)
 
         # Set footer with admin info
-        admin_user = self.message.guild.get_member(259725211664908288)  # Your admin ID
-        if admin_user:
-            results_embed.set_footer(
-                text="Created by حَـــــنَّـــــا",
-                icon_url=admin_user.avatar.url if admin_user.avatar else None
-            )
-        else:
+        try:
+            import os
+            DEVELOPER_ID = int(os.getenv("DEVELOPER_ID", "0"))
+            if DEVELOPER_ID != 0:
+                # Try to get admin user from guild first
+                admin_user = self.message.guild.get_member(DEVELOPER_ID)
+                if not admin_user:
+                    # If not in guild, fetch user directly
+                    admin_user = await self.message.channel.guild.client.fetch_user(DEVELOPER_ID)
+                
+                if admin_user and admin_user.avatar:
+                    results_embed.set_footer(
+                        text="Created by حَـــــنَّـــــا",
+                        icon_url=admin_user.avatar.url
+                    )
+                else:
+                    results_embed.set_footer(text="Created by حَـــــنَّـــــا")
+            else:
+                results_embed.set_footer(text="Created by حَـــــنَّـــــا")
+        except Exception:
             results_embed.set_footer(text="Created by حَـــــنَّـــــا")
 
         # Send results
@@ -552,13 +565,26 @@ class QuizButton(discord.ui.Button):
                 color=0xFF6B6B,
             )
             # Set footer with admin info and profile picture
-            admin_user = interaction.guild.get_member(259725211664908288)  # Your admin ID
-            if admin_user and admin_user.avatar:
-                embed.set_footer(
-                    text="Created by حَـــــنَّـــــا",
-                    icon_url=admin_user.avatar.url
-                )
-            else:
+            try:
+                import os
+                DEVELOPER_ID = int(os.getenv("DEVELOPER_ID", "0"))
+                if DEVELOPER_ID != 0:
+                    # Try to get admin user from guild first
+                    admin_user = interaction.guild.get_member(DEVELOPER_ID)
+                    if not admin_user:
+                        # If not in guild, fetch user directly
+                        admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
+                    
+                    if admin_user and admin_user.avatar:
+                        embed.set_footer(
+                            text="Created by حَـــــنَّـــــا",
+                            icon_url=admin_user.avatar.url
+                        )
+                    else:
+                        embed.set_footer(text="Created by حَـــــنَّـــــا")
+                else:
+                    embed.set_footer(text="Created by حَـــــنَّـــــا")
+            except Exception:
                 embed.set_footer(text="Created by حَـــــنَّـــــا")
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return

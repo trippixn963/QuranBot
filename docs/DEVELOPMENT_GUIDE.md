@@ -131,7 +131,6 @@ QuranBot/
 ├── config/                # Configuration files
 ├── tests/                 # Test suite
 ├── tools/                 # Development utilities
-├── vps/                   # VPS deployment
 ├── docs/                  # Documentation
 ├── audio/                 # Quranic recitations
 ├── data/                  # Runtime data

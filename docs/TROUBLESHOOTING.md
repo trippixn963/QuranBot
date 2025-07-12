@@ -353,37 +353,36 @@ qb-logs | grep -i "rate\|limit"
 
 ### 6. Log and Data Issues
 
-#### **Issue: Logs Not Syncing from VPS**
+#### **Issue: Log Files Not Accessible**
 
 **Symptoms:**
-- Local vps_logs directory empty
-- Sync script not working
-- Cannot access recent VPS logs
+- Local logs directory empty
+- Log rotation not working
+- Cannot access recent bot logs
 
 **Solutions:**
 
 ```bash
-# 1. Check SSH connection to VPS
-ssh root@your-vps-ip "ls -la /opt/DiscordBots/QuranBot/logs/"
+# 1. Check log directory structure
+ls -la logs/
 
-# 2. Verify sync script configuration
-cat vps/scripts/local_log_sync.sh
-# Check VPS_IP and paths
+# 2. Verify log file permissions
+ls -la logs/$(date '+%Y-%m-%d')/
 
-# 3. Test manual sync
-vps/scripts/local_log_sync.sh once
+# 3. Check log configuration
+grep -i "log" src/bot/main.py
 
-# 4. Check daemon status
-ps aux | grep sync_logs
+# 4. Check disk space
+df -h
 
-# 5. Restart sync daemon
-vps/scripts/local_log_sync.sh daemon
+# 5. Restart bot to reinitialize logging
+python main.py
 ```
 
 **Recent Fix Applied:**
-- Fixed VPS path in sync scripts
-- Enhanced error handling in sync process
-- Added status checking for sync daemon
+- Enhanced log directory management
+- Improved error handling in log process
+- Added automatic log rotation
 
 #### **Issue: Dashboard Shows Wrong Timezone**
 
@@ -396,7 +395,7 @@ vps/scripts/local_log_sync.sh daemon
 
 ```bash
 # 1. Check timezone configuration
-grep -i timezone vps/web_dashboard/app.py
+grep -i timezone src/utils/daily_verses.py
 
 # 2. Verify EST timezone usage
 python3 -c "
@@ -567,58 +566,61 @@ qb-logs | grep -i "loop\|repeat"
 
 ---
 
-### 10. VPS-Specific Issues
+### 10. Service Management Issues
 
-#### **Issue: Services Not Starting on Boot**
+#### **Issue: Bot Process Not Starting**
 
 **Symptoms:**
-- Bot offline after VPS restart
-- Services not enabled
+- Bot offline after system restart
+- Process not running
 - Manual start required
 
 **Solutions:**
 
 ```bash
-# 1. Check service enablement
-sudo systemctl is-enabled quranbot.service
-sudo systemctl is-enabled quranbot-dashboard.service
+# 1. Check if bot process is running
+ps aux | grep python | grep main.py
 
-# 2. Enable services
-sudo systemctl enable quranbot.service
-sudo systemctl enable quranbot-dashboard.service
+# 2. Check for error messages
+python main.py
 
-# 3. Test boot process
-sudo systemctl reboot
-# Wait and check if services start automatically
+# 3. Check file permissions
+ls -la main.py src/
 
-# 4. Check service dependencies
-sudo systemctl list-dependencies quranbot.service
+# 4. Verify Python environment
+which python3
+python3 --version
+
+# 5. Check dependencies
+pip list | grep discord
 ```
 
-#### **Issue: Nginx Configuration Problems**
+#### **Issue: Configuration Problems**
 
 **Symptoms:**
-- Cannot access dashboard via domain
-- 502 Bad Gateway errors
-- Nginx not serving dashboard
+- Bot starts but doesn't respond
+- Permission errors
+- Configuration not loading
 
 **Solutions:**
 
 ```bash
-# 1. Check nginx status
-sudo systemctl status nginx
+# 1. Check environment variables
+echo $DISCORD_TOKEN | head -c 10
 
-# 2. Test nginx configuration
-sudo nginx -t
+# 2. Verify config file
+ls -la config/.env
 
-# 3. Check nginx logs
-sudo tail -f /var/log/nginx/error.log
+# 3. Check file structure
+tree -L 2 src/
 
-# 4. Verify proxy configuration
-sudo cat /etc/nginx/sites-available/quranbot
-
-# 5. Restart nginx
-sudo systemctl restart nginx
+# 4. Validate configuration
+python3 -c "
+import os
+from dotenv import load_dotenv
+load_dotenv('config/.env')
+print('DISCORD_TOKEN:', 'Set' if os.getenv('DISCORD_TOKEN') else 'Missing')
+"
 ```
 
 ---
@@ -721,7 +723,7 @@ ls -la data/ logs/ audio/
 
 - **GitHub Issues**: For bug reports and feature requests
 - **Documentation**: Check all docs/ files first
-- **VPS Management**: Use built-in management scripts
+- **Bot Management**: Use built-in management scripts
 - **Community**: Discord server (if available)
 
 ---
@@ -759,10 +761,12 @@ echo "=== Maintenance Complete ==="
 
 ```bash
 # Set up automated health checks
-cat > /etc/cron.d/quranbot-health << 'EOF'
-# Check QuranBot health every 5 minutes
-*/5 * * * * root /opt/DiscordBots/QuranBot/vps/scripts/health_check.sh
+cat > check_bot_health.sh << 'EOF'
+#!/bin/bash
+# Check QuranBot health
+ps aux | grep "python.*main.py" || echo "Bot not running"
 EOF
+chmod +x check_bot_health.sh
 ```
 
 ### Backup Verification

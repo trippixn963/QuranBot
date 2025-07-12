@@ -104,10 +104,8 @@ vps_logs/  # Prevent VPS logs folder - all logs should go to logs/
 bot.log
 nohup.out
 
-# VPS Management - Allow VPS tools but ignore runtime files
-!vps/
-vps/web_dashboard/dashboard.log
-vps/web_dashboard/dashboard.pid
+# VPS Management - Personal deployment files (not part of public project)
+vps/
 
 # Audio Files (too large for git)
 audio/
