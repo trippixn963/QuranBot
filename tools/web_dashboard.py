@@ -104,6 +104,44 @@ def get_system_uptime():
     except:
         return "Unknown"
 
+def get_discord_api_health():
+    """Get Discord API health status"""
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["ssh", VPS_HOST, "python3 -c \"import sys; sys.path.append('/opt/DiscordBots/QuranBot'); from src.utils.discord_api_monitor import get_discord_monitor; monitor = get_discord_monitor(); print(__import__('json').dumps(monitor.get_current_health() if monitor else {'status': 'unavailable'}))\""],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        if result.returncode == 0:
+            import json
+            return json.loads(result.stdout.strip())
+        else:
+            return {'status': 'unavailable', 'is_healthy': False}
+    except:
+        return {'status': 'unavailable', 'is_healthy': False}
+
+def get_discord_gateway_status():
+    """Get Discord gateway status"""
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["ssh", VPS_HOST, "python3 -c \"import sys; sys.path.append('/opt/DiscordBots/QuranBot'); from src.utils.discord_api_monitor import get_discord_monitor; monitor = get_discord_monitor(); print(__import__('json').dumps(monitor.get_gateway_status() if monitor else {'connected': False}))\""],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        if result.returncode == 0:
+            import json
+            return json.loads(result.stdout.strip())
+        else:
+            return {'connected': False, 'latency': None}
+    except:
+        return {'connected': False, 'latency': None}
+
 # Dashboard HTML template
 DASHBOARD_HTML = """
 <!DOCTYPE html>
@@ -276,6 +314,60 @@ DASHBOARD_HTML = """
                     <div class="info-value">{{ 'Connected' if bot_status else 'Disconnected' }}</div>
                 </div>
             </div>
+            
+            <div class="card">
+                <h3>
+                    🔗 Discord API Health
+                    <span class="status-indicator {{ 'status-online' if discord_health.get('is_healthy', False) else 'status-warning' if discord_health.get('status') == 'warning' else 'status-offline' }}"></span>
+                </h3>
+                <div class="info-item">
+                    <div class="info-label">API Status</div>
+                    <div class="info-value">
+                        {% if discord_health.get('status') == 'healthy' %}
+                            ✅ Healthy
+                        {% elif discord_health.get('status') == 'warning' %}
+                            ⚠️ Warning
+                        {% elif discord_health.get('status') == 'critical' %}
+                            🚨 Critical
+                        {% else %}
+                            ❓ Unavailable
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Response Time</div>
+                    <div class="info-value">{{ "%.2f"|format(discord_health.get('avg_response_time', 0)) }}s</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Rate Limit Usage</div>
+                    <div class="info-value">{{ "%.1f"|format(discord_health.get('rate_limit_usage', 0) * 100) }}%</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>
+                    🌐 Gateway Status
+                    <span class="status-indicator {{ 'status-online' if gateway_status.get('connected', False) else 'status-offline' }}"></span>
+                </h3>
+                <div class="info-item">
+                    <div class="info-label">Connection</div>
+                    <div class="info-value">{{ 'Connected' if gateway_status.get('connected', False) else 'Disconnected' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Latency</div>
+                    <div class="info-value">
+                        {% if gateway_status.get('latency') %}
+                            {{ "%.0f"|format(gateway_status.get('latency') * 1000) }}ms
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Reconnects</div>
+                    <div class="info-value">{{ gateway_status.get('reconnect_count', 0) }}</div>
+                </div>
+            </div>
         </div>
         
         <div class="card">
@@ -306,6 +398,10 @@ def dashboard():
     uptime = get_system_uptime()
     recent_logs = get_recent_logs(15)
     
+    # Get Discord API health data
+    discord_health = get_discord_api_health()
+    gateway_status = get_discord_gateway_status()
+    
     # Get current EST time
     est_time = get_est_time().strftime("%Y-%m-%d %I:%M:%S %p EST")
     
@@ -316,6 +412,8 @@ def dashboard():
         current_surah=current_surah,
         uptime=uptime,
         recent_logs=recent_logs,
+        discord_health=discord_health,
+        gateway_status=gateway_status,
         timestamp=est_time
     )
 
@@ -337,6 +435,93 @@ def api_logs():
         'logs': get_recent_logs(20),
         'timestamp': get_est_time().isoformat()
     })
+
+@app.route('/api/discord/health')
+def api_discord_health():
+    """API endpoint for Discord API health status"""
+    try:
+        # Try to get Discord API health data from the VPS
+        import subprocess
+        result = subprocess.run(
+            ["ssh", VPS_HOST, "python3 -c \"import sys; sys.path.append('/opt/DiscordBots/QuranBot'); from src.utils.discord_api_monitor import get_discord_monitor; monitor = get_discord_monitor(); print(__import__('json').dumps(monitor.get_current_health() if monitor else {'status': 'unavailable'}))\""],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        if result.returncode == 0:
+            import json
+            return jsonify(json.loads(result.stdout.strip()))
+        else:
+            return jsonify({
+                'status': 'unavailable',
+                'error': 'Could not fetch Discord API health data',
+                'timestamp': get_est_time().isoformat()
+            })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'timestamp': get_est_time().isoformat()
+        })
+
+@app.route('/api/discord/metrics')
+def api_discord_metrics():
+    """API endpoint for Discord API metrics summary"""
+    try:
+        # Try to get Discord API metrics from the VPS
+        import subprocess
+        result = subprocess.run(
+            ["ssh", VPS_HOST, "python3 -c \"import sys; sys.path.append('/opt/DiscordBots/QuranBot'); from src.utils.discord_api_monitor import get_discord_monitor; monitor = get_discord_monitor(); print(__import__('json').dumps(monitor.get_api_metrics_summary() if monitor else {'total_calls': 0}))\""],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        if result.returncode == 0:
+            import json
+            return jsonify(json.loads(result.stdout.strip()))
+        else:
+            return jsonify({
+                'total_calls': 0,
+                'error': 'Could not fetch Discord API metrics',
+                'timestamp': get_est_time().isoformat()
+            })
+    except Exception as e:
+        return jsonify({
+            'total_calls': 0,
+            'error': str(e),
+            'timestamp': get_est_time().isoformat()
+        })
+
+@app.route('/api/discord/gateway')
+def api_discord_gateway():
+    """API endpoint for Discord gateway status"""
+    try:
+        # Try to get Discord gateway status from the VPS
+        import subprocess
+        result = subprocess.run(
+            ["ssh", VPS_HOST, "python3 -c \"import sys; sys.path.append('/opt/DiscordBots/QuranBot'); from src.utils.discord_api_monitor import get_discord_monitor; monitor = get_discord_monitor(); print(__import__('json').dumps(monitor.get_gateway_status() if monitor else {'connected': False}))\""],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        if result.returncode == 0:
+            import json
+            return jsonify(json.loads(result.stdout.strip()))
+        else:
+            return jsonify({
+                'connected': False,
+                'error': 'Could not fetch Discord gateway status',
+                'timestamp': get_est_time().isoformat()
+            })
+    except Exception as e:
+        return jsonify({
+            'connected': False,
+            'error': str(e),
+            'timestamp': get_est_time().isoformat()
+        })
 
 @app.route('/health')
 def health_check():

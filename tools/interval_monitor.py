@@ -116,7 +116,8 @@ def check_current_status():
     else:
         print("❌ Quiz state file not found")
 
-if __name__ == "__main__":
+def main():
+    """Main function for the interval monitor"""
     import sys
     
     if len(sys.argv) > 1 and sys.argv[1] == "status":
@@ -124,4 +125,7 @@ if __name__ == "__main__":
     else:
         check_current_status()
         print()
-        monitor_interval_changes() 
+        monitor_interval_changes()
+
+if __name__ == "__main__":
+    main() 

@@ -147,6 +147,7 @@ from utils.tree_log import (
     log_warning_with_context,
     write_to_log_files,
 )
+from utils.discord_api_monitor import initialize_discord_monitor, get_discord_monitor
 
 # =============================================================================
 # Global Managers
@@ -1165,6 +1166,23 @@ async def on_ready():
                 # Start playing audio using AudioManager
                 try:
                     await audio_manager.start_playback()
+                    
+                    # Initialize Discord API Monitor
+                    try:
+                        discord_monitor = initialize_discord_monitor(bot)
+                        log_perfect_tree_section(
+                            "Discord API Monitor",
+                            [
+                                ("status", "✅ Discord API monitoring started"),
+                                ("tracking", "API response times, rate limits, gateway health"),
+                                ("data_retention", "24 hours"),
+                                ("dashboard_integration", "✅ Web dashboard endpoints available"),
+                                ("alerts", "Rate limit warnings, critical thresholds"),
+                            ],
+                            "🔗",
+                        )
+                    except Exception as e:
+                        log_error_with_traceback("Error starting Discord API monitor", e)
                     
                     # Start audio monitoring system
                     try:
