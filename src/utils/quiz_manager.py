@@ -28,29 +28,37 @@
 #
 # File Structure:
 # /data/
-#   quiz_data.json      - Question pool
-#   quiz_stats.json     - Usage statistics
-#   quiz_state.json     - Current state
-#   quiz_scores.json    - User scores
-#   recent_questions.json - Anti-duplicate tracking
+#   ├── quiz_data.json      # Question pool and metadata
+#   ├── quiz_state.json     # Current quiz state and scheduling
+#   ├── quiz_stats.json     # User statistics and leaderboard
+#   └── recent_questions.json # Anti-duplicate tracking
 #
-# Required Dependencies:
-# - discord.py: Discord API wrapper
-# - pytz: Timezone handling
 # =============================================================================
 
 import asyncio
 import json
+import os
 import random
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import discord
 import pytz
 from discord.ui import Button, View
 
-from .tree_log import log_error_with_traceback, log_perfect_tree_section
+# Load environment variables
+from dotenv import load_dotenv
+env_path = os.path.join(os.path.dirname(__file__), "..", "..", "config", ".env")
+load_dotenv(env_path)
+
+from .tree_log import (
+    log_error_with_traceback,
+    log_perfect_tree_section,
+    log_user_interaction,
+    log_warning_with_context,
+)
 
 # Global scheduler task reference
 _quiz_scheduler_task = None
