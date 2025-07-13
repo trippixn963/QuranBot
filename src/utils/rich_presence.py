@@ -97,9 +97,10 @@ class RichPresenceManager:
 
     Templates Available:
     1. Listening Template:
-       - Status: {emoji} {surah} ・ {playback_time}
+       - Status: {emoji} {surah}
        - Details: Verse {verse} of {total}
        - State: Recited by {reciter}
+       - Elapsed time: Automatically calculated by Discord
 
     2. Reading Template:
        - Status: Reading Quran
@@ -153,7 +154,7 @@ class RichPresenceManager:
 
     PRESENCE_TEMPLATES = {
         "listening": {
-            "status": "{emoji} {surah} ・ {playback_time}",  # Added playback time with ・ separator
+            "status": "{emoji} {surah}",  # Removed playback_time - Discord will show elapsed time automatically
             "details": "Verse {verse} of {total}",
             "state": "Recited by {reciter}",
         },

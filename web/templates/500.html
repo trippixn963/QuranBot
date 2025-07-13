@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error - QuranBot Dashboard{% endblock %}
+
+{% block content %}
+<div class="card text-center fade-in-up">
+    <div style="font-size: 4rem; margin-bottom: 20px;">⚠️</div>
+    <h1 style="font-size: 3rem; margin-bottom: 20px; color: var(--accent-color);">500</h1>
+    <h2 style="margin-bottom: 20px;">Internal Server Error</h2>
+    <p style="font-size: 1.2rem; margin-bottom: 30px; color: var(--text-secondary);">
+        Something went wrong on our end. Please try again later.
+    </p>
+    <div class="btn-group">
+        <a href="/" class="btn btn-primary">
+            🏠 Go Home
+        </a>
+        <button onclick="location.reload()" class="btn btn-warning">
+            🔄 Retry
+        </button>
+        <button onclick="history.back()" class="btn btn-secondary">
+            ← Go Back
+        </button>
+    </div>
+    <div style="margin-top: 40px; padding: 20px; background: rgba(231, 76, 60, 0.1); border-radius: var(--border-radius);">
+        <p style="font-style: italic; color: var(--text-secondary);">
+            "And it is He who created the heavens and earth in truth. And the day He says, 'Be,' and it is, His word is the truth."
+        </p>
+        <p style="font-size: 0.9rem; margin-top: 10px; color: var(--text-secondary);">
+            - Quran 6:73
+        </p>
+    </div>
+</div>
+{% endblock %} 

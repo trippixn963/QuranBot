@@ -1639,6 +1639,17 @@ class AudioManager:
                                 )
                                 surah_emoji = surah_info.emoji if surah_info else "📖"
 
+                                # Calculate the actual start time for Discord's automatic elapsed time
+                                # This accounts for resume position by adjusting the start time backwards
+                                from datetime import datetime, timezone
+                                import time
+                                
+                                # If we're resuming, adjust start time to account for current position
+                                actual_start_time = datetime.now(timezone.utc)
+                                if self.current_position > 0:
+                                    from datetime import timedelta
+                                    actual_start_time -= timedelta(seconds=self.current_position)
+
                                 self.rich_presence.update_presence_with_template(
                                     "listening",
                                     {
@@ -1647,8 +1658,8 @@ class AudioManager:
                                         "verse": "1",  # Could be enhanced with actual verse tracking
                                         "total": verse_count,  # Now shows actual verse count
                                         "reciter": self.current_reciter,
-                                        "playback_time": self._get_playback_time_display(),
                                     },
+                                    start_time=actual_start_time,  # Pass start_time for automatic elapsed time
                                 )
 
                                 # Note: seek_to_position doesn't exist either, so we'll skip that

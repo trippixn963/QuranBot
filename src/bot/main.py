@@ -23,7 +23,7 @@ import glob
 import os
 import traceback
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import discord
 from discord.ext import commands
@@ -1699,18 +1699,23 @@ async def play_audio(voice_client):
 
                         # Start Rich Presence tracking
                         if rich_presence:
-                            from src.utils.surah_mapper import get_surah_name
+                            from src.utils.surah_mapper import get_surah_name, get_surah_info
+                            from datetime import datetime, timezone
 
                             surah_name = get_surah_name(surah_number)
+                            surah_info = get_surah_info(surah_number)
+                            surah_emoji = surah_info.emoji if surah_info else "📖"
 
                             rich_presence.update_presence_with_template(
                                 "listening",
                                 {
+                                    "emoji": surah_emoji,
                                     "surah": surah_name,
                                     "verse": "1",
                                     "total": "Unknown",
                                     "reciter": "Saad Al Ghamdi",
                                 },
+                                start_time=datetime.now(timezone.utc),  # Add start_time for automatic elapsed time
                             )
 
                     else:

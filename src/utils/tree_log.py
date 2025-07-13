@@ -126,8 +126,9 @@ class TreeLogger:
     def _setup_log_directories(self):
         """Create log directory structure with date-based subdirectories and 3 log files."""
         try:
-            # Create main logs directory
-            main_log_dir = Path("logs")
+            # Create main logs directory (always relative to project root)
+            project_root = Path(__file__).parent.parent.parent
+            main_log_dir = project_root / "logs"
             main_log_dir.mkdir(parents=True, exist_ok=True)
             
             # Create today's date subdirectory
@@ -858,7 +859,8 @@ class TreeLogger:
             current_date = self._get_log_date()
             if not self.log_dir or self.log_dir.name != current_date:
                 # Date has changed, create new log directory
-                main_log_dir = Path("logs")
+                project_root = Path(__file__).parent.parent.parent
+                main_log_dir = project_root / "logs"
                 main_log_dir.mkdir(parents=True, exist_ok=True)
                 
                 new_date_log_dir = main_log_dir / current_date

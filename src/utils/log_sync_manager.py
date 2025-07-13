@@ -48,6 +48,21 @@ class LogSyncManager:
                 )
                 return
 
+            # Check if we're running on the VPS itself
+            if await self._is_running_on_vps():
+                log_perfect_tree_section(
+                    "Integrated Log Sync",
+                    [
+                        ("status", "⚠️ Running on VPS - Integrated sync disabled"),
+                        ("reason", "Bot is running on VPS itself"),
+                        ("action", "Log syncing disabled"),
+                        ("note", "Use standalone daemon on local machine for log sync"),
+                        ("vps_host", self.vps_host),
+                    ],
+                    "📡",
+                )
+                return
+
             if self.is_running:
                 log_perfect_tree_section(
                     "Log Sync Manager - Already Running",
@@ -239,6 +254,15 @@ class LogSyncManager:
             
             return result.returncode == 0
 
+        except Exception:
+            return False
+
+    async def _is_running_on_vps(self) -> bool:
+        """Check if we're running on the VPS itself"""
+        try:
+            # If we can access the VPS logs directory locally, we're on the VPS
+            vps_logs_path = Path(self.vps_logs_path)
+            return vps_logs_path.exists() and vps_logs_path.is_dir()
         except Exception:
             return False
 

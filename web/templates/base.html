@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="QuranBot Professional Dashboard - Monitor and control your Islamic Discord bot">
+    <meta name="keywords" content="QuranBot, Discord, Islamic, Dashboard, Quran, Bot Management">
+    <meta name="author" content="QuranBot Team">
+    
+    <title>{% block title %}QuranBot Dashboard{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+    
+    <!-- Meta tags for social sharing -->
+    <meta property="og:title" content="QuranBot Dashboard">
+    <meta property="og:description" content="Professional monitoring and control interface for QuranBot">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="http://159.89.90.90:8080">
+    
+    <!-- Theme color -->
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="msapplication-TileColor" content="#2c3e50">
+</head>
+<body>
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading"></div>
+            <p>Loading QuranBot Dashboard...</p>
+        </div>
+    </div>
+
+    <!-- Main container -->
+    <div class="container">
+        <!-- Header -->
+        <header class="header fade-in-up">
+            <h1>
+                <img src="{{ url_for('static', filename='images/PFP (Cropped - Animated).gif') }}" alt="QuranBot" class="logo">
+                🕌 {% block header_title %}QuranBot Dashboard{% endblock %}
+                <span id="status-badge" class="status-badge status-loading">Loading...</span>
+            </h1>
+            <p>{% block header_subtitle %}Professional monitoring and control interface for your Islamic Discord bot{% endblock %}</p>
+            
+            <!-- Navigation -->
+            <nav class="nav">
+                <a href="/" class="nav-btn {{ 'active' if request.endpoint == 'index' }}">
+                    📊 Dashboard
+                </a>
+                <a href="/analytics" class="nav-btn {{ 'active' if request.endpoint == 'analytics' }}">
+                    📈 Analytics
+                </a>
+                <a href="/controls" class="nav-btn {{ 'active' if request.endpoint == 'controls' }}">
+                    🎛️ Controls
+                </a>
+                <a href="/logs" class="nav-btn {{ 'active' if request.endpoint == 'logs_page' }}">
+                    📝 Logs
+                </a>
+            </nav>
+            
+            <!-- Status indicators -->
+            <div class="status-indicators mt-20">
+                <div class="metric">
+                    <span class="metric-label">Last Updated:</span>
+                    <span class="metric-value timestamp">Never</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main content -->
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer mt-20">
+            <div class="card">
+                <p class="text-center">
+                    <strong>QuranBot Dashboard</strong> • Serving the Islamic community 24/7<br>
+                    <small class="text-secondary">
+                        "And Allah will not change the condition of a people until they change what is in themselves." - Quran 13:11
+                    </small>
+                </p>
+                <div class="footer-links text-center mt-20">
+                    <a href="https://github.com/johnhamwi/QuranBot" target="_blank" class="btn btn-info">
+                        📱 GitHub
+                    </a>
+                    <a href="/api/status" target="_blank" class="btn btn-primary">
+                        🔗 API Status
+                    </a>
+                    <button onclick="dashboard.forceUpdate()" class="btn btn-warning">
+                        🔄 Refresh
+                    </button>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Notification container -->
+    <div id="notification-container"></div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}?v={{ range(8000, 9999) | random }}"></script>
+    {% block extra_js %}{% endblock %}
+
+    <!-- Hide loading overlay -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            if (loadingOverlay) {
+                setTimeout(() => {
+                    loadingOverlay.style.opacity = '0';
+                    setTimeout(() => {
+                        loadingOverlay.style.display = 'none';
+                    }, 300);
+                }, 1000);
+            }
+        });
+    </script>
+
+    <style>
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
+
+        .loading-content {
+            text-align: center;
+            color: white;
+        }
+
+        .loading-content p {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .footer {
+            margin-top: 40px;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .text-secondary {
+            color: var(--text-secondary);
+        }
+
+        .status-indicators {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .footer-links {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .status-indicators {
+                justify-content: center;
+            }
+        }
+    </style>
+</body>
+</html> 
