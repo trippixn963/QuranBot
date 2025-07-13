@@ -1,0 +1,452 @@
+{% extends "base.html" %}
+
+{% block header_title %}Bot Controls{% endblock %}
+{% block header_subtitle %}Remote control and management interface for QuranBot{% endblock %}
+
+{% block content %}
+<!-- Bot Control Panel -->
+<div class="card fade-in-up">
+    <h3>
+        <span class="icon">🎛️</span>
+        Bot Control Panel
+    </h3>
+    
+    <div class="grid-3">
+        <div class="btn-group">
+            <button class="btn btn-success" onclick="controlBot('start')">
+                🚀 Start Bot
+            </button>
+            <button class="btn btn-warning" onclick="controlBot('restart')">
+                🔄 Restart Bot
+            </button>
+            <button class="btn btn-danger" onclick="controlBot('stop')">
+                ⏹️ Stop Bot
+            </button>
+        </div>
+        
+        <div class="metric">
+            <span class="metric-label">Bot Status</span>
+            <span class="metric-value" id="bot-status">Loading...</span>
+        </div>
+        
+        <div class="metric">
+            <span class="metric-label">Last Action</span>
+            <span class="metric-value" id="last-action">None</span>
+        </div>
+    </div>
+</div>
+
+<!-- Audio Control Panel -->
+<div class="card fade-in-up">
+    <h3>
+        <span class="icon">🎵</span>
+        Audio Control Panel
+    </h3>
+    
+    <div class="grid-2">
+        <div>
+            <h4>Playback Controls</h4>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="controlAudio('play')">
+                    ▶️ Play
+                </button>
+                <button class="btn btn-warning" onclick="controlAudio('pause')">
+                    ⏸️ Pause
+                </button>
+                <button class="btn btn-info" onclick="controlAudio('skip')">
+                    ⏭️ Skip
+                </button>
+                <button class="btn btn-danger" onclick="controlAudio('stop')">
+                    ⏹️ Stop
+                </button>
+            </div>
+            
+            <div class="mt-20">
+                <label for="volume-control">Volume Control:</label>
+                <input type="range" id="volume-control" min="0" max="100" value="50" 
+                       onchange="controlVolume(this.value)">
+                <span id="volume-display">50%</span>
+            </div>
+        </div>
+        
+        <div>
+            <h4>Current Status</h4>
+            <div class="metric">
+                <span class="metric-label">Now Playing</span>
+                <span class="metric-value" id="now-playing">Loading...</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Progress</span>
+                <span class="metric-value" id="audio-progress">Loading...</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Reciter</span>
+                <span class="metric-value" id="current-reciter">Loading...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Surah Selection -->
+<div class="card fade-in-up">
+    <h3>
+        <span class="icon">📖</span>
+        Surah Selection
+    </h3>
+    
+    <div class="grid-2">
+        <div>
+            <label for="surah-select">Jump to Surah:</label>
+            <select id="surah-select" onchange="jumpToSurah(this.value)">
+                <option value="">Select a Surah...</option>
+                <option value="1">1. Al-Fatiha</option>
+                <option value="2">2. Al-Baqarah</option>
+                <option value="3">3. Ali 'Imran</option>
+                <option value="4">4. An-Nisa</option>
+                <option value="5">5. Al-Ma'idah</option>
+                <option value="6">6. Al-An'am</option>
+                <option value="7">7. Al-A'raf</option>
+                <option value="8">8. Al-Anfal</option>
+                <option value="9">9. At-Tawbah</option>
+                <option value="10">10. Yunus</option>
+                <!-- Add more surahs as needed -->
+            </select>
+        </div>
+        
+        <div>
+            <label for="reciter-select">Change Reciter:</label>
+            <select id="reciter-select" onchange="changeReciter(this.value)">
+                <option value="">Select a Reciter...</option>
+                <option value="Saad Al Ghamdi">Saad Al Ghamdi</option>
+                <option value="Abdul Basit Abdul Samad">Abdul Basit Abdul Samad</option>
+                <option value="Maher Al Muaiqly">Maher Al Muaiqly</option>
+                <option value="Muhammad Al Luhaidan">Muhammad Al Luhaidan</option>
+                <option value="Mishary Rashid Alafasy">Mishary Rashid Alafasy</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- Quiz Controls -->
+<div class="card fade-in-up">
+    <h3>
+        <span class="icon">🎯</span>
+        Quiz Controls
+    </h3>
+    
+    <div class="grid-3">
+        <div class="btn-group">
+            <button class="btn btn-primary" onclick="sendQuiz()">
+                📝 Send Quiz Now
+            </button>
+            <button class="btn btn-info" onclick="toggleQuizMode()">
+                🔄 Toggle Quiz Mode
+            </button>
+            <button class="btn btn-warning" onclick="resetQuizStats()">
+                🔄 Reset Stats
+            </button>
+        </div>
+        
+        <div class="metric">
+            <span class="metric-label">Quiz Mode</span>
+            <span class="metric-value" id="quiz-mode">Loading...</span>
+        </div>
+        
+        <div class="metric">
+            <span class="metric-label">Next Quiz</span>
+            <span class="metric-value" id="next-quiz">Loading...</span>
+        </div>
+    </div>
+</div>
+
+<!-- System Controls -->
+<div class="card fade-in-up">
+    <h3>
+        <span class="icon">⚙️</span>
+        System Controls
+    </h3>
+    
+    <div class="grid-2">
+        <div>
+            <h4>Maintenance</h4>
+            <div class="btn-group">
+                <button class="btn btn-info" onclick="clearCache()">
+                    🗑️ Clear Cache
+                </button>
+                <button class="btn btn-warning" onclick="syncLogs()">
+                    📋 Sync Logs
+                </button>
+                <button class="btn btn-primary" onclick="backupData()">
+                    💾 Backup Data
+                </button>
+            </div>
+        </div>
+        
+        <div>
+            <h4>System Status</h4>
+            <div class="metric">
+                <span class="metric-label">CPU Usage</span>
+                <span class="metric-value" id="cpu-usage">Loading...</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Memory Usage</span>
+                <span class="metric-value" id="memory-usage">Loading...</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Disk Usage</span>
+                <span class="metric-value" id="disk-usage">Loading...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Log -->
+<div class="card fade-in-up">
+    <h3>
+        <span class="icon">📋</span>
+        Action Log
+    </h3>
+    <div id="action-log" style="max-height: 200px; overflow-y: auto; background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 8px; font-family: monospace;">
+        <div class="log-entry">Dashboard initialized - Ready for commands</div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Controls page JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize controls
+    updateSystemStatus();
+    
+    // Set up auto-refresh for status
+    setInterval(updateSystemStatus, 10000); // Every 10 seconds
+});
+
+function controlBot(action) {
+    logAction(`Bot ${action} command sent...`);
+    
+    fetch('/api/bot/control', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: action })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            logAction(`✅ Bot ${action} successful`);
+            document.getElementById('last-action').textContent = `Bot ${action}`;
+        } else {
+            logAction(`❌ Bot ${action} failed: ${data.error}`);
+        }
+    })
+    .catch(error => {
+        logAction(`❌ Error: ${error.message}`);
+    });
+}
+
+function controlAudio(action) {
+    logAction(`Audio ${action} command sent...`);
+    
+    fetch('/api/audio/control', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: action })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            logAction(`✅ Audio ${action} successful`);
+        } else {
+            logAction(`❌ Audio ${action} failed: ${data.error}`);
+        }
+    })
+    .catch(error => {
+        logAction(`❌ Error: ${error.message}`);
+    });
+}
+
+function controlVolume(value) {
+    document.getElementById('volume-display').textContent = value + '%';
+    logAction(`Volume set to ${value}%`);
+    
+    fetch('/api/audio/control', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'volume', value: parseInt(value) })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            logAction(`✅ Volume changed to ${value}%`);
+        } else {
+            logAction(`❌ Volume change failed: ${data.error}`);
+        }
+    })
+    .catch(error => {
+        logAction(`❌ Error: ${error.message}`);
+    });
+}
+
+function jumpToSurah(surahNumber) {
+    if (!surahNumber) return;
+    
+    logAction(`Jumping to Surah ${surahNumber}...`);
+    
+    fetch('/api/audio/control', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'jump', surah: parseInt(surahNumber) })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            logAction(`✅ Jumped to Surah ${surahNumber}`);
+        } else {
+            logAction(`❌ Jump failed: ${data.error}`);
+        }
+    })
+    .catch(error => {
+        logAction(`❌ Error: ${error.message}`);
+    });
+}
+
+function changeReciter(reciter) {
+    if (!reciter) return;
+    
+    logAction(`Changing reciter to ${reciter}...`);
+    
+    fetch('/api/audio/control', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'reciter', reciter: reciter })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            logAction(`✅ Reciter changed to ${reciter}`);
+        } else {
+            logAction(`❌ Reciter change failed: ${data.error}`);
+        }
+    })
+    .catch(error => {
+        logAction(`❌ Error: ${error.message}`);
+    });
+}
+
+function sendQuiz() {
+    logAction('Sending quiz question...');
+    
+    fetch('/api/quiz/send', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'send_quiz' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            logAction('✅ Quiz question sent');
+        } else {
+            logAction(`❌ Quiz send failed: ${data.error}`);
+        }
+    })
+    .catch(error => {
+        logAction(`❌ Error: ${error.message}`);
+    });
+}
+
+function toggleQuizMode() {
+    logAction('Toggling quiz mode...');
+    logAction('✅ Quiz mode toggled (placeholder)');
+}
+
+function resetQuizStats() {
+    if (confirm('Are you sure you want to reset all quiz statistics?')) {
+        logAction('Resetting quiz statistics...');
+        logAction('✅ Quiz statistics reset (placeholder)');
+    }
+}
+
+function clearCache() {
+    logAction('Clearing cache...');
+    logAction('✅ Cache cleared (placeholder)');
+}
+
+function syncLogs() {
+    logAction('Syncing logs...');
+    logAction('✅ Logs synced (placeholder)');
+}
+
+function backupData() {
+    logAction('Creating backup...');
+    logAction('✅ Backup created (placeholder)');
+}
+
+function updateSystemStatus() {
+    // Update bot status
+    fetch('/api/status')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('bot-status').textContent = 
+                data.bot && data.bot.online ? 'Online' : 'Offline';
+            document.getElementById('bot-status').className = 
+                'metric-value ' + (data.bot && data.bot.online ? 'success' : 'error');
+                
+            // Update audio status
+            if (data.audio) {
+                document.getElementById('now-playing').textContent = 
+                    data.audio.current_surah || 'Nothing playing';
+                document.getElementById('audio-progress').textContent = 
+                    data.audio.progress || 'N/A';
+                document.getElementById('current-reciter').textContent = 
+                    data.audio.reciter || 'N/A';
+            }
+            
+            // Update system metrics
+            if (data.system) {
+                document.getElementById('cpu-usage').textContent = 
+                    data.system.cpu_percent ? data.system.cpu_percent.toFixed(1) + '%' : 'N/A';
+                document.getElementById('memory-usage').textContent = 
+                    data.system.memory_percent ? data.system.memory_percent.toFixed(1) + '%' : 'N/A';
+                document.getElementById('disk-usage').textContent = 
+                    data.system.disk_percent ? data.system.disk_percent.toFixed(1) + '%' : 'N/A';
+            }
+        })
+        .catch(error => {
+            console.error('Error updating system status:', error);
+        });
+}
+
+function logAction(message) {
+    const logContainer = document.getElementById('action-log');
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = document.createElement('div');
+    logEntry.className = 'log-entry';
+    logEntry.innerHTML = `[${timestamp}] ${message}`;
+    
+    logContainer.appendChild(logEntry);
+    logContainer.scrollTop = logContainer.scrollHeight;
+    
+    // Keep only last 50 entries
+    const entries = logContainer.querySelectorAll('.log-entry');
+    if (entries.length > 50) {
+        entries[0].remove();
+    }
+}
+
+console.log('🎛️ Controls page scripts loaded');
+</script>
+{% endblock %} 
