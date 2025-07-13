@@ -9,6 +9,14 @@
 
 A professional Discord bot that provides 24/7 Quranic recitation, interactive quizzes, daily verses, and comprehensive management tools. Built with modern Python and featuring a beautiful web dashboard for monitoring and control.
 
+**🤲 Created by an Orthodox Christian**  
+This project was created by an Orthodox Christian developer (ME) who grew up in Syria surrounded by Muslim friends and community. Now owning a Syrian Discord server with over 2,500 members, this bot was originally developed to serve that community's needs. The project represents the beauty of interfaith friendship and collaboration, where technology bridges communities regardless of religious differences.
+
+**بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيم**  
+*In the name of Allah, the Most Gracious, the Most Merciful*
+
+![QuranBot Banner](images/BANNER%20(Still).png)
+
 ## 🌟 Key Features
 
 ### 🎵 **Audio Playback System**
