@@ -1,7 +1,5 @@
 # 🕌 QuranBot - Professional Discord Bot
 
-*"And We have certainly made the Quran easy for remembrance, so is there any who will remember?"* - **Quran 54:17**
-
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
 [![Discord.py](https://img.shields.io/badge/Discord.py-2.0+-blue.svg)](https://discordpy.readthedocs.io/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -11,9 +9,6 @@ A professional Discord bot that provides 24/7 Quranic recitation, interactive qu
 
 **🤲 Created by an Orthodox Christian**  
 This project was created by an Orthodox Christian developer (ME) who grew up in Syria surrounded by Muslim friends and community. Now owning a Syrian Discord server with over 2,500 members, this bot was originally developed to serve that community's needs. The project represents the beauty of interfaith friendship and collaboration, where technology bridges communities regardless of religious differences.
-
-**بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيم**  
-*In the name of Allah, the Most Gracious, the Most Merciful*
 
 ![QuranBot Banner](images/BANNER%20(Still).png)
 
