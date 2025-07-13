@@ -33,6 +33,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+import pytz
+
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root / "src"))
@@ -56,6 +58,9 @@ class LogSyncDaemon:
         self.local_logs_dir = project_root / "logs"
         self.vps_logs_path = "/opt/DiscordBots/QuranBot/logs/"
         
+        # EST timezone to match bot's timezone
+        self.est_tz = pytz.timezone("US/Eastern")
+        
         # Daemon state
         self.is_running = False
         self.sync_count = 0
@@ -74,7 +79,7 @@ class LogSyncDaemon:
     def log_message(self, message: str, level: str = "INFO"):
         """Log a message using the standard logging system"""
         # Print to console for immediate feedback
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        timestamp = datetime.now(self.est_tz).strftime("%Y-%m-%d %H:%M:%S EST")
         print(f"[{timestamp}] [{level}] {message}")
         
         # Use the standard logging system to maintain structure
@@ -128,9 +133,9 @@ class LogSyncDaemon:
         """Perform log sync operation"""
         try:
             # Get current and previous day
-            today = datetime.now().strftime("%Y-%m-%d")
+            today = datetime.now(self.est_tz).strftime("%Y-%m-%d")
             yesterday = datetime.fromtimestamp(
-                datetime.now().timestamp() - 86400
+                datetime.now(self.est_tz).timestamp() - 86400
             ).strftime("%Y-%m-%d")
             
             dates_to_sync = [today, yesterday]
@@ -178,7 +183,7 @@ class LogSyncDaemon:
 
             # Update stats
             self.sync_count += 1
-            self.last_sync_time = datetime.now()
+            self.last_sync_time = datetime.now(self.est_tz)
             self.last_error = None
             
             # Log success (every 5th sync to reduce noise)
@@ -205,7 +210,7 @@ class LogSyncDaemon:
         
         # Set daemon state
         self.is_running = True
-        self.start_time = datetime.now()
+        self.start_time = datetime.now(self.est_tz)
         self.save_status()
         
         self.log_message(f"Daemon started - syncing every {self.sync_interval}s")

@@ -34,7 +34,7 @@ def get_est_time():
 def get_latest_log_file():
     """Get the latest log file path"""
     today = get_est_time().strftime("%Y-%m-%d")
-    log_file = LOGS_PATH / today / f"{today}.log"
+    log_file = LOGS_PATH / today / "logs.log"  # Use logs.log instead of YYYY-MM-DD.log
     return log_file if log_file.exists() else None
 
 def get_bot_status():

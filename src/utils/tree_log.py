@@ -854,6 +854,25 @@ class TreeLogger:
             category: Category of the log (for context)
         """
         try:
+            # Check if the date has changed and update log directory if needed
+            current_date = self._get_log_date()
+            if not self.log_dir or self.log_dir.name != current_date:
+                # Date has changed, create new log directory
+                main_log_dir = Path("logs")
+                main_log_dir.mkdir(parents=True, exist_ok=True)
+                
+                new_date_log_dir = main_log_dir / current_date
+                new_date_log_dir.mkdir(parents=True, exist_ok=True)
+                
+                # Update the log directory
+                old_date = self.log_dir.name if self.log_dir else "None"
+                self.log_dir = new_date_log_dir
+                
+                # Log the date change (but avoid infinite recursion)
+                if old_date != "None" and old_date != current_date:
+                    timestamp = self._get_timestamp()
+                    print(f"{timestamp} [INFO] 📅 Log date changed: {old_date} → {current_date}")
+
             if not self.log_dir:
                 return
 
