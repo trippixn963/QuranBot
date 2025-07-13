@@ -1026,10 +1026,13 @@ class SimpleControlPanelView(View):
             )
 
     async def update_panel(self):
-        """Update the control panel embed"""
+        """Update the control panel embed with monitoring and alerts"""
+        global _control_panel_monitor
+        
         try:
             # Check if message still exists before trying to update it
             if not self.panel_message:
+                _control_panel_monitor.record_failure("no_message", "Panel message is None")
                 return
 
             # Try to fetch the message to see if it still exists
@@ -1037,6 +1040,7 @@ class SimpleControlPanelView(View):
                 await self.panel_message.channel.fetch_message(self.panel_message.id)
             except discord.NotFound:
                 # Message was deleted, stop trying to update it
+                _control_panel_monitor.record_failure("message_deleted", "Control panel message was deleted")
                 log_perfect_tree_section(
                     "Control Panel - Message Deleted",
                     [
@@ -1050,8 +1054,9 @@ class SimpleControlPanelView(View):
                 if self.update_task and not self.update_task.done():
                     self.update_task.cancel()
                 return
-            except discord.HTTPException:
+            except discord.HTTPException as e:
                 # Other HTTP errors, wait and try again later
+                _control_panel_monitor.record_failure("http_error", f"HTTP {e.status}: {str(e)}")
                 return
 
             # Create embed using helper method
@@ -1060,8 +1065,12 @@ class SimpleControlPanelView(View):
             # Update the message with additional error handling
             try:
                 await self.panel_message.edit(embed=embed, view=self)
+                # Record successful update
+                _control_panel_monitor.record_success()
+                
             except discord.NotFound:
                 # Message was deleted during our update
+                _control_panel_monitor.record_failure("message_deleted_during_update", "Message deleted during update")
                 log_perfect_tree_section(
                     "Control Panel - Message Deleted",
                     [
@@ -1077,6 +1086,7 @@ class SimpleControlPanelView(View):
             except discord.HTTPException as e:
                 if e.status == 429:  # Rate limited
                     retry_after = getattr(e, 'retry_after', 60)
+                    _control_panel_monitor.record_failure("rate_limited", f"Rate limited for {retry_after}s")
                     log_perfect_tree_section(
                         "Control Panel - Rate Limited",
                         [
@@ -1107,9 +1117,11 @@ class SimpleControlPanelView(View):
                     
                     return
                 else:
+                    _control_panel_monitor.record_failure("http_error", f"HTTP {e.status}: {str(e)}")
                     raise
 
         except Exception as e:
+            _control_panel_monitor.record_failure("update_error", str(e))
             log_error_with_traceback("Error updating panel", e)
 
     def _format_time(self, seconds: float) -> str:
@@ -1540,6 +1552,123 @@ def cleanup_all_control_panels():
         log_error_with_traceback("Error cleaning up control panels", e)
         # Force clear the list even if cleanup failed
         _active_panels.clear()
+
+
+# =============================================================================
+# Control Panel Monitoring
+# =============================================================================
+
+class ControlPanelMonitor:
+    """Monitor control panel health and send Discord alerts"""
+    
+    def __init__(self):
+        self.consecutive_failures = 0
+        self.last_successful_update = datetime.now(timezone.utc)
+        self.last_alert_sent = None
+        self.alert_cooldown = 300  # 5 minutes between alerts
+        self.failure_threshold = 3  # Alert after 3 consecutive failures
+        self.is_panel_healthy = True
+        
+    def record_success(self):
+        """Record a successful panel update"""
+        if self.consecutive_failures > 0:
+            # Panel recovered
+            self.consecutive_failures = 0
+            self.last_successful_update = datetime.now(timezone.utc)
+            if not self.is_panel_healthy:
+                self.is_panel_healthy = True
+                asyncio.create_task(self._send_recovery_alert())
+        else:
+            self.last_successful_update = datetime.now(timezone.utc)
+    
+    def record_failure(self, error_type: str, error_message: str):
+        """Record a panel update failure"""
+        self.consecutive_failures += 1
+        
+        # Send alert if threshold reached and cooldown passed
+        if (self.consecutive_failures >= self.failure_threshold and 
+            self.is_panel_healthy and
+            self._should_send_alert()):
+            self.is_panel_healthy = False
+            asyncio.create_task(self._send_failure_alert(error_type, error_message))
+    
+    def _should_send_alert(self) -> bool:
+        """Check if enough time has passed since last alert"""
+        if not self.last_alert_sent:
+            return True
+        
+        time_since_last = datetime.now(timezone.utc) - self.last_alert_sent
+        return time_since_last.total_seconds() >= self.alert_cooldown
+    
+    async def _send_failure_alert(self, error_type: str, error_message: str):
+        """Send Discord alert for control panel failure"""
+        try:
+            from src.utils.discord_logger import get_discord_logger
+            discord_logger = get_discord_logger()
+            if discord_logger:
+                self.last_alert_sent = datetime.now(timezone.utc)
+                
+                time_since_success = datetime.now(timezone.utc) - self.last_successful_update
+                minutes_down = int(time_since_success.total_seconds() / 60)
+                
+                await discord_logger.log_critical_error(
+                    "Control Panel Failure Detected",
+                    None,
+                    {
+                        "Component": "Control Panel",
+                        "Error Type": error_type,
+                        "Error Message": error_message[:500],
+                        "Consecutive Failures": str(self.consecutive_failures),
+                        "Time Since Success": f"{minutes_down} minutes ago",
+                        "Impact": "Control panel not updating - user interface affected",
+                        "Status": "❌ Control Panel Down",
+                        "Action Required": "Check bot connection and restart if needed"
+                    }
+                )
+                
+                log_perfect_tree_section(
+                    "Control Panel Monitor - Alert Sent",
+                    [
+                        ("alert_type", "Control Panel Failure"),
+                        ("consecutive_failures", str(self.consecutive_failures)),
+                        ("time_since_success", f"{minutes_down}m ago"),
+                        ("discord_alert", "✅ Sent"),
+                    ],
+                    "🚨",
+                )
+        except Exception as e:
+            log_error_with_traceback("Failed to send control panel failure alert", e)
+    
+    async def _send_recovery_alert(self):
+        """Send Discord alert for control panel recovery"""
+        try:
+            from src.utils.discord_logger import get_discord_logger
+            discord_logger = get_discord_logger()
+            if discord_logger:
+                await discord_logger.log_success(
+                    "Control Panel Recovered",
+                    {
+                        "Component": "Control Panel",
+                        "Status": "✅ Control Panel Restored",
+                        "Recovery Time": datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
+                        "Action": "Panel updates resumed successfully"
+                    }
+                )
+                
+                log_perfect_tree_section(
+                    "Control Panel Monitor - Recovery",
+                    [
+                        ("status", "✅ Panel recovered"),
+                        ("recovery_time", datetime.now(timezone.utc).strftime("%H:%M:%S")),
+                        ("discord_alert", "✅ Sent"),
+                    ],
+                    "✅",
+                )
+        except Exception as e:
+            log_error_with_traceback("Failed to send control panel recovery alert", e)
+
+# Global monitor instance
+_control_panel_monitor = ControlPanelMonitor()
 
 
 # =============================================================================

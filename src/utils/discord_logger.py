@@ -794,6 +794,47 @@ class DiscordLogger:
         except Exception as e:
             log_error_with_traceback("Error sending rate limit notification", e)
 
+    async def log_rate_limit(
+        self,
+        event: str,
+        retry_after: float,
+        context: Optional[Dict[str, str]] = None
+    ):
+        """
+        Log a rate limit event.
+        
+        Args:
+            event: Event that was rate limited
+            retry_after: Time to wait before retrying
+            context: Additional context information
+        """
+        if not self.enabled:
+            return
+        
+        description = f"**Rate Limited:** {event}\n\nRetry after: {retry_after} seconds"
+        
+        fields = []
+        if context:
+            for key, value in context.items():
+                fields.append({
+                    "name": key,
+                    "value": str(value)[:1000],
+                    "inline": True
+                })
+        
+        fields.append({
+            "name": "Retry After",
+            "value": f"{retry_after} seconds",
+            "inline": True
+        })
+        
+        await self._send_log_embed(
+            title="Rate Limit",
+            description=description,
+            level="WARNING",
+            fields=fields
+        )
+
     async def log_warning(
         self, 
         warning_message: str, 

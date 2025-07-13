@@ -34,6 +34,7 @@ import glob
 import os
 import re
 import time
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import discord
@@ -53,6 +54,323 @@ from .tree_log import (
     log_progress,
     log_warning_with_context,
 )
+
+# =============================================================================
+# Audio Monitoring System
+# =============================================================================
+
+class AudioPlaybackMonitor:
+    """Monitor audio playback health and send Discord alerts"""
+    
+    def __init__(self):
+        self.last_successful_playback = datetime.now(timezone.utc)
+        self.last_voice_connection = datetime.now(timezone.utc)
+        self.consecutive_playback_failures = 0
+        self.consecutive_connection_failures = 0
+        self.last_playback_alert = None
+        self.last_connection_alert = None
+        self.alert_cooldown = 600  # 10 minutes between alerts
+        self.playback_failure_threshold = 3
+        self.connection_failure_threshold = 2
+        self.is_audio_healthy = True
+        self.is_connection_healthy = True
+        self.expected_playback_interval = 300  # 5 minutes max between tracks
+        
+    def record_successful_playback(self):
+        """Record successful audio playback start"""
+        if self.consecutive_playback_failures > 0:
+            # Audio recovered
+            self.consecutive_playback_failures = 0
+            self.last_successful_playback = datetime.now(timezone.utc)
+            if not self.is_audio_healthy:
+                self.is_audio_healthy = True
+                asyncio.create_task(self._send_audio_recovery_alert())
+        else:
+            self.last_successful_playback = datetime.now(timezone.utc)
+    
+    def record_successful_connection(self):
+        """Record successful voice connection"""
+        if self.consecutive_connection_failures > 0:
+            # Connection recovered
+            self.consecutive_connection_failures = 0
+            self.last_voice_connection = datetime.now(timezone.utc)
+            if not self.is_connection_healthy:
+                self.is_connection_healthy = True
+                asyncio.create_task(self._send_connection_recovery_alert())
+        else:
+            self.last_voice_connection = datetime.now(timezone.utc)
+    
+    def record_playback_failure(self, error_type: str, error_message: str):
+        """Record audio playback failure"""
+        self.consecutive_playback_failures += 1
+        
+        if (self.consecutive_playback_failures >= self.playback_failure_threshold and 
+            self.is_audio_healthy and
+            self._should_send_playback_alert()):
+            self.is_audio_healthy = False
+            asyncio.create_task(self._send_playback_failure_alert(error_type, error_message))
+    
+    def record_connection_failure(self, error_type: str, error_message: str):
+        """Record voice connection failure"""
+        self.consecutive_connection_failures += 1
+        
+        if (self.consecutive_connection_failures >= self.connection_failure_threshold and 
+            self.is_connection_healthy and
+            self._should_send_connection_alert()):
+            self.is_connection_healthy = False
+            asyncio.create_task(self._send_connection_failure_alert(error_type, error_message))
+    
+    def check_playback_timeout(self):
+        """Check if audio hasn't played for too long"""
+        time_since_playback = datetime.now(timezone.utc) - self.last_successful_playback
+        if (time_since_playback.total_seconds() > self.expected_playback_interval and 
+            self.is_audio_healthy and
+            self._should_send_playback_alert()):
+            self.is_audio_healthy = False
+            minutes_silent = int(time_since_playback.total_seconds() / 60)
+            asyncio.create_task(self._send_playback_timeout_alert(minutes_silent))
+    
+    def _should_send_playback_alert(self) -> bool:
+        """Check if enough time has passed since last playback alert"""
+        if not self.last_playback_alert:
+            return True
+        time_since_last = datetime.now(timezone.utc) - self.last_playback_alert
+        return time_since_last.total_seconds() >= self.alert_cooldown
+    
+    def _should_send_connection_alert(self) -> bool:
+        """Check if enough time has passed since last connection alert"""
+        if not self.last_connection_alert:
+            return True
+        time_since_last = datetime.now(timezone.utc) - self.last_connection_alert
+        return time_since_last.total_seconds() >= self.alert_cooldown
+    
+    async def _send_playback_failure_alert(self, error_type: str, error_message: str):
+        """Send Discord alert for audio playback failure"""
+        try:
+            from src.utils.discord_logger import get_discord_logger
+            discord_logger = get_discord_logger()
+            if discord_logger:
+                self.last_playback_alert = datetime.now(timezone.utc)
+                
+                time_since_success = datetime.now(timezone.utc) - self.last_successful_playback
+                minutes_down = int(time_since_success.total_seconds() / 60)
+                
+                await discord_logger.log_critical_error(
+                    "Audio Playback Failure Detected",
+                    None,
+                    {
+                        "Component": "Audio Manager",
+                        "Error Type": error_type,
+                        "Error Message": error_message[:500],
+                        "Consecutive Failures": str(self.consecutive_playback_failures),
+                        "Time Since Success": f"{minutes_down} minutes ago",
+                        "Impact": "❌ Audio playback stopped - bot is silent",
+                        "Status": "🔇 Audio System Down",
+                        "Action Required": "Check voice connection and audio files"
+                    }
+                )
+                
+                log_perfect_tree_section(
+                    "Audio Monitor - Playback Alert Sent",
+                    [
+                        ("alert_type", "Audio Playback Failure"),
+                        ("consecutive_failures", str(self.consecutive_playback_failures)),
+                        ("time_since_success", f"{minutes_down}m ago"),
+                        ("discord_alert", "✅ Sent"),
+                    ],
+                    "🚨",
+                )
+        except Exception as e:
+            log_error_with_traceback("Failed to send audio playback failure alert", e)
+    
+    async def _send_connection_failure_alert(self, error_type: str, error_message: str):
+        """Send Discord alert for voice connection failure"""
+        try:
+            from src.utils.discord_logger import get_discord_logger
+            discord_logger = get_discord_logger()
+            if discord_logger:
+                self.last_connection_alert = datetime.now(timezone.utc)
+                
+                time_since_success = datetime.now(timezone.utc) - self.last_voice_connection
+                minutes_down = int(time_since_success.total_seconds() / 60)
+                
+                await discord_logger.log_critical_error(
+                    "Voice Connection Failure Detected",
+                    None,
+                    {
+                        "Component": "Voice Connection",
+                        "Error Type": error_type,
+                        "Error Message": error_message[:500],
+                        "Consecutive Failures": str(self.consecutive_connection_failures),
+                        "Time Since Success": f"{minutes_down} minutes ago",
+                        "Impact": "❌ Bot disconnected from voice channel",
+                        "Status": "🔌 Voice Connection Down",
+                        "Action Required": "Check voice channel permissions and reconnect"
+                    }
+                )
+                
+                log_perfect_tree_section(
+                    "Audio Monitor - Connection Alert Sent",
+                    [
+                        ("alert_type", "Voice Connection Failure"),
+                        ("consecutive_failures", str(self.consecutive_connection_failures)),
+                        ("time_since_success", f"{minutes_down}m ago"),
+                        ("discord_alert", "✅ Sent"),
+                    ],
+                    "🚨",
+                )
+        except Exception as e:
+            log_error_with_traceback("Failed to send voice connection failure alert", e)
+    
+    async def _send_playback_timeout_alert(self, minutes_silent: int):
+        """Send Discord alert for audio playback timeout"""
+        try:
+            from src.utils.discord_logger import get_discord_logger
+            discord_logger = get_discord_logger()
+            if discord_logger:
+                self.last_playback_alert = datetime.now(timezone.utc)
+                
+                await discord_logger.log_critical_error(
+                    "Audio Playback Timeout Detected",
+                    None,
+                    {
+                        "Component": "Audio Manager",
+                        "Error Type": "playback_timeout",
+                        "Silent Duration": f"{minutes_silent} minutes",
+                        "Expected Interval": f"{self.expected_playback_interval//60} minutes max",
+                        "Impact": "❌ Bot has been silent too long",
+                        "Status": "🔇 Audio Timeout",
+                        "Action Required": "Check audio playback loop and restart if needed"
+                    }
+                )
+                
+                log_perfect_tree_section(
+                    "Audio Monitor - Timeout Alert Sent",
+                    [
+                        ("alert_type", "Audio Playback Timeout"),
+                        ("silent_duration", f"{minutes_silent}m"),
+                        ("expected_max", f"{self.expected_playback_interval//60}m"),
+                        ("discord_alert", "✅ Sent"),
+                    ],
+                    "🚨",
+                )
+        except Exception as e:
+            log_error_with_traceback("Failed to send audio timeout alert", e)
+    
+    async def _send_audio_recovery_alert(self):
+        """Send Discord alert for audio recovery"""
+        try:
+            from src.utils.discord_logger import get_discord_logger
+            discord_logger = get_discord_logger()
+            if discord_logger:
+                await discord_logger.log_success(
+                    "Audio Playback Recovered",
+                    {
+                        "Component": "Audio Manager",
+                        "Status": "✅ Audio Playback Restored",
+                        "Recovery Time": datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
+                        "Action": "Audio playback resumed successfully"
+                    }
+                )
+                
+                log_perfect_tree_section(
+                    "Audio Monitor - Playback Recovery",
+                    [
+                        ("status", "✅ Audio recovered"),
+                        ("recovery_time", datetime.now(timezone.utc).strftime("%H:%M:%S")),
+                        ("discord_alert", "✅ Sent"),
+                    ],
+                    "✅",
+                )
+        except Exception as e:
+            log_error_with_traceback("Failed to send audio recovery alert", e)
+    
+    async def _send_connection_recovery_alert(self):
+        """Send Discord alert for connection recovery"""
+        try:
+            from src.utils.discord_logger import get_discord_logger
+            discord_logger = get_discord_logger()
+            if discord_logger:
+                await discord_logger.log_success(
+                    "Voice Connection Recovered",
+                    {
+                        "Component": "Voice Connection",
+                        "Status": "✅ Voice Connection Restored",
+                        "Recovery Time": datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
+                        "Action": "Voice connection resumed successfully"
+                    }
+                )
+                
+                log_perfect_tree_section(
+                    "Audio Monitor - Connection Recovery",
+                    [
+                        ("status", "✅ Connection recovered"),
+                        ("recovery_time", datetime.now(timezone.utc).strftime("%H:%M:%S")),
+                        ("discord_alert", "✅ Sent"),
+                    ],
+                    "✅",
+                )
+        except Exception as e:
+            log_error_with_traceback("Failed to send connection recovery alert", e)
+
+# Global monitor instance
+_audio_monitor = AudioPlaybackMonitor()
+
+# =============================================================================
+# Monitoring Task
+# =============================================================================
+
+async def start_audio_monitoring_task(audio_manager):
+    """Start a background task to monitor audio health"""
+    async def monitoring_loop():
+        """Monitor audio health every 2 minutes"""
+        while True:
+            try:
+                await asyncio.sleep(120)  # Check every 2 minutes
+                
+                # Check if audio manager exists and is healthy
+                if audio_manager:
+                    # Check for playback timeout
+                    _audio_monitor.check_playback_timeout()
+                    
+                    # Check voice connection
+                    if not audio_manager.voice_client or not audio_manager.voice_client.is_connected():
+                        _audio_monitor.record_connection_failure("monitoring_check", "Voice client not connected during health check")
+                    else:
+                        _audio_monitor.record_successful_connection()
+                    
+                    # Check if audio should be playing but isn't
+                    if (hasattr(audio_manager, 'playback_task') and 
+                        audio_manager.playback_task and 
+                        not audio_manager.playback_task.done() and
+                        not audio_manager.is_playing):
+                        _audio_monitor.record_playback_failure("monitoring_check", "Playback task running but audio not playing")
+                    
+                    # Log monitoring status occasionally
+                    if hasattr(_audio_monitor, '_monitoring_cycles'):
+                        _audio_monitor._monitoring_cycles += 1
+                    else:
+                        _audio_monitor._monitoring_cycles = 1
+                    
+                    # Log every 30 minutes (15 cycles)
+                    if _audio_monitor._monitoring_cycles % 15 == 0:
+                        log_perfect_tree_section(
+                            "Audio Monitor - Health Check",
+                            [
+                                ("cycles_completed", str(_audio_monitor._monitoring_cycles)),
+                                ("audio_healthy", "✅ Yes" if _audio_monitor.is_audio_healthy else "❌ No"),
+                                ("connection_healthy", "✅ Yes" if _audio_monitor.is_connection_healthy else "❌ No"),
+                                ("last_playback", _audio_monitor.last_successful_playback.strftime("%H:%M:%S")),
+                            ],
+                            "🔍",
+                        )
+                        
+            except Exception as e:
+                log_error_with_traceback("Error in audio monitoring loop", e)
+                await asyncio.sleep(60)  # Wait a minute before trying again
+    
+    # Start the monitoring task
+    return asyncio.create_task(monitoring_loop())
 
 
 class AudioManager:
@@ -611,7 +929,9 @@ class AudioManager:
             log_error_with_traceback("Error checking missing surahs", e)
 
     async def start_playback(self, resume_position: bool = True):
-        """Start the audio playback loop"""
+        """Start the audio playback loop with monitoring"""
+        global _audio_monitor
+        
         try:
             log_perfect_tree_section(
                 "Audio Manager - Starting Playback",
@@ -623,12 +943,14 @@ class AudioManager:
             )
 
             if not self.voice_client or not self.voice_client.is_connected():
+                _audio_monitor.record_connection_failure("no_voice_client", "Voice client not connected")
                 log_warning_with_context(
                     "Cannot start playback", "Voice client not connected"
                 )
                 return
 
             if not self.load_audio_files():
+                _audio_monitor.record_playback_failure("no_audio_files", "No audio files loaded")
                 log_warning_with_context(
                     "Cannot start playback", "No audio files loaded"
                 )
@@ -644,6 +966,10 @@ class AudioManager:
             self.playback_task = asyncio.create_task(
                 self._playback_loop(resume_position=resume_position)
             )
+            
+            # Record successful start
+            _audio_monitor.record_successful_connection()
+            
             log_perfect_tree_section(
                 "Audio Manager - Playback Started",
                 [
@@ -655,6 +981,7 @@ class AudioManager:
             )
 
         except Exception as e:
+            _audio_monitor.record_playback_failure("start_playback_error", str(e))
             log_async_error("start_playback", e, f"Reciter: {self.current_reciter}")
 
     async def stop_playback(self):
@@ -1230,6 +1557,7 @@ class AudioManager:
             while True:
                 try:
                     if not self.voice_client or not self.voice_client.is_connected():
+                        _audio_monitor.record_connection_failure("voice_disconnected", "Voice client disconnected during playback")
                         log_warning_with_context(
                             "Voice client disconnected", "Stopping playback"
                         )
@@ -1387,6 +1715,9 @@ class AudioManager:
                             self.is_playing = True
                             self.is_paused = False
 
+                            # Record successful playback start
+                            _audio_monitor.record_successful_playback()
+
                             # Set track start time for position tracking
                             import time
 
@@ -1455,6 +1786,7 @@ class AudioManager:
                                     "✅",
                                 )
                             else:
+                                _audio_monitor.record_playback_failure("voice_client_error", str(voice_error))
                                 log_error_with_traceback(
                                     f"Voice client error for: {filename}", voice_error
                                 )
@@ -1476,6 +1808,7 @@ class AudioManager:
                                 "✅",
                             )
                         else:
+                            _audio_monitor.record_playback_failure("audio_file_error", str(e))
                             log_error_with_traceback(
                                 f"Error playing audio file: {filename}", e
                             )
@@ -1582,6 +1915,7 @@ class AudioManager:
                     # 24/7 mode - never break the loop, always continue playing
 
                 except Exception as e:
+                    _audio_monitor.record_playback_failure("playback_loop_error", str(e))
                     log_error_with_traceback("Error in playback loop iteration", e)
                     # Wait a bit before continuing to avoid rapid error loops
                     await asyncio.sleep(2)

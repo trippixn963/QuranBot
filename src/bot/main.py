@@ -1165,11 +1165,30 @@ async def on_ready():
                 # Start playing audio using AudioManager
                 try:
                     await audio_manager.start_playback()
+                    
+                    # Start audio monitoring system
+                    try:
+                        from utils.audio_manager import start_audio_monitoring_task
+                        monitoring_task = await start_audio_monitoring_task(audio_manager)
+                        log_perfect_tree_section(
+                            "Audio Monitoring System",
+                            [
+                                ("status", "✅ Audio monitoring started"),
+                                ("check_interval", "2 minutes"),
+                                ("alert_system", "Discord notifications enabled"),
+                                ("monitors", "Control panel, audio playback, voice connection"),
+                            ],
+                            "🔍",
+                        )
+                    except Exception as e:
+                        log_error_with_traceback("Error starting audio monitoring", e)
+                    
                     log_perfect_tree_section(
                         "Bot Initialization Complete",
                         [
                             ("status", "✅ Bot initialization successful"),
                             ("audio_playback", "Started"),
+                            ("monitoring", "✅ Active"),
                             ("initialization_phase", "Complete"),
                         ],
                         "🎯",
