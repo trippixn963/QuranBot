@@ -46,7 +46,7 @@ env_path = project_root / "config" / ".env"
 load_dotenv(env_path)
 
 # Import the logging system to use the same structure
-from utils.tree_log import write_to_log_files
+from utils.tree_log import write_to_log_files, log_perfect_tree_section
 
 
 class LogSyncDaemon:
@@ -75,6 +75,10 @@ class LogSyncDaemon:
         # Create required directories
         self.local_logs_dir.mkdir(exist_ok=True)
         (project_root / "tools").mkdir(exist_ok=True)
+
+    def log_tree_section(self, title: str, items: list, emoji: str = "🤖"):
+        """Log a tree section using the standard tree logging format"""
+        log_perfect_tree_section(title, items, emoji)
 
     def log_message(self, message: str, level: str = "INFO"):
         """Log a message using the standard logging system"""
@@ -176,44 +180,111 @@ class LogSyncDaemon:
                         synced_count += 1
                     else:
                         error_msg = stderr.decode() if stderr else "Unknown error"
-                        self.log_message(f"Rsync failed for {date_str}: {error_msg}", "ERROR")
+                        self.log_tree_section(
+                            "Log Sync - Rsync Error",
+                            [
+                                ("date", date_str),
+                                ("error", error_msg),
+                                ("command", rsync_cmd),
+                            ],
+                            "❌"
+                        )
 
                 except Exception as e:
-                    self.log_message(f"Error syncing {date_str}: {e}", "ERROR")
+                    self.log_tree_section(
+                        "Log Sync - Date Sync Error",
+                        [
+                            ("date", date_str),
+                            ("error", str(e)),
+                            ("action", "Continuing with other dates"),
+                        ],
+                        "⚠️"
+                    )
 
             # Update stats
             self.sync_count += 1
             self.last_sync_time = datetime.now(self.est_tz)
             self.last_error = None
             
-            # Log success (every 5th sync to reduce noise)
-            if self.sync_count % 5 == 1:
-                self.log_message(f"Sync #{self.sync_count} completed - {synced_count} dates synced")
+            # Log success with tree format (every 10th sync to reduce noise)
+            if self.sync_count % 10 == 1 or synced_count == 0:
+                self.log_tree_section(
+                    "Log Sync - Completed",
+                    [
+                        ("sync_number", f"#{self.sync_count}"),
+                        ("dates_synced", f"{synced_count} dates"),
+                        ("dates_checked", f"{len(dates_to_sync)} dates ({', '.join(dates_to_sync)})"),
+                        ("next_sync", f"in {self.sync_interval}s"),
+                    ],
+                    "📡"
+                )
             
             return True
 
         except Exception as e:
             self.last_error = str(e)
-            self.log_message(f"Sync failed: {e}", "ERROR")
+            self.log_tree_section(
+                "Log Sync - Failed",
+                [
+                    ("sync_number", f"#{self.sync_count + 1}"),
+                    ("error", str(e)),
+                    ("action", "Will retry next cycle"),
+                ],
+                "❌"
+            )
             return False
 
     async def daemon_loop(self):
         """Main daemon loop"""
-        self.log_message("Log sync daemon starting...")
+        self.log_tree_section(
+            "Log Sync Daemon Starting",
+            [
+                ("vps_host", self.vps_host),
+                ("sync_interval", f"{self.sync_interval}s"),
+                ("local_logs", str(self.local_logs_dir)),
+                ("vps_logs", self.vps_logs_path),
+            ],
+            "🚀"
+        )
         
         # Test VPS connection
         if not await self.test_vps_connection():
-            self.log_message(f"Cannot connect to VPS: {self.vps_host}", "ERROR")
+            self.log_tree_section(
+                "Log Sync Daemon - Connection Failed",
+                [
+                    ("status", "❌ Cannot connect to VPS"),
+                    ("vps_host", self.vps_host),
+                    ("action", "Daemon startup aborted"),
+                ],
+                "❌"
+            )
             return False
         
-        self.log_message(f"Connected to VPS: {self.vps_host}")
+        self.log_tree_section(
+            "Log Sync Daemon - VPS Connection",
+            [
+                ("status", "✅ Connected successfully"),
+                ("vps_host", self.vps_host),
+                ("connection_test", "✅ Passed"),
+            ],
+            "🌐"
+        )
         
         # Set daemon state
         self.is_running = True
         self.start_time = datetime.now(self.est_tz)
         self.save_status()
         
-        self.log_message(f"Daemon started - syncing every {self.sync_interval}s")
+        self.log_tree_section(
+            "Log Sync Daemon - Active",
+            [
+                ("status", "✅ Daemon running"),
+                ("sync_interval", f"{self.sync_interval}s"),
+                ("timezone", "EST (US/Eastern)"),
+                ("start_time", self.start_time.strftime("%Y-%m-%d %H:%M:%S EST")),
+            ],
+            "🔄"
+        )
         
         # Initial sync
         await self.sync_logs()
@@ -227,10 +298,25 @@ class LogSyncDaemon:
                     self.save_status()
                     
             except asyncio.CancelledError:
-                self.log_message("Daemon cancelled")
+                self.log_tree_section(
+                    "Log Sync Daemon - Cancelled",
+                    [
+                        ("status", "🛑 Daemon cancelled"),
+                        ("reason", "CancelledError received"),
+                    ],
+                    "🛑"
+                )
                 break
             except Exception as e:
-                self.log_message(f"Error in daemon loop: {e}", "ERROR")
+                self.log_tree_section(
+                    "Log Sync Daemon - Error",
+                    [
+                        ("status", "❌ Error in daemon loop"),
+                        ("error", str(e)),
+                        ("action", "Retrying in 60s"),
+                    ],
+                    "❌"
+                )
                 self.last_error = str(e)
                 self.save_status()
                 # Wait before retrying
@@ -238,7 +324,16 @@ class LogSyncDaemon:
 
         self.is_running = False
         self.save_status()
-        self.log_message("Log sync daemon stopped")
+        
+        self.log_tree_section(
+            "Log Sync Daemon - Stopped",
+            [
+                ("status", "🛑 Daemon stopped"),
+                ("total_syncs", str(self.sync_count)),
+                ("uptime", str(datetime.now(self.est_tz) - self.start_time) if self.start_time else "Unknown"),
+            ],
+            "🏁"
+        )
         return True
 
     def start_daemon(self):
