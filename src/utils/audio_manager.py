@@ -599,49 +599,45 @@ class AudioManager:
                         # Ensure position doesn't exceed track duration
                         if track_duration > 0:
                             self.current_position = min(elapsed_time, track_duration)
+                            
+                            # SAFEGUARD: Check if we've reached the end of the track
+                            # If position is within 5 seconds of the end and voice client is still playing,
+                            # this indicates a potential stuck state - force progression
+                            if (self.current_position >= (track_duration - 5) and 
+                                self.voice_client and self.voice_client.is_playing()):
+                                
+                                # Log the safeguard activation
+                                log_perfect_tree_section(
+                                    "Audio Safeguard - Track End Detected",
+                                    [
+                                        ("current_position", f"{self.current_position:.1f}s"),
+                                        ("track_duration", f"{track_duration:.1f}s"),
+                                        ("action", "Force stopping to prevent stuck state"),
+                                        ("safeguard", "✅ Automatic progression activated"),
+                                    ],
+                                    "🛡️"
+                                )
+                                
+                                # Force stop the voice client to trigger progression
+                                try:
+                                    self.voice_client.stop()
+                                except Exception as e:
+                                    log_error_with_traceback("Error force-stopping voice client", e)
                         else:
                             self.current_position = elapsed_time
 
-                        # Update rich presence with new time
-                        if self.rich_presence:
-                            from src.utils.surah_mapper import (
-                                get_surah_info,
-                                get_surah_name,
-                            )
-
-                            surah_name = get_surah_name(self.current_surah)
-                            surah_info = get_surah_info(self.current_surah)
-                            verse_count = (
-                                str(surah_info.verses) if surah_info else "Unknown"
-                            )
-                            surah_emoji = surah_info.emoji if surah_info else "📖"
-
-                            # Log status every 5 minutes (20 updates * 15 seconds = 300 seconds = 5 minutes)
-                            should_log_status = update_counter >= 20
-
-                            self.rich_presence.update_presence_with_template(
-                                "listening",
-                                {
-                                    "emoji": surah_emoji,
-                                    "surah": surah_name,
-                                    "verse": "1",  # Could be enhanced with actual verse tracking
-                                    "total": verse_count,
-                                    "reciter": self.current_reciter,
-                                    "playback_time": self._get_playback_time_display(),
-                                },
-                                silent=not should_log_status,  # Log every 5 minutes, silent otherwise
-                            )
-
-                            # Reset counter after logging status
-                            if should_log_status:
-                                update_counter = 0
-
-                        # Update control panel
-                        if self.control_panel_view:
-                            await self.control_panel_view.update_panel()
+                        # Update control panel every 4th iteration (1 minute)
+                        if update_counter % 4 == 0 and self.control_panel_view:
+                            try:
+                                await self.control_panel_view.update_panel()
+                            except Exception as e:
+                                log_error_with_traceback(
+                                    "Error updating control panel during position tracking",
+                                    e,
+                                )
 
                     except Exception as e:
-                        log_error_with_traceback("Error in position tracking loop", e)
+                        log_error_with_traceback("Error in position tracking", e)
 
         except asyncio.CancelledError:
             log_perfect_tree_section(
@@ -650,7 +646,7 @@ class AudioManager:
                     ("status", "🛑 Position tracking stopped"),
                     ("reason", "Task cancelled"),
                 ],
-                "⏱️",
+                "📍",
             )
         except Exception as e:
             log_error_with_traceback("Critical error in position tracking loop", e)
@@ -1491,8 +1487,9 @@ class AudioManager:
                         # Get actual duration using the existing method
                         duration = self._get_current_file_duration()
                         if duration > 0:
-                            # Check if track is complete or nearly complete (within 10 seconds of end)
-                            if self.current_position >= (duration - 10):
+                            # Check if track is complete or nearly complete (within 30 seconds of end)
+                            # Reduced from 10 seconds to 30 seconds for better detection
+                            if self.current_position >= (duration - 30):
                                 # Track is complete or nearly complete - skip to next track
                                 log_perfect_tree_section(
                                     "Audio Playback - Track Complete on Startup",
@@ -1502,7 +1499,9 @@ class AudioManager:
                                             f"{self.current_position:.1f}s",
                                         ),
                                         ("track_duration", f"{duration:.1f}s"),
+                                        ("remaining_time", f"{duration - self.current_position:.1f}s"),
                                         ("action", "Skipping to next track"),
+                                        ("reason", "Track nearly complete (< 30s remaining)"),
                                     ],
                                     "⏭️",
                                 )
@@ -1667,18 +1666,20 @@ class AudioManager:
                             track_duration = self._get_current_file_duration()
                             if (
                                 track_duration > 0
-                                and self.current_position >= track_duration
+                                and self.current_position >= (track_duration - 30)
                             ):
-                                # Position is beyond track duration - start from beginning
+                                # Position is too close to end - start from beginning
                                 log_perfect_tree_section(
-                                    "Audio Resume - Invalid Position",
+                                    "Audio Resume - Position Too Close to End",
                                     [
                                         (
                                             "saved_position",
                                             f"{self.current_position:.1f}s",
                                         ),
                                         ("track_duration", f"{track_duration:.1f}s"),
+                                        ("remaining_time", f"{track_duration - self.current_position:.1f}s"),
                                         ("action", "Starting from beginning instead"),
+                                        ("reason", "Less than 30s remaining"),
                                     ],
                                     "⚠️",
                                 )
@@ -1745,11 +1746,40 @@ class AudioManager:
                                     )
 
                             # Wait for playback to finish with better error handling
+                            playback_start_time = time.time()
+                            track_duration = self._get_current_file_duration()
+                            
+                            # Set a reasonable timeout: track duration + 30 seconds buffer
+                            # This prevents infinite waiting if the track gets stuck
+                            timeout_duration = track_duration + 30 if track_duration > 0 else 300  # 5 min default
+                            
                             while (
                                 self.voice_client.is_playing()
                                 or self.voice_client.is_paused()
                             ):
                                 await asyncio.sleep(1)
+                                
+                                # SAFEGUARD: Check for timeout to prevent infinite waiting
+                                elapsed_playback = time.time() - playback_start_time
+                                if elapsed_playback > timeout_duration:
+                                    log_perfect_tree_section(
+                                        "Audio Safeguard - Playback Timeout",
+                                        [
+                                            ("elapsed_time", f"{elapsed_playback:.1f}s"),
+                                            ("timeout_limit", f"{timeout_duration:.1f}s"),
+                                            ("track_duration", f"{track_duration:.1f}s"),
+                                            ("action", "Force stopping stuck playback"),
+                                            ("safeguard", "✅ Timeout protection activated"),
+                                        ],
+                                        "⏰"
+                                    )
+                                    
+                                    # Force stop the stuck playback
+                                    try:
+                                        self.voice_client.stop()
+                                    except Exception as e:
+                                        log_error_with_traceback("Error force-stopping stuck playback", e)
+                                    break
 
                             # Mark surah as completed
                             state_manager.mark_surah_completed()
