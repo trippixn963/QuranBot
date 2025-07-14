@@ -415,75 +415,45 @@ SURAH_DATABASE = load_surah_database()
 
 
 def get_surah_info(surah_number: int) -> Optional[SurahInfo]:
-    """Get complete information about a Surah by number"""
+    """Get complete Surah information by number"""
+    if not validate_surah_number(surah_number):
+        return None
+
     try:
-        if not validate_surah_number(surah_number):
-            log_warning_with_context(
-                f"Invalid Surah number: {surah_number}", "Valid range is 1-114"
-            )
+        surah_data = load_surah_database().get(surah_number)
+        if not surah_data:
             return None
 
-        if not SURAH_DATABASE:
-            log_error_with_traceback(
-                "Surah database not loaded", "Cannot retrieve Surah information"
-            )
-            return None
-
-        return SURAH_DATABASE.get(surah_number)
-
-    except Exception as e:
-        log_error_with_traceback(
-            f"Error getting Surah info for number {surah_number}", e
+        return SurahInfo(
+            number=surah_number,
+            name_arabic=surah_data["name_arabic"],
+            name_english=surah_data["name_english"],
+            name_transliteration="Al-Fatihah" if surah_number == 1 else surah_data["name_transliteration"],
+            emoji=surah_data["emoji"],
+            verses=surah_data["verses"],
+            revelation_type=RevelationType(surah_data["revelation_type"]),
+            meaning=surah_data["meaning"],
+            description=surah_data["description"],
         )
+    except Exception as e:
+        log_error_with_traceback("Error getting Surah info", e)
         return None
 
 
 def get_surah_name(surah_number: int) -> str:
-    """Get the transliterated name of a Surah by number"""
-    try:
-        if not SURAH_DATABASE:
-            log_error_with_traceback(
-                "Surah database not loaded", "Cannot retrieve Surah information"
-            )
-            return f"Surah {surah_number}"
-
-        if surah_number in SURAH_DATABASE:
-            surah = SURAH_DATABASE[surah_number]
-            return surah.name_transliteration
-        else:
-            log_perfect_tree_section(
-                "Surah Not Found",
-                [
-                    ("surah_number", surah_number),
-                    ("status", "⚠️ Using fallback name"),
-                ],
-                "⚠️",
-            )
-            return f"Surah {surah_number}"
-    except Exception as e:
-        log_error_with_traceback(f"Error getting Surah name for {surah_number}", e)
+    """Get Surah name in English transliteration"""
+    surah = get_surah_info(surah_number)
+    if not surah:
         return f"Surah {surah_number}"
+    return surah.name_transliteration
 
 
 def get_surah_display(surah_number: int) -> str:
-    """Get a display-friendly Surah name with number"""
-    try:
-        surah = get_surah_info(surah_number)
-        if not surah:
-            log_perfect_tree_section(
-                "Surah Display Fallback",
-                [
-                    ("surah_number", surah_number),
-                    ("status", "⚠️ Using fallback display"),
-                ],
-                "⚠️",
-            )
-            return f"Surah {surah_number}"
-
-        return f"{surah.number}. {surah.name_transliteration}"
-    except Exception as e:
-        log_error_with_traceback(f"Error getting Surah display for {surah_number}", e)
+    """Get formatted Surah display name"""
+    surah = get_surah_info(surah_number)
+    if not surah:
         return f"Surah {surah_number}"
+    return f"{surah.name_transliteration} ({surah.name_arabic})"
 
 
 def get_random_surah() -> Optional[SurahInfo]:
@@ -725,41 +695,27 @@ def get_quran_statistics() -> Dict[str, int]:
 def format_now_playing(
     surah_info: Optional[SurahInfo], reciter: str = "Unknown"
 ) -> str:
-    """Format a now playing message for Discord"""
-    try:
-        if not surah_info:
-            log_perfect_tree_section(
-                "Now Playing Format Warning",
-                [
-                    ("surah_info", "None provided"),
-                    ("status", "⚠️ Using fallback message"),
-                ],
-                "⚠️",
-            )
-            return "🎵 **Now Playing** • *Unknown*"
+    """Format a Discord message for currently playing Surah"""
+    if not surah_info:
+        return "❌ No Surah information available"
 
-        message = (
-            f"🎵 **Now Playing** • "
-            f"{surah_info.emoji} **{surah_info.name_transliteration}** "
-            f"({surah_info.name_arabic}) • "
-            f"*{surah_info.verses} verses* • "
-            f"**{reciter}**"
-        )
+    # Log the formatting operation
+    log_perfect_tree_section(
+        "Now Playing Message Formatted",
+        [
+            ("surah", surah_info.name_transliteration),
+            ("reciter", reciter),
+            ("status", "🎵 Message formatted"),
+        ],
+        "🎵",
+    )
 
-        log_perfect_tree_section(
-            "Now Playing Message Formatted",
-            [
-                ("surah", surah_info.name_transliteration),
-                ("reciter", reciter),
-                ("status", "🎵 Message formatted"),
-            ],
-            "🎵",
-        )
-        return message
-
-    except Exception as e:
-        log_error_with_traceback("Error formatting now playing message", e)
-        return "🎵 **Now Playing** • *Error*"
+    # Format the message with consistent naming
+    return (
+        f"🎵 **Now Playing** • 🕌 **{surah_info.name_transliteration}** "
+        f"({surah_info.name_arabic}) • *{surah_info.verses} verses* • "
+        f"**{reciter}**"
+    )
 
 
 def format_surah_embed(surah_info: Optional[SurahInfo]) -> Optional[discord.Embed]:

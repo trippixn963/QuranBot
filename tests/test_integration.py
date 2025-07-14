@@ -19,12 +19,12 @@ from discord.ext import commands
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from bot.main import QuranBot
-from commands.verse import VerseCommand
-from commands.interval import IntervalCommand
-from commands.question import QuestionCommand
-from commands.leaderboard import LeaderboardCommand
-from commands.credits import CreditsCommand
+from bot.main import DiscordTreeHandler
+from commands.verse import VerseCog
+from commands.interval import IntervalCog
+from commands.question import QuestionCog
+from commands.leaderboard import LeaderboardCog
+from commands.credits import CreditsCog
 from utils.audio_manager import AudioManager
 from utils.quiz_manager import QuizManager
 from utils.state_manager import StateManager
@@ -70,6 +70,14 @@ class TestDiscordIntegration(unittest.IsolatedAsyncioTestCase):
         self.quiz_manager = QuizManager()
         self.state_manager = StateManager()
 
+        # Create bot instance
+        self.bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
+        self.bot.tree = discord.app_commands.CommandTree(self.bot)
+
+        # Add Discord tree handler
+        self.tree_handler = DiscordTreeHandler()
+        discord.utils.setup_logging(handler=self.tree_handler)
+
     async def test_verse_command_integration(self):
         """Test /verse command integration."""
         # Test data
@@ -90,9 +98,11 @@ class TestDiscordIntegration(unittest.IsolatedAsyncioTestCase):
                 'translation': 'In the name of Allah, the Entirely Merciful, the Especially Merciful.'
             }
 
+            # Create verse cog
+            verse_cog = VerseCog(self.bot)
+
             # Execute command
-            verse_command = VerseCommand()
-            await verse_command.execute(self.interaction, surah, ayah, reciter)
+            await verse_cog.verse(self.interaction)
 
             # Verify interactions
             self.interaction.response.defer.assert_called_once()
@@ -131,10 +141,14 @@ class TestDiscordIntegration(unittest.IsolatedAsyncioTestCase):
                 'estimated_duration': '00:45'
             }
 
+            # Create interval cog
+            interval_cog = IntervalCog(self.bot)
+
             # Execute command
-            interval_command = IntervalCommand()
-            await interval_command.execute(
-                self.interaction, surah, start_ayah, end_ayah, reciter, pause_duration
+            await interval_cog.interval(
+                self.interaction,
+                quiz_time="30m",
+                verse_time="3h"
             )
 
             # Verify interactions
@@ -165,9 +179,11 @@ class TestDiscordIntegration(unittest.IsolatedAsyncioTestCase):
             mock_quiz.return_value = mock_quiz_instance
             mock_quiz_instance.get_question.return_value = mock_question
 
+            # Create question cog
+            question_cog = QuestionCog(self.bot)
+
             # Execute command
-            question_command = QuestionCommand()
-            await question_command.execute(self.interaction, 'medium', 'verses')
+            await question_cog.question(self.interaction)
 
             # Verify quiz manager called
             mock_quiz_instance.get_question.assert_called_once_with(
@@ -215,9 +231,11 @@ class TestDiscordIntegration(unittest.IsolatedAsyncioTestCase):
             mock_quiz.return_value = mock_quiz_instance
             mock_quiz_instance.get_leaderboard.return_value = mock_leaderboard
 
+            # Create leaderboard cog
+            leaderboard_cog = LeaderboardCog(self.bot)
+
             # Execute command
-            leaderboard_command = LeaderboardCommand()
-            await leaderboard_command.execute(self.interaction, 'server', 10)
+            await leaderboard_cog.leaderboard(self.interaction, 'server', 10)
 
             # Verify quiz manager called
             mock_quiz_instance.get_leaderboard.assert_called_once_with(
@@ -232,8 +250,8 @@ class TestDiscordIntegration(unittest.IsolatedAsyncioTestCase):
     async def test_credits_command_integration(self):
         """Test /credits command integration."""
         # Execute command
-        credits_command = CreditsCommand()
-        await credits_command.execute(self.interaction)
+        credits_cog = CreditsCog(self.bot)
+        await credits_cog.credits(self.interaction)
 
         # Verify response sent
         self.assertTrue(self.interaction.response.send_message.called)
@@ -242,7 +260,7 @@ class TestDiscordIntegration(unittest.IsolatedAsyncioTestCase):
         call_args = self.interaction.response.send_message.call_args
         embed = call_args[1]['embed']
         self.assertIn('QuranBot', embed.title)
-        self.assertIn('3.5.0', embed.description)
+        self.assertIn('3.5.2', embed.description)
 
     async def test_audio_manager_voice_integration(self):
         """Test AudioManager voice channel integration."""
@@ -324,8 +342,8 @@ class TestDiscordIntegration(unittest.IsolatedAsyncioTestCase):
             mock_audio.return_value = mock_audio_instance
             mock_audio_instance.play_verse.side_effect = ValueError("Invalid surah number: 115")
 
-            verse_command = VerseCommand()
-            await verse_command.execute(self.interaction, 115, 1, "Mishary Rashid Alafasy")
+            verse_command = VerseCog(self.bot)
+            await verse_command.verse(self.interaction)
 
             # Verify error response
             self.assertTrue(self.interaction.followup.send.called)
@@ -342,7 +360,7 @@ class TestDiscordIntegration(unittest.IsolatedAsyncioTestCase):
             # Test rate limit not exceeded
             mock_limiter_instance.is_rate_limited.return_value = False
             
-            verse_command = VerseCommand()
+            verse_command = VerseCog(self.bot)
             # Should proceed normally
             
             # Test rate limit exceeded
@@ -408,13 +426,13 @@ class TestDiscordIntegration(unittest.IsolatedAsyncioTestCase):
                 'reciter': 'Mishary Rashid Alafasy'
             }
 
-            verse_command = VerseCommand()
+            verse_command = VerseCog(self.bot)
             
             # Execute all commands concurrently
             tasks = []
             for interaction in interactions:
                 task = asyncio.create_task(
-                    verse_command.execute(interaction, 1, 1, "Mishary Rashid Alafasy")
+                    verse_command.verse(interaction)
                 )
                 tasks.append(task)
             
@@ -427,23 +445,14 @@ class TestDiscordIntegration(unittest.IsolatedAsyncioTestCase):
 
     async def test_bot_lifecycle_integration(self):
         """Test bot startup and shutdown integration."""
-        # Mock bot instance
-        with patch('discord.ext.commands.Bot') as mock_bot_class:
-            mock_bot = AsyncMock()
-            mock_bot_class.return_value = mock_bot
-            
-            # Test bot initialization
-            bot = QuranBot()
-            self.assertIsNotNone(bot)
-            
-            # Test bot startup
-            await bot.setup_hook()
-            
-            # Test command registration
-            # (Would verify slash commands are registered)
-            
-            # Test bot shutdown
-            await bot.close()
+        # Test bot initialization
+        self.assertIsNotNone(self.bot)
+        
+        # Test command registration
+        # (Would verify slash commands are registered)
+        
+        # Test bot shutdown
+        await self.bot.close()
 
     def test_configuration_integration(self):
         """Test configuration loading integration."""

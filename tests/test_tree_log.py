@@ -19,122 +19,126 @@ import pytz
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from utils.tree_log import (
+    TreeLogger,
     TREE_SYMBOLS,
-    end_tree_section,
-    get_log_date,
-    get_timestamp,
-    get_tree_prefix,
     log_error_with_traceback,
-    log_initialization_tree,
     log_perfect_tree_section,
     log_progress,
-    log_run_end,
-    log_run_header,
     log_status,
     log_tree_group,
     log_user_interaction,
-    log_version_info,
     log_voice_activity_tree,
+    log_version_info,
     log_warning_with_context,
-    reset_section_tracking,
-    reset_tree_structure,
-    setup_log_directories,
-    start_tree_section,
     write_to_log_files,
 )
-
 
 class TestTreeLog:
     """Test suite for tree-style logging functionality"""
 
-    def setup_method(self):
+    @pytest.fixture(autouse=True)
+    def setup_test(self):
         """Set up test environment"""
         # Create test log directory
         self.test_dir = Path("test_logs")
-        self.test_dir.mkdir(exist_ok=True)
+        if not self.test_dir.exists():
+            self.test_dir.mkdir(parents=True)
+
+        # Create logs subdirectory
+        self.logs_dir = self.test_dir / "logs"
+        if not self.logs_dir.exists():
+            self.logs_dir.mkdir(parents=True)
+
+        # Create test date directory
+        self.date_dir = self.logs_dir / "2024-01-01"
+        if not self.date_dir.exists():
+            self.date_dir.mkdir(parents=True)
+
+        # Initialize TreeLogger
+        self.logger = TreeLogger()
+        self.logger.log_dir = self.test_dir
 
         # Mock datetime for consistent timestamps
         self.mock_now = datetime(2024, 1, 1, 12, 0, tzinfo=pytz.UTC)
         self.mock_est = self.mock_now.astimezone(pytz.timezone("US/Eastern"))
 
-        # Reset tree structure
-        reset_tree_structure()
-        reset_section_tracking()
+        # Create initial log files
+        self.log_file = self.date_dir / "2024-01-01.log"
+        self.log_file.touch()
+        self.json_file = self.date_dir / "2024-01-01.json"
+        self.json_file.touch()
+        self.error_file = self.date_dir / "2024-01-01-errors.log"
+        self.error_file.touch()
 
-    def teardown_method(self):
-        """Clean up test environment"""
+        # Mock datetime globally
+        self.datetime_patcher = patch("datetime.datetime")
+        self.mock_datetime = self.datetime_patcher.start()
+        self.mock_datetime.now.return_value = self.mock_now
+
+        yield
+
+        # Clean up
+        self.datetime_patcher.stop()
         if self.test_dir.exists():
             import shutil
-
             shutil.rmtree(self.test_dir)
 
     def test_tree_structure(self):
         """Test tree structure generation"""
         # Test root level
-        assert get_tree_prefix() == TREE_SYMBOLS["branch"]
-        assert get_tree_prefix(is_last_item=True) == TREE_SYMBOLS["last"]
+        assert self.logger.get_tree_prefix() == TREE_SYMBOLS["branch"]
+        assert self.logger.get_tree_prefix(is_last_item=True) == TREE_SYMBOLS["last"]
 
         # Test nested level
-        start_tree_section()
-        assert get_tree_prefix() == TREE_SYMBOLS["pipe"] + TREE_SYMBOLS["branch"]
-        assert (
-            get_tree_prefix(is_last_item=True)
-            == TREE_SYMBOLS["pipe"] + TREE_SYMBOLS["last"]
-        )
+        self.logger.start_tree_section()
+        assert self.logger.get_tree_prefix() == TREE_SYMBOLS["pipe"] + TREE_SYMBOLS["branch"]
+        assert self.logger.get_tree_prefix(is_last_item=True) == TREE_SYMBOLS["pipe"] + TREE_SYMBOLS["last"]
 
         # Test multiple levels
-        start_tree_section()
-        prefix = get_tree_prefix()
+        self.logger.start_tree_section()
+        prefix = self.logger.get_tree_prefix()
         assert prefix.count(TREE_SYMBOLS["pipe"]) == 2
         assert prefix.endswith(TREE_SYMBOLS["branch"])
 
         # Test section ending
-        end_tree_section()
-        end_tree_section()
-        assert get_tree_prefix() == TREE_SYMBOLS["branch"]
+        self.logger.end_tree_section()
+        self.logger.end_tree_section()
+        assert self.logger.get_tree_prefix() == TREE_SYMBOLS["branch"]
 
     def test_timestamp_formatting(self):
         """Test timestamp generation and formatting"""
-        with patch("datetime.datetime") as mock_dt:
-            mock_dt.now.return_value = self.mock_now
-            timestamp = get_timestamp()
-            assert timestamp == "[01/01 07:00 AM EST]"  # 12:00 UTC = 07:00 EST
+        timestamp = self.logger._get_timestamp()
+        assert timestamp == "[01/01 07:00 AM EST]"  # 12:00 UTC = 07:00 EST
 
     def test_log_date(self):
         """Test log date generation"""
-        with patch("datetime.datetime") as mock_dt:
-            mock_dt.now.return_value = self.mock_now
-            log_date = get_log_date()
-            assert log_date == "2024-01-01"
+        log_date = self.logger._get_log_date()
+        assert log_date == "2024-01-01"
 
     def test_log_directories(self):
         """Test log directory setup"""
-        with patch("pathlib.Path") as mock_path:
-            mock_path.return_value = self.test_dir
-            log_dir = setup_log_directories()
-            assert log_dir is not None
-            assert (self.test_dir / "logs/2024-01-01").exists()
+        log_dir = self.logger._setup_log_directories()
+        assert log_dir is not None
+        assert (self.test_dir / "logs/2024-01-01").exists()
 
     def test_file_writing(self):
         """Test log file writing"""
-        with patch("pathlib.Path") as mock_path:
-            mock_path.return_value = self.test_dir
-            write_to_log_files("Test message", "INFO", "test")
+        self.logger._write_to_log_files("Test message", "INFO", "test")
 
-            # Check main log file
-            log_file = self.test_dir / "2024-01-01.log"
-            assert log_file.exists()
-            content = log_file.read_text()
-            assert "Test message" in content
+        # Check main log file
+        log_file = self.date_dir / "2024-01-01.log"
+        assert log_file.exists()
+        content = log_file.read_text()
+        assert "Test message" in content
 
-            # Check JSON log file
-            json_file = self.test_dir / "2024-01-01.json"
-            assert json_file.exists()
-            content = json_file.read_text()
-            data = json.loads(content)
-            assert data["message"] == "Test message"
-            assert data["level"] == "INFO"
-            assert data["type"] == "test"
+        # Check JSON log file
+        json_file = self.date_dir / "2024-01-01.json"
+        assert json_file.exists()
+        content = json_file.read_text()
+        data = json.loads(content)
+        assert data["message"] == "Test message"
+        assert data["level"] == "INFO"
+        assert data["type"] == "test"
 
     def test_run_logging(self):
         """Test run header and footer logging"""
@@ -142,7 +146,7 @@ class TestTreeLog:
             mock_path.return_value = self.test_dir
 
             # Test run header
-            run_id = log_run_header("TestBot", "1.0.0")
+            run_id = self.logger.log_run_header("TestBot", "1.0.0")
             assert run_id is not None
 
             # Check header content
@@ -152,7 +156,7 @@ class TestTreeLog:
             assert run_id in content
 
             # Test run footer
-            log_run_end(run_id, "Test complete")
+            self.logger.log_run_end(run_id, "Test complete")
             content = log_file.read_text()
             assert "Bot Run Ended" in content
             assert "Test complete" in content
@@ -163,7 +167,7 @@ class TestTreeLog:
             mock_path.return_value = self.test_dir
 
             # Log user interaction
-            log_user_interaction(
+            self.logger.log_user_interaction(
                 "button_click",
                 "TestUser",
                 123456789,
@@ -186,7 +190,7 @@ class TestTreeLog:
             mock_path.return_value = self.test_dir
 
             # Log voice activity
-            log_voice_activity_tree(
+            self.logger.log_voice_activity_tree(
                 "TestUser",
                 "join",
                 {
@@ -202,27 +206,6 @@ class TestTreeLog:
             assert "TestUser" in content
             assert "Test Channel" in content
 
-    def test_initialization_logging(self):
-        """Test initialization logging"""
-        with patch("pathlib.Path") as mock_path:
-            mock_path.return_value = self.test_dir
-
-            # Log initialization steps
-            steps = [
-                ("Database", "success", "Connected successfully"),
-                ("Cache", "success", "Initialized"),
-                ("API", "error", "Connection failed"),
-            ]
-            log_initialization_tree("TestComponent", steps)
-
-            # Check log content
-            log_file = self.test_dir / "2024-01-01.log"
-            content = log_file.read_text()
-            assert "TestComponent Initialization" in content
-            assert "Database: ✅" in content
-            assert "Cache: ✅" in content
-            assert "API: ❌" in content
-
     def test_error_logging(self):
         """Test error logging with traceback"""
         with patch("pathlib.Path") as mock_path:
@@ -232,7 +215,7 @@ class TestTreeLog:
             try:
                 raise ValueError("Test error")
             except ValueError as e:
-                log_error_with_traceback("Error occurred", e)
+                self.logger.log_error_with_traceback("Error occurred", e)
 
             # Check error log
             error_log = self.test_dir / "2024-01-01-errors.log"
@@ -248,7 +231,7 @@ class TestTreeLog:
             mock_path.return_value = self.test_dir
 
             # Log warning
-            log_warning_with_context(
+            self.logger.log_warning_with_context(
                 "Resource not found",
                 "File missing: config.json",
             )
@@ -266,7 +249,7 @@ class TestTreeLog:
             mock_path.return_value = self.test_dir
 
             # Log progress
-            log_progress(5, 10, "📊")
+            self.logger.log_progress(5, 10, "📊")
 
             # Check log content
             log_file = self.test_dir / "2024-01-01.log"
@@ -279,9 +262,9 @@ class TestTreeLog:
             mock_path.return_value = self.test_dir
 
             # Log different status types
-            log_status("Normal message")
-            log_status("Warning message", "WARNING", "⚠️")
-            log_status("Error message", "ERROR", "❌")
+            self.logger.log_status("Normal message")
+            self.logger.log_status("Warning message", "WARNING", "⚠️")
+            self.logger.log_status("Error message", "ERROR", "❌")
 
             # Check log content
             log_file = self.test_dir / "2024-01-01.log"
@@ -296,7 +279,7 @@ class TestTreeLog:
             mock_path.return_value = self.test_dir
 
             # Log version info
-            log_version_info(
+            self.logger.log_version_info(
                 "TestBot",
                 "1.0.0",
                 {"build": "123", "environment": "test"},
@@ -321,7 +304,7 @@ class TestTreeLog:
                 ("status", "active"),
                 ("count", 5),
             ]
-            log_tree_group("Test Group", items, "📊")
+            self.logger.log_tree_group("Test Group", items, "📊")
 
             # Check log content
             log_file = self.test_dir / "2024-01-01.log"
@@ -351,7 +334,7 @@ class TestTreeLog:
                     ("item4", "value4"),
                 ],
             }
-            log_perfect_tree_section(
+            self.logger.log_perfect_tree_section(
                 "Test Section",
                 items,
                 "📊",

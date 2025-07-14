@@ -36,6 +36,8 @@ import re
 import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+from pathlib import Path
+import random
 
 import discord
 from mutagen.mp3 import MP3  # For MP3 duration detection
@@ -76,12 +78,20 @@ class AudioPlaybackMonitor:
         self.is_connection_healthy = True
         self.expected_playback_interval = 300  # 5 minutes max between tracks
         
+        # Auto-recovery settings
+        self.auto_recovery_enabled = True
+        self.max_recovery_attempts = 3
+        self.recovery_cooldown = 300  # 5 minutes between recovery attempts
+        self.last_recovery_attempt = None
+        self.recovery_attempts = 0
+        
     def record_successful_playback(self):
         """Record successful audio playback start"""
         if self.consecutive_playback_failures > 0:
             # Audio recovered
             self.consecutive_playback_failures = 0
             self.last_successful_playback = datetime.now(timezone.utc)
+            self.recovery_attempts = 0  # Reset recovery attempts on success
             if not self.is_audio_healthy:
                 self.is_audio_healthy = True
                 asyncio.create_task(self._send_audio_recovery_alert())
@@ -94,6 +104,7 @@ class AudioPlaybackMonitor:
             # Connection recovered
             self.consecutive_connection_failures = 0
             self.last_voice_connection = datetime.now(timezone.utc)
+            self.recovery_attempts = 0  # Reset recovery attempts on success
             if not self.is_connection_healthy:
                 self.is_connection_healthy = True
                 asyncio.create_task(self._send_connection_recovery_alert())
@@ -109,6 +120,10 @@ class AudioPlaybackMonitor:
             self._should_send_playback_alert()):
             self.is_audio_healthy = False
             asyncio.create_task(self._send_playback_failure_alert(error_type, error_message))
+            
+            # Trigger auto-recovery if enabled
+            if self.auto_recovery_enabled and self._should_attempt_recovery():
+                asyncio.create_task(self._attempt_audio_recovery())
     
     def record_connection_failure(self, error_type: str, error_message: str):
         """Record voice connection failure"""
@@ -119,6 +134,10 @@ class AudioPlaybackMonitor:
             self._should_send_connection_alert()):
             self.is_connection_healthy = False
             asyncio.create_task(self._send_connection_failure_alert(error_type, error_message))
+            
+            # Trigger auto-recovery if enabled
+            if self.auto_recovery_enabled and self._should_attempt_recovery():
+                asyncio.create_task(self._attempt_connection_recovery())
     
     def check_playback_timeout(self):
         """Check if audio hasn't played for too long"""
@@ -129,6 +148,10 @@ class AudioPlaybackMonitor:
             self.is_audio_healthy = False
             minutes_silent = int(time_since_playback.total_seconds() / 60)
             asyncio.create_task(self._send_playback_timeout_alert(minutes_silent))
+            
+            # Trigger auto-recovery for timeout
+            if self.auto_recovery_enabled and self._should_attempt_recovery():
+                asyncio.create_task(self._attempt_audio_recovery())
     
     def _should_send_playback_alert(self) -> bool:
         """Check if enough time has passed since last playback alert"""
@@ -143,6 +166,142 @@ class AudioPlaybackMonitor:
             return True
         time_since_last = datetime.now(timezone.utc) - self.last_connection_alert
         return time_since_last.total_seconds() >= self.alert_cooldown
+    
+    def _should_attempt_recovery(self) -> bool:
+        """Check if we should attempt auto-recovery"""
+        if not self.auto_recovery_enabled:
+            return False
+            
+        if self.recovery_attempts >= self.max_recovery_attempts:
+            return False
+            
+        if self.last_recovery_attempt:
+            time_since_last = datetime.now(timezone.utc) - self.last_recovery_attempt
+            if time_since_last.total_seconds() < self.recovery_cooldown:
+                return False
+                
+        return True
+    
+    async def _attempt_audio_recovery(self):
+        """Attempt to recover audio playback automatically"""
+        try:
+            self.recovery_attempts += 1
+            self.last_recovery_attempt = datetime.now(timezone.utc)
+            
+            log_perfect_tree_section(
+                "Audio Recovery - Attempting Auto-Recovery",
+                [
+                    ("attempt_number", f"{self.recovery_attempts}/{self.max_recovery_attempts}"),
+                    ("recovery_type", "Audio Playback Recovery"),
+                    ("trigger", "Automatic recovery system"),
+                    ("action", "Restarting audio system"),
+                ],
+                "🔄",
+            )
+            
+            # Get the audio manager instance
+            audio_manager = getattr(self, '_audio_manager', None)
+            if not audio_manager:
+                log_error_with_traceback("Auto-recovery failed", Exception("No audio manager reference"))
+                return
+            
+            # Attempt to restart audio playback
+            try:
+                await audio_manager.stop_playback()
+                await asyncio.sleep(2)  # Brief pause before restart
+                await audio_manager.start_playback(resume_position=True)
+                
+                # Send recovery attempt notification
+                from src.utils.discord_logger import get_discord_logger
+                discord_logger = get_discord_logger()
+                if discord_logger:
+                    await discord_logger.log_bot_activity(
+                        "auto_recovery",
+                        f"automatically restarted audio system (attempt {self.recovery_attempts}/{self.max_recovery_attempts})",
+                        {
+                            "Recovery Type": "Audio Playback",
+                            "Trigger": "Automatic monitoring system",
+                            "Attempt": f"{self.recovery_attempts}/{self.max_recovery_attempts}",
+                            "Action": "Restarted audio playback",
+                            "Status": "🔄 Recovery in progress"
+                        }
+                    )
+                
+            except Exception as e:
+                log_error_with_traceback("Audio recovery attempt failed", e)
+                
+                # If this was the last attempt, send final failure alert
+                if self.recovery_attempts >= self.max_recovery_attempts:
+                    from src.utils.discord_logger import get_discord_logger
+                    discord_logger = get_discord_logger()
+                    if discord_logger:
+                        await discord_logger.log_critical_error(
+                            "Auto-Recovery Failed - Manual Intervention Required",
+                            None,
+                            {
+                                "Component": "Audio Recovery System",
+                                "Failed Attempts": f"{self.recovery_attempts}/{self.max_recovery_attempts}",
+                                "Status": "❌ Auto-recovery exhausted",
+                                "Action Required": "Manual restart needed",
+                                "Recommendation": "Check VPS and restart bot service"
+                            }
+                        )
+                
+        except Exception as e:
+            log_error_with_traceback("Critical error in audio recovery", e)
+    
+    async def _attempt_connection_recovery(self):
+        """Attempt to recover voice connection automatically"""
+        try:
+            self.recovery_attempts += 1
+            self.last_recovery_attempt = datetime.now(timezone.utc)
+            
+            log_perfect_tree_section(
+                "Audio Recovery - Attempting Connection Recovery",
+                [
+                    ("attempt_number", f"{self.recovery_attempts}/{self.max_recovery_attempts}"),
+                    ("recovery_type", "Voice Connection Recovery"),
+                    ("trigger", "Automatic recovery system"),
+                    ("action", "Reconnecting to voice channel"),
+                ],
+                "🔄",
+            )
+            
+            # Get the audio manager instance
+            audio_manager = getattr(self, '_audio_manager', None)
+            if not audio_manager:
+                log_error_with_traceback("Connection recovery failed", Exception("No audio manager reference"))
+                return
+            
+            # Attempt to reconnect to voice channel
+            try:
+                # Try to reconnect to voice channel
+                if hasattr(audio_manager, 'connect_to_voice_channel'):
+                    await audio_manager.connect_to_voice_channel()
+                    await asyncio.sleep(2)  # Brief pause before restart
+                    await audio_manager.start_playback(resume_position=True)
+                
+                # Send recovery attempt notification
+                from src.utils.discord_logger import get_discord_logger
+                discord_logger = get_discord_logger()
+                if discord_logger:
+                    await discord_logger.log_bot_activity(
+                        "auto_recovery",
+                        f"automatically reconnected to voice channel (attempt {self.recovery_attempts}/{self.max_recovery_attempts})",
+                        {
+                            "Recovery Type": "Voice Connection",
+                            "Trigger": "Automatic monitoring system",
+                            "Attempt": f"{self.recovery_attempts}/{self.max_recovery_attempts}",
+                            "Action": "Reconnected to voice channel",
+                            "Status": "🔄 Recovery in progress"
+                        }
+                    )
+                
+            except Exception as e:
+                log_error_with_traceback("Connection recovery attempt failed", e)
+                
+        except Exception as e:
+            log_error_with_traceback("Critical error in connection recovery", e)
     
     async def _send_playback_failure_alert(self, error_type: str, error_message: str):
         """Send Discord alert for audio playback failure"""
@@ -322,6 +481,9 @@ _audio_monitor = AudioPlaybackMonitor()
 
 async def start_audio_monitoring_task(audio_manager):
     """Start a background task to monitor audio health"""
+    # Link the audio manager to the monitor for auto-recovery
+    _audio_monitor._audio_manager = audio_manager
+    
     async def monitoring_loop():
         """Monitor audio health every 2 minutes"""
         while True:
@@ -361,6 +523,8 @@ async def start_audio_monitoring_task(audio_manager):
                                 ("audio_healthy", "✅ Yes" if _audio_monitor.is_audio_healthy else "❌ No"),
                                 ("connection_healthy", "✅ Yes" if _audio_monitor.is_connection_healthy else "❌ No"),
                                 ("last_playback", _audio_monitor.last_successful_playback.strftime("%H:%M:%S")),
+                                ("auto_recovery", "✅ Enabled" if _audio_monitor.auto_recovery_enabled else "❌ Disabled"),
+                                ("recovery_attempts", f"{_audio_monitor.recovery_attempts}/{_audio_monitor.max_recovery_attempts}"),
                             ],
                             "🔍",
                         )
@@ -374,39 +538,7 @@ async def start_audio_monitoring_task(audio_manager):
 
 
 class AudioManager:
-    """
-    Advanced audio playback manager for Discord voice channels.
-
-    This is an open source component that can be used as a reference for
-    implementing Discord audio playback systems with state management.
-
-    Key Features:
-    - Multi-reciter audio support with dynamic discovery
-    - Persistent playback state across bot restarts
-    - Precise position tracking and resumption
-    - Shuffle and loop mode support
-    - Integration with control panel and rich presence
-    - Comprehensive error handling and logging
-
-    Configuration:
-    - ffmpeg_path: Path to FFmpeg executable
-    - audio_base_folder: Root folder for audio files
-    - default_reciter: Default reciter name
-    - default_shuffle: Initial shuffle state
-    - default_loop: Initial loop state
-
-    Audio File Structure:
-    /audio_base_folder/
-        /reciter_name/
-            /surah_number.mp3
-
-    Implementation Notes:
-    - Uses FFmpeg for reliable audio processing
-    - Implements position tracking for accurate resumption
-    - Handles Discord voice state changes gracefully
-    - Provides comprehensive playback controls
-    - Maintains state persistence with JSON storage
-    """
+    """Advanced audio playback system for Discord voice channels"""
 
     def __init__(
         self,
@@ -417,50 +549,34 @@ class AudioManager:
         default_shuffle: bool = False,
         default_loop: bool = False,
     ):
+        """Initialize audio manager with configuration"""
         self.bot = bot
         self.ffmpeg_path = ffmpeg_path
         self.audio_base_folder = audio_base_folder
-        self.voice_client: Optional[discord.VoiceClient] = None
-        self.rich_presence = None
-
-        # Store default values from environment
         self.default_reciter = default_reciter
-        self.default_shuffle = default_shuffle
-        self.default_loop = default_loop
-
-        # Playback state - will be restored from saved state
-        self.current_surah = 1
+        
+        # State variables
         self.current_reciter = default_reciter
-        self.current_position = 0.0  # Position in seconds within current track
+        self.current_surah = 1
+        self.current_position = 0.0
         self.is_playing = False
         self.is_paused = False
         self.is_loop_enabled = default_loop
         self.is_shuffle_enabled = default_shuffle
-        self.current_audio_files: List[str] = []
-        self.current_file_index = 0
-
-        # Jump operation flag to prevent automatic index increment
-        self._jump_occurred = False
-
-        # Control panel reference
-        self.control_panel_view = None
-
-        # Playback task
-        self.playback_task: Optional[asyncio.Task] = None
-        self.position_save_task: Optional[asyncio.Task] = None
-        self.position_tracking_task: Optional[
-            asyncio.Task
-        ] = None  # New task for real-time position tracking
-
-        # Position tracking state
-        self.track_start_time = None  # When current track started playing
-        self.track_pause_time = None  # When track was paused (if any)
-
-        # Available reciters (based on audio folder structure)
-        self.available_reciters = self._discover_reciters()
-
-        # Load previous state
+        
+        # Initialize components
+        self.voice_client = None
+        self.rich_presence = None
+        self.control_panel = None
+        self.monitor = AudioPlaybackMonitor()
+        
+        # Load saved state
         self._load_saved_state()
+        
+        # Start background tasks
+        if bot and bot.loop:
+            self._start_position_saving()
+            asyncio.create_task(start_audio_monitoring_task(self))
 
     def _load_saved_state(self):
         """Load previous playback state from state manager"""
@@ -789,6 +905,80 @@ class AudioManager:
             )
         except Exception as e:
             log_error_with_traceback("Error setting voice client", e)
+
+    async def connect_to_voice_channel(self):
+        """Connect to the voice channel with auto-recovery support"""
+        try:
+            import os
+            
+            # Disconnect from any existing voice client first
+            if self.voice_client:
+                try:
+                    await self.voice_client.disconnect(force=True)
+                    self.voice_client = None
+                    await asyncio.sleep(2)  # Give Discord time to process disconnection
+                except:
+                    pass
+            
+            # Get the bot's target guild and channel
+            guild_id = int(os.getenv("GUILD_ID", "0"))
+            channel_id = int(os.getenv("VOICE_CHANNEL_ID", "0"))
+
+            if not guild_id or not channel_id:
+                log_warning_with_context(
+                    "Missing configuration", "GUILD_ID or VOICE_CHANNEL_ID not set"
+                )
+                return False
+
+            guild = self.bot.get_guild(guild_id)
+            if not guild:
+                log_warning_with_context(
+                    "Guild not found", f"Guild ID: {guild_id}"
+                )
+                return False
+
+            channel = guild.get_channel(channel_id)
+            if not channel:
+                log_warning_with_context(
+                    "Voice channel not found", f"Channel ID: {channel_id}"
+                )
+                return False
+
+            # Connect to voice channel
+            log_perfect_tree_section(
+                "Voice Channel Connection - Auto Recovery",
+                [
+                    ("status", "🔄 Attempting voice connection"),
+                    ("channel_name", channel.name),
+                    ("channel_id", channel_id),
+                    ("channel_type", "Voice Channel"),
+                    ("guild_name", guild.name),
+                    ("guild_id", guild_id),
+                    ("recovery_mode", "✅ Auto-recovery active"),
+                ],
+                "🎤",
+            )
+
+            self.voice_client = await channel.connect(reconnect=False, timeout=60)
+
+            log_perfect_tree_section(
+                "Voice Channel Connection - Recovery Success",
+                [
+                    ("status", "✅ Connected to voice channel"),
+                    ("channel_name", channel.name),
+                    ("channel_id", channel_id),
+                    ("guild_name", guild.name),
+                    ("guild_id", guild_id),
+                    ("recovery_result", "✅ Voice connection restored"),
+                ],
+                "✅",
+            )
+
+            return True
+
+        except Exception as e:
+            log_error_with_traceback("Error connecting to voice channel during recovery", e)
+            return False
 
     def get_current_audio_folder(self) -> str:
         """Get the current audio folder path"""
@@ -2052,3 +2242,80 @@ class AudioManager:
             return surah_info.name_transliteration if surah_info else f"Surah {surah_number}"
         except Exception:
             return f"Surah {surah_number}"
+
+    def _get_surah_files(self, reciter: str) -> List[str]:
+        """Get list of surah files for a reciter"""
+        reciter_dir = Path(self.audio_base_folder) / reciter
+        if not reciter_dir.exists():
+            return []
+        
+        files = sorted(glob.glob(str(reciter_dir / "*.mp3")))
+        return [str(Path(f)) for f in files]
+
+    def change_reciter(self, reciter_name: str) -> bool:
+        """Change current reciter"""
+        reciter_dir = Path(self.audio_base_folder) / reciter_name
+        if not reciter_dir.exists():
+            return False
+        
+        self.current_reciter = reciter_name
+        return True
+
+    def get_current_surah_file(self) -> Optional[str]:
+        """Get current surah audio file path"""
+        return self.get_surah_file(self.current_surah)
+
+    def get_surah_file(self, surah_number: int) -> Optional[str]:
+        """Get specific surah audio file path"""
+        files = self._get_surah_files(self.current_reciter)
+        if not files:
+            return None
+        
+        try:
+            return files[surah_number - 1]
+        except IndexError:
+            return None
+
+    def get_surah_count(self, reciter: str) -> int:
+        """Get total number of surahs for reciter"""
+        return len(self._get_surah_files(reciter))
+
+    @property
+    def loop_enabled(self) -> bool:
+        """Get loop mode status"""
+        return self.is_loop_enabled
+
+    @property
+    def shuffle_enabled(self) -> bool:
+        """Get shuffle mode status"""
+        return self.is_shuffle_enabled
+
+    def toggle_loop(self) -> None:
+        """Toggle loop mode"""
+        self.is_loop_enabled = not self.is_loop_enabled
+
+    def toggle_shuffle(self) -> None:
+        """Toggle shuffle mode"""
+        self.is_shuffle_enabled = not self.is_shuffle_enabled
+
+    def next_surah(self) -> None:
+        """Move to next surah"""
+        total_surahs = self.get_surah_count(self.current_reciter)
+        if total_surahs == 0:
+            return
+
+        if self.shuffle_enabled:
+            self.current_surah = random.randint(1, total_surahs)
+        else:
+            self.current_surah = (self.current_surah % total_surahs) + 1
+
+    def previous_surah(self) -> None:
+        """Move to previous surah"""
+        total_surahs = self.get_surah_count(self.current_reciter)
+        if total_surahs == 0:
+            return
+
+        if self.current_surah > 1:
+            self.current_surah -= 1
+        else:
+            self.current_surah = total_surahs

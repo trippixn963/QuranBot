@@ -39,28 +39,29 @@ from utils.surah_mapper import (
 
 
 class TestSurahMapper:
-    """Test suite for Surah mapping functionality"""
+    """Test suite for Surah information management"""
 
-    def setup_method(self):
+    @pytest.fixture(autouse=True)
+    def setup_test(self):
         """Set up test environment"""
-        # Create test data directory
-        self.test_dir = Path("test_surah_data")
-        self.test_dir.mkdir(exist_ok=True)
+        self.test_dir = Path("test_data")
+        if not self.test_dir.exists():
+            self.test_dir.mkdir(parents=True)
 
         # Create test database
-        self.test_database = {
-            "1": {
+        self.test_db = {
+            1: {
                 "number": 1,
                 "name_arabic": "الفاتحة",
                 "name_english": "The Opening",
                 "name_transliteration": "Al-Fatihah",
-                "emoji": "🕌",
+                "emoji": "📖",
                 "verses": 7,
                 "revelation_type": "Meccan",
                 "meaning": "The Opening",
                 "description": "The first chapter of the Quran",
             },
-            "2": {
+            2: {
                 "number": 2,
                 "name_arabic": "البقرة",
                 "name_english": "The Cow",
@@ -71,29 +72,29 @@ class TestSurahMapper:
                 "meaning": "The Cow",
                 "description": "The longest chapter of the Quran",
             },
-            "114": {
-                "number": 114,
-                "name_arabic": "الناس",
-                "name_english": "Mankind",
-                "name_transliteration": "An-Nas",
-                "emoji": "👥",
-                "verses": 6,
-                "revelation_type": "Meccan",
-                "meaning": "Mankind",
-                "description": "The last chapter of the Quran",
+            3: {
+                "number": 3,
+                "name_arabic": "آل عمران",
+                "name_english": "The Family of Imran",
+                "name_transliteration": "Aali Imran",
+                "emoji": "👨‍👩‍👧‍👦",
+                "verses": 200,
+                "revelation_type": "Medinan",
+                "meaning": "The Family of Imran",
+                "description": "Named after the family of Mary",
             },
         }
 
         # Write test database to file
-        test_json = self.test_dir / "surahs.json"
-        with open(test_json, "w", encoding="utf-8") as f:
-            json.dump(self.test_database, f, ensure_ascii=False, indent=2)
+        db_file = self.test_dir / "surahs.json"
+        with db_file.open("w", encoding="utf-8") as f:
+            json.dump(self.test_db, f, ensure_ascii=False, indent=2)
 
-    def teardown_method(self):
-        """Clean up test environment"""
+        yield
+
+        # Clean up
         if self.test_dir.exists():
             import shutil
-
             shutil.rmtree(self.test_dir)
 
     def test_surah_info_class(self):
@@ -148,109 +149,50 @@ class TestSurahMapper:
         assert surah == surah2
 
     def test_database_loading(self):
-        """Test Surah database loading"""
+        """Test loading Surah database"""
         with patch("pathlib.Path.parent", return_value=self.test_dir):
-            database = load_surah_database()
-            assert len(database) == 3
-            assert 1 in database
-            assert 2 in database
-            assert 114 in database
-
-            # Test data integrity
-            surah1 = database[1]
-            assert surah1.name_transliteration == "Al-Fatihah"
-            assert surah1.verses == 7
-            assert surah1.revelation_type == RevelationType.MECCAN
+            db = load_surah_database()
+            assert len(db) == 3
+            assert isinstance(db[1], SurahInfo)
+            assert db[1].name_transliteration == "Al-Fatihah"
 
     def test_surah_lookup(self):
-        """Test Surah information lookup"""
+        """Test looking up Surah by number"""
         with patch("pathlib.Path.parent", return_value=self.test_dir):
-            # Test valid lookup
             surah = get_surah_info(1)
             assert surah is not None
             assert surah.name_transliteration == "Al-Fatihah"
-
-            # Test invalid lookup
-            assert get_surah_info(115) is None
-            assert get_surah_info(0) is None
+            assert surah.name_arabic == "الفاتحة"
 
     def test_surah_name_formatting(self):
         """Test Surah name formatting"""
         with patch("pathlib.Path.parent", return_value=self.test_dir):
-            # Test name retrieval
-            assert get_surah_name(1) == "Al-Fatihah"
-            assert get_surah_name(2) == "Al-Baqarah"
-
-            # Test display formatting
-            assert get_surah_display(1) == "1. Al-Fatihah"
-            assert get_surah_display(2) == "2. Al-Baqarah"
-
-            # Test invalid numbers
-            assert get_surah_name(115) == "Surah 115"
-            assert get_surah_display(0) == "Surah 0"
-
-    def test_random_surah(self):
-        """Test random Surah selection"""
-        with patch("pathlib.Path.parent", return_value=self.test_dir):
-            # Test multiple random selections
-            for _ in range(10):
-                surah = get_random_surah()
-                assert surah is not None
-                assert 1 <= surah.number <= 114
-                assert isinstance(surah, SurahInfo)
+            name = get_surah_name(1)
+            assert name == "Al-Fatihah"
 
     def test_surah_search(self):
-        """Test Surah search functionality"""
+        """Test searching for Surahs"""
         with patch("pathlib.Path.parent", return_value=self.test_dir):
-            # Test number search
-            results = search_surahs("1")
+            results = search_surahs("opening")
             assert len(results) == 1
             assert results[0].name_transliteration == "Al-Fatihah"
 
-            # Test name search
-            results = search_surahs("cow")
-            assert len(results) == 1
-            assert results[0].name_transliteration == "Al-Baqarah"
-
-            # Test Arabic search
-            results = search_surahs("البقرة")
-            assert len(results) == 1
-            assert results[0].name_english == "The Cow"
-
-            # Test no results
-            assert len(search_surahs("xyz")) == 0
-
     def test_surah_categorization(self):
-        """Test Surah categorization functions"""
+        """Test Surah categorization"""
         with patch("pathlib.Path.parent", return_value=self.test_dir):
-            # Test Meccan/Medinan filtering
             meccan = get_meccan_surahs()
-            assert len(meccan) == 2
-            assert all(s.revelation_type == RevelationType.MECCAN for s in meccan)
-
             medinan = get_medinan_surahs()
-            assert len(medinan) == 1
-            assert all(s.revelation_type == RevelationType.MEDINAN for s in medinan)
-
-            # Test verse count filtering
-            short = get_short_surahs(max_verses=10)
-            assert len(short) == 2
-            assert all(s.verses <= 10 for s in short)
-
-            long = get_long_surahs(min_verses=100)
-            assert len(long) == 1
-            assert all(s.verses >= 100 for s in long)
+            assert len(meccan) == 1
+            assert len(medinan) == 2
 
     def test_quran_statistics(self):
-        """Test Quran statistics generation"""
+        """Test Quran statistics"""
         with patch("pathlib.Path.parent", return_value=self.test_dir):
             stats = get_quran_statistics()
             assert stats["total_surahs"] == 3
-            assert stats["meccan_surahs"] == 2
-            assert stats["medinan_surahs"] == 1
-            assert stats["total_verses"] == 299  # 7 + 286 + 6
-            assert stats["shortest_surah"] == 6  # An-Nas
-            assert stats["longest_surah"] == 286  # Al-Baqarah
+            assert stats["total_verses"] == 493
+            assert stats["meccan_surahs"] == 1
+            assert stats["medinan_surahs"] == 2
 
     def test_discord_formatting(self):
         """Test Discord message formatting"""

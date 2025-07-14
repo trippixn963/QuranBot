@@ -69,4 +69,18 @@ echo "   qb-daemon-status  - Check daemon status"
 echo "   qb-daemon-start   - Start daemon manually"
 echo "   qb-daemon-stop    - Stop daemon"
 echo ""
-echo "🎯 Quick check: qb-status && qb-audio && qb-daemon-status" 
+echo "🛡️ Audio Recovery System:"
+echo "   qb-recovery-status  - Show recovery system status"
+echo "   qb-recovery-enable  - Enable auto-recovery"
+echo "   qb-recovery-disable - Disable auto-recovery"
+echo "   qb-recovery-config  - Interactive configuration"
+echo "   qb-recovery-reset   - Reset to default settings"
+echo ""
+echo "🎯 Quick check: qb-status && qb-audio && qb-daemon-status"
+
+# Audio Recovery Management
+alias qb-recovery-status='python3 tools/audio_recovery_control.py status'
+alias qb-recovery-enable='python3 tools/audio_recovery_control.py enable'
+alias qb-recovery-disable='python3 tools/audio_recovery_control.py disable'
+alias qb-recovery-config='python3 tools/audio_recovery_control.py config'
+alias qb-recovery-reset='python3 tools/audio_recovery_control.py reset' 

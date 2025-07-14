@@ -14,14 +14,14 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 # Import tree logging functions
-from src.utils.tree_log import (
+from utils.tree_log import (
     log_error_with_traceback,
     log_perfect_tree_section,
     log_user_interaction,
 )
 
 # Import version and author from centralized version module
-from ..version import BOT_VERSION
+from version import BOT_VERSION
 
 # =============================================================================
 # Environment Configuration

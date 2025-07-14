@@ -23,17 +23,24 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from utils.audio_manager import AudioManager
 
 
+@pytest.mark.asyncio
 class TestAudioManager:
     """Test suite for AudioManager class"""
 
-    def setup_method(self):
+    @pytest.fixture(autouse=True)
+    async def setup_test(self):
         """Set up test environment"""
+        # Create test directories
         self.temp_dir = tempfile.mkdtemp()
         self.audio_dir = Path(self.temp_dir) / "audio"
         self.audio_dir.mkdir(parents=True)
 
         # Create test reciter directories and files
         self.create_test_files()
+
+        # Mock bot
+        self.mock_bot = MagicMock()
+        self.mock_bot.loop = asyncio.get_event_loop()
 
         # Mock state manager
         self.mock_state_manager = MagicMock()
@@ -59,13 +66,22 @@ class TestAudioManager:
             "duration": 300.0,
         }
 
-        # Create audio manager instance
+        # Create audio manager instance with new constructor signature
         self.manager = AudioManager(
-            audio_dir=str(self.audio_dir),
+            bot=self.mock_bot,
+            ffmpeg_path="/usr/local/bin/ffmpeg",  # Use system FFmpeg for tests
+            audio_base_folder=str(self.audio_dir),
             default_reciter="Test Reciter",
+            default_shuffle=False,
+            default_loop=False,
         )
         self.manager.voice_client = self.mock_voice_client
         self.manager.rich_presence = self.mock_rich_presence
+
+        yield
+
+        # Clean up
+        shutil.rmtree(self.temp_dir)
 
     def create_test_files(self):
         """Create test audio files"""
@@ -84,13 +100,9 @@ class TestAudioManager:
             file_path = other_reciter_dir / f"{i:03d}.mp3"
             file_path.touch()
 
-    def teardown_method(self):
-        """Clean up test environment"""
-        shutil.rmtree(self.temp_dir)
-
-    def test_initialization(self):
+    async def test_initialization(self):
         """Test manager initialization"""
-        assert self.manager.audio_dir == Path(self.audio_dir)
+        assert self.manager.audio_base_folder == str(self.audio_dir)
         assert self.manager.current_reciter == "Test Reciter"
         assert self.manager.current_surah == 1
         assert self.manager.current_position == 0.0
@@ -99,7 +111,7 @@ class TestAudioManager:
         assert self.manager.shuffle_enabled is False
         assert len(self.manager.available_reciters) == 2
 
-    def test_get_surah_files(self):
+    async def test_get_surah_files(self):
         """Test getting surah files for a reciter"""
         files = self.manager._get_surah_files("Test Reciter")
         assert len(files) == 5
@@ -110,7 +122,7 @@ class TestAudioManager:
         files = self.manager._get_surah_files("Non-existent")
         assert len(files) == 0
 
-    def test_change_reciter(self):
+    async def test_change_reciter(self):
         """Test changing reciter"""
         # Test valid reciter
         result = self.manager.change_reciter("Other Reciter")
@@ -122,14 +134,14 @@ class TestAudioManager:
         assert result is False
         assert self.manager.current_reciter == "Other Reciter"
 
-    def test_get_available_reciters(self):
+    async def test_get_available_reciters(self):
         """Test getting available reciters"""
         reciters = self.manager.available_reciters
         assert len(reciters) == 2
         assert "Test Reciter" in reciters
         assert "Other Reciter" in reciters
 
-    def test_get_current_surah_file(self):
+    async def test_get_current_surah_file(self):
         """Test getting current surah file"""
         file = self.manager.get_current_surah_file()
         assert file is not None
@@ -140,7 +152,7 @@ class TestAudioManager:
         file = self.manager.get_current_surah_file()
         assert file is None
 
-    def test_get_surah_file(self):
+    async def test_get_surah_file(self):
         """Test getting specific surah file"""
         file = self.manager.get_surah_file(2)
         assert file is not None
@@ -150,7 +162,7 @@ class TestAudioManager:
         file = self.manager.get_surah_file(999)
         assert file is None
 
-    def test_get_surah_count(self):
+    async def test_get_surah_count(self):
         """Test getting surah count for reciter"""
         count = self.manager.get_surah_count("Test Reciter")
         assert count == 5
@@ -161,7 +173,7 @@ class TestAudioManager:
         count = self.manager.get_surah_count("Non-existent")
         assert count == 0
 
-    def test_toggle_loop(self):
+    async def test_toggle_loop(self):
         """Test toggling loop mode"""
         assert self.manager.loop_enabled is False
         self.manager.toggle_loop()
@@ -169,7 +181,7 @@ class TestAudioManager:
         self.manager.toggle_loop()
         assert self.manager.loop_enabled is False
 
-    def test_toggle_shuffle(self):
+    async def test_toggle_shuffle(self):
         """Test toggling shuffle mode"""
         assert self.manager.shuffle_enabled is False
         self.manager.toggle_shuffle()
@@ -177,7 +189,7 @@ class TestAudioManager:
         self.manager.toggle_shuffle()
         assert self.manager.shuffle_enabled is False
 
-    def test_next_surah(self):
+    async def test_next_surah(self):
         """Test moving to next surah"""
         assert self.manager.current_surah == 1
         self.manager.next_surah()
@@ -188,7 +200,7 @@ class TestAudioManager:
         self.manager.next_surah()
         assert self.manager.current_surah == 1  # Should wrap around
 
-    def test_previous_surah(self):
+    async def test_previous_surah(self):
         """Test moving to previous surah"""
         self.manager.current_surah = 3
         self.manager.previous_surah()
@@ -199,7 +211,7 @@ class TestAudioManager:
         self.manager.previous_surah()
         assert self.manager.current_surah == 5  # Should wrap around
 
-    def test_jump_to_surah(self):
+    async def test_jump_to_surah(self):
         """Test jumping to specific surah"""
         result = self.manager.jump_to_surah(3)
         assert result is True
@@ -210,7 +222,7 @@ class TestAudioManager:
         assert result is False
         assert self.manager.current_surah == 3  # Should not change
 
-    def test_get_playback_state(self):
+    async def test_get_playback_state(self):
         """Test getting playback state"""
         state = self.manager.get_playback_status()
         assert isinstance(state, dict)
@@ -585,8 +597,12 @@ class TestAudioManager:
 
         # Simulate restart/reload
         new_manager = AudioManager(
-            audio_dir=str(self.audio_dir),
+            bot=self.mock_bot,
+            ffmpeg_path="/usr/local/bin/ffmpeg",
+            audio_base_folder=str(self.audio_dir),
             default_reciter="Test Reciter",
+            default_shuffle=False,
+            default_loop=False,
         )
         new_manager.voice_client = self.mock_voice_client
         new_manager.rich_presence = self.mock_rich_presence
