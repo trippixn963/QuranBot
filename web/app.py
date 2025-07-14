@@ -14,6 +14,7 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Any
+import uuid
 
 import pytz
 from flask import Flask, jsonify, render_template, request, send_from_directory
@@ -50,6 +51,75 @@ app = Flask(__name__,
            static_folder='static',
            template_folder='templates')
 
+# =============================================================================
+# COMMAND QUEUE SYSTEM
+# =============================================================================
+# This system allows the web dashboard to send commands to the actual bot
+# by writing command files that the bot can read and execute
+
+def create_command_queue_dir():
+    """Create the command queue directory if it doesn't exist"""
+    # Use relative path from current working directory
+    queue_dir = Path("command_queue")
+    queue_dir.mkdir(parents=True, exist_ok=True)
+    return queue_dir
+
+def send_command_to_bot(command_type: str, command_data: Dict = None) -> str:
+    """
+    Send a command to the bot via the command queue system
+    
+    Args:
+        command_type: Type of command (quiz_send, audio_control, etc.)
+        command_data: Additional data for the command
+    
+    Returns:
+        Command ID for tracking
+    """
+    try:
+        queue_dir = create_command_queue_dir()
+        command_id = str(uuid.uuid4())
+        
+        command = {
+            "id": command_id,
+            "type": command_type,
+            "data": command_data or {},
+            "timestamp": datetime.now(pytz.UTC).isoformat(),
+            "status": "pending",
+            "source": "web_dashboard"
+        }
+        
+        # Write command to queue
+        command_file = queue_dir / f"{command_id}.json"
+        with open(command_file, 'w') as f:
+            json.dump(command, f, indent=2)
+        
+        return command_id
+    except Exception as e:
+        print(f"Error sending command to bot: {e}")
+        return None
+
+def check_command_status(command_id: str) -> Dict:
+    """
+    Check the status of a command sent to the bot
+    
+    Args:
+        command_id: The command ID to check
+    
+    Returns:
+        Command status information
+    """
+    try:
+        queue_dir = create_command_queue_dir()
+        command_file = queue_dir / f"{command_id}.json"
+        
+        if command_file.exists():
+            with open(command_file, 'r') as f:
+                return json.load(f)
+        else:
+            return {"status": "not_found", "error": "Command not found"}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
 # Configuration
 VPS_HOST = "root@159.89.90.90"
 
@@ -80,7 +150,7 @@ tree_log = TreeLogger()
 
 def get_est_time():
     """Get current time in EST"""
-    est = pytz.timezone("US/Eastern")
+    est = pytz.timezone("America/New_York")
     return datetime.now(est)
 
 def format_timestamp_readable(timestamp_str):
@@ -103,7 +173,7 @@ def format_timestamp_readable(timestamp_str):
                 return timestamp_str
         
         # Convert to EST
-        est = pytz.timezone('US/Eastern')
+        est = pytz.timezone('America/New_York')
         est_dt = dt.astimezone(est)
         
         # Format as readable 12-hour format
@@ -149,7 +219,7 @@ def format_uptime_readable(uptime_str):
                     dt = dt.replace(tzinfo=pytz.utc)
                     
                     # Convert to EST
-                    est = pytz.timezone('US/Eastern')
+                    est = pytz.timezone('America/New_York')
                     est_dt = dt.astimezone(est)
                     
                     # Calculate time ago
@@ -271,6 +341,89 @@ print(json.dumps({
     except Exception as e:
         return {"error": str(e)}
 
+def get_quiz_status():
+    """Get real quiz status information"""
+    try:
+        from pathlib import Path
+        import json
+        
+        # Get quiz interval from config
+        quiz_config_file = Path("data/quiz_state.json")
+        interval_hours = 3.0  # Default
+        last_sent_time = None
+        
+        if quiz_config_file.exists():
+            try:
+                with open(quiz_config_file, 'r') as f:
+                    config_data = json.load(f)
+                    schedule_config = config_data.get("schedule_config", {})
+                    interval_hours = schedule_config.get("send_interval_hours", 3.0)
+                    
+                    # Get last sent time
+                    if "last_sent_time" in config_data:
+                        last_sent_time = config_data["last_sent_time"]
+            except:
+                pass
+        
+        # Calculate next quiz time
+        next_quiz = "Unknown"
+        if last_sent_time:
+            try:
+                from datetime import datetime, timedelta
+                import pytz
+                
+                last_time = datetime.fromisoformat(last_sent_time.replace('Z', '+00:00'))
+                if last_time.tzinfo is None:
+                    last_time = last_time.replace(tzinfo=pytz.UTC)
+                
+                next_time = last_time + timedelta(hours=interval_hours)
+                now = datetime.now(pytz.UTC)
+                
+                if next_time > now:
+                    time_diff = next_time - now
+                    minutes = int(time_diff.total_seconds() / 60)
+                    if minutes < 60:
+                        next_quiz = f"{minutes} minutes"
+                    else:
+                        hours = minutes // 60
+                        remaining_minutes = minutes % 60
+                        if remaining_minutes > 0:
+                            next_quiz = f"{hours}h {remaining_minutes}m"
+                        else:
+                            next_quiz = f"{hours}h"
+                else:
+                    next_quiz = "Due now"
+            except:
+                next_quiz = "Unknown"
+        else:
+            next_quiz = "Not scheduled"
+        
+        # Get active users from quiz stats
+        active_users = 0
+        quiz_stats_file = Path("data/quiz_stats.json")
+        if quiz_stats_file.exists():
+            try:
+                with open(quiz_stats_file, 'r') as f:
+                    stats_data = json.load(f)
+                    user_scores = stats_data.get("user_scores", {})
+                    active_users = len(user_scores)
+            except:
+                pass
+        
+        return {
+            "mode": "Active" if interval_hours > 0 else "Disabled",
+            "interval": f"{interval_hours}h",
+            "next_quiz": next_quiz,
+            "active_users": f"{active_users} users"
+        }
+    except Exception as e:
+        return {
+            "mode": "Unknown",
+            "interval": "Unknown",
+            "next_quiz": "Unknown",
+            "active_users": "Unknown"
+        }
+
 def get_audio_status():
     """Get current audio playback status"""
     try:
@@ -311,11 +464,11 @@ def get_audio_status():
         }
 
 def get_quiz_statistics():
-    """Get comprehensive quiz statistics"""
+    """Get comprehensive quiz statistics with enhanced analytics"""
     try:
         # Read quiz stats directly from JSON file
-        quiz_stats_file = Path("/opt/DiscordBots/QuranBot/data/quiz_stats.json")
-        user_cache_file = Path("/opt/DiscordBots/QuranBot/data/user_cache.json")
+        quiz_stats_file = DATA_PATH / "quiz_stats.json"
+        user_cache_file = DATA_PATH / "user_cache.json"
         
         # Load user cache for display names and avatars
         user_cache = {}
@@ -329,37 +482,48 @@ def get_quiz_statistics():
                 stats_data = json.load(f)
                 user_scores = stats_data.get("user_scores", {})
                 
-                # Calculate statistics
+                # Calculate comprehensive statistics
                 total_questions = sum(user.get("total_questions", 0) for user in user_scores.values())
                 correct_answers = sum(user.get("correct_answers", 0) for user in user_scores.values())
                 total_users = len(user_scores)
                 accuracy_rate = (correct_answers / total_questions * 100) if total_questions > 0 else 0
                 
-                # Get top users by points with user info
+                # Calculate streaks and engagement metrics
+                active_users = sum(1 for user in user_scores.values() if user.get("total_questions", 0) > 0)
+                high_performers = sum(1 for user in user_scores.values() if (user.get("correct_answers", 0) / max(user.get("total_questions", 1), 1)) > 0.8)
+                
+                # Get top users by points with enhanced user info
                 top_users = []
                 for user_id, user_data in user_scores.items():
                     points = user_data.get("points", 0)
-                    if points > 0:
+                    total_q = user_data.get("total_questions", 0)
+                    correct_a = user_data.get("correct_answers", 0)
+                    
+                    if total_q > 0:  # Only include users who have answered questions
                         # Get user info from cache
                         user_info = user_cache.get(user_id, {})
                         display_name = user_info.get("display_name", f"User {user_id[:8]}...")
                         avatar_url = user_info.get("avatar_url", "https://cdn.discordapp.com/embed/avatars/0.png")
+                        
+                        accuracy = (correct_a / total_q * 100) if total_q > 0 else 0
                         
                         top_users.append({
                             "user_id": user_id,
                             "display_name": display_name,
                             "avatar_url": avatar_url,
                             "points": points,
-                            "correct_answers": user_data.get("correct_answers", 0),
-                            "total_questions": user_data.get("total_questions", 0),
-                            "accuracy": (user_data.get("correct_answers", 0) / user_data.get("total_questions", 1) * 100) if user_data.get("total_questions", 0) > 0 else 0
+                            "correct_answers": correct_a,
+                            "total_questions": total_q,
+                            "accuracy": accuracy,
+                            "current_streak": user_data.get("current_streak", 0),
+                            "best_streak": user_data.get("best_streak", 0)
                         })
                 
                 # Sort by points and take top 10
                 top_users.sort(key=lambda x: x["points"], reverse=True)
                 top_users = top_users[:10]
                 
-                # Create recent activity from users with recent answers
+                # Create enhanced recent activity
                 recent_activity = []
                 for user_id, user_data in user_scores.items():
                     if user_data.get("last_answer_time"):
@@ -367,77 +531,239 @@ def get_quiz_statistics():
                         display_name = user_info.get("display_name", f"User {user_id[:8]}...")
                         avatar_url = user_info.get("avatar_url", "https://cdn.discordapp.com/embed/avatars/0.png")
                         
+                        # Determine action based on streak
+                        streak = user_data.get("current_streak", 0)
+                        if streak >= 5:
+                            action = f"is on a {streak}-question streak! 🔥"
+                        elif streak >= 3:
+                            action = f"answered correctly (streak: {streak})"
+                        else:
+                            action = "answered a question"
+                        
                         recent_activity.append({
                             "user_id": user_id,
                             "display_name": display_name,
                             "avatar_url": avatar_url,
-                            "action": "answered a question",
+                            "action": action,
                             "timestamp": user_data.get("last_answer_time"),
-                            "points": user_data.get("points", 0)
+                            "points": user_data.get("points", 0),
+                            "streak": streak
                         })
                 
-                # Sort by timestamp and take most recent 10
+                # Sort by timestamp and take most recent 15
                 recent_activity.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
-                recent_activity = recent_activity[:10]
+                recent_activity = recent_activity[:15]
+                
+                # Calculate engagement metrics
+                participation_rate = (active_users / max(total_users, 1)) * 100
+                excellence_rate = (high_performers / max(active_users, 1)) * 100
                 
                 return {
                     "total_questions": total_questions,
                     "correct_answers": correct_answers,
                     "total_users": total_users,
+                    "active_users": active_users,
                     "accuracy_rate": accuracy_rate,
+                    "participation_rate": participation_rate,
+                    "excellence_rate": excellence_rate,
+                    "high_performers": high_performers,
                     "questions_today": 0,  # Would need to track daily questions
+                    "avg_response_time": "5.2s",  # Placeholder - would need to track this
                     "top_users": top_users,
-                    "recent_activity": recent_activity
+                    "recent_activity": recent_activity,
+                    "analytics": {
+                        "accuracy_distribution": calculate_accuracy_distribution(user_scores),
+                        "engagement_levels": calculate_engagement_levels(user_scores),
+                        "streak_analysis": calculate_streak_analysis(user_scores)
+                    }
                 }
         else:
             return {
                 "total_questions": 0,
                 "correct_answers": 0,
                 "total_users": 0,
+                "active_users": 0,
                 "accuracy_rate": 0,
+                "participation_rate": 0,
+                "excellence_rate": 0,
+                "high_performers": 0,
                 "questions_today": 0,
+                "avg_response_time": "N/A",
                 "top_users": [],
-                "recent_activity": []
+                "recent_activity": [],
+                "analytics": {
+                    "accuracy_distribution": [],
+                    "engagement_levels": [],
+                    "streak_analysis": []
+                }
             }
     except Exception as e:
         return {"error": str(e)}
 
+def calculate_accuracy_distribution(user_scores):
+    """Calculate accuracy distribution for analytics"""
+    distribution = {"0-20%": 0, "21-40%": 0, "41-60%": 0, "61-80%": 0, "81-100%": 0}
+    
+    for user_data in user_scores.values():
+        total_q = user_data.get("total_questions", 0)
+        correct_a = user_data.get("correct_answers", 0)
+        
+        if total_q > 0:
+            accuracy = (correct_a / total_q) * 100
+            if accuracy <= 20:
+                distribution["0-20%"] += 1
+            elif accuracy <= 40:
+                distribution["21-40%"] += 1
+            elif accuracy <= 60:
+                distribution["41-60%"] += 1
+            elif accuracy <= 80:
+                distribution["61-80%"] += 1
+            else:
+                distribution["81-100%"] += 1
+    
+    return distribution
+
+def calculate_engagement_levels(user_scores):
+    """Calculate user engagement levels"""
+    levels = {"New": 0, "Casual": 0, "Active": 0, "Expert": 0}
+    
+    for user_data in user_scores.values():
+        total_q = user_data.get("total_questions", 0)
+        points = user_data.get("points", 0)
+        
+        if total_q == 0:
+            continue
+        elif total_q <= 5:
+            levels["New"] += 1
+        elif total_q <= 20:
+            levels["Casual"] += 1
+        elif total_q <= 50:
+            levels["Active"] += 1
+        else:
+            levels["Expert"] += 1
+    
+    return levels
+
+def calculate_streak_analysis(user_scores):
+    """Calculate streak analysis for insights"""
+    streaks = {"No Streak": 0, "Short (2-4)": 0, "Medium (5-9)": 0, "Long (10+)": 0}
+    
+    for user_data in user_scores.values():
+        best_streak = user_data.get("best_streak", 0)
+        
+        if best_streak == 0:
+            streaks["No Streak"] += 1
+        elif best_streak <= 4:
+            streaks["Short (2-4)"] += 1
+        elif best_streak <= 9:
+            streaks["Medium (5-9)"] += 1
+        else:
+            streaks["Long (10+)"] += 1
+    
+    return streaks
+
 def get_listening_statistics():
-    """Get listening time statistics"""
+    """Get comprehensive listening time statistics with enhanced analytics"""
     try:
-        # Read listening stats directly from JSON file
+        # Read listening stats and bot stats
         listening_stats_file = data_path / "listening_stats.json"
+        bot_stats_file = data_path / "bot_stats.json"
+        user_cache_file = data_path / "user_cache.json"
+        
+        # Load user cache for display names
+        user_cache = {}
+        if user_cache_file.exists():
+            with open(user_cache_file, 'r') as f:
+                cache_data = json.load(f)
+                user_cache = cache_data.get("users", {})
+        
+        # Load bot stats for additional info
+        bot_stats = {}
+        if bot_stats_file.exists():
+            with open(bot_stats_file, 'r') as f:
+                bot_stats = json.load(f)
+        
         if listening_stats_file.exists():
             with open(listening_stats_file, 'r') as f:
                 stats_data = json.load(f)
                 
-                # Calculate total listening time
+                # Calculate comprehensive listening statistics
                 total_time = 0
                 active_listeners = 0
                 top_listeners = []
+                session_data = []
                 
-                for user_id, user_data in stats_data.items():
-                    if isinstance(user_data, dict):
-                        user_time = user_data.get("total_listening_time", 0)
+                # Get users data from the correct structure
+                users_data = stats_data.get("users", stats_data)
+                
+                for user_id, user_data in users_data.items():
+                    if isinstance(user_data, dict) and user_id != "total_stats":
+                        user_time = user_data.get("total_time", 0)
+                        sessions = user_data.get("sessions", 0)
+                        last_seen = user_data.get("last_seen", "")
+                        
                         total_time += user_time
+                        
                         if user_time > 0:
                             active_listeners += 1
+                            
+                            # Get user info from cache
+                            user_info = user_cache.get(user_id, {})
+                            display_name = user_info.get("display_name", f"User {user_id[:8]}...")
+                            avatar_url = user_info.get("avatar_url", "https://cdn.discordapp.com/embed/avatars/0.png")
+                            
+                            # Calculate average session time
+                            avg_session = (user_time / sessions) if sessions > 0 else 0
+                            
                             top_listeners.append({
                                 "user_id": user_id,
+                                "display_name": display_name,
+                                "avatar_url": avatar_url,
                                 "listening_time": user_time,
-                                "sessions": user_data.get("total_sessions", 0)
+                                "sessions": sessions,
+                                "average_session": avg_session,
+                                "last_seen": last_seen,
+                                "engagement_level": get_listening_engagement_level(user_time, sessions)
+                            })
+                            
+                            session_data.append({
+                                "user_id": user_id,
+                                "sessions": sessions,
+                                "total_time": user_time
                             })
                 
                 # Sort by listening time and take top 10
                 top_listeners.sort(key=lambda x: x["listening_time"], reverse=True)
                 top_listeners = top_listeners[:10]
                 
+                # Calculate engagement metrics
+                total_sessions = sum(user.get("sessions", 0) for user in session_data)
+                average_session_time = total_time / max(total_sessions, 1) if total_sessions > 0 else 0
+                
+                # Get favorite reciter from bot stats
+                favorite_reciter = bot_stats.get("favorite_reciter", "Abdul Rahman Al-Sudais")
+                surahs_completed = bot_stats.get("surahs_completed", 0)
+                
+                # Calculate listening patterns
+                listening_patterns = calculate_listening_patterns(session_data)
+                
                 return {
                     "total_listening_time": total_time,
                     "active_listeners": active_listeners,
+                    "total_sessions": total_sessions,
                     "sessions_today": 0,  # Would need to track daily sessions
-                    "average_session_time": total_time / max(active_listeners, 1) if active_listeners > 0 else 0,
+                    "average_session_time": average_session_time,
+                    "most_played_surah": "Al-Fatiha",  # Placeholder - would need to track this
+                    "hours_streamed": total_time / 3600,  # Convert seconds to hours
+                    "skip_rate": 0.0,  # Placeholder - would need to track this
+                    "favorite_reciter": favorite_reciter,
+                    "surahs_completed": surahs_completed,
                     "top_listeners": top_listeners,
+                    "analytics": {
+                        "listening_patterns": listening_patterns,
+                        "engagement_distribution": calculate_listening_engagement_distribution(session_data),
+                        "session_length_distribution": calculate_session_length_distribution(session_data)
+                    },
                     "daily_stats": {},  # Would need to track this separately
                     "weekly_stats": {}  # Would need to track this separately
                 }
@@ -445,14 +771,77 @@ def get_listening_statistics():
             return {
                 "total_listening_time": 0,
                 "active_listeners": 0,
+                "total_sessions": 0,
                 "sessions_today": 0,
                 "average_session_time": 0,
+                "most_played_surah": "N/A",
+                "hours_streamed": 0,
+                "skip_rate": 0.0,
+                "favorite_reciter": "N/A",
+                "surahs_completed": 0,
                 "top_listeners": [],
+                "analytics": {
+                    "listening_patterns": {},
+                    "engagement_distribution": {},
+                    "session_length_distribution": {}
+                },
                 "daily_stats": {},
                 "weekly_stats": {}
             }
     except Exception as e:
         return {"error": str(e)}
+
+def get_listening_engagement_level(total_time, sessions):
+    """Determine user engagement level based on listening time and sessions"""
+    if total_time < 300:  # Less than 5 minutes
+        return "New"
+    elif total_time < 1800:  # Less than 30 minutes
+        return "Casual"
+    elif total_time < 7200:  # Less than 2 hours
+        return "Active"
+    else:
+        return "Devoted"
+
+def calculate_listening_patterns(session_data):
+    """Calculate listening patterns for analytics"""
+    if not session_data:
+        return {}
+    
+    total_users = len(session_data)
+    total_time = sum(user["total_time"] for user in session_data)
+    total_sessions = sum(user["sessions"] for user in session_data)
+    
+    return {
+        "average_sessions_per_user": total_sessions / total_users if total_users > 0 else 0,
+        "average_time_per_user": total_time / total_users if total_users > 0 else 0,
+        "most_active_users": total_users
+    }
+
+def calculate_listening_engagement_distribution(session_data):
+    """Calculate engagement level distribution"""
+    distribution = {"New": 0, "Casual": 0, "Active": 0, "Devoted": 0}
+    
+    for user in session_data:
+        level = get_listening_engagement_level(user["total_time"], user["sessions"])
+        distribution[level] += 1
+    
+    return distribution
+
+def calculate_session_length_distribution(session_data):
+    """Calculate session length distribution"""
+    distribution = {"Short (0-5m)": 0, "Medium (5-30m)": 0, "Long (30m+)": 0}
+    
+    for user in session_data:
+        if user["sessions"] > 0:
+            avg_session = user["total_time"] / user["sessions"]
+            if avg_session < 300:  # Less than 5 minutes
+                distribution["Short (0-5m)"] += 1
+            elif avg_session < 1800:  # Less than 30 minutes
+                distribution["Medium (5-30m)"] += 1
+            else:
+                distribution["Long (30m+)"] += 1
+    
+    return distribution
 
 def get_recent_logs(lines=50):
     """Get recent log entries"""
@@ -698,6 +1087,7 @@ def api_status():
     """Get overall bot status"""
     bot_status = get_bot_status()
     audio_status = get_audio_status()
+    quiz_status = get_quiz_status()
     system_metrics = get_system_metrics()
     performance_metrics = get_performance_metrics()
     storage_metrics = get_storage_metrics()
@@ -706,6 +1096,7 @@ def api_status():
     return jsonify({
         "bot": bot_status,
         "audio": audio_status,
+        "quiz": quiz_status,
         "system": system_metrics,
         "performance": performance_metrics,
         "storage": storage_metrics,
@@ -743,45 +1134,251 @@ def api_discord_health():
     health = get_discord_health()
     return jsonify(health)
 
+@app.route('/api/command/status/<command_id>', methods=['GET'])
+def api_command_status(command_id):
+    """Check the status of a command sent to the bot"""
+    try:
+        status = check_command_status(command_id)
+        return jsonify(status)
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
 # =============================================================================
 # API ROUTES - Control Endpoints
 # =============================================================================
 
+@app.route('/api/quiz/send', methods=['POST'])
+def api_quiz_send():
+    """Send a quiz question immediately"""
+    try:
+        log_dashboard_action("Quiz Send", {"action": "send_quiz"}, request.remote_addr)
+        
+        # Send command to bot via command queue
+        command_id = send_command_to_bot("quiz_send", {"action": "send_quiz"})
+        
+        if command_id:
+            return jsonify({
+                "success": True,
+                "message": "Quiz question command sent to bot",
+                "command_id": command_id,
+                "timestamp": get_est_time().strftime("%I:%M %p EST")
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Failed to send command to bot"
+            }), 500
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/quiz/toggle', methods=['POST'])
+def api_quiz_toggle():
+    """Toggle quiz mode on/off"""
+    try:
+        log_dashboard_action("Quiz Toggle", {"action": "toggle_mode"}, request.remote_addr)
+        
+        # Send command to bot via command queue
+        command_id = send_command_to_bot("quiz_toggle", {"action": "toggle_mode"})
+        
+        if command_id:
+            return jsonify({
+                "success": True,
+                "message": "Quiz mode toggle command sent to bot",
+                "command_id": command_id,
+                "timestamp": get_est_time().strftime("%I:%M %p EST")
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Failed to send command to bot"
+            }), 500
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/quiz/reset', methods=['POST'])
+def api_quiz_reset():
+    """Reset quiz statistics"""
+    try:
+        log_dashboard_action("Quiz Reset", {"action": "reset_stats"}, request.remote_addr)
+        
+        # Send command to bot via command queue
+        command_id = send_command_to_bot("quiz_reset", {"action": "reset_stats"})
+        
+        if command_id:
+            return jsonify({
+                "success": True,
+                "message": "Quiz statistics reset command sent to bot",
+                "command_id": command_id,
+                "timestamp": get_est_time().strftime("%I:%M %p EST")
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Failed to send command to bot"
+            }), 500
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/system/cache', methods=['POST'])
+def api_system_cache():
+    """Clear system cache"""
+    try:
+        log_dashboard_action("System Cache", {"action": "clear_cache"}, request.remote_addr)
+        
+        # Send command to bot via command queue
+        command_id = send_command_to_bot("system_cache", {"action": "clear_cache"})
+        
+        if command_id:
+            return jsonify({
+                "success": True,
+                "message": "System cache clear command sent to bot",
+                "command_id": command_id,
+                "timestamp": get_est_time().strftime("%I:%M %p EST")
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Failed to send command to bot"
+            }), 500
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/system/logs', methods=['POST'])
+def api_system_logs():
+    """Sync logs to VPS"""
+    try:
+        log_dashboard_action("System Logs", {"action": "sync_logs"}, request.remote_addr)
+        
+        # Send command to bot via command queue
+        command_id = send_command_to_bot("system_logs", {"action": "sync_logs"})
+        
+        if command_id:
+            return jsonify({
+                "success": True,
+                "message": "Log sync command sent to bot",
+                "command_id": command_id,
+                "timestamp": get_est_time().strftime("%I:%M %p EST")
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Failed to send command to bot"
+            }), 500
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/system/backup', methods=['POST'])
+def api_system_backup():
+    """Create data backup"""
+    try:
+        log_dashboard_action("System Backup", {"action": "backup_data"}, request.remote_addr)
+        
+        # Send command to bot via command queue
+        command_id = send_command_to_bot("system_backup", {"action": "backup_data"})
+        
+        if command_id:
+            return jsonify({
+                "success": True,
+                "message": "Data backup command sent to bot",
+                "command_id": command_id,
+                "timestamp": get_est_time().strftime("%I:%M %p EST")
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Failed to send command to bot"
+            }), 500
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
 @app.route('/api/bot/control', methods=['POST'])
 def api_bot_control():
     """Control bot service (start/stop/restart)"""
-    data = request.get_json()
-    action = data.get('action')
-    
-    if action not in ['start', 'stop', 'restart']:
-        return jsonify({"error": "Invalid action"}), 400
-    
     try:
+        data = request.get_json()
+        action = data.get('action')
+        
+        if action not in ['start', 'stop', 'restart']:
+            return jsonify({
+                "success": False,
+                "error": "Invalid action. Must be 'start', 'stop', or 'restart'"
+            }), 400
+        
         log_dashboard_action(f"Bot Control: {action}", {"action": action}, request.remote_addr)
         
-        result = subprocess.run([
-            "systemctl", action, "quranbot.service"
-        ], capture_output=True, text=True, timeout=30)
+        # Send command to bot via command queue
+        command_id = send_command_to_bot("bot_control", data)
         
-        if result.returncode == 0:
-            return jsonify({"success": True, "message": f"Bot {action} successful"})
+        if command_id:
+            return jsonify({
+                "success": True,
+                "message": f"Bot {action} command sent to bot",
+                "command_id": command_id,
+                "timestamp": get_est_time().strftime("%I:%M %p EST")
+            })
         else:
-            return jsonify({"error": result.stderr}), 500
+            return jsonify({
+                "success": False,
+                "error": "Failed to send command to bot"
+            }), 500
             
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 @app.route('/api/audio/control', methods=['POST'])
 def api_audio_control():
     """Control audio playback"""
-    data = request.get_json()
-    action = data.get('action')
-    
-    log_dashboard_action(f"Audio Control: {action}", {"action": action}, request.remote_addr)
-    
-    # Here you would implement audio control logic
-    # For now, return success
-    return jsonify({"success": True, "message": f"Audio {action} command sent"})
+    try:
+        data = request.get_json()
+        action = data.get('action')
+        
+        log_dashboard_action(f"Audio Control: {action}", {"action": action}, request.remote_addr)
+        
+        # Send command to bot via command queue
+        command_id = send_command_to_bot("audio_control", data)
+        
+        if command_id:
+            return jsonify({
+                "success": True,
+                "message": f"Audio {action} command sent to bot",
+                "command_id": command_id,
+                "timestamp": get_est_time().strftime("%I:%M %p EST")
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Failed to send command to bot"
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 # =============================================================================
 # STATIC FILES

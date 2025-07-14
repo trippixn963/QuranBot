@@ -10,7 +10,7 @@
 # =============================================================================
 
 # Main version number - update this single line for new releases
-__version__ = "3.5.1"
+__version__ = "3.5.2"
 
 # Bot name and branding
 BOT_NAME = "QuranBot"

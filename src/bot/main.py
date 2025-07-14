@@ -1123,6 +1123,34 @@ async def on_ready():
                     )
 
                 # =============================================================================
+                # Web Command Processor Setup
+                # =============================================================================
+                try:
+                    from src.utils.web_command_processor import initialize_web_command_processor
+                    web_processor = initialize_web_command_processor(bot)
+                    log_perfect_tree_section(
+                        "Web Command Processor",
+                        [
+                            ("status", "✅ Web command processor started"),
+                            ("queue_directory", "web/command_queue"),
+                            ("check_interval", "5 seconds"),
+                            ("features", "🌐 Web dashboard integration"),
+                        ],
+                        "🌐",
+                    )
+                except Exception as web_error:
+                    log_error_with_traceback("Failed to start web command processor", web_error)
+                    log_perfect_tree_section(
+                        "Web Command Processor Warning",
+                        [
+                            ("status", "⚠️ Web command processor failed to start"),
+                            ("impact", "Web dashboard controls may not work"),
+                            ("action", "Check logs for details"),
+                        ],
+                        "⚠️",
+                    )
+
+                # =============================================================================
                 # Slash Commands Setup - MUST BE AFTER DAILY VERSES SETUP
                 # =============================================================================
                 log_spacing()

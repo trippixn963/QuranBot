@@ -1,10 +1,10 @@
 {
   "is_running": true,
-  "sync_count": 172,
-  "last_sync_time": "2025-07-13T04:26:37.174052-04:00",
+  "sync_count": 167,
+  "last_sync_time": "2025-07-13T20:25:18.357217-04:00",
   "last_error": null,
-  "start_time": "2025-07-13T02:56:17.322193-04:00",
+  "start_time": "2025-07-13T18:39:25.469408-04:00",
   "vps_host": "root@159.89.90.90",
   "sync_interval": 30,
-  "pid": 27683
+  "pid": 93526
 }
