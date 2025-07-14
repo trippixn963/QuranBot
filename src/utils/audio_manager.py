@@ -567,6 +567,7 @@ class AudioManager:
         self.is_shuffle_enabled = default_shuffle
         self.current_audio_files = []
         self.current_file_index = 0
+        self.available_reciters = []
         
         # Initialize components
         self.voice_client = None
@@ -579,6 +580,13 @@ class AudioManager:
         self._position_save_task = None
         self._position_tracking_task = None
         self._jump_occurred = False
+        
+        # Initialize timing variables
+        self.track_start_time = None
+        self.track_pause_time = None
+        
+        # Discover available reciters
+        self.available_reciters = self._discover_reciters()
         
         # Load saved state
         self._load_saved_state()
@@ -2218,12 +2226,25 @@ class AudioManager:
 
             # Use the exact same time calculation as rich presence
             # This ensures both control panel and rich presence show identical times
-            status[
-                "current_time"
-            ] = self.current_position  # Use actual current position
+            current_time_seconds = 0.0
+            if self.is_playing and self.track_start_time:
+                import time
+                current_time = time.time()
+                # This calculation already accounts for resumed position
+                current_time_seconds = current_time - self.track_start_time
+            else:
+                # Use saved position when not playing
+                current_time_seconds = self.current_position
 
             # Get the real duration of the current MP3 file
-            status["total_time"] = self._get_current_file_duration()
+            total_time_seconds = self._get_current_file_duration()
+
+            # Ensure current time doesn't exceed total time
+            if total_time_seconds > 0:
+                current_time_seconds = min(current_time_seconds, total_time_seconds)
+
+            status["current_time"] = current_time_seconds
+            status["total_time"] = total_time_seconds
 
             return status
 
