@@ -563,12 +563,19 @@ class AudioManager:
         self.is_paused = False
         self.is_loop_enabled = default_loop
         self.is_shuffle_enabled = default_shuffle
+        self.current_audio_files = []
+        self.current_file_index = 0
         
         # Initialize components
         self.voice_client = None
         self.rich_presence = None
         self.control_panel = None
         self.monitor = AudioPlaybackMonitor()
+        
+        # Initialize task variables
+        self._position_save_task = None
+        self._position_tracking_task = None
+        self._jump_occurred = False
         
         # Load saved state
         self._load_saved_state()
@@ -628,10 +635,10 @@ class AudioManager:
     def _start_position_saving(self):
         """Start the periodic position saving task"""
         try:
-            if self.position_save_task and not self.position_save_task.done():
-                self.position_save_task.cancel()
+            if hasattr(self, '_position_save_task') and self._position_save_task and not self._position_save_task.done():
+                self._position_save_task.cancel()
 
-            self.position_save_task = asyncio.create_task(self._position_save_loop())
+            self._position_save_task = asyncio.create_task(self._position_save_loop())
             log_perfect_tree_section(
                 "Audio Manager - Position Saving",
                 [
@@ -1193,12 +1200,12 @@ class AudioManager:
                     log_error_with_traceback("Error saving final state", e)
 
             # Stop position saving task
-            if self.position_save_task and not self.position_save_task.done():
-                self.position_save_task.cancel()
+            if hasattr(self, '_position_save_task') and self._position_save_task and not self._position_save_task.done():
+                self._position_save_task.cancel()
 
             # Stop position tracking task
-            if self.position_tracking_task and not self.position_tracking_task.done():
-                self.position_tracking_task.cancel()
+            if hasattr(self, '_position_tracking_task') and self._position_tracking_task and not self._position_tracking_task.done():
+                self._position_tracking_task.cancel()
 
             if self.playback_task and not self.playback_task.done():
                 self.playback_task.cancel()
@@ -1929,10 +1936,10 @@ class AudioManager:
 
                             # Start position tracking task
                             if (
-                                not self.position_tracking_task
-                                or self.position_tracking_task.done()
+                                not hasattr(self, '_position_tracking_task') or not self._position_tracking_task
+                                or self._position_tracking_task.done()
                             ):
-                                self.position_tracking_task = asyncio.create_task(
+                                self._position_tracking_task = asyncio.create_task(
                                     self._position_tracking_loop()
                                 )
 
