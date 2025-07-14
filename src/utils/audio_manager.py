@@ -580,6 +580,7 @@ class AudioManager:
         self._position_save_task = None
         self._position_tracking_task = None
         self._jump_occurred = False
+        self.playback_task = None
         
         # Initialize timing variables
         self.track_start_time = None
