@@ -554,6 +554,8 @@ class AudioManager:
         self.ffmpeg_path = ffmpeg_path
         self.audio_base_folder = audio_base_folder
         self.default_reciter = default_reciter
+        self.default_loop = default_loop
+        self.default_shuffle = default_shuffle
         
         # State variables
         self.current_reciter = default_reciter
