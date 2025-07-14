@@ -83,6 +83,8 @@ class QuizView(discord.ui.View):
         self.remaining_time = 60  # Track remaining time separately
         self.timer_task = None  # Track the timer task
         self.start_time = None  # Track when quiz started
+        self.results_message = None  # Store results message for deletion
+        self.deletion_task = None  # Track the deletion task
 
         # Add buttons for each choice with different colors
         choice_letters = ["A", "B", "C", "D", "E", "F"]
@@ -268,6 +270,8 @@ class QuizView(discord.ui.View):
             # Message was deleted - stop the timer and view
             if self.timer_task and not self.timer_task.done():
                 self.timer_task.cancel()
+            if self.deletion_task and not self.deletion_task.done():
+                self.deletion_task.cancel()
             self.stop()
         except Exception as e:
             log_error_with_traceback("Failed to update question embed", e)
@@ -324,8 +328,93 @@ class QuizView(discord.ui.View):
         except Exception as e:
             log_error_with_traceback("Failed to update message on timeout", e)
 
+        # Schedule deletion of both messages after 1 minute
+        self.deletion_task = asyncio.create_task(self._schedule_message_deletion())
+
         # Stop the view
         self.stop()
+
+    def stop(self):
+        """Override stop method to ensure proper cleanup of tasks"""
+        # Cancel any running tasks
+        if self.timer_task and not self.timer_task.done():
+            self.timer_task.cancel()
+        if self.deletion_task and not self.deletion_task.done():
+            self.deletion_task.cancel()
+        
+        # Call parent stop method
+        super().stop()
+
+    async def _schedule_message_deletion(self):
+        """Schedule deletion of quiz question and results messages after 1 minute"""
+        try:
+            # Wait 1 minute (60 seconds)
+            await asyncio.sleep(60)
+            
+            messages_deleted = []
+            
+            # Delete the original quiz question
+            if self.message:
+                try:
+                    await self.message.delete()
+                    messages_deleted.append("question")
+                    log_perfect_tree_section(
+                        "Quiz Cleanup - Question Deleted",
+                        [
+                            ("message_id", str(self.message.id)),
+                            ("status", "✅ Quiz question deleted after timeout"),
+                        ],
+                        "🗑️",
+                    )
+                except discord.NotFound:
+                    # Message was already deleted
+                    messages_deleted.append("question (already deleted)")
+                except Exception as e:
+                    log_error_with_traceback("Failed to delete quiz question", e)
+            
+            # Delete the results message
+            if self.results_message:
+                try:
+                    await self.results_message.delete()
+                    messages_deleted.append("results")
+                    log_perfect_tree_section(
+                        "Quiz Cleanup - Results Deleted",
+                        [
+                            ("message_id", str(self.results_message.id)),
+                            ("status", "✅ Quiz results deleted after timeout"),
+                        ],
+                        "🗑️",
+                    )
+                except discord.NotFound:
+                    # Message was already deleted
+                    messages_deleted.append("results (already deleted)")
+                except Exception as e:
+                    log_error_with_traceback("Failed to delete quiz results", e)
+            
+            # Log cleanup summary
+            if messages_deleted:
+                log_perfect_tree_section(
+                    "Quiz Cleanup - Complete",
+                    [
+                        ("messages_deleted", ", ".join(messages_deleted)),
+                        ("cleanup_delay", "60 seconds after timeout"),
+                        ("status", "✅ Quiz cleanup completed"),
+                    ],
+                    "🧹",
+                )
+                
+        except asyncio.CancelledError:
+            # Task was cancelled, which is normal during shutdown
+            log_perfect_tree_section(
+                "Quiz Cleanup - Cancelled",
+                [
+                    ("status", "⚠️ Quiz cleanup task cancelled"),
+                    ("reason", "Bot shutdown or quiz interrupted"),
+                ],
+                "⚠️",
+            )
+        except Exception as e:
+            log_error_with_traceback("Error in quiz message deletion", e)
 
     async def send_results(self):
         """Send quiz results"""
@@ -544,7 +633,7 @@ class QuizView(discord.ui.View):
 
         # Send results
         try:
-            await self.message.channel.send(embed=results_embed)
+            self.results_message = await self.message.channel.send(embed=results_embed)
         except Exception as e:
             log_error_with_traceback("Failed to send quiz results", e)
 
