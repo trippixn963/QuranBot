@@ -572,6 +572,7 @@ class AudioManager:
         self.voice_client = None
         self.rich_presence = None
         self.control_panel = None
+        self.control_panel_view = None
         self.monitor = AudioPlaybackMonitor()
         
         # Initialize task variables
