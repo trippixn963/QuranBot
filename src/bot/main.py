@@ -1879,18 +1879,45 @@ async def on_voice_state_update(member, before, after):
                 guild = before.channel.guild
                 channel = before.channel
 
-                # Add delay to prevent rapid reconnection attempts
+                # Add longer delay to prevent rapid reconnection attempts
+                # Increased from 5 to 10 seconds for better stability
                 log_perfect_tree_section(
                     "Reconnection Preparation",
                     [
-                        ("reconnection", "Waiting 5 seconds before reconnection"),
+                        ("reconnection", "Waiting 10 seconds before reconnection"),
+                        ("reason", "Preventing rapid reconnection cycles"),
                     ],
                     "🔄",
                 )
-                await asyncio.sleep(5)
+                await asyncio.sleep(10)
 
                 try:
-                    voice_client = await channel.connect(reconnect=False, timeout=60)
+                    # Check if we're already connected before attempting reconnection
+                    if guild.voice_client and guild.voice_client.is_connected():
+                        log_perfect_tree_section(
+                            "Reconnection Skipped",
+                            [
+                                ("status", "Already connected to voice channel"),
+                                ("channel", guild.voice_client.channel.name),
+                            ],
+                            "ℹ️",
+                        )
+                        return
+
+                    # Attempt reconnection with longer timeout for stability
+                    voice_client = await channel.connect(reconnect=False, timeout=90)
+
+                    # Verify connection is stable before proceeding
+                    await asyncio.sleep(2)
+                    if not voice_client.is_connected():
+                        log_perfect_tree_section(
+                            "Reconnection Failed",
+                            [
+                                ("status", "❌ Voice client not stable after connection"),
+                            ],
+                            "❌",
+                        )
+                        return
 
                     # Use intelligent auto-restart logic
                     await auto_restart_audio_playback(voice_client)
@@ -1904,6 +1931,7 @@ async def on_voice_state_update(member, before, after):
                                 "audio_restart",
                                 "✅ Audio playback intelligently restarted",
                             ),
+                            ("connection_stable", "✅ Connection verified stable"),
                         ],
                         "✅",
                     )
@@ -2857,9 +2885,39 @@ async def _attempt_voice_reconnection(reason):
     try:
         guild = bot.get_guild(GUILD_ID)
         if guild:
+            # Check if we're already connected
+            if guild.voice_client and guild.voice_client.is_connected():
+                log_perfect_tree_section(
+                    "Voice Reconnection - Already Connected",
+                    [
+                        ("status", "Already connected to voice channel"),
+                        ("reason", reason),
+                        ("action", "Skipping reconnection attempt"),
+                    ],
+                    "ℹ️",
+                )
+                return
+
             channel = guild.get_channel(TARGET_CHANNEL_ID)
             if channel:
-                voice_client = await channel.connect(reconnect=False, timeout=30)
+                # Add delay before reconnection to prevent rapid cycles
+                await asyncio.sleep(3)
+                
+                # Use longer timeout for more stable connection
+                voice_client = await channel.connect(reconnect=False, timeout=90)
+
+                # Verify connection stability
+                await asyncio.sleep(2)
+                if not voice_client.is_connected():
+                    log_perfect_tree_section(
+                        "Voice Reconnection - Connection Unstable",
+                        [
+                            ("status", "❌ Connection not stable after establishment"),
+                            ("reason", reason),
+                        ],
+                        "❌",
+                    )
+                    return
 
                 if audio_manager:
                     audio_manager.set_voice_client(voice_client)
@@ -2875,6 +2933,8 @@ async def _attempt_voice_reconnection(reason):
                             "audio_restart",
                             "✅ Audio playback resumed from saved position",
                         ),
+                        ("connection_timeout", "90s (extended for stability)"),
+                        ("stability_check", "✅ Connection verified stable"),
                     ],
                     "✅",
                 )

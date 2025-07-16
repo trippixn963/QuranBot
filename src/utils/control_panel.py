@@ -1333,14 +1333,9 @@ class SimpleControlPanelView(View):
             if self.audio_manager:
                 await self.audio_manager.skip_to_previous()
 
-            # Immediately update the panel to show the change
-            if hasattr(self, "update_panel"):
-                try:
-                    await self.update_panel()
-                except Exception as e:
-                    log_error_with_traceback(
-                        "Error updating panel after previous surah", e
-                    )
+            # The audio manager's skip method now handles panel updates
+            # after confirming the audio has actually changed
+            # No need for immediate panel update here
 
             await interaction.response.defer()
         except Exception as e:
@@ -1479,12 +1474,9 @@ class SimpleControlPanelView(View):
             if self.audio_manager:
                 await self.audio_manager.skip_to_next()
 
-            # Immediately update the panel to show the change
-            if hasattr(self, "update_panel"):
-                try:
-                    await self.update_panel()
-                except Exception as e:
-                    log_error_with_traceback("Error updating panel after next surah", e)
+            # The audio manager's skip method now handles panel updates
+            # after confirming the audio has actually changed
+            # No need for immediate panel update here
 
             await interaction.response.defer()
         except Exception as e:

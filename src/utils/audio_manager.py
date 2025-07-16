@@ -1357,11 +1357,36 @@ class AudioManager:
             # Update current surah
             self._update_current_surah()
 
+            # Wait for the playback loop to process the skip
+            # This ensures the next track actually starts playing
+            await asyncio.sleep(1.0)
+
+            # Wait for voice client to start playing the new track
+            max_wait_time = 5.0  # Maximum 5 seconds to wait
+            wait_interval = 0.2  # Check every 200ms
+            waited_time = 0.0
+
+            while waited_time < max_wait_time:
+                if self.voice_client and self.voice_client.is_playing():
+                    # Audio is now playing - update control panel
+                    if self.control_panel_view:
+                        try:
+                            await self.control_panel_view.update_panel()
+                        except Exception as e:
+                            log_error_with_traceback("Error updating control panel after skip", e)
+                    break
+                
+                await asyncio.sleep(wait_interval)
+                waited_time += wait_interval
+
             # The playback loop will automatically play the next track
             log_perfect_tree_section(
                 "Audio Playback - Skipped Next",
                 [
                     ("skipped_to_next", f"Track {self.current_file_index + 1}"),
+                    ("current_surah", self.current_surah),
+                    ("wait_time", f"{waited_time:.1f}s"),
+                    ("is_playing", self.voice_client.is_playing() if self.voice_client else False),
                 ],
                 "⏭️",
             )
@@ -1399,11 +1424,36 @@ class AudioManager:
             # Update current surah
             self._update_current_surah()
 
+            # Wait for the playback loop to process the skip
+            # This ensures the previous track actually starts playing
+            await asyncio.sleep(1.0)
+
+            # Wait for voice client to start playing the new track
+            max_wait_time = 5.0  # Maximum 5 seconds to wait
+            wait_interval = 0.2  # Check every 200ms
+            waited_time = 0.0
+
+            while waited_time < max_wait_time:
+                if self.voice_client and self.voice_client.is_playing():
+                    # Audio is now playing - update control panel
+                    if self.control_panel_view:
+                        try:
+                            await self.control_panel_view.update_panel()
+                        except Exception as e:
+                            log_error_with_traceback("Error updating control panel after skip", e)
+                    break
+                
+                await asyncio.sleep(wait_interval)
+                waited_time += wait_interval
+
             # The playback loop will automatically play the previous track
             log_perfect_tree_section(
                 "Audio Playback - Skipped Previous",
                 [
                     ("skipped_to_previous", f"Track {self.current_file_index + 1}"),
+                    ("current_surah", self.current_surah),
+                    ("wait_time", f"{waited_time:.1f}s"),
+                    ("is_playing", self.voice_client.is_playing() if self.voice_client else False),
                 ],
                 "⏮️",
             )
@@ -1913,13 +1963,14 @@ class AudioManager:
                                 current_file,
                                 executable=self.ffmpeg_path,
                                 before_options=seek_options,
-                                options="-vn -loglevel quiet",  # Suppress FFmpeg logs
+                                options="-vn -loglevel warning -bufsize 1024k -reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",  # Enhanced options for stability
                             )
                             should_resume = False  # Only resume once
                             log_perfect_tree_section(
                                 "Audio Resume",
                                 [
                                     ("resumed_from", f"{self.current_position:.1f}s"),
+                                    ("enhanced_stability", "✅ Using enhanced FFmpeg options"),
                                 ],
                                 "⏯️",
                             )
@@ -1927,12 +1978,36 @@ class AudioManager:
                             source = discord.FFmpegPCMAudio(
                                 current_file,
                                 executable=self.ffmpeg_path,
-                                options="-vn -loglevel quiet",  # Suppress FFmpeg logs
+                                options="-vn -loglevel warning -bufsize 1024k -reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",  # Enhanced options for stability
                             )
 
                         # Use a wrapper to catch FFmpeg process errors
                         try:
+                            # Validate that the audio file still exists before playing
+                            if not os.path.exists(current_file):
+                                log_error_with_traceback(
+                                    f"Audio file no longer exists: {current_file}", 
+                                    FileNotFoundError(f"File not found: {current_file}")
+                                )
+                                continue
+
+                            # Attempt to play with error handling
                             self.voice_client.play(source)
+                            
+                            # Verify playback actually started
+                            await asyncio.sleep(0.5)  # Brief delay to check if playback started
+                            if not self.voice_client.is_playing():
+                                log_perfect_tree_section(
+                                    "Audio Playback - Failed to Start",
+                                    [
+                                        ("file", filename),
+                                        ("status", "❌ Playback did not start"),
+                                        ("action", "Retrying next track"),
+                                    ],
+                                    "❌",
+                                )
+                                continue
+
                             self.is_playing = True
                             self.is_paused = False
 
