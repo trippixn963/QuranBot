@@ -10,7 +10,7 @@
 # =============================================================================
 
 # Main version number - update this single line for new releases
-__version__ = "3.5.3"
+__version__ = "3.5.4"
 
 # Bot name and branding
 BOT_NAME = "QuranBot"
@@ -22,7 +22,7 @@ BOT_AUTHOR = __author__  # For backward compatibility
 # Version components for programmatic access
 VERSION_MAJOR = 3
 VERSION_MINOR = 5
-VERSION_PATCH = 3
+VERSION_PATCH = 4
 
 # Pre-release identifiers (empty for stable releases)
 VERSION_PRERELEASE = ""  # e.g., "alpha", "beta", "rc1"

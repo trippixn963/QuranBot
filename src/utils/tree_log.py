@@ -151,8 +151,9 @@ class TreeLogger:
 
     def _get_log_date(self) -> str:
         """Get current date for log file naming (YYYY-MM-DD format)."""
-        if self.mock_date:
+        if hasattr(self, 'mock_date') and self.mock_date:
             now = self.mock_date
+            return now.strftime("%Y-%m-%d")
         else:
             try:
                 est = pytz.timezone("US/Eastern")
@@ -172,8 +173,10 @@ class TreeLogger:
 
     def _get_timestamp(self) -> str:
         """Get current timestamp in EST timezone with custom format."""
-        if self.mock_date:
+        if hasattr(self, 'mock_date') and self.mock_date:
             now = self.mock_date
+            formatted_time = now.strftime("%m/%d %I:%M %p EST")
+            return f"[{formatted_time}]"
         else:
             try:
                 # Create EST timezone
@@ -958,94 +961,76 @@ _global_logger = TreeLogger()
 # Standalone functions for backward compatibility and convenience
 def log_version_info(bot_name, version, additional_info=None):
     """Log version information."""
-    logger = TreeLogger()
-    return logger.log_version_info(bot_name, version, additional_info)
+    return _global_logger.log_version_info(bot_name, version, additional_info)
 
 def log_tree_group(title, items, emoji="🎯"):
     """Log a group of items in tree format."""
-    logger = TreeLogger()
-    return logger.log_tree_group(title, items, emoji)
+    return _global_logger.log_tree_group(title, items, emoji)
 
 def log_perfect_tree_section(title, items, emoji="🎯", nested_groups=None):
     """Log a perfect tree section."""
-    logger = TreeLogger()
-    return logger.log_perfect_tree_section(title, items, emoji, nested_groups)
+    return _global_logger.log_perfect_tree_section(title, items, emoji, nested_groups)
 
 def log_error_with_traceback(message, exception=None, level="ERROR"):
     """Log an error with traceback."""
-    logger = TreeLogger()
-    return logger.log_error_with_traceback(message, exception, level)
+    return _global_logger.log_error_with_traceback(message, exception, level)
 
 def log_critical_error(message, exception=None):
     """Log a critical error."""
-    logger = TreeLogger()
-    return logger.log_critical_error(message, exception)
+    return _global_logger.log_critical_error(message, exception)
 
 def log_warning_with_context(message, context=None):
     """Log a warning with context."""
-    logger = TreeLogger()
-    return logger.log_warning_with_context(message, context)
+    return _global_logger.log_warning_with_context(message, context)
 
 def log_async_error(function_name, exception, additional_context=None):
     """Log an async error."""
-    logger = TreeLogger()
-    return logger.log_async_error(function_name, exception, additional_context)
+    return _global_logger.log_async_error(function_name, exception, additional_context)
 
 def log_discord_error(event_name, exception, guild_id=None, channel_id=None):
     """Log a Discord error."""
-    logger = TreeLogger()
-    return logger.log_discord_error(event_name, exception, guild_id, channel_id)
+    return _global_logger.log_discord_error(event_name, exception, guild_id, channel_id)
 
 def log_spacing():
     """Add spacing in logs."""
-    logger = TreeLogger()
-    return logger.log_spacing()
+    return _global_logger.log_spacing()
 
 def log_status(message, status="INFO", emoji="📍"):
     """Log a status message."""
-    logger = TreeLogger()
-    return logger.log_status(message, status, emoji)
+    return _global_logger.log_status(message, status, emoji)
 
 def log_progress(current, total, emoji="🎶"):
     """Log progress."""
-    logger = TreeLogger()
-    return logger.log_progress(current, total, emoji)
+    return _global_logger.log_progress(current, total, emoji)
 
 def log_user_interaction(
     interaction_type, user_name, user_id, action_description, details=None
 ):
     """Log a user interaction."""
-    logger = TreeLogger()
-    return logger.log_user_interaction(
+    return _global_logger.log_user_interaction(
         interaction_type, user_name, user_id, action_description, details
     )
 
 def log_voice_activity_tree(user_name, activity_type, details):
     """Log voice activity."""
-    logger = TreeLogger()
-    return logger.log_voice_activity_tree(user_name, activity_type, details)
+    return _global_logger.log_voice_activity_tree(user_name, activity_type, details)
 
 def log_run_separator():
     """Log a run separator."""
-    logger = TreeLogger()
-    return logger.log_run_separator()
+    return _global_logger.log_run_separator()
 
 def log_run_header(bot_name, version, run_id=None):
     """Log a run header."""
-    logger = TreeLogger()
-    return logger.log_run_header(bot_name, version, run_id)
+    return _global_logger.log_run_header(bot_name, version, run_id)
 
 def log_run_end(run_id, reason="Normal shutdown"):
     """Log a run end."""
-    logger = TreeLogger()
-    return logger.log_run_end(run_id, reason)
+    return _global_logger.log_run_end(run_id, reason)
 
 def get_timestamp():
     """Get current timestamp."""
-    logger = TreeLogger()
-    return logger._get_timestamp()
+    return _global_logger._get_timestamp()
 
 def write_to_log_files(message: str, level: str, category: str) -> None:
     """Write to log files."""
-    logger = TreeLogger()
-    return logger._write_to_log_files(message, level, category)
+    return _global_logger._write_to_log_files(message, level, category)
