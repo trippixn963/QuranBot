@@ -106,9 +106,9 @@ from utils.backup_manager import start_backup_scheduler
 from utils.control_panel import setup_control_panel
 
 # =============================================================================
-# Import Discord Logger for VPS Monitoring
+# Import Unified Discord Logger for VPS Monitoring (Webhook + Bot)
 # =============================================================================
-from utils.discord_logger import setup_discord_logger, get_discord_logger
+from utils.unified_discord_logger import setup_unified_discord_logger, get_unified_discord_logger
 
 # =============================================================================
 # Import Listening Stats Manager
@@ -1402,48 +1402,50 @@ async def on_ready():
                         # Continue with bot startup even if this fails
 
                     # =============================================================================
-                    # Discord Logger Setup for VPS Monitoring
+                    # Unified Discord Logger Setup for VPS Monitoring (Webhook + Bot)
                     # =============================================================================
                     discord_logger = None
-                    if LOGS_CHANNEL_ID != 0:
-                        try:
-                            discord_logger = setup_discord_logger(bot, LOGS_CHANNEL_ID, DASHBOARD_URL)
-                            await discord_logger.initialize()
+                    try:
+                        discord_logger = setup_unified_discord_logger()
+                        success = await discord_logger.initialize(bot)
+                        
+                        if success:
                             log_perfect_tree_section(
-                                "Discord Logger Setup",
+                                "Unified Discord Logger Setup",
                                 [
-                                    ("status", "✅ Discord logger initialized"),
-                                    ("log_channel_id", str(LOGS_CHANNEL_ID)),
-                                    ("dashboard_url", DASHBOARD_URL if DASHBOARD_URL else "Not configured"),
+                                    ("status", "✅ Unified Discord logger initialized"),
+                                    ("method", discord_logger.get_logger_type()),
+                                    ("log_channel_id", str(LOGS_CHANNEL_ID) if LOGS_CHANNEL_ID != 0 else "Not configured"),
+                                    ("webhook_enabled", "✅" if discord_logger.get_logger_type() == "webhook" else "❌"),
                                     ("monitoring", "Errors, warnings, and system events"),
                                     ("rate_limit", "10 messages per minute per type"),
                                 ],
-                                "🔔",
+                                "🔗" if discord_logger.get_logger_type() == "webhook" else "🔔",
                             )
-                            
-
-                            
-                        except Exception as e:
-                            log_error_with_traceback("Error setting up Discord logger", e)
+                        else:
                             log_perfect_tree_section(
-                                "Discord Logger Setup",
+                                "Unified Discord Logger Setup",
                                 [
                                     ("status", "❌ Discord logger failed to initialize"),
-                                    ("error", str(e)),
                                     ("impact", "VPS monitoring will use console logs only"),
+                                    ("suggestion", "Check webhook URL or bot configuration"),
                                 ],
                                 "⚠️",
                             )
-                    else:
+                            discord_logger = None
+                            
+                    except Exception as e:
+                        log_error_with_traceback("Error setting up unified Discord logger", e)
                         log_perfect_tree_section(
-                            "Discord Logger Setup",
+                            "Unified Discord Logger Setup",
                             [
-                                ("status", "⚠️ Discord logger disabled"),
-                                ("reason", "LOGS_CHANNEL_ID not configured"),
+                                ("status", "❌ Discord logger setup failed"),
+                                ("error", str(e)),
                                 ("impact", "VPS monitoring will use console logs only"),
                             ],
                             "⚠️",
                         )
+                        discord_logger = None
 
                     # =============================================================================
                     # Integrated Log Sync Manager
@@ -1632,7 +1634,7 @@ async def on_ready():
         log_critical_error("Fatal error in on_ready event", e)
         
         # Send critical error to Discord if logger is available
-        discord_logger = get_discord_logger()
+        discord_logger = get_unified_discord_logger()
         if discord_logger:
             try:
                 await discord_logger.log_critical_error(
@@ -2039,7 +2041,7 @@ async def on_voice_state_update(member, before, after):
                 )
 
                 # Log to Discord with user profile picture
-                discord_logger = get_discord_logger()
+                discord_logger = get_unified_discord_logger()
                 if discord_logger:
                     try:
                         user_avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
@@ -2082,7 +2084,7 @@ async def on_voice_state_update(member, before, after):
                 )
 
                 # Log to Discord with user profile picture
-                discord_logger = get_discord_logger()
+                discord_logger = get_unified_discord_logger()
                 if discord_logger:
                     try:
                         user_avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
@@ -2124,7 +2126,7 @@ async def on_voice_state_update(member, before, after):
                 )
 
                 # Log to Discord with user profile picture
-                discord_logger = get_discord_logger()
+                discord_logger = get_unified_discord_logger()
                 if discord_logger:
                     try:
                         user_avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
@@ -2167,7 +2169,7 @@ async def on_voice_state_update(member, before, after):
                 )
 
                 # Log to Discord with user profile picture
-                discord_logger = get_discord_logger()
+                discord_logger = get_unified_discord_logger()
                 if discord_logger:
                     try:
                         user_avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
@@ -2210,7 +2212,7 @@ async def on_voice_state_update(member, before, after):
                     )
 
                     # Log to Discord with user profile picture
-                    discord_logger = get_discord_logger()
+                    discord_logger = get_unified_discord_logger()
                     if discord_logger:
                         try:
                             user_avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
@@ -2244,7 +2246,7 @@ async def on_voice_state_update(member, before, after):
                     )
 
                     # Log to Discord with user profile picture
-                    discord_logger = get_discord_logger()
+                    discord_logger = get_unified_discord_logger()
                     if discord_logger:
                         try:
                             user_avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
@@ -2650,7 +2652,7 @@ async def on_error(event, *args, **kwargs):
                 )
                 
                 # Send error to Discord logger
-                discord_logger = get_discord_logger()
+                discord_logger = get_unified_discord_logger()
                 if discord_logger:
                     try:
                         await discord_logger.log_error(
@@ -2669,7 +2671,7 @@ async def on_error(event, *args, **kwargs):
             log_error_with_traceback(f"Unknown error in Discord event: {event}")
             
             # Send unknown error to Discord logger
-            discord_logger = get_discord_logger()
+            discord_logger = get_unified_discord_logger()
             if discord_logger:
                 try:
                     await discord_logger.log_error(
@@ -2687,7 +2689,7 @@ async def on_error(event, *args, **kwargs):
         log_critical_error("Error in error handler", e)
         
         # Send critical error to Discord logger
-        discord_logger = get_discord_logger()
+        discord_logger = get_unified_discord_logger()
         if discord_logger:
             try:
                 await discord_logger.log_critical_error(
@@ -2771,7 +2773,7 @@ async def _handle_http_error(exc_value, event, kwargs):
             )
             
             # Send Discord notification about rate limiting
-            discord_logger = get_discord_logger()
+            discord_logger = get_unified_discord_logger()
             if discord_logger:
                 try:
                     # Create context information
@@ -2815,7 +2817,7 @@ async def _handle_http_error(exc_value, event, kwargs):
             )
             
             # Send Discord notification for permissions issues
-            discord_logger = get_discord_logger()
+            discord_logger = get_unified_discord_logger()
             if discord_logger:
                 try:
                     context = {
@@ -2851,7 +2853,7 @@ async def _handle_http_error(exc_value, event, kwargs):
             log_error_with_traceback(f"Discord HTTP error {status_code}", exc_value)
             
             # Send Discord notification for other HTTP errors
-            discord_logger = get_discord_logger()
+            discord_logger = get_unified_discord_logger()
             if discord_logger:
                 try:
                     context = {
@@ -2975,7 +2977,7 @@ async def on_disconnect():
         )
 
         # Send disconnect notification to Discord logger
-        discord_logger = get_discord_logger()
+        discord_logger = get_unified_discord_logger()
         if discord_logger:
             try:
                 await discord_logger.log_system_event(
@@ -3028,7 +3030,7 @@ async def on_disconnect():
         log_error_with_traceback("Error handling disconnect event", e)
         
         # Send error to Discord logger
-        discord_logger = get_discord_logger()
+        discord_logger = get_unified_discord_logger()
         if discord_logger:
             try:
                 await discord_logger.log_error(
@@ -3074,7 +3076,7 @@ async def on_resumed():
         )
 
         # Send reconnection notification to Discord logger
-        discord_logger = get_discord_logger()
+        discord_logger = get_unified_discord_logger()
         if discord_logger:
             try:
                 await discord_logger.log_system_event(
@@ -3294,8 +3296,7 @@ async def auto_restart_audio_playback(voice_client=None) -> bool:
         )
 
         # Log voice reconnection to Discord
-        from src.utils.discord_logger import get_discord_logger
-        discord_logger = get_discord_logger()
+        discord_logger = get_unified_discord_logger()
         if discord_logger:
             try:
                 await discord_logger.log_bot_activity(
