@@ -1104,6 +1104,7 @@ class AudioManager:
 
     async def connect_to_voice_channel(self):
         """Connect to the voice channel with enhanced auto-recovery and validation support"""
+        global _audio_monitor
         try:
             import os
             
@@ -1219,7 +1220,6 @@ class AudioManager:
                             )
                             
                             # Record successful connection for monitoring
-                            global _audio_monitor
                             _audio_monitor.record_successful_connection()
                             
                             return True
@@ -1305,7 +1305,6 @@ class AudioManager:
             )
             
             # Record connection failure for monitoring
-            global _audio_monitor
             _audio_monitor.record_connection_failure("connection_failed", f"All {max_connection_attempts} connection attempts failed")
             
             return False
@@ -1314,7 +1313,6 @@ class AudioManager:
             log_error_with_traceback("Critical error in enhanced voice channel connection", e)
             
             # Record critical failure
-            global _audio_monitor
             _audio_monitor.record_connection_failure("critical_error", str(e))
             
             return False
