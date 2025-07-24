@@ -78,12 +78,23 @@ class AudioPlaybackMonitor:
         self.is_connection_healthy = True
         self.expected_playback_interval = 300  # 5 minutes max between tracks
         
-        # Auto-recovery settings
+        # Enhanced auto-recovery settings
         self.auto_recovery_enabled = True
-        self.max_recovery_attempts = 3
-        self.recovery_cooldown = 300  # 5 minutes between recovery attempts
+        self.max_recovery_attempts = 5  # Increased from 3
+        self.recovery_cooldown = 180  # Reduced from 300 to 3 minutes for faster recovery
         self.last_recovery_attempt = None
         self.recovery_attempts = 0
+        
+        # New: Connection health monitoring
+        self.connection_health_checks = 0
+        self.last_health_check = datetime.now(timezone.utc)
+        self.health_check_interval = 60  # Check every minute
+        self.connection_timeout_threshold = 120  # 2 minutes without response
+        
+        # New: Proactive reconnection settings
+        self.proactive_reconnect_enabled = True
+        self.connection_stability_threshold = 30  # Seconds to consider connection stable
+        self.last_connection_validation = datetime.now(timezone.utc)
         
     def record_successful_playback(self):
         """Record successful audio playback start"""
@@ -100,16 +111,19 @@ class AudioPlaybackMonitor:
     
     def record_successful_connection(self):
         """Record successful voice connection"""
+        current_time = datetime.now(timezone.utc)
         if self.consecutive_connection_failures > 0:
             # Connection recovered
             self.consecutive_connection_failures = 0
-            self.last_voice_connection = datetime.now(timezone.utc)
+            self.last_voice_connection = current_time
+            self.last_connection_validation = current_time
             self.recovery_attempts = 0  # Reset recovery attempts on success
             if not self.is_connection_healthy:
                 self.is_connection_healthy = True
                 asyncio.create_task(self._send_connection_recovery_alert())
         else:
-            self.last_voice_connection = datetime.now(timezone.utc)
+            self.last_voice_connection = current_time
+            self.last_connection_validation = current_time
     
     def record_playback_failure(self, error_type: str, error_message: str):
         """Record audio playback failure"""
@@ -152,6 +166,63 @@ class AudioPlaybackMonitor:
             # Trigger auto-recovery for timeout
             if self.auto_recovery_enabled and self._should_attempt_recovery():
                 asyncio.create_task(self._attempt_audio_recovery())
+    
+    def check_connection_health(self, audio_manager):
+        """Proactively check voice connection health"""
+        try:
+            current_time = datetime.now(timezone.utc)
+            
+            # Check if enough time has passed since last health check
+            if (current_time - self.last_health_check).total_seconds() < self.health_check_interval:
+                return
+            
+            self.last_health_check = current_time
+            self.connection_health_checks += 1
+            
+            # Validate voice client connection
+            if not audio_manager or not audio_manager.voice_client:
+                self.record_connection_failure("health_check", "No voice client available")
+                return
+            
+            voice_client = audio_manager.voice_client
+            
+            # Check if voice client is connected
+            if not voice_client.is_connected():
+                self.record_connection_failure("health_check", "Voice client not connected")
+                return
+            
+            # Check connection timeout
+            time_since_validation = current_time - self.last_connection_validation
+            if time_since_validation.total_seconds() > self.connection_timeout_threshold:
+                log_perfect_tree_section(
+                    "Connection Health - Timeout Detected",
+                    [
+                        ("timeout_duration", f"{time_since_validation.total_seconds():.1f}s"),
+                        ("threshold", f"{self.connection_timeout_threshold}s"),
+                        ("action", "Triggering proactive reconnection"),
+                    ],
+                    "⚠️"
+                )
+                self.record_connection_failure("timeout", "Connection validation timeout")
+                return
+            
+            # Connection is healthy
+            self.record_successful_connection()
+            
+            # Log health check status periodically
+            if self.connection_health_checks % 10 == 0:  # Every 10 checks (10 minutes)
+                log_perfect_tree_section(
+                    "Connection Health - Status",
+                    [
+                        ("health_checks", str(self.connection_health_checks)),
+                        ("connection_status", "✅ Healthy"),
+                        ("last_validation", f"{time_since_validation.total_seconds():.1f}s ago"),
+                    ],
+                    "💚"
+                )
+            
+        except Exception as e:
+            log_error_with_traceback("Error in connection health check", e)
     
     def _should_send_playback_alert(self) -> bool:
         """Check if enough time has passed since last playback alert"""
@@ -251,18 +322,19 @@ class AudioPlaybackMonitor:
             log_error_with_traceback("Critical error in audio recovery", e)
     
     async def _attempt_connection_recovery(self):
-        """Attempt to recover voice connection automatically"""
+        """Attempt to recover voice connection automatically with enhanced retry logic"""
         try:
             self.recovery_attempts += 1
             self.last_recovery_attempt = datetime.now(timezone.utc)
             
             log_perfect_tree_section(
-                "Audio Recovery - Attempting Connection Recovery",
+                "Audio Recovery - Enhanced Connection Recovery",
                 [
                     ("attempt_number", f"{self.recovery_attempts}/{self.max_recovery_attempts}"),
-                    ("recovery_type", "Voice Connection Recovery"),
-                    ("trigger", "Automatic recovery system"),
-                    ("action", "Reconnecting to voice channel"),
+                    ("recovery_type", "Enhanced Voice Connection Recovery"),
+                    ("trigger", "Automatic monitoring system"),
+                    ("action", "Multi-step reconnection process"),
+                    ("timeout_handling", "✅ Enhanced"),
                 ],
                 "🔄",
             )
@@ -273,35 +345,119 @@ class AudioPlaybackMonitor:
                 log_error_with_traceback("Connection recovery failed", Exception("No audio manager reference"))
                 return
             
-            # Attempt to reconnect to voice channel
-            try:
-                # Try to reconnect to voice channel
-                if hasattr(audio_manager, 'connect_to_voice_channel'):
-                    await audio_manager.connect_to_voice_channel()
-                    await asyncio.sleep(2)  # Brief pause before restart
-                    await audio_manager.start_playback(resume_position=True)
-                
-                # Send recovery attempt notification
-                from src.utils.discord_logger import get_discord_logger
-                discord_logger = get_discord_logger()
-                if discord_logger:
-                    await discord_logger.log_bot_activity(
-                        "auto_recovery",
-                        f"automatically reconnected to voice channel (attempt {self.recovery_attempts}/{self.max_recovery_attempts})",
-                        {
-                            "Recovery Type": "Voice Connection",
-                            "Trigger": "Automatic monitoring system",
-                            "Attempt": f"{self.recovery_attempts}/{self.max_recovery_attempts}",
-                            "Action": "Reconnected to voice channel",
-                            "Status": "🔄 Recovery in progress"
-                        }
+            # Enhanced reconnection process
+            recovery_success = False
+            
+            for retry in range(3):  # Try up to 3 times per recovery attempt
+                try:
+                    log_perfect_tree_section(
+                        f"Connection Recovery - Retry {retry + 1}",
+                        [
+                            ("step", f"Reconnection retry {retry + 1}/3"),
+                            ("recovery_attempt", f"{self.recovery_attempts}/{self.max_recovery_attempts}"),
+                            ("action", "Attempting voice channel connection"),
+                        ],
+                        "🔄",
                     )
+                    
+                    # Step 1: Clean disconnect if connected
+                    if audio_manager.voice_client:
+                        try:
+                            await audio_manager.voice_client.disconnect(force=True)
+                            audio_manager.voice_client = None
+                            await asyncio.sleep(3)  # Increased delay for Discord processing
+                        except Exception as disconnect_error:
+                            log_error_with_traceback("Error during disconnect in recovery", disconnect_error)
+                    
+                    # Step 2: Attempt fresh connection with extended timeout
+                    connection_success = await audio_manager.connect_to_voice_channel()
+                    if not connection_success:
+                        log_perfect_tree_section(
+                            f"Connection Recovery - Failed Retry {retry + 1}",
+                            [
+                                ("retry", f"{retry + 1}/3"),
+                                ("status", "❌ Connection failed"),
+                                ("next_action", "Trying again" if retry < 2 else "Recovery attempt failed"),
+                            ],
+                            "❌",
+                        )
+                        await asyncio.sleep(5)  # Wait before next retry
+                        continue
+                    
+                    # Step 3: Validate connection stability
+                    await asyncio.sleep(3)  # Wait for connection to stabilize
+                    if not audio_manager.voice_client or not audio_manager.voice_client.is_connected():
+                        log_perfect_tree_section(
+                            f"Connection Recovery - Unstable {retry + 1}",
+                            [
+                                ("retry", f"{retry + 1}/3"),
+                                ("status", "❌ Connection unstable"),
+                                ("action", "Retrying with longer stabilization"),
+                            ],
+                            "⚠️",
+                        )
+                        continue
+                    
+                    # Step 4: Restart audio playback
+                    await audio_manager.start_playback(resume_position=True)
+                    
+                    # Step 5: Final validation
+                    await asyncio.sleep(2)
+                    if audio_manager.is_playing and audio_manager.voice_client.is_connected():
+                        recovery_success = True
+                        break
+                    
+                except Exception as retry_error:
+                    log_error_with_traceback(f"Connection recovery retry {retry + 1} failed", retry_error)
+                    await asyncio.sleep(5)  # Wait before next retry
+            
+            # Send recovery notification
+            from src.utils.discord_logger import get_discord_logger
+            discord_logger = get_discord_logger()
+            if discord_logger:
+                status_emoji = "✅" if recovery_success else "❌"
+                status_text = "Recovery successful" if recovery_success else "Recovery failed"
                 
-            except Exception as e:
-                log_error_with_traceback("Connection recovery attempt failed", e)
+                await discord_logger.log_bot_activity(
+                    "enhanced_auto_recovery",
+                    f"voice connection recovery attempt completed (attempt {self.recovery_attempts}/{self.max_recovery_attempts})",
+                    {
+                        "Recovery Type": "Enhanced Voice Connection",
+                        "Trigger": "Automatic monitoring system",
+                        "Attempt": f"{self.recovery_attempts}/{self.max_recovery_attempts}",
+                        "Action": "Multi-step reconnection process",
+                        "Retries Performed": "Up to 3 per attempt",
+                        "Status": f"{status_emoji} {status_text}",
+                        "Audio Restored": "✅ Yes" if recovery_success else "❌ No"
+                    }
+                )
+            
+            if recovery_success:
+                log_perfect_tree_section(
+                    "Audio Recovery - Enhanced Success",
+                    [
+                        ("recovery_result", "✅ Enhanced recovery successful"),
+                        ("connection_status", "✅ Voice connection stable"),
+                        ("audio_status", "✅ Playback resumed"),
+                        ("attempt", f"{self.recovery_attempts}/{self.max_recovery_attempts}"),
+                    ],
+                    "✅",
+                )
+                # Reset recovery attempts on success
+                self.recovery_attempts = 0
+            else:
+                log_perfect_tree_section(
+                    "Audio Recovery - Attempt Failed",
+                    [
+                        ("recovery_result", "❌ Recovery attempt failed"),
+                        ("attempt", f"{self.recovery_attempts}/{self.max_recovery_attempts}"),
+                        ("next_action", "Will retry later" if self.recovery_attempts < self.max_recovery_attempts else "Max attempts reached"),
+                    ],
+                    "❌",
+                )
                 
         except Exception as e:
-            log_error_with_traceback("Critical error in connection recovery", e)
+            log_error_with_traceback("Critical error in enhanced connection recovery", e)
     
     async def _send_playback_failure_alert(self, error_type: str, error_message: str):
         """Send Discord alert for audio playback failure"""
@@ -480,61 +636,82 @@ _audio_monitor = AudioPlaybackMonitor()
 # =============================================================================
 
 async def start_audio_monitoring_task(audio_manager):
-    """Start a background task to monitor audio health"""
+    """Start a background task to monitor audio health with enhanced connection monitoring"""
     # Link the audio manager to the monitor for auto-recovery
     _audio_monitor._audio_manager = audio_manager
     
     async def monitoring_loop():
-        """Monitor audio health every 2 minutes"""
+        """Monitor audio health with enhanced frequency and connection validation"""
         while True:
             try:
-                await asyncio.sleep(120)  # Check every 2 minutes
+                await asyncio.sleep(60)  # Reduced from 120 to 60 seconds for more responsive monitoring
                 
                 # Check if audio manager exists and is healthy
                 if audio_manager:
+                    # Enhanced connection health monitoring
+                    _audio_monitor.check_connection_health(audio_manager)
+                    
                     # Check for playback timeout
                     _audio_monitor.check_playback_timeout()
                     
-                    # Check voice connection
+                    # Enhanced voice connection validation
                     if not audio_manager.voice_client or not audio_manager.voice_client.is_connected():
                         _audio_monitor.record_connection_failure("monitoring_check", "Voice client not connected during health check")
                     else:
-                        _audio_monitor.record_successful_connection()
+                        # Proactive connection validation
+                        try:
+                            # Test if the voice client is actually responsive
+                            if hasattr(audio_manager.voice_client, 'channel') and audio_manager.voice_client.channel:
+                                # Connection appears healthy
+                                _audio_monitor.record_successful_connection()
+                            else:
+                                _audio_monitor.record_connection_failure("monitoring_check", "Voice client channel reference lost")
+                        except Exception as validation_error:
+                            _audio_monitor.record_connection_failure("validation_error", str(validation_error))
                     
-                    # Check if audio should be playing but isn't
+                    # Enhanced audio playback monitoring
                     if (hasattr(audio_manager, 'playback_task') and 
                         audio_manager.playback_task and 
-                        not audio_manager.playback_task.done() and
-                        not audio_manager.is_playing):
-                        _audio_monitor.record_playback_failure("monitoring_check", "Playback task running but audio not playing")
+                        not audio_manager.playback_task.done()):
+                        
+                        # Check if audio should be playing but isn't
+                        if not audio_manager.is_playing:
+                            _audio_monitor.record_playback_failure("monitoring_check", "Playback task running but audio not playing")
+                        else:
+                            # Audio is playing - record success
+                            _audio_monitor.record_successful_playback()
                     
-                    # Log monitoring status occasionally
+                    # Periodic status logging with enhanced details
                     if hasattr(_audio_monitor, '_monitoring_cycles'):
                         _audio_monitor._monitoring_cycles += 1
                     else:
                         _audio_monitor._monitoring_cycles = 1
                     
-                    # Log every 30 minutes (15 cycles)
-                    if _audio_monitor._monitoring_cycles % 15 == 0:
-                        log_perfect_tree_section(
-                            "Audio Monitor - Health Check",
-                            [
-                                ("cycles_completed", str(_audio_monitor._monitoring_cycles)),
-                                ("audio_healthy", "✅ Yes" if _audio_monitor.is_audio_healthy else "❌ No"),
-                                ("connection_healthy", "✅ Yes" if _audio_monitor.is_connection_healthy else "❌ No"),
-                                ("last_playback", _audio_monitor.last_successful_playback.strftime("%H:%M:%S")),
-                                ("auto_recovery", "✅ Enabled" if _audio_monitor.auto_recovery_enabled else "❌ Disabled"),
-                                ("recovery_attempts", f"{_audio_monitor.recovery_attempts}/{_audio_monitor.max_recovery_attempts}"),
-                            ],
-                            "🔍",
-                        )
+                    # Log comprehensive status every 5 minutes (5 cycles)
+                    if _audio_monitor._monitoring_cycles % 5 == 0:
+                        connection_status = "✅ Connected" if (audio_manager.voice_client and audio_manager.voice_client.is_connected()) else "❌ Disconnected"
+                        playback_status = "✅ Playing" if audio_manager.is_playing else "⏸️ Not Playing"
                         
+                        log_perfect_tree_section(
+                            "Audio Monitoring - Health Status",
+                            [
+                                ("monitoring_cycle", str(_audio_monitor._monitoring_cycles)),
+                                ("connection_status", connection_status),
+                                ("playback_status", playback_status),
+                                ("connection_health", "✅ Healthy" if _audio_monitor.is_connection_healthy else "❌ Unhealthy"),
+                                ("audio_health", "✅ Healthy" if _audio_monitor.is_audio_healthy else "❌ Unhealthy"),
+                                ("recovery_attempts", str(_audio_monitor.recovery_attempts)),
+                                ("last_successful_playback", f"{(datetime.now(timezone.utc) - _audio_monitor.last_successful_playback).total_seconds():.0f}s ago"),
+                            ],
+                            "📊",
+                        )
+                
             except Exception as e:
-                log_error_with_traceback("Error in audio monitoring loop", e)
-                await asyncio.sleep(60)  # Wait a minute before trying again
-    
+                log_error_with_traceback("Error in enhanced audio monitoring loop", e)
+                # Continue monitoring even if there's an error
+                
     # Start the monitoring task
-    return asyncio.create_task(monitoring_loop())
+    asyncio.create_task(monitoring_loop())
 
 
 class AudioManager:
@@ -926,7 +1103,7 @@ class AudioManager:
             log_error_with_traceback("Error setting voice client", e)
 
     async def connect_to_voice_channel(self):
-        """Connect to the voice channel with auto-recovery support"""
+        """Connect to the voice channel with enhanced auto-recovery and validation support"""
         try:
             import os
             
@@ -935,9 +1112,9 @@ class AudioManager:
                 try:
                     await self.voice_client.disconnect(force=True)
                     self.voice_client = None
-                    await asyncio.sleep(2)  # Give Discord time to process disconnection
-                except:
-                    pass
+                    await asyncio.sleep(3)  # Increased delay for Discord processing
+                except Exception as disconnect_error:
+                    log_error_with_traceback("Error disconnecting existing voice client", disconnect_error)
             
             # Get the bot's target guild and channel
             guild_id = int(os.getenv("GUILD_ID", "0"))
@@ -963,40 +1140,183 @@ class AudioManager:
                 )
                 return False
 
-            # Connect to voice channel
+            # Enhanced connection attempt with multiple retry strategies
+            max_connection_attempts = 3
+            connection_timeout = 90  # Extended timeout for stability
+            
+            for attempt in range(max_connection_attempts):
+                try:
+                    # Log connection attempt
+                    log_perfect_tree_section(
+                        f"Voice Channel Connection - Enhanced Recovery (Attempt {attempt + 1})",
+                        [
+                            ("status", "🔄 Attempting enhanced voice connection"),
+                            ("attempt", f"{attempt + 1}/{max_connection_attempts}"),
+                            ("channel_name", channel.name),
+                            ("channel_id", channel_id),
+                            ("channel_type", "Voice Channel"),
+                            ("guild_name", guild.name),
+                            ("guild_id", guild_id),
+                            ("timeout", f"{connection_timeout}s"),
+                            ("recovery_mode", "✅ Enhanced auto-recovery active"),
+                        ],
+                        "🎤",
+                    )
+
+                    # Check if already connected to avoid duplicate connections
+                    if guild.voice_client and guild.voice_client.is_connected():
+                        if guild.voice_client.channel.id == channel_id:
+                            log_perfect_tree_section(
+                                "Voice Connection - Already Connected",
+                                [
+                                    ("status", "✅ Already connected to target channel"),
+                                    ("channel_name", channel.name),
+                                    ("action", "Using existing connection"),
+                                ],
+                                "ℹ️",
+                            )
+                            self.voice_client = guild.voice_client
+                            return True
+                        else:
+                            # Connected to wrong channel, disconnect first
+                            await guild.voice_client.disconnect(force=True)
+                            await asyncio.sleep(2)
+
+                    # Attempt connection with enhanced timeout
+                    self.voice_client = await channel.connect(
+                        reconnect=False, 
+                        timeout=connection_timeout
+                    )
+
+                    # Enhanced connection validation
+                    validation_attempts = 0
+                    max_validation_attempts = 5
+                    
+                    while validation_attempts < max_validation_attempts:
+                        await asyncio.sleep(1)  # Brief delay for connection to stabilize
+                        validation_attempts += 1
+                        
+                        if (self.voice_client and 
+                            self.voice_client.is_connected() and 
+                            hasattr(self.voice_client, 'channel') and 
+                            self.voice_client.channel):
+                            
+                            # Connection is stable
+                            log_perfect_tree_section(
+                                f"Voice Channel Connection - Enhanced Success (Attempt {attempt + 1})",
+                                [
+                                    ("status", "✅ Enhanced connection established"),
+                                    ("channel_name", channel.name),
+                                    ("channel_id", channel_id),
+                                    ("guild_name", guild.name),
+                                    ("guild_id", guild_id),
+                                    ("validation_checks", f"{validation_attempts}/{max_validation_attempts}"),
+                                    ("connection_timeout", f"{connection_timeout}s"),
+                                    ("recovery_result", "✅ Voice connection restored"),
+                                    ("stability_verified", "✅ Connection validated"),
+                                ],
+                                "✅",
+                            )
+                            
+                            # Record successful connection for monitoring
+                            global _audio_monitor
+                            _audio_monitor.record_successful_connection()
+                            
+                            return True
+                    
+                    # Connection validation failed
+                    log_perfect_tree_section(
+                        f"Voice Connection - Validation Failed (Attempt {attempt + 1})",
+                        [
+                            ("status", "❌ Connection validation failed"),
+                            ("validation_attempts", f"{validation_attempts}/{max_validation_attempts}"),
+                            ("action", "Retrying connection" if attempt < max_connection_attempts - 1 else "Connection failed"),
+                        ],
+                        "❌",
+                    )
+                    
+                    # Clean up failed connection
+                    if self.voice_client:
+                        try:
+                            await self.voice_client.disconnect(force=True)
+                            self.voice_client = None
+                        except:
+                            pass
+                    
+                    if attempt < max_connection_attempts - 1:
+                        await asyncio.sleep(5)  # Wait before next attempt
+                
+                except discord.errors.ClientException as client_error:
+                    error_msg = str(client_error).lower()
+                    
+                    if "already connected" in error_msg:
+                        # Handle already connected case
+                        existing_client = guild.voice_client
+                        if existing_client and existing_client.is_connected():
+                            self.voice_client = existing_client
+                            log_perfect_tree_section(
+                                "Voice Connection - Using Existing",
+                                [
+                                    ("status", "✅ Using existing connection"),
+                                    ("channel_name", existing_client.channel.name),
+                                ],
+                                "ℹ️",
+                            )
+                            return True
+                    
+                    log_error_with_traceback(f"Discord client error on attempt {attempt + 1}", client_error)
+                    
+                    if attempt < max_connection_attempts - 1:
+                        await asyncio.sleep(5)  # Wait before retry
+                
+                except asyncio.TimeoutError:
+                    log_perfect_tree_section(
+                        f"Voice Connection - Timeout (Attempt {attempt + 1})",
+                        [
+                            ("status", "⏱️ Connection timeout"),
+                            ("timeout_duration", f"{connection_timeout}s"),
+                            ("action", "Retrying with extended timeout" if attempt < max_connection_attempts - 1 else "Connection failed"),
+                        ],
+                        "⏱️",
+                    )
+                    
+                    # Increase timeout for next attempt
+                    connection_timeout += 30
+                    
+                    if attempt < max_connection_attempts - 1:
+                        await asyncio.sleep(10)  # Longer wait after timeout
+                
+                except Exception as general_error:
+                    log_error_with_traceback(f"General error on connection attempt {attempt + 1}", general_error)
+                    
+                    if attempt < max_connection_attempts - 1:
+                        await asyncio.sleep(5)
+
+            # All connection attempts failed
             log_perfect_tree_section(
-                "Voice Channel Connection - Auto Recovery",
+                "Voice Connection - All Attempts Failed",
                 [
-                    ("status", "🔄 Attempting voice connection"),
+                    ("status", "❌ All connection attempts failed"),
+                    ("attempts_made", f"{max_connection_attempts}/{max_connection_attempts}"),
                     ("channel_name", channel.name),
-                    ("channel_id", channel_id),
-                    ("channel_type", "Voice Channel"),
-                    ("guild_name", guild.name),
-                    ("guild_id", guild_id),
-                    ("recovery_mode", "✅ Auto-recovery active"),
+                    ("action", "Connection recovery failed"),
                 ],
-                "🎤",
+                "❌",
             )
-
-            self.voice_client = await channel.connect(reconnect=False, timeout=60)
-
-            log_perfect_tree_section(
-                "Voice Channel Connection - Recovery Success",
-                [
-                    ("status", "✅ Connected to voice channel"),
-                    ("channel_name", channel.name),
-                    ("channel_id", channel_id),
-                    ("guild_name", guild.name),
-                    ("guild_id", guild_id),
-                    ("recovery_result", "✅ Voice connection restored"),
-                ],
-                "✅",
-            )
-
-            return True
+            
+            # Record connection failure for monitoring
+            global _audio_monitor
+            _audio_monitor.record_connection_failure("connection_failed", f"All {max_connection_attempts} connection attempts failed")
+            
+            return False
 
         except Exception as e:
-            log_error_with_traceback("Error connecting to voice channel during recovery", e)
+            log_error_with_traceback("Critical error in enhanced voice channel connection", e)
+            
+            # Record critical failure
+            global _audio_monitor
+            _audio_monitor.record_connection_failure("critical_error", str(e))
+            
             return False
 
     def get_current_audio_folder(self) -> str:
@@ -1963,14 +2283,17 @@ class AudioManager:
                                 current_file,
                                 executable=self.ffmpeg_path,
                                 before_options=seek_options,
-                                options="-vn -loglevel warning -bufsize 1024k -reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",  # Enhanced options for stability
+                                options="-vn -loglevel warning -bufsize 2048k -reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -multiple_requests 1 -rw_timeout 30000000",  # Enhanced options for maximum stability
                             )
                             should_resume = False  # Only resume once
                             log_perfect_tree_section(
-                                "Audio Resume",
+                                "Audio Resume - Enhanced",
                                 [
                                     ("resumed_from", f"{self.current_position:.1f}s"),
                                     ("enhanced_stability", "✅ Using enhanced FFmpeg options"),
+                                    ("buffer_size", "2048k (increased)"),
+                                    ("reconnection", "✅ Enhanced auto-reconnect"),
+                                    ("timeout_handling", "✅ 30s timeout protection"),
                                 ],
                                 "⏯️",
                             )
@@ -1978,34 +2301,76 @@ class AudioManager:
                             source = discord.FFmpegPCMAudio(
                                 current_file,
                                 executable=self.ffmpeg_path,
-                                options="-vn -loglevel warning -bufsize 1024k -reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",  # Enhanced options for stability
+                                options="-vn -loglevel warning -bufsize 2048k -reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -multiple_requests 1 -rw_timeout 30000000",  # Enhanced options for maximum stability
                             )
 
                         # Use a wrapper to catch FFmpeg process errors
                         try:
-                            # Validate that the audio file still exists before playing
+                            # Enhanced audio validation before playback
                             if not os.path.exists(current_file):
                                 log_error_with_traceback(
                                     f"Audio file no longer exists: {current_file}", 
                                     FileNotFoundError(f"File not found: {current_file}")
                                 )
+                                _audio_monitor.record_playback_failure("file_missing", f"Audio file not found: {current_file}")
                                 continue
 
-                            # Attempt to play with error handling
+                            # Check file accessibility
+                            try:
+                                with open(current_file, 'rb') as f:
+                                    f.read(1024)  # Test read first 1KB
+                            except Exception as file_error:
+                                log_error_with_traceback(f"Audio file not accessible: {current_file}", file_error)
+                                _audio_monitor.record_playback_failure("file_access", f"Cannot access audio file: {file_error}")
+                                continue
+
+                            # Enhanced voice client validation before playback
+                            if not self.voice_client or not self.voice_client.is_connected():
+                                _audio_monitor.record_connection_failure("pre_playback_check", "Voice client lost connection before playback")
+                                log_warning_with_context("Voice client disconnected", "Cannot start audio playback")
+                                break
+
+                            # Attempt to play with enhanced error handling
                             self.voice_client.play(source)
                             
-                            # Verify playback actually started
-                            await asyncio.sleep(0.5)  # Brief delay to check if playback started
+                            # Enhanced playback validation with multiple checks
+                            playback_validation_attempts = 0
+                            max_playback_validation = 10  # Check up to 10 times (5 seconds)
+                            
+                            while playback_validation_attempts < max_playback_validation:
+                                await asyncio.sleep(0.5)
+                                playback_validation_attempts += 1
+                                
+                                if self.voice_client.is_playing():
+                                    # Playback successfully started
+                                    break
+                                elif playback_validation_attempts >= max_playback_validation:
+                                    # Playback failed to start
+                                    log_perfect_tree_section(
+                                        "Audio Playback - Failed to Start",
+                                        [
+                                            ("file", filename),
+                                            ("status", "❌ Playback validation failed"),
+                                            ("validation_attempts", f"{playback_validation_attempts}/{max_playback_validation}"),
+                                            ("action", "Retrying next track"),
+                                        ],
+                                        "❌",
+                                    )
+                                    _audio_monitor.record_playback_failure("playback_start", "Audio playback failed to start after validation")
+                                    continue
+
+                            # Verify playback actually started successfully
                             if not self.voice_client.is_playing():
                                 log_perfect_tree_section(
-                                    "Audio Playback - Failed to Start",
+                                    "Audio Playback - Start Verification Failed",
                                     [
                                         ("file", filename),
                                         ("status", "❌ Playback did not start"),
-                                        ("action", "Retrying next track"),
+                                        ("action", "Skipping to next track"),
                                     ],
                                     "❌",
                                 )
+                                _audio_monitor.record_playback_failure("playback_verification", "Playback verification failed")
                                 continue
 
                             self.is_playing = True
