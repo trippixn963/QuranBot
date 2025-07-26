@@ -5,11 +5,36 @@
 # =============================================================================
 
 # Import all command cogs
-from .credits import CreditsCog, setup as setup_credits
-from .interval import IntervalCog, setup as setup_interval
-from .leaderboard import LeaderboardCog, setup as setup_leaderboard
-from .question import QuestionCog, setup as setup_question
-from .verse import VerseCog, setup as setup_verse
+from .credits import CreditsCog
+from .credits import setup as setup_credits
+from .interval import IntervalCog
+from .interval import setup as setup_interval
+from .leaderboard import LeaderboardCog
+from .leaderboard import setup as setup_leaderboard
+from .question import QuestionCog
+from .question import setup as setup_question
+from .verse import VerseCog
+from .verse import setup as setup_verse
+
+# =============================================================================
+# Command Loading Function
+# =============================================================================
+
+
+async def load_commands(bot, container=None):
+    """Load all command cogs into the bot.
+
+    Args:
+        bot: Discord bot instance
+        container: Dependency injection container (optional)
+    """
+    # Load all command cogs
+    await setup_credits(bot, container)
+    await setup_interval(bot, container)
+    await setup_leaderboard(bot, container)
+    await setup_question(bot, container)
+    await setup_verse(bot, container)
+
 
 # Export all cogs and setup functions
 __all__ = [
@@ -25,4 +50,6 @@ __all__ = [
     "setup_leaderboard",
     "setup_question",
     "setup_verse",
+    # Command loading
+    "load_commands",
 ]

@@ -36,29 +36,23 @@
 # =============================================================================
 
 import asyncio
+from datetime import UTC, datetime
 import json
-import os
-import random
-import time
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+import random
 
 import discord
 import pytz
-from discord.ui import Button, View
 
-# Load environment variables
-from dotenv import load_dotenv
-env_path = os.path.join(os.path.dirname(__file__), "..", "..", "config", ".env")
-load_dotenv(env_path)
+from src.config import get_config_service
 
+from .discord_logger import get_discord_logger
 from .tree_log import (
     log_error_with_traceback,
     log_perfect_tree_section,
     log_user_interaction,
-    log_warning_with_context,
 )
+from .user_cache import cache_user_from_interaction
 
 # Global scheduler task reference
 _quiz_scheduler_task = None
@@ -69,14 +63,19 @@ _quiz_scheduler_task = None
 # Import the interactive quiz components from the question command
 # This ensures automated questions have the same beautiful UI as manual ones
 
+
 class QuizView(discord.ui.View):
     """Discord UI View for quiz buttons - used by both manual and automated quizzes"""
 
-    def __init__(self, correct_answer: str, question_data: dict, quiz_manager_instance=None):
+    def __init__(
+        self, correct_answer: str, question_data: dict, quiz_manager_instance=None
+    ):
         super().__init__(timeout=None)  # Disable default timeout, use custom timer
         self.correct_answer = correct_answer
         self.question_data = question_data
-        self.quiz_manager = quiz_manager_instance  # Reference to quiz manager for score tracking
+        self.quiz_manager = (
+            quiz_manager_instance  # Reference to quiz manager for score tracking
+        )
         self.responses = {}  # Store user responses {user_id: answer}
         self.message = None
         self.original_embed = None  # Store original embed for updates
@@ -109,14 +108,14 @@ class QuizView(discord.ui.View):
 
     async def start_timer(self):
         """Start the custom timer that counts down and handles timeout"""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
-        self.start_time = datetime.now(timezone.utc)
+        self.start_time = datetime.now(UTC)
 
         # Update the timer field to show "60s" at the start
         if self.message and self.original_embed:
             embed = self.original_embed.copy()
-            
+
             # Update the timer field to show "60s" at the start
             timer_text = "60s"
 
@@ -132,13 +131,15 @@ class QuizView(discord.ui.View):
                     )
                     timer_field_found = True
                     break
-            
+
             # Update the message with the initial timer field
             try:
                 await self.message.edit(embed=embed, view=self)
                 self.original_embed = embed  # Update the stored embed
             except Exception as e:
-                log_error_with_traceback("Failed to update initial timer field in embed", e)
+                log_error_with_traceback(
+                    "Failed to update initial timer field in embed", e
+                )
 
         log_perfect_tree_section(
             "Quiz Timer - Started",
@@ -154,7 +155,7 @@ class QuizView(discord.ui.View):
 
     async def _timer_countdown(self):
         """Internal timer countdown that updates every second"""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         try:
             while self.remaining_time > 0:
@@ -163,9 +164,7 @@ class QuizView(discord.ui.View):
 
                 # Update every 5 seconds for smoother progress bar
                 if self.remaining_time % 5 == 0:
-                    elapsed = (
-                        datetime.now(timezone.utc) - self.start_time
-                    ).total_seconds()
+                    elapsed = (datetime.now(UTC) - self.start_time).total_seconds()
                     log_perfect_tree_section(
                         "Quiz Timer - Update",
                         [
@@ -182,7 +181,7 @@ class QuizView(discord.ui.View):
                     await self.update_question_embed(update_timer=True)
 
             # Time's up - trigger timeout
-            elapsed = (datetime.now(timezone.utc) - self.start_time).total_seconds()
+            elapsed = (datetime.now(UTC) - self.start_time).total_seconds()
             log_perfect_tree_section(
                 "Quiz Timer - Timeout",
                 [
@@ -213,8 +212,19 @@ class QuizView(discord.ui.View):
         # Update or add "Answered by" field
         if self.responses:
             answered_users = []
-            order_labels = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th"]
-            
+            order_labels = [
+                "1st",
+                "2nd",
+                "3rd",
+                "4th",
+                "5th",
+                "6th",
+                "7th",
+                "8th",
+                "9th",
+                "10th",
+            ]
+
             for i, user_id in enumerate(self.responses.keys()):
                 if i < len(order_labels):
                     answered_users.append(f"{order_labels[i]} <@{user_id}>")
@@ -286,7 +296,7 @@ class QuizView(discord.ui.View):
 
         # Calculate elapsed time
         elapsed = (
-            (datetime.now(timezone.utc) - self.start_time).total_seconds()
+            (datetime.now(UTC) - self.start_time).total_seconds()
             if self.start_time
             else 60
         )
@@ -310,7 +320,7 @@ class QuizView(discord.ui.View):
             if self.message and self.original_embed:
                 # Keep the original quiz content, just disable the view
                 final_embed = self.original_embed.copy()
-                
+
                 # Update timer field to show "Time's Up!" if it exists
                 timer_field_found = False
                 for i, field in enumerate(final_embed.fields):
@@ -323,7 +333,7 @@ class QuizView(discord.ui.View):
                         )
                         timer_field_found = True
                         break
-                
+
                 await self.message.edit(embed=final_embed, view=self)
         except Exception as e:
             log_error_with_traceback("Failed to update message on timeout", e)
@@ -341,7 +351,7 @@ class QuizView(discord.ui.View):
             self.timer_task.cancel()
         if self.deletion_task and not self.deletion_task.done():
             self.deletion_task.cancel()
-        
+
         # Call parent stop method
         super().stop()
 
@@ -350,9 +360,9 @@ class QuizView(discord.ui.View):
         try:
             # Wait 1 minute (60 seconds)
             await asyncio.sleep(60)
-            
+
             messages_deleted = []
-            
+
             # Delete the original quiz question
             if self.message:
                 try:
@@ -371,7 +381,7 @@ class QuizView(discord.ui.View):
                     messages_deleted.append("question (already deleted)")
                 except Exception as e:
                     log_error_with_traceback("Failed to delete quiz question", e)
-            
+
             # Delete the results message
             if self.results_message:
                 try:
@@ -390,7 +400,7 @@ class QuizView(discord.ui.View):
                     messages_deleted.append("results (already deleted)")
                 except Exception as e:
                     log_error_with_traceback("Failed to delete quiz results", e)
-            
+
             # Log cleanup summary
             if messages_deleted:
                 log_perfect_tree_section(
@@ -402,7 +412,7 @@ class QuizView(discord.ui.View):
                     ],
                     "🧹",
                 )
-                
+
         except asyncio.CancelledError:
             # Task was cancelled, which is normal during shutdown
             log_perfect_tree_section(
@@ -467,7 +477,7 @@ class QuizView(discord.ui.View):
         if isinstance(correct_choice, dict):
             english_text = correct_choice.get("english", "")
             arabic_text = correct_choice.get("arabic", "")
-            
+
             if english_text and arabic_text:
                 correct_display = f"**{self.correct_answer}: {english_text}**\n```\n{arabic_text}\n```"
             elif english_text:
@@ -477,7 +487,7 @@ class QuizView(discord.ui.View):
             else:
                 correct_display = f"**{self.correct_answer}:** Answer not available"
         else:
-            correct_display = f"**{self.correct_answer}: {str(correct_choice)}**"
+            correct_display = f"**{self.correct_answer}: {correct_choice!s}**"
 
         results_embed.add_field(
             name="✅ Correct Answer",
@@ -499,36 +509,56 @@ class QuizView(discord.ui.View):
                 try:
                     # Always use mention format for consistency
                     if result["is_correct"]:
-                        answers_text += f"👤 <@{user_id}> - {result['answer']} ✅ (+1 pt)\n"
-                    else:
-                        # Check if user would lose points (i.e., they have points to lose)
-                        if self.quiz_manager:
-                            try:
-                                # Load current user stats to check if they have points
-                                from pathlib import Path
-                                import json
-                                quiz_stats_file = Path("data") / "quiz_stats.json"
-                                if quiz_stats_file.exists():
-                                    with open(quiz_stats_file, "r", encoding="utf-8") as f:
-                                        quiz_stats = json.load(f)
-                                    user_points = quiz_stats.get("user_scores", {}).get(str(user_id), {}).get("points", 0)
-                                    if user_points > 0:
-                                        answers_text += f"👤 <@{user_id}> - {result['answer']} ❌ (-1 pt)\n"
-                                    else:
-                                        answers_text += f"👤 <@{user_id}> - {result['answer']} ❌ (0 pts)\n"
-                                else:
+                        answers_text += (
+                            f"👤 <@{user_id}> - {result['answer']} ✅ (+1 pt)\n"
+                        )
+                    # Check if user would lose points (i.e., they have points to lose)
+                    elif self.quiz_manager:
+                        try:
+                            # Load current user stats to check if they have points
+                            import json
+                            from pathlib import Path
+
+                            quiz_stats_file = Path("data") / "quiz_stats.json"
+                            if quiz_stats_file.exists():
+                                with open(quiz_stats_file, encoding="utf-8") as f:
+                                    quiz_stats = json.load(f)
+                                user_points = (
+                                    quiz_stats.get("user_scores", {})
+                                    .get(str(user_id), {})
+                                    .get("points", 0)
+                                )
+                                if user_points > 0:
                                     answers_text += f"👤 <@{user_id}> - {result['answer']} ❌ (-1 pt)\n"
-                            except Exception:
-                                answers_text += f"👤 <@{user_id}> - {result['answer']} ❌ (-1 pt)\n"
-                        else:
-                            answers_text += f"👤 <@{user_id}> - {result['answer']} ❌ (-1 pt)\n"
-                except Exception as e:
-                    # Log the error and continue with mention format
-                    if result["is_correct"]:
-                        answers_text += f"👤 <@{user_id}> - {result['answer']} ✅ (+1 pt)\n"
+                                else:
+                                    answers_text += f"👤 <@{user_id}> - {result['answer']} ❌ (0 pts)\n"
+                            else:
+                                answers_text += (
+                                    f"👤 <@{user_id}> - {result['answer']} ❌ (-1 pt)\n"
+                                )
+                        except (FileNotFoundError, json.JSONDecodeError, KeyError):
+                            # Fallback to standard format if stats unavailable
+                            answers_text += (
+                                f"👤 <@{user_id}> - {result['answer']} ❌ (-1 pt)\n"
+                            )
                     else:
-                        answers_text += f"👤 <@{user_id}> - {result['answer']} ❌ (-1 pt)\n"
-            
+                        answers_text += (
+                            f"👤 <@{user_id}> - {result['answer']} ❌ (-1 pt)\n"
+                        )
+                except (AttributeError, KeyError, ValueError) as e:
+                    # Log the error and continue with mention format
+                    log_error_with_traceback(
+                        f"Error processing user answer for {user_id}", e
+                    )
+                    if result["is_correct"]:
+                        answers_text += (
+                            f"👤 <@{user_id}> - {result['answer']} ✅ (+1 pt)\n"
+                        )
+                    else:
+                        answers_text += (
+                            f"👤 <@{user_id}> - {result['answer']} ❌ (-1 pt)\n"
+                        )
+
             if answers_text:
                 results_embed.add_field(
                     name="👥 Answers",
@@ -561,19 +591,22 @@ class QuizView(discord.ui.View):
 
         # Add explanation if available
         explanation = self.question_data.get("explanation", {})
-        
+
         # Debug: Log explanation data to help troubleshoot
         log_perfect_tree_section(
             "Quiz Results - Explanation Debug",
             [
                 ("explanation_exists", "Yes" if explanation else "No"),
                 ("explanation_type", type(explanation).__name__),
-                ("explanation_content", str(explanation)[:200] if explanation else "None"),
+                (
+                    "explanation_content",
+                    str(explanation)[:200] if explanation else "None",
+                ),
                 ("question_data_keys", list(self.question_data.keys())),
             ],
             "🔍",
         )
-        
+
         if explanation:
             # Add single spacing line before explanation
             results_embed.add_field(
@@ -581,21 +614,19 @@ class QuizView(discord.ui.View):
                 value="",
                 inline=False,
             )
-            
+
             if isinstance(explanation, dict):
                 english_explanation = explanation.get("english", "")
                 arabic_explanation = explanation.get("arabic", "")
-                
-                if english_explanation and arabic_explanation:
-                    explanation_text = f"```\n{english_explanation}\n```"
-                elif english_explanation:
+
+                if (english_explanation and arabic_explanation) or english_explanation:
                     explanation_text = f"```\n{english_explanation}\n```"
                 elif arabic_explanation:
                     explanation_text = f"```\n{arabic_explanation}\n```"
                 else:
                     explanation_text = None
             else:
-                explanation_text = f"```\n{str(explanation)}\n```"
+                explanation_text = f"```\n{explanation!s}\n```"
 
             if explanation_text:
                 results_embed.add_field(
@@ -610,22 +641,22 @@ class QuizView(discord.ui.View):
 
         # Set footer with admin info
         try:
-            import os
-            DEVELOPER_ID = int(os.getenv("DEVELOPER_ID", "0"))
-            if DEVELOPER_ID != 0:
-                # Try to get admin user from guild first
-                admin_user = self.message.guild.get_member(DEVELOPER_ID)
-                if not admin_user:
-                    # If not in guild, fetch user directly
-                    admin_user = await self.message.channel.guild.client.fetch_user(DEVELOPER_ID)
-                
-                if admin_user and admin_user.avatar:
-                    results_embed.set_footer(
-                        text="Created by حَـــــنَّـــــا",
-                        icon_url=admin_user.avatar.url
-                    )
-                else:
-                    results_embed.set_footer(text="Created by حَـــــنَّـــــا")
+            config = get_config_service().config
+            developer_id = config.DEVELOPER_ID
+
+            # Try to get admin user from guild first
+            admin_user = self.message.guild.get_member(developer_id)
+            if not admin_user:
+                # If not in guild, fetch user directly
+                admin_user = await self.message.channel.guild.client.fetch_user(
+                    developer_id
+                )
+
+            # Set footer with avatar if available
+            if admin_user and admin_user.avatar:
+                results_embed.set_footer(
+                    text="Created by حَـــــنَّـــــا", icon_url=admin_user.avatar.url
+                )
             else:
                 results_embed.set_footer(text="Created by حَـــــنَّـــــا")
         except Exception:
@@ -652,8 +683,6 @@ class QuizButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         """Handle button click"""
-        from src.utils.tree_log import log_user_interaction
-
         # Check if user already answered
         if interaction.user.id in self.view.responses:
             embed = discord.Embed(
@@ -663,19 +692,19 @@ class QuizButton(discord.ui.Button):
             )
             # Set footer with admin info and profile picture
             try:
-                import os
-                DEVELOPER_ID = int(os.getenv("DEVELOPER_ID", "0"))
-                if DEVELOPER_ID != 0:
-                    # Try to get admin user from guild first
-                    admin_user = interaction.guild.get_member(DEVELOPER_ID)
-                    if not admin_user:
-                        # If not in guild, fetch user directly
-                        admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
-                    
+                config = get_config_service().config
+                developer_id = config.DEVELOPER_ID
+
+                # Try to get admin user from guild first
+                admin_user = interaction.guild.get_member(developer_id)
+                if not admin_user:
+                    # If not in guild, fetch user directly
+                    admin_user = await interaction.client.fetch_user(developer_id)
+
                     if admin_user and admin_user.avatar:
                         embed.set_footer(
                             text="Created by حَـــــنَّـــــا",
-                            icon_url=admin_user.avatar.url
+                            icon_url=admin_user.avatar.url,
                         )
                     else:
                         embed.set_footer(text="Created by حَـــــنَّـــــا")
@@ -689,9 +718,8 @@ class QuizButton(discord.ui.Button):
         # Record the response
         self.view.responses[interaction.user.id] = self.letter
 
-        # Cache user info for dashboard display
+        # Cache user info for analytics and statistics
         try:
-            from src.utils.user_cache import cache_user_from_interaction
             cache_user_from_interaction(interaction)
         except Exception:
             pass  # Fail silently to not interfere with quiz operations
@@ -711,11 +739,14 @@ class QuizButton(discord.ui.Button):
         )
 
         # Log to Discord with user profile picture
-        from src.utils.discord_logger import get_discord_logger
         discord_logger = get_discord_logger()
         if discord_logger:
             try:
-                user_avatar_url = interaction.user.avatar.url if interaction.user.avatar else interaction.user.default_avatar.url
+                user_avatar_url = (
+                    interaction.user.avatar.url
+                    if interaction.user.avatar
+                    else interaction.user.default_avatar.url
+                )
                 await discord_logger.log_user_interaction(
                     "quiz_correct" if self.is_correct else "quiz_incorrect",
                     interaction.user.display_name,
@@ -724,11 +755,18 @@ class QuizButton(discord.ui.Button):
                     {
                         "Choice": self.letter,
                         "Result": "Correct ✅" if self.is_correct else "Incorrect ❌",
-                        "Question ID": str(self.view.question_data.get("id", "Unknown")),
+                        "Question ID": str(
+                            self.view.question_data.get("id", "Unknown")
+                        ),
                         "Response Time": datetime.now().strftime("%I:%M %p EST"),
-                        "Question": self.view.question_data.get("question", "Unknown")[:100] + "..." if len(self.view.question_data.get("question", "")) > 100 else self.view.question_data.get("question", "Unknown")
+                        "Question": (
+                            self.view.question_data.get("question", "Unknown")[:100]
+                            + "..."
+                            if len(self.view.question_data.get("question", "")) > 100
+                            else self.view.question_data.get("question", "Unknown")
+                        ),
                     },
-                    user_avatar_url
+                    user_avatar_url,
                 )
             except:
                 pass
@@ -852,17 +890,17 @@ class QuizManager:
     ```
     """
 
-    def __init__(self, data_dir: Union[str, Path]):
+    def __init__(self, data_dir: str | Path):
         """Initialize the quiz manager"""
         self.data_dir = Path(data_dir)
-        self.questions: List[Dict] = []
-        self.user_scores: Dict[int, Dict] = {}
+        self.questions: list[dict] = []
+        self.user_scores: dict[int, dict] = {}
         self.state_file = self.data_dir / "quiz_state.json"
         self.scores_file = self.data_dir / "quiz_scores.json"
         self.last_sent_time = None
 
         # Recent questions tracking to avoid duplicates
-        self.recent_questions: List[str] = []  # Store question IDs
+        self.recent_questions: list[str] = []  # Store question IDs
         self.max_recent_questions = 15  # Track last 15 questions
 
         # Create data directory if it doesn't exist
@@ -874,11 +912,11 @@ class QuizManager:
     def validate_question(
         self,
         question: str,
-        options: List[str],
+        options: list[str],
         correct_answer: int,
         difficulty: str = "medium",
         category: str = "general",
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Validate question data before adding to the pool.
 
@@ -960,16 +998,16 @@ class QuizManager:
 
         except Exception as e:
             log_error_with_traceback("Error validating question", e)
-            return False, f"Validation error: {str(e)}"
+            return False, f"Validation error: {e!s}"
 
     def add_question(
         self,
         question: str,
-        options: List[str],
+        options: list[str],
         correct_answer: int,
         difficulty: str = "medium",
         category: str = "general",
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Add a new quiz question with comprehensive validation.
 
@@ -1000,7 +1038,7 @@ class QuizManager:
                 "correct_answer": correct_answer,
                 "difficulty": difficulty,
                 "category": category,
-                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_at": datetime.now(UTC).isoformat(),
                 "times_asked": 0,
                 "times_correct": 0,
                 "last_asked": None,
@@ -1023,13 +1061,13 @@ class QuizManager:
             return True, None
 
         except Exception as e:
-            error_msg = f"Error adding quiz question: {str(e)}"
+            error_msg = f"Error adding quiz question: {e!s}"
             log_error_with_traceback(error_msg, e)
             return False, error_msg
 
     def validate_answer(
         self, question_index: int, answer: int
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Validate a user's answer to a question.
 
@@ -1057,11 +1095,11 @@ class QuizManager:
 
         except Exception as e:
             log_error_with_traceback("Error validating answer", e)
-            return False, f"Validation error: {str(e)}"
+            return False, f"Validation error: {e!s}"
 
     def get_random_question(
-        self, difficulty: Optional[str] = None, category: Optional[str] = None
-    ) -> Optional[Dict]:
+        self, difficulty: str | None = None, category: str | None = None
+    ) -> dict | None:
         """Get a random quiz question, avoiding recently asked questions"""
         try:
             filtered_questions = self.questions
@@ -1146,7 +1184,7 @@ class QuizManager:
         except Exception as e:
             log_error_with_traceback("Error adding to recent questions", e)
 
-    def get_recent_questions_info(self) -> Dict:
+    def get_recent_questions_info(self) -> dict:
         """Get information about recently asked questions"""
         try:
             return {
@@ -1166,7 +1204,7 @@ class QuizManager:
             log_error_with_traceback("Error getting recent questions info", e)
             return {}
 
-    def check_answer(self, answer_index: int, question: Dict) -> bool:
+    def check_answer(self, answer_index: int, question: dict) -> bool:
         """Check if the provided answer is correct"""
         try:
             return answer_index == question["correct_answer"]
@@ -1187,10 +1225,10 @@ class QuizManager:
 
             # Save to quiz state file
             self.save_state()
-            
+
             # Also update the quiz stats file that the leaderboard reads from
             self.update_quiz_stats_file(user_id, is_correct)
-            
+
             return True
         except Exception as e:
             log_error_with_traceback("Error recording user answer", e)
@@ -1200,21 +1238,21 @@ class QuizManager:
         """Update the quiz_stats.json file that the leaderboard command reads from"""
         try:
             user_id_str = str(user_id)
-            
+
             # Load existing quiz stats
             quiz_stats = {"user_scores": {}}
             if QUIZ_STATS_FILE.exists():
                 try:
-                    with open(QUIZ_STATS_FILE, "r", encoding="utf-8") as f:
+                    with open(QUIZ_STATS_FILE, encoding="utf-8") as f:
                         quiz_stats = json.load(f)
                 except Exception as e:
                     log_error_with_traceback("Error loading quiz stats file", e)
                     quiz_stats = {"user_scores": {}}
-            
+
             # Ensure user_scores exists
             if "user_scores" not in quiz_stats:
                 quiz_stats["user_scores"] = {}
-            
+
             # Initialize user if not exists
             if user_id_str not in quiz_stats["user_scores"]:
                 quiz_stats["user_scores"][user_id_str] = {
@@ -1224,11 +1262,11 @@ class QuizManager:
                     "current_streak": 0,
                     "best_streak": 0,
                     "last_answer_time": None,
-                    "categories": {}
+                    "categories": {},
                 }
-            
+
             user_stats = quiz_stats["user_scores"][user_id_str]
-            
+
             # Ensure all required fields exist (for backwards compatibility)
             if "correct" not in user_stats:
                 user_stats["correct"] = 0
@@ -1240,25 +1278,27 @@ class QuizManager:
                 user_stats["current_streak"] = 0
             if "best_streak" not in user_stats:
                 user_stats["best_streak"] = 0
-            
+
             # Update stats
             if is_correct:
                 user_stats["points"] += 1
                 user_stats["correct"] += 1
                 user_stats["current_streak"] += 1
-                user_stats["best_streak"] = max(user_stats["best_streak"], user_stats["current_streak"])
+                user_stats["best_streak"] = max(
+                    user_stats["best_streak"], user_stats["current_streak"]
+                )
             else:
                 # Subtract 1 point for wrong answers, but don't go below 0
                 user_stats["points"] = max(0, user_stats["points"] - 1)
                 user_stats["current_streak"] = 0
-            
+
             user_stats["total"] += 1
-            user_stats["last_answer_time"] = datetime.now(timezone.utc).isoformat()
-            
+            user_stats["last_answer_time"] = datetime.now(UTC).isoformat()
+
             # Save updated quiz stats
             with open(QUIZ_STATS_FILE, "w", encoding="utf-8") as f:
                 json.dump(quiz_stats, f, indent=2)
-            
+
             log_perfect_tree_section(
                 "Quiz Stats Updated",
                 [
@@ -1271,14 +1311,14 @@ class QuizManager:
                 ],
                 "📊",
             )
-            
+
             return True
-            
+
         except Exception as e:
             log_error_with_traceback("Error updating quiz stats file", e)
             return False
 
-    def get_user_stats(self, user_id: str) -> Dict:
+    def get_user_stats(self, user_id: str) -> dict:
         """Get statistics for a specific user"""
         try:
             if user_id not in self.user_scores:
@@ -1298,7 +1338,7 @@ class QuizManager:
             log_error_with_traceback("Error getting user stats", e)
             return {"correct": 0, "total": 0, "percentage": 0.0}
 
-    def get_leaderboard(self, limit: int = 10) -> List[Dict]:
+    def get_leaderboard(self, limit: int = 10) -> list[dict]:
         """Get the quiz leaderboard"""
         try:
             # Calculate scores and sort
@@ -1329,7 +1369,7 @@ class QuizManager:
             log_error_with_traceback("Error getting leaderboard", e)
             return []
 
-    def get_questions_by_difficulty(self, difficulty: str) -> List[Dict]:
+    def get_questions_by_difficulty(self, difficulty: str) -> list[dict]:
         """Get questions filtered by difficulty"""
         try:
             return [q for q in self.questions if q["difficulty"] == difficulty]
@@ -1337,7 +1377,7 @@ class QuizManager:
             log_error_with_traceback("Error filtering questions by difficulty", e)
             return []
 
-    def get_questions_by_category(self, category: str) -> List[Dict]:
+    def get_questions_by_category(self, category: str) -> list[dict]:
         """Get questions filtered by category"""
         try:
             return [q for q in self.questions if q["category"] == category]
@@ -1352,11 +1392,11 @@ class QuizManager:
             existing_state = {}
             if self.state_file.exists():
                 try:
-                    with open(self.state_file, "r", encoding="utf-8") as f:
+                    with open(self.state_file, encoding="utf-8") as f:
                         existing_state = json.load(f)
                 except Exception:
                     existing_state = {}
-            
+
             state = {
                 "questions": self.questions,
                 "user_scores": self.user_scores,
@@ -1402,7 +1442,7 @@ class QuizManager:
         try:
             # First try to load from quiz_data.json (the main quiz database)
             if QUIZ_DATA_FILE.exists():
-                with open(QUIZ_DATA_FILE, "r", encoding="utf-8") as f:
+                with open(QUIZ_DATA_FILE, encoding="utf-8") as f:
                     quiz_data = json.load(f)
                     if "questions" in quiz_data:
                         self.questions = quiz_data["questions"]
@@ -1411,7 +1451,7 @@ class QuizManager:
 
             # Then load user scores, timing, and recent questions from state file
             if self.state_file.exists():
-                with open(self.state_file, "r", encoding="utf-8") as f:
+                with open(self.state_file, encoding="utf-8") as f:
                     state = json.load(f)
                     # Only load user scores, timing, and recent questions, not questions
                     self.user_scores = state.get("user_scores", {})
@@ -1567,7 +1607,7 @@ class QuizManager:
             # Use the same file path as the interval command
             quiz_config_file = Path("data/quiz_state.json")
             if quiz_config_file.exists():
-                with open(quiz_config_file, "r") as f:
+                with open(quiz_config_file) as f:
                     data = json.load(f)
                     return data.get("schedule_config", {}).get(
                         "send_interval_hours", 3.0
@@ -1581,24 +1621,26 @@ class QuizManager:
         """Set the question interval in hours and save to config"""
         try:
             quiz_config_file = Path("data/quiz_state.json")
-            
+
             # Load existing config or create new one
             config_data = {}
             if quiz_config_file.exists():
-                with open(quiz_config_file, "r") as f:
+                with open(quiz_config_file) as f:
                     config_data = json.load(f)
-            
+
             # Update the schedule config
             if "schedule_config" not in config_data:
                 config_data["schedule_config"] = {}
-            
+
             config_data["schedule_config"]["send_interval_hours"] = hours
-            config_data["schedule_config"]["last_updated"] = datetime.now(timezone.utc).isoformat()
-            
+            config_data["schedule_config"]["last_updated"] = datetime.now(
+                UTC
+            ).isoformat()
+
             # Save the updated config
             with open(quiz_config_file, "w") as f:
                 json.dump(config_data, f, indent=2)
-            
+
             return True
         except Exception as e:
             log_error_with_traceback("Error saving question interval config", e)
@@ -1763,14 +1805,18 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                     if isinstance(question["question"], dict):
                         arabic_text = question["question"].get("arabic", "")
                         english_text = question["question"].get("english", "")
-                        
+
                         # Format: Arabic Question first, then English Question
                         if arabic_text and english_text:
                             question_text = f"🕌 **Arabic Question**\n```\n{arabic_text}\n```\n\n🇺🇸 **English Question**\n```\n{english_text}\n```"
                         elif arabic_text:
-                            question_text = f"🕌 **Arabic Question**\n```\n{arabic_text}\n```"
+                            question_text = (
+                                f"🕌 **Arabic Question**\n```\n{arabic_text}\n```"
+                            )
                         elif english_text:
-                            question_text = f"🇺🇸 **English Question**\n```\n{english_text}\n```"
+                            question_text = (
+                                f"🇺🇸 **English Question**\n```\n{english_text}\n```"
+                            )
                         else:
                             question_text = "Question text not available"
                     else:
@@ -1779,16 +1825,18 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                     # Extract options from choices - show English first, then Arabic in code blocks
                     choices = question["choices"]
                     choice_letters = sorted(choices.keys())  # A, B, C, D, etc.
-                    
+
                     for letter in choice_letters:
                         choice = choices[letter]
                         if isinstance(choice, dict):
                             arabic_option = choice.get("arabic", "")
                             english_option = choice.get("english", "")
-                            
+
                             # Format: English first, then Arabic in code block
                             if english_option and arabic_option:
-                                option_text = f"{english_option}\n```\n{arabic_option}\n```"
+                                option_text = (
+                                    f"{english_option}\n```\n{arabic_option}\n```"
+                                )
                             elif english_option:
                                 option_text = english_option
                             elif arabic_option:
@@ -1856,14 +1904,14 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                     if isinstance(question_text, dict):
                         arabic_text = question_text.get("arabic", "")
                         english_text = question_text.get("english", "")
-                        
+
                         if arabic_text:
                             embed.add_field(
                                 name="🕌 **Question**",
                                 value=f"```\n{arabic_text}\n```",
                                 inline=False,
                             )
-                        
+
                         # Add English translation right after Arabic (if both exist)
                         if english_text:
                             embed.add_field(
@@ -1875,7 +1923,7 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                         # If it's just a string, display it as the question
                         embed.add_field(
                             name="❓ **Question**",
-                            value=f"```\n{str(question_text)}\n```",
+                            value=f"```\n{question_text!s}\n```",
                             inline=False,
                         )
 
@@ -1903,7 +1951,7 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                             difficulty_display = str(difficulty_value)
                     else:
                         difficulty_display = str(difficulty_value)
-                    
+
                     embed.add_field(
                         name="⭐ Difficulty",
                         value=difficulty_display,
@@ -1933,13 +1981,15 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                             if isinstance(choice_data, dict):
                                 english_choice = choice_data.get("english", "")
                                 arabic_choice = choice_data.get("arabic", "")
-                                
+
                                 if english_choice and arabic_choice:
                                     choice_text += f"**{letter}.** {english_choice}\n```\n{arabic_choice}\n```\n\n"
                                 elif english_choice:
                                     choice_text += f"**{letter}.** {english_choice}\n\n"
                                 elif arabic_choice:
-                                    choice_text += f"**{letter}.** ```\n{arabic_choice}\n```\n\n"
+                                    choice_text += (
+                                        f"**{letter}.** ```\n{arabic_choice}\n```\n\n"
+                                    )
                             else:
                                 choice_text += f"**{letter}.** {choice_data}\n\n"
 
@@ -1966,37 +2016,41 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
 
                     # Set footer with admin profile picture
                     try:
-                        import os
-                        DEVELOPER_ID = int(os.getenv("DEVELOPER_ID", "0"))
-                        if DEVELOPER_ID != 0:
-                            admin_user = await bot.fetch_user(DEVELOPER_ID)
-                            if admin_user and admin_user.avatar:
-                                embed.set_footer(
-                                    text="Created by حَـــــنَـــــا",
-                                    icon_url=admin_user.avatar.url,
-                                )
-                            else:
-                                embed.set_footer(text="Created by حَـــــنَـــــا")
+                        config = get_config_service().config
+                        admin_user = await bot.fetch_user(config.DEVELOPER_ID)
+                        if admin_user and admin_user.avatar:
+                            embed.set_footer(
+                                text="Created by حَـــــنَـــــا",
+                                icon_url=admin_user.avatar.url,
+                            )
                         else:
                             embed.set_footer(text="Created by حَـــــنَـــــا")
                     except Exception:
                         embed.set_footer(text="Created by حَـــــنَـــــا")
 
                     # Create the interactive quiz view with buttons and timer
-                    correct_answer = chr(65 + correct_answer_index)  # Convert index to letter
-                    
+                    correct_answer = chr(
+                        65 + correct_answer_index
+                    )  # Convert index to letter
+
                     # Prepare question data for the view (convert to format expected by QuizView)
                     # Pass the original question structure to maintain Arabic/English choice
                     quiz_question_data = {
-                        "question": question.get("question", question_text),  # Pass original structure
-                        "choices": question.get("choices", {}),  # Pass original choices structure
+                        "question": question.get(
+                            "question", question_text
+                        ),  # Pass original structure
+                        "choices": question.get(
+                            "choices", {}
+                        ),  # Pass original choices structure
                         "correct_answer": correct_answer,
                         "category": question.get("category", "general"),
                         "difficulty": difficulty_display,
                         "id": question.get("id", "scheduled_quiz"),
-                        "explanation": question.get("explanation", {})  # Include explanation for results
+                        "explanation": question.get(
+                            "explanation", {}
+                        ),  # Include explanation for results
                     }
-                    
+
                     # If it's a simple format, build choices dictionary for the view
                     if "choices" not in question:
                         quiz_question_data["choices"] = {}
@@ -2017,56 +2071,61 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
 
                     # Send admin DM with the correct answer (same format as manual /question)
                     try:
-                        import os
+                        config = get_config_service().config
+                        admin_user = await bot.fetch_user(config.DEVELOPER_ID)
+                        if admin_user:
+                            # Use EXACT same DM format as manual /question command
+                            choices = question.get("choices", {})
+                            correct_choice = choices.get(correct_answer, "Unknown")
 
-                        DEVELOPER_ID = int(os.getenv("DEVELOPER_ID", "0"))
-                        if DEVELOPER_ID != 0:
-                            admin_user = await bot.fetch_user(DEVELOPER_ID)
-                            if admin_user:
-                                # Use EXACT same DM format as manual /question command
-                                choices = question.get("choices", {})
-                                correct_choice = choices.get(correct_answer, "Unknown")
-                                
-                                # Format the correct answer
-                                if isinstance(correct_choice, dict):
-                                    english_text = correct_choice.get("english", "")
-                                    arabic_text = correct_choice.get("arabic", "")
-                                    
-                                    if english_text and arabic_text:
-                                        answer_display = f"**{correct_answer}: {english_text}**\n{arabic_text}"
-                                    elif english_text:
-                                        answer_display = f"**{correct_answer}: {english_text}**"
-                                    elif arabic_text:
-                                        answer_display = f"**{correct_answer}:** {arabic_text}"
-                                    else:
-                                        answer_display = f"**{correct_answer}:** Answer not available"
+                            # Format the correct answer
+                            if isinstance(correct_choice, dict):
+                                english_text = correct_choice.get("english", "")
+                                arabic_text = correct_choice.get("arabic", "")
+
+                                if english_text and arabic_text:
+                                    answer_display = f"**{correct_answer}: {english_text}**\n{arabic_text}"
+                                elif english_text:
+                                    answer_display = (
+                                        f"**{correct_answer}: {english_text}**"
+                                    )
+                                elif arabic_text:
+                                    answer_display = (
+                                        f"**{correct_answer}:** {arabic_text}"
+                                    )
                                 else:
-                                    answer_display = f"**{correct_answer}: {str(correct_choice)}**"
+                                    answer_display = (
+                                        f"**{correct_answer}:** Answer not available"
+                                    )
+                            else:
+                                answer_display = (
+                                    f"**{correct_answer}: {correct_choice!s}**"
+                                )
 
-                                dm_embed = discord.Embed(
-                                    title="🔑 Quiz Answer",
-                                    description=f"The correct answer for the quiz you just sent:\n\n{answer_display}",
-                                    color=0x00D4AA,
-                                )
-                                
-                                # Add question details
-                                dm_embed.add_field(
-                                    name="📝 Question Details",
-                                    value=f"• **Category:** {question.get('category', 'Unknown')}\n• **Difficulty:** {question.get('difficulty', 'Unknown')}\n• **ID:** {question.get('id', 'Unknown')}",
-                                    inline=False
-                                )
-                                
-                                # Add message link for easy navigation
-                                message_link = f"https://discord.com/channels/{message.guild.id}/{message.channel.id}/{message.id}"
-                                dm_embed.add_field(
-                                    name="🔗 Go to Question",
-                                    value=f"[Click here to jump to the quiz]({message_link})",
-                                    inline=False
-                                )
-                                
-                                dm_embed.set_footer(text="Created by حَـــــنَّـــــا")
-                                
-                                await admin_user.send(embed=dm_embed)
+                            dm_embed = discord.Embed(
+                                title="🔑 Quiz Answer",
+                                description=f"The correct answer for the quiz you just sent:\n\n{answer_display}",
+                                color=0x00D4AA,
+                            )
+
+                            # Add question details
+                            dm_embed.add_field(
+                                name="📝 Question Details",
+                                value=f"• **Category:** {question.get('category', 'Unknown')}\n• **Difficulty:** {question.get('difficulty', 'Unknown')}\n• **ID:** {question.get('id', 'Unknown')}",
+                                inline=False,
+                            )
+
+                            # Add message link for easy navigation
+                            message_link = f"https://discord.com/channels/{message.guild.id}/{message.channel.id}/{message.id}"
+                            dm_embed.add_field(
+                                name="🔗 Go to Question",
+                                value=f"[Click here to jump to the quiz]({message_link})",
+                                inline=False,
+                            )
+
+                            dm_embed.set_footer(text="Created by حَـــــنَّـــــا")
+
+                            await admin_user.send(embed=dm_embed)
 
                     except Exception as e:
                         # Log error but don't fail the whole question sending
@@ -2079,23 +2138,37 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                     # Get correct answer text for logging
                     correct_answer_text = "Unknown"
                     if "choices" in question:
-                        correct_choice = question["choices"].get(correct_answer, "Unknown")
+                        correct_choice = question["choices"].get(
+                            correct_answer, "Unknown"
+                        )
                         if isinstance(correct_choice, dict):
-                            correct_answer_text = correct_choice.get("english", correct_choice.get("arabic", "Unknown"))
+                            correct_answer_text = correct_choice.get(
+                                "english", correct_choice.get("arabic", "Unknown")
+                            )
                         else:
                             correct_answer_text = str(correct_choice)
-                    elif "options" in question and correct_answer_index < len(options_list):
+                    elif "options" in question and correct_answer_index < len(
+                        options_list
+                    ):
                         correct_answer_text = options_list[correct_answer_index]
-                    
+
                     log_perfect_tree_section(
                         "Interactive Scheduled Quiz Sent",
                         [
                             ("channel", f"#{channel.name}"),
                             ("question_id", question.get("id", "N/A")),
                             ("difficulty", difficulty_display),
-                            ("category", str(question.get("category", "general")).replace("_", " ").title()),
+                            (
+                                "category",
+                                str(question.get("category", "general"))
+                                .replace("_", " ")
+                                .title(),
+                            ),
                             ("options_count", len(options_list)),
-                            ("correct_answer", f"{chr(65 + correct_answer_index)}. {correct_answer_text}"),
+                            (
+                                "correct_answer",
+                                f"{chr(65 + correct_answer_index)}. {correct_answer_text}",
+                            ),
                             ("interactive_features", "✅ Buttons, Timer, Progress Bar"),
                             ("timer_duration", "60 seconds"),
                             ("status", "✅ Interactive quiz posted successfully"),

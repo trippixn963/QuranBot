@@ -20,4 +20,4 @@ __license__ = "MIT"
 __url__ = "https://github.com/trippixn963/QuranBot"
 
 # Package metadata for external tools
-__all__ = ["__version__", "__author__", "__description__", "__license__", "__url__"]
+__all__ = ["__author__", "__description__", "__license__", "__url__", "__version__"]

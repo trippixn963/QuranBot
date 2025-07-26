@@ -6,7 +6,6 @@
 
 import json
 import os
-from datetime import datetime, timezone
 from pathlib import Path
 
 import discord
@@ -210,7 +209,7 @@ class LeaderboardCog(commands.Cog):
             # Load fresh quiz stats from file each time
             try:
                 if QUIZ_STATS_FILE.exists():
-                    with open(QUIZ_STATS_FILE, "r", encoding="utf-8") as f:
+                    with open(QUIZ_STATS_FILE, encoding="utf-8") as f:
                         quiz_stats = json.load(f)
                 else:
                     quiz_stats = {"user_scores": {}}
@@ -298,7 +297,7 @@ class LeaderboardCog(commands.Cog):
 # =============================================================================
 
 
-async def setup(bot):
+async def setup(bot, container=None):
     """Set up the Leaderboard cog"""
     try:
         log_perfect_tree_section(

@@ -32,14 +32,11 @@
 # - discord.py: Discord integration
 # =============================================================================
 
-import json
-import os
-import random
-import traceback
 from dataclasses import dataclass
 from enum import Enum
+import json
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+import random
 
 import discord
 
@@ -71,6 +68,9 @@ except ImportError:
         def log_warning_with_context(msg, context=""):
             print(f"WARNING: {msg} - {context}")
 
+
+# Import custom exceptions
+from src.core.exceptions import ValidationError
 
 # =============================================================================
 # Surah Data Classes and Enums
@@ -191,7 +191,12 @@ class SurahInfo:
             "description": self.description,
         }
         if key not in mapping:
-            raise KeyError(f"Key {key} not found")
+            raise ValidationError(
+                f"Key {key} not found",
+                field_name="key",
+                field_value=key,
+                validation_rule="must be valid mapping key",
+            )
         return mapping[key]
 
     def __iter__(self):
@@ -270,7 +275,7 @@ class SurahInfo:
 # =============================================================================
 
 
-def load_surah_database() -> Dict[int, SurahInfo]:
+def load_surah_database() -> dict[int, SurahInfo]:
     """
     Load and validate the complete Surah database from JSON.
 
@@ -334,7 +339,7 @@ def load_surah_database() -> Dict[int, SurahInfo]:
                 )
                 return {}
 
-            with open(json_path, "r", encoding="utf-8") as f:
+            with open(json_path, encoding="utf-8") as f:
                 data = json.load(f)
 
             log_perfect_tree_section(
@@ -367,7 +372,7 @@ def load_surah_database() -> Dict[int, SurahInfo]:
                 except (KeyError, ValueError, TypeError) as e:
                     log_warning_with_context(
                         f"Error processing Surah {number_str}",
-                        f"Skipping due to: {str(e)}",
+                        f"Skipping due to: {e!s}",
                     )
                     continue
 
@@ -414,7 +419,7 @@ SURAH_DATABASE = load_surah_database()
 # =============================================================================
 
 
-def get_surah_info(surah_number: int) -> Optional[SurahInfo]:
+def get_surah_info(surah_number: int) -> SurahInfo | None:
     """Get complete Surah information by number"""
     if not validate_surah_number(surah_number):
         return None
@@ -428,7 +433,11 @@ def get_surah_info(surah_number: int) -> Optional[SurahInfo]:
             number=surah_number,
             name_arabic=surah_data["name_arabic"],
             name_english=surah_data["name_english"],
-            name_transliteration="Al-Fatihah" if surah_number == 1 else surah_data["name_transliteration"],
+            name_transliteration=(
+                "Al-Fatihah"
+                if surah_number == 1
+                else surah_data["name_transliteration"]
+            ),
             emoji=surah_data["emoji"],
             verses=surah_data["verses"],
             revelation_type=RevelationType(surah_data["revelation_type"]),
@@ -456,7 +465,7 @@ def get_surah_display(surah_number: int) -> str:
     return f"{surah.name_transliteration} ({surah.name_arabic})"
 
 
-def get_random_surah() -> Optional[SurahInfo]:
+def get_random_surah() -> SurahInfo | None:
     """Get a random Surah from the database"""
     try:
         if not SURAH_DATABASE:
@@ -472,7 +481,7 @@ def get_random_surah() -> Optional[SurahInfo]:
         return None
 
 
-def get_all_surahs() -> Dict[int, SurahInfo]:
+def get_all_surahs() -> dict[int, SurahInfo]:
     """Get all Surahs from the database"""
     try:
         if not SURAH_DATABASE:
@@ -487,7 +496,7 @@ def get_all_surahs() -> Dict[int, SurahInfo]:
         return {}
 
 
-def search_surahs(query: str) -> List[SurahInfo]:
+def search_surahs(query: str) -> list[SurahInfo]:
     """Search for Surahs by name or number"""
     try:
         results = []
@@ -523,7 +532,7 @@ def search_surahs(query: str) -> List[SurahInfo]:
         return []
 
 
-def get_meccan_surahs() -> List[SurahInfo]:
+def get_meccan_surahs() -> list[SurahInfo]:
     """Get all Meccan Surahs"""
     try:
         if not SURAH_DATABASE:
@@ -550,7 +559,7 @@ def get_meccan_surahs() -> List[SurahInfo]:
         return []
 
 
-def get_medinan_surahs() -> List[SurahInfo]:
+def get_medinan_surahs() -> list[SurahInfo]:
     """Get all Medinan Surahs"""
     try:
         if not SURAH_DATABASE:
@@ -577,7 +586,7 @@ def get_medinan_surahs() -> List[SurahInfo]:
         return []
 
 
-def get_short_surahs(max_verses: int = 20) -> List[SurahInfo]:
+def get_short_surahs(max_verses: int = 20) -> list[SurahInfo]:
     """Get Surahs with verses count less than or equal to max_verses"""
     try:
         if not SURAH_DATABASE:
@@ -601,7 +610,7 @@ def get_short_surahs(max_verses: int = 20) -> List[SurahInfo]:
         return []
 
 
-def get_long_surahs(min_verses: int = 100) -> List[SurahInfo]:
+def get_long_surahs(min_verses: int = 100) -> list[SurahInfo]:
     """Get Surahs with verses count greater than or equal to min_verses"""
     try:
         if not SURAH_DATABASE:
@@ -646,7 +655,7 @@ def validate_surah_number(surah_number: int) -> bool:
         return False
 
 
-def get_quran_statistics() -> Dict[str, int]:
+def get_quran_statistics() -> dict[str, int]:
     """Get statistics about the Quran"""
     try:
         if not SURAH_DATABASE:
@@ -692,9 +701,7 @@ def get_quran_statistics() -> Dict[str, int]:
 # =============================================================================
 
 
-def format_now_playing(
-    surah_info: Optional[SurahInfo], reciter: str = "Unknown"
-) -> str:
+def format_now_playing(surah_info: SurahInfo | None, reciter: str = "Unknown") -> str:
     """Format a Discord message for currently playing Surah"""
     if not surah_info:
         return "❌ No Surah information available"
@@ -718,7 +725,7 @@ def format_now_playing(
     )
 
 
-def format_surah_embed(surah_info: Optional[SurahInfo]) -> Optional[discord.Embed]:
+def format_surah_embed(surah_info: SurahInfo | None) -> discord.Embed | None:
     """Format a Discord embed for Surah information"""
     try:
         if not discord:

@@ -4,39 +4,25 @@
 # Clean, simple bot information display using Discord.py Cogs
 # =============================================================================
 
-import os
-from datetime import datetime, timezone
-from pathlib import Path
-
 import discord
 from discord import app_commands
 from discord.ext import commands
-from dotenv import load_dotenv
+
+from src.config import get_config_service
+from src.core.exceptions import DiscordAPIError, ServiceError, handle_errors
+from src.core.security import rate_limit
+from src.core.structured_logger import StructuredLogger
+from src.core.webhook_logger import ModernWebhookLogger
 
 # Import tree logging functions
-from utils.tree_log import (
-    log_error_with_traceback,
-    log_perfect_tree_section,
-    log_user_interaction,
-)
-
-# Import version and author from centralized version module
-from version import BOT_VERSION
+from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
+from src.version import __version__
 
 # =============================================================================
-# Environment Configuration
-# =============================================================================
-
-# Load environment variables
-current_dir = Path(__file__).parent
-project_root = current_dir.parent.parent
-env_path = os.path.join(os.path.dirname(__file__), "..", "..", "config", ".env")
-load_dotenv(env_path)
-
 # Configuration
-ADMIN_USER_ID = int(os.getenv("ADMIN_USER_ID", "0"))
-GITHUB_REPO_URL = "https://github.com/trippixn963/QuranBot"
+# =============================================================================
 
+GITHUB_REPO_URL = "https://github.com/trippixn963/QuranBot"
 
 # =============================================================================
 # Credits Cog
@@ -46,32 +32,33 @@ GITHUB_REPO_URL = "https://github.com/trippixn963/QuranBot"
 class CreditsCog(commands.Cog):
     """Credits command cog for displaying bot information"""
 
-    def __init__(self, bot):
+    def __init__(self, bot, container=None):
         self.bot = bot
+        self.container = container
+        self.config_service = get_config_service()
+        self.config = self.config_service.config
+        self.logger = StructuredLogger("credits", "INFO")
 
     @app_commands.command(
         name="credits",
         description="🕌 Show bot information and credits",
     )
+    @rate_limit(user_limit=3, user_window=30)  # 3 requests per 30 seconds per user
+    @handle_errors(logger=None, reraise=False)
     async def credits(self, interaction: discord.Interaction):
         """
         Simple and clean credits command
         """
         try:
             # Log command execution
-            log_perfect_tree_section(
-                "Credits Command - Simplified",
-                [
-                    (
-                        "user",
-                        f"{interaction.user.display_name} ({interaction.user.id})",
-                    ),
-                    (
-                        "guild",
-                        f"{interaction.guild.name if interaction.guild else 'DM'}",
-                    ),
-                ],
-                "ℹ️",
+            await self.logger.info(
+                "Credits command executed",
+                {
+                    "user_id": interaction.user.id,
+                    "user_name": interaction.user.display_name,
+                    "guild_id": interaction.guild.id if interaction.guild else None,
+                    "guild_name": interaction.guild.name if interaction.guild else "DM",
+                },
             )
 
             # Get bot stats
@@ -89,9 +76,9 @@ class CreditsCog(commands.Cog):
             embed.add_field(
                 name="🤖 Bot Information",
                 value=(
-                    f"**Version:** `3.0.0`\n"
-                    f"**Commands:** `/credits` `/leaderboard`\n"
-                    f"**Features:** Audio streaming, Daily verses, Leaderboard"
+                    f"**Version:** `{__version__}`\n"
+                    "**Commands:** `/credits` `/leaderboard`\n"
+                    "**Features:** Audio streaming, Daily verses, Leaderboard"
                 ),
                 inline=False,
             )
@@ -103,7 +90,7 @@ class CreditsCog(commands.Cog):
             embed.add_field(
                 name="👨‍💻 Developer Information",
                 value=(
-                    f"**Created by:** <@{ADMIN_USER_ID}>\n"
+                    f"**Created by:** <@{self.config.ADMIN_USER_ID}>\n"
                     f"**GitHub:** [QuranBot Repository]({GITHUB_REPO_URL})\n"
                     f"**⭐ Please star the repository if you like it!**"
                 ),
@@ -116,7 +103,7 @@ class CreditsCog(commands.Cog):
             # Beta Testing Notice
             embed.add_field(
                 name="⚠️ Beta Testing",
-                value=f"This bot is currently in **beta testing phase**. Please DM <@{ADMIN_USER_ID}> if you encounter any issues or bugs.",
+                value=f"This bot is currently in **beta testing phase**. Please DM <@{self.config.ADMIN_USER_ID}> if you encounter any issues or bugs.",
                 inline=False,
             )
 
@@ -124,25 +111,96 @@ class CreditsCog(commands.Cog):
             if interaction.client.user and interaction.client.user.avatar:
                 embed.set_thumbnail(url=interaction.client.user.avatar.url)
 
-            # No footer as requested
-
             # Send the embed
             await interaction.response.send_message(embed=embed, ephemeral=False)
 
+            # Log credits command usage via webhook
+            try:
+                if self.container:
+                    webhook_logger = self.container.get(ModernWebhookLogger)
+                    if webhook_logger and webhook_logger.initialized:
+                        await webhook_logger.log_quran_command_usage(
+                            command_name="credits",
+                            user_name=interaction.user.display_name,
+                            user_id=interaction.user.id,
+                            user_avatar=(
+                                interaction.user.display_avatar.url
+                                if interaction.user.display_avatar
+                                else None
+                            ),
+                            channel_name=(
+                                interaction.channel.name
+                                if hasattr(interaction.channel, "name")
+                                else "Direct Message"
+                            ),
+                            details="Bot information and credits displayed",
+                            success=True,
+                        )
+            except Exception as webhook_error:
+                await self.logger.warning(
+                    "Failed to send webhook for credits command",
+                    {"user_id": interaction.user.id, "error": str(webhook_error)},
+                )
+
             # Log successful completion
-            log_perfect_tree_section(
-                "Credits Command - Success",
-                [
-                    ("user", f"{interaction.user.display_name}"),
-                    ("guild_count", guild_count),
-                    ("user_count", user_count),
-                    ("status", "✅ Simple credits display sent"),
-                ],
-                "✅",
+            await self.logger.info(
+                "Credits command completed successfully",
+                {
+                    "user_id": interaction.user.id,
+                    "guild_count": guild_count,
+                    "user_count": user_count,
+                },
+            )
+
+        except discord.HTTPException as e:
+            # Discord API specific errors
+            await self.logger.error(
+                "Discord API error in credits command",
+                {
+                    "error_code": getattr(e, "code", None),
+                    "error_text": getattr(e, "text", str(e)),
+                    "user_id": interaction.user.id,
+                },
+            )
+            raise DiscordAPIError(
+                "Failed to send credits message due to Discord API error",
+                status_code=getattr(e, "status", None),
+                discord_error=str(e),
+                context={"command": "credits", "user_id": interaction.user.id},
+                original_error=e,
+            )
+
+        except discord.Forbidden as e:
+            # Permission errors
+            await self.logger.error(
+                "Permission denied in credits command",
+                {
+                    "error": str(e),
+                    "user_id": interaction.user.id,
+                    "guild_id": interaction.guild.id if interaction.guild else None,
+                },
+            )
+            raise DiscordAPIError(
+                "Insufficient permissions to send credits message",
+                status_code=403,
+                discord_error=str(e),
+                context={"command": "credits", "user_id": interaction.user.id},
+                original_error=e,
             )
 
         except Exception as e:
-            log_error_with_traceback("Error in credits command", e)
+            # Unexpected errors - wrap in ServiceError
+            await self.logger.error(
+                "Unexpected error in credits command",
+                {
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                    "user_id": interaction.user.id,
+                },
+                exc_info=True,
+            )
+
+            # Try to send error message to user
             try:
                 error_embed = discord.Embed(
                     title="❌ Error",
@@ -153,7 +211,19 @@ class CreditsCog(commands.Cog):
                     embed=error_embed, ephemeral=True
                 )
             except:
-                pass
+                # If we can't send the error message, just log it
+                await self.logger.error(
+                    "Failed to send error message to user",
+                    {"user_id": interaction.user.id},
+                )
+
+            raise ServiceError(
+                "Unexpected error in credits command",
+                service_name="credits_cog",
+                operation="display_credits",
+                context={"user_id": interaction.user.id},
+                original_error=e,
+            )
 
 
 # =============================================================================
@@ -161,7 +231,7 @@ class CreditsCog(commands.Cog):
 # =============================================================================
 
 
-async def setup(bot):
+async def setup(bot, container=None):
     """
     Set up the Credits cog
     """
@@ -176,7 +246,7 @@ async def setup(bot):
             "🚀",
         )
 
-        await bot.add_cog(CreditsCog(bot))
+        await bot.add_cog(CreditsCog(bot, container))
 
         log_perfect_tree_section(
             "Credits Cog Setup - Complete",
@@ -203,8 +273,14 @@ async def setup(bot):
             "💥",
         )
 
-        # Re-raise the exception to ensure the bot startup process is aware of the failure
-        raise
+        # Re-raise as ServiceError for proper handling
+        raise ServiceError(
+            "Failed to setup credits cog",
+            service_name="credits_cog",
+            operation="setup",
+            context={"error_type": type(setup_error).__name__},
+            original_error=setup_error,
+        )
 
 
 # =============================================================================

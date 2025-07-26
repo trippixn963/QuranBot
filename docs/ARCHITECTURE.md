@@ -1,6 +1,6 @@
 # 🏗️ QuranBot Technical Architecture
 
-*"And Allah has created every animal from water. Some of them walk on their bellies, some walk on two legs, and some walk on four. Allah creates what He wills. Allah has power over all things."* - **Quran 24:45**
+_"And Allah has created every animal from water. Some of them walk on their bellies, some walk on two legs, and some walk on four. Allah creates what He wills. Allah has power over all things."_ - **Quran 24:45**
 
 ## Overview
 
@@ -38,33 +38,33 @@ graph TB
         DG[Discord Gateway]
         DA[Discord API]
     end
-    
+
     subgraph "QuranBot Core"
         BM[Bot Main]
         CM[Command Manager]
         EM[Event Manager]
     end
-    
+
     subgraph "Service Layer"
         AM[Audio Manager]
         QM[Quiz Manager]
         SM[State Manager]
         CP[Control Panel]
     end
-    
+
     subgraph "Data Layer"
         JSON[JSON Files]
         AUDIO[Audio Files]
         LOGS[Log Files]
         BACKUP[Backup System]
     end
-    
+
     subgraph "Infrastructure"
         SRV[Server Environment]
-        WD[Web Dashboard]
-        NGINX[Nginx Proxy]
+        WH[Webhook System]
+        LOG[Log Management]
     end
-    
+
     DC --> DG
     DG --> DA
     DA --> BM
@@ -78,8 +78,8 @@ graph TB
     SM --> JSON
     AM --> AUDIO
     BM --> LOGS
-    SRV --> WD
-    WD --> NGINX
+    SRV --> WH
+    WH --> LOG
 ```
 
 ### Component Interaction Flow
@@ -91,8 +91,8 @@ sequenceDiagram
     participant B as Bot Core
     participant A as Audio Manager
     participant S as State Manager
-    participant W as Web Dashboard
-    
+    participant L as Logging System
+
     U->>D: /verse command
     D->>B: Command received
     B->>A: Process audio request
@@ -102,17 +102,18 @@ sequenceDiagram
     A->>D: Join voice channel
     A->>D: Start audio playback
     A->>S: Save current state
-    B->>W: Update dashboard data
-    W-->>U: Real-time status update
+    B->>L: Log activity via webhook
+    L-->>D: Send status to Discord
 ```
 
 ---
 
 ## 🧩 Core Components Architecture
 
-### 1. Bot Core (`src/bot/main.py`)
+### 1. Bot Core (`main.py`)
 
 #### Responsibilities
+
 - Discord client initialization and management
 - Event handling and command routing
 - Global error handling and logging
@@ -121,10 +122,11 @@ sequenceDiagram
 #### Key Design Patterns
 
 **Singleton Pattern**: Single bot instance per deployment
+
 ```python
 class QuranBot:
     _instance = None
-    
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
@@ -132,6 +134,7 @@ class QuranBot:
 ```
 
 **Observer Pattern**: Event-driven architecture
+
 ```python
 @bot.event
 async def on_voice_state_update(member, before, after):
@@ -140,6 +143,7 @@ async def on_voice_state_update(member, before, after):
 ```
 
 **Command Pattern**: Slash command handling
+
 ```python
 @bot.tree.command(name="verse", description="Play Quranic verse")
 async def verse_command(interaction: discord.Interaction, surah: int, ayah: int):
@@ -157,20 +161,20 @@ graph TD
         CH[Command Handlers]
         GEH[Global Error Handler]
     end
-    
+
     subgraph "Discord Integration"
         INTENTS[Discord Intents]
         TREE[Command Tree]
         VC[Voice Client]
     end
-    
+
     subgraph "Service Integration"
         AM[Audio Manager]
         QM[Quiz Manager]
         SM[State Manager]
         LSM[Listening Stats]
     end
-    
+
     INIT --> INTENTS
     INIT --> TREE
     EH --> AM
@@ -204,15 +208,16 @@ stateDiagram-v2
 #### Key Components
 
 **Position Tracking System**:
+
 ```python
 class PositionTracker:
     """Real-time audio position tracking for resume functionality"""
-    
+
     def __init__(self):
         self.track_start_time = None
         self.current_position = 0.0
         self.is_tracking = False
-    
+
     async def start_tracking(self):
         """Begin position tracking loop"""
         while self.is_tracking:
@@ -223,14 +228,15 @@ class PositionTracker:
 ```
 
 **Multi-Reciter Support**:
+
 ```python
 class ReciterManager:
     """Manages multiple Quranic reciters and audio sources"""
-    
+
     def __init__(self, audio_base_folder: str):
         self.base_folder = Path(audio_base_folder)
         self.available_reciters = self._discover_reciters()
-    
+
     def _discover_reciters(self) -> List[str]:
         """Dynamically discover available reciters from filesystem"""
         return [d.name for d in self.base_folder.iterdir() if d.is_dir()]
@@ -245,25 +251,25 @@ flowchart LR
         API[API Requests]
         SCHED[Scheduler]
     end
-    
+
     subgraph "Processing Layer"
         AM[Audio Manager]
         FM[File Manager]
         SM[State Manager]
     end
-    
+
     subgraph "Output Layer"
         VC[Voice Client]
         LOGS[Logging]
-        DASH[Dashboard]
+        MON[Monitoring]
     end
-    
+
     subgraph "Storage Layer"
         AUDIO[Audio Files]
         STATE[State Files]
         BACKUP[Backups]
     end
-    
+
     UI --> AM
     API --> AM
     SCHED --> AM
@@ -274,7 +280,6 @@ flowchart LR
     SM --> BACKUP
     AM --> VC
     AM --> LOGS
-    AM --> DASH
 ```
 
 ### 3. Quiz Management System (`src/utils/quiz_manager.py`)
@@ -290,20 +295,20 @@ graph TD
         QV[Question Validator]
         QS[Question Selector]
     end
-    
+
     subgraph "Session Management"
         SS[Session State]
         US[User Statistics]
         LB[Leaderboard]
     end
-    
+
     subgraph "Islamic Content"
         QC[Quranic Content]
         HC[Hadith Content]
         IC[Islamic History]
         FC[Fiqh Content]
     end
-    
+
     QDB --> QV
     QV --> QS
     QS --> SS
@@ -321,7 +326,7 @@ graph TD
 @dataclass
 class IslamicQuestion:
     """Structured representation of Islamic knowledge questions"""
-    
+
     id: str
     category: QuestionCategory  # Quran, Hadith, Fiqh, History
     difficulty: DifficultyLevel  # Beginner, Intermediate, Advanced
@@ -331,7 +336,7 @@ class IslamicQuestion:
     explanation: Dict[str, str]  # Multi-language explanations
     references: List[str]  # Quranic verses, Hadith references
     tags: List[str]  # Topic classification
-    
+
     def validate_islamic_content(self) -> bool:
         """Ensure content adheres to Islamic principles"""
         # Implementation for content validation
@@ -343,9 +348,9 @@ class IslamicQuestion:
 ```python
 class IslamicScoringSystem:
     """Implements Islamic education-focused scoring"""
-    
-    def calculate_score(self, 
-                       correct: bool, 
+
+    def calculate_score(self,
+                       correct: bool,
                        difficulty: DifficultyLevel,
                        time_taken: float,
                        streak: int) -> int:
@@ -361,14 +366,14 @@ class IslamicScoringSystem:
             DifficultyLevel.INTERMEDIATE: 1.5,
             DifficultyLevel.ADVANCED: 2.0
         }
-        
+
         # Time bonus: reward thoughtful answers
         time_bonus = max(0, 30 - time_taken) / 30 * 5
-        
+
         # Streak bonus: encourage consistent learning
         streak_bonus = min(streak * 2, 20)
-        
-        return int(base_score * difficulty_multiplier[difficulty] + 
+
+        return int(base_score * difficulty_multiplier[difficulty] +
                   time_bonus + streak_bonus)
 ```
 
@@ -386,28 +391,30 @@ graph LR
         LS[Listening Stats]
         BS[Bot Statistics]
     end
-    
-    subgraph "State Manager"
-        SM[State Manager]
+
+    subgraph "Modern State Service"
+        SS[State Service]
         BM[Backup Manager]
         VM[Validation Manager]
+        SM[Session Manager]
     end
-    
+
     subgraph "Storage"
         JSON[JSON Files]
         BACKUP[ZIP Backups]
         TEMP[Temp Files]
     end
-    
-    PS --> SM
-    QS --> SM
-    LS --> SM
-    BS --> SM
-    SM --> VM
+
+    PS --> SS
+    QS --> SS
+    LS --> SS
+    BS --> SS
+    SS --> VM
     VM --> JSON
-    SM --> BM
+    SS --> BM
     BM --> BACKUP
-    SM --> TEMP
+    SS --> SM
+    SS --> TEMP
 ```
 
 #### Atomic Operations
@@ -415,7 +422,7 @@ graph LR
 ```python
 class AtomicStateWriter:
     """Ensures atomic writes to prevent data corruption"""
-    
+
     async def write_state(self, data: Dict, filepath: Path) -> bool:
         """
         Atomic write operation:
@@ -425,12 +432,12 @@ class AtomicStateWriter:
         4. Create backup if needed
         """
         temp_file = filepath.with_suffix('.tmp')
-        
+
         try:
             # Write to temporary file
             async with aiofiles.open(temp_file, 'w') as f:
                 await f.write(json.dumps(data, indent=2))
-            
+
             # Validate written data
             if await self._validate_json_file(temp_file):
                 # Atomic rename
@@ -439,83 +446,77 @@ class AtomicStateWriter:
             else:
                 temp_file.unlink()  # Remove invalid file
                 return False
-                
+
         except Exception as e:
             if temp_file.exists():
                 temp_file.unlink()
             raise e
 ```
 
-### 5. Web Dashboard Architecture (Optional Component)
+### 5. Webhook Logging Architecture
 
-#### Dashboard System Design
+#### Discord Webhook System Design
 
 ```mermaid
 graph TB
-    subgraph "Frontend Layer"
-        HTML[Dashboard HTML]
-        JS[JavaScript Client]
-        CSS[Styling]
+    subgraph "Logging Sources"
+        BOT[Bot Events]
+        AUDIO[Audio System]
+        QUIZ[Quiz System]
+        ERROR[Error Handler]
     end
-    
-    subgraph "Backend Layer"
-        FLASK[Flask Application]
-        API[REST API Endpoints]
-        MONITOR[Bot Monitor]
+
+    subgraph "Webhook Layer"
+        UL[Unified Logger]
+        WH[Discord Webhook]
+        RATE[Rate Limiter]
     end
-    
-    subgraph "Data Sources"
-        LOGS[Log Files]
-        STATE[State Files]
-        SYSTEM[System Metrics]
+
+    subgraph "Discord Platform"
+        CHAN[Log Channel]
+        EMBED[Rich Embeds]
+        NOTIF[Notifications]
     end
-    
-    subgraph "Real-time Features"
-        SSE[Server-Sent Events]
-        POLLING[AJAX Polling]
-        WS[WebSocket Support]
-    end
-    
-    HTML --> JS
-    JS --> API
-    API --> FLASK
-    FLASK --> MONITOR
-    MONITOR --> LOGS
-    MONITOR --> STATE
-    MONITOR --> SYSTEM
-    JS --> SSE
-    JS --> POLLING
-    FLASK --> WS
+
+    BOT --> UL
+    AUDIO --> UL
+    QUIZ --> UL
+    ERROR --> UL
+    UL --> RATE
+    RATE --> WH
+    WH --> CHAN
+    CHAN --> EMBED
+    CHAN --> NOTIF
 ```
 
-#### API Architecture
+#### Webhook Logger Architecture
 
 ```python
-class DashboardAPI:
-    """RESTful API for dashboard functionality"""
-    
-    def __init__(self, bot_monitor: BotMonitor):
-        self.monitor = bot_monitor
-        self.app = Flask(__name__)
-        self._register_routes()
-    
-    def _register_routes(self):
-        """Register all API endpoints"""
-        
-        @self.app.route('/api/status')
-        def get_bot_status():
-            """Real-time bot status endpoint"""
-            return jsonify(self.monitor.get_bot_status())
-        
-        @self.app.route('/api/audio')
-        def get_audio_status():
-            """Current audio playback status"""
-            return jsonify(self.monitor.get_audio_status())
-        
-        @self.app.route('/api/leaderboard')
-        def get_leaderboard():
-            """Quiz leaderboard with Islamic context"""
-            return jsonify(self.monitor.get_leaderboard())
+class DiscordWebhookLogger:
+    """Webhook-based Discord logging system"""
+
+    def __init__(self, webhook_url: str, owner_user_id: int):
+        self.webhook_url = webhook_url
+        self.owner_user_id = owner_user_id
+        self.rate_limit_cache = {}
+        self.session = None
+
+    async def log_error(self, error_message: str, exception: Exception = None):
+        """Log error with owner ping via webhook"""
+        await self._send_webhook_embed(
+            title="Critical Error",
+            description=error_message,
+            level="ERROR",
+            content=f"🚨 <@{self.owner_user_id}> **ERROR DETECTED** 🚨"
+        )
+
+    async def log_system_event(self, event_name: str, description: str):
+        """Log system events via webhook"""
+        await self._send_webhook_embed(
+            title=event_name,
+            description=description,
+            level="SYSTEM"
+        )
 ```
 
 ---
@@ -534,7 +535,7 @@ sequenceDiagram
     participant CM as Command Manager
     participant SM as Service Manager
     participant DL as Data Layer
-    
+
     U->>D: Slash Command
     D->>BC: Interaction Event
     BC->>CM: Route Command
@@ -557,7 +558,7 @@ flowchart TD
     JOIN --> STREAM[Stream Audio]
     STREAM --> TRACK[Track Position]
     TRACK --> SAVE[Save State]
-    SAVE --> UPDATE[Update Dashboard]
+    SAVE --> UPDATE[Update Monitoring]
     UPDATE --> COMPLETE{Complete?}
     COMPLETE -->|No| STREAM
     COMPLETE -->|Yes| CLEANUP[Cleanup Resources]
@@ -600,17 +601,13 @@ flowchart TD
     "points": 2450,
     "rank": 3,
     "categories": {
-      "quran": {"correct": 45, "total": 50},
-      "hadith": {"correct": 38, "total": 45},
-      "fiqh": {"correct": 28, "total": 35},
-      "history": {"correct": 16, "total": 20}
+      "quran": { "correct": 45, "total": 50 },
+      "hadith": { "correct": 38, "total": 45 },
+      "fiqh": { "correct": 28, "total": 35 },
+      "history": { "correct": 16, "total": 20 }
     }
   },
-  "achievements": [
-    "first_correct_answer",
-    "streak_master_10",
-    "quran_expert"
-  ],
+  "achievements": ["first_correct_answer", "streak_master_10", "quran_expert"],
   "last_activity": "2024-07-12T10:30:00Z"
 }
 ```
@@ -652,12 +649,12 @@ flowchart TD
 ```python
 class AsyncQuranBot:
     """Async-first architecture for optimal performance"""
-    
+
     def __init__(self):
         self.loop = asyncio.get_event_loop()
         self.task_manager = TaskManager()
         self.services = {}
-    
+
     async def start_services(self):
         """Start all bot services concurrently"""
         tasks = [
@@ -666,7 +663,7 @@ class AsyncQuranBot:
             self.task_manager.create_task(self._start_monitoring_service()),
             self.task_manager.create_task(self._start_backup_service())
         ]
-        
+
         await asyncio.gather(*tasks, return_exceptions=True)
 ```
 
@@ -675,33 +672,33 @@ class AsyncQuranBot:
 ```python
 class TaskManager:
     """Manages concurrent tasks with proper lifecycle"""
-    
+
     def __init__(self):
         self.tasks: Dict[str, asyncio.Task] = {}
         self.task_groups: Dict[str, List[asyncio.Task]] = {}
-    
+
     def create_task(self, coro, name: str = None, group: str = None) -> asyncio.Task:
         """Create and track async task"""
         task = asyncio.create_task(coro)
-        
+
         if name:
             self.tasks[name] = task
             task.add_done_callback(lambda t: self.tasks.pop(name, None))
-        
+
         if group:
             if group not in self.task_groups:
                 self.task_groups[group] = []
             self.task_groups[group].append(task)
-        
+
         return task
-    
+
     async def shutdown_group(self, group: str, timeout: float = 30):
         """Gracefully shutdown task group"""
         if group in self.task_groups:
             tasks = self.task_groups[group]
             for task in tasks:
                 task.cancel()
-            
+
             await asyncio.wait_for(
                 asyncio.gather(*tasks, return_exceptions=True),
                 timeout=timeout
@@ -715,12 +712,12 @@ class TaskManager:
 ```python
 class AudioResourcePool:
     """Manages audio processing resources efficiently"""
-    
+
     def __init__(self, max_size: int = 10):
         self.max_size = max_size
         self.pool: asyncio.Queue = asyncio.Queue(maxsize=max_size)
         self.active_resources: Set[AudioResource] = set()
-    
+
     async def acquire(self) -> AudioResource:
         """Acquire audio processing resource"""
         try:
@@ -730,10 +727,10 @@ class AudioResourcePool:
                 resource = AudioResource()
             else:
                 resource = await self.pool.get()
-        
+
         self.active_resources.add(resource)
         return resource
-    
+
     async def release(self, resource: AudioResource):
         """Release resource back to pool"""
         if resource in self.active_resources:
@@ -753,7 +750,7 @@ class AudioResourcePool:
 ```python
 class IslamicErrorHandler:
     """Islamic-values-based error handling system"""
-    
+
     def __init__(self):
         self.error_handlers = {
             AudioError: self._handle_audio_error,
@@ -761,21 +758,21 @@ class IslamicErrorHandler:
             StateError: self._handle_state_error,
             NetworkError: self._handle_network_error
         }
-    
+
     async def handle_error(self, error: Exception, context: Dict[str, Any]):
         """Handle errors with Islamic principles of patience and wisdom"""
-        
+
         # Log with Islamic context
         await self._log_with_islamic_context(error, context)
-        
+
         # Attempt graceful recovery
         handler = self.error_handlers.get(type(error), self._handle_generic_error)
         recovery_successful = await handler(error, context)
-        
+
         if not recovery_successful:
             # Escalate with du'a for guidance
             await self._escalate_with_guidance(error, context)
-    
+
     async def _log_with_islamic_context(self, error: Exception, context: Dict[str, Any]):
         """Log errors with Islamic wisdom and patience"""
         log_perfect_tree_section(
@@ -797,12 +794,12 @@ class IslamicErrorHandler:
 ```python
 class IslamicSecurityManager:
     """Security management with Islamic principles"""
-    
+
     def __init__(self):
         self.rate_limiters = {}
         self.access_controls = {}
         self.audit_logger = AuditLogger()
-    
+
     async def validate_user_access(self, user_id: int, resource: str) -> bool:
         """
         Validate user access with Islamic principles of trust and responsibility
@@ -811,27 +808,27 @@ class IslamicSecurityManager:
         if not await self._check_rate_limit(user_id, resource):
             await self.audit_logger.log_rate_limit_exceeded(user_id, resource)
             return False
-        
+
         # Check permissions (amanah - trust and responsibility)
         if not await self._check_permissions(user_id, resource):
             await self.audit_logger.log_access_denied(user_id, resource)
             return False
-        
+
         # Log successful access
         await self.audit_logger.log_access_granted(user_id, resource)
         return True
-    
+
     async def _check_rate_limit(self, user_id: int, resource: str) -> bool:
         """Implement rate limiting with Islamic moderation principles"""
         key = f"{user_id}:{resource}"
-        
+
         if key not in self.rate_limiters:
             self.rate_limiters[key] = RateLimiter(
                 max_requests=10,  # Moderate usage
                 time_window=60,   # Per minute
                 principle="moderation_in_all_things"
             )
-        
+
         return await self.rate_limiters[key].allow_request()
 ```
 
@@ -848,19 +845,19 @@ graph TD
     subgraph "Application Layer"
         APP[Application Code]
     end
-    
+
     subgraph "Cache Layers"
         L1[Memory Cache<br/>Frequently Used Data]
         L2[File Cache<br/>Audio Metadata]
         L3[Disk Cache<br/>Processed Audio]
     end
-    
+
     subgraph "Storage Layer"
         DB[JSON Database]
         FILES[Audio Files]
         BACKUP[Backup Storage]
     end
-    
+
     APP --> L1
     L1 --> L2
     L2 --> L3
@@ -874,12 +871,12 @@ graph TD
 ```python
 class IslamicCacheManager:
     """Multi-layer caching with Islamic efficiency principles"""
-    
+
     def __init__(self):
         self.memory_cache = TTLCache(maxsize=1000, ttl=300)  # 5 minutes
         self.file_cache = FileCache(cache_dir="cache/")
         self.metrics = CacheMetrics()
-    
+
     async def get(self, key: str, fetch_func: Callable = None) -> Any:
         """
         Get data with cache hierarchy following Islamic efficiency
@@ -889,23 +886,23 @@ class IslamicCacheManager:
         if key in self.memory_cache:
             self.metrics.record_hit('memory')
             return self.memory_cache[key]
-        
+
         # L2: File cache
         file_data = await self.file_cache.get(key)
         if file_data is not None:
             self.memory_cache[key] = file_data
             self.metrics.record_hit('file')
             return file_data
-        
+
         # L3: Fetch from source
         if fetch_func:
             data = await fetch_func()
             await self.set(key, data)
             self.metrics.record_miss()
             return data
-        
+
         return None
-    
+
     async def set(self, key: str, value: Any, ttl: int = None):
         """Set data in all cache layers"""
         self.memory_cache[key] = value
@@ -921,19 +918,19 @@ graph TB
     subgraph "Load Balancer"
         LB[Nginx Load Balancer]
     end
-    
+
     subgraph "Bot Instances"
         B1[QuranBot Instance 1]
         B2[QuranBot Instance 2]
         B3[QuranBot Instance 3]
     end
-    
+
     subgraph "Shared Resources"
         REDIS[Redis Cache]
         SHARED_STORAGE[Shared Audio Storage]
         LOG_AGGREGATOR[Log Aggregator]
     end
-    
+
     LB --> B1
     LB --> B2
     LB --> B3
@@ -957,7 +954,7 @@ graph TB
 ```python
 class IslamicMetricsCollector:
     """Metrics collection with Islamic mindfulness"""
-    
+
     def __init__(self):
         self.metrics = {
             'community_benefit': CommunityBenefitMetrics(),
@@ -965,7 +962,7 @@ class IslamicMetricsCollector:
             'islamic_content': IslamicContentMetrics(),
             'user_engagement': UserEngagementMetrics()
         }
-    
+
     async def collect_community_metrics(self):
         """Collect metrics focused on community benefit"""
         return {
@@ -974,7 +971,7 @@ class IslamicMetricsCollector:
             'community_growth': await self._get_user_growth_rate(),
             'spiritual_engagement': await self._get_spiritual_activity_score()
         }
-    
+
     async def _get_spiritual_activity_score(self) -> float:
         """
         Calculate spiritual engagement score based on:
@@ -985,7 +982,7 @@ class IslamicMetricsCollector:
         listening_consistency = await self._calculate_listening_consistency()
         quiz_participation = await self._calculate_quiz_participation()
         community_interaction = await self._calculate_community_interaction()
-        
+
         # Weighted score emphasizing spiritual growth
         return (
             listening_consistency * 0.5 +
@@ -1001,19 +998,19 @@ class IslamicMetricsCollector:
 ```python
 class IslamicLogger:
     """Logging system with Islamic context and values"""
-    
+
     def __init__(self):
         self.tree_logger = TreeLogger()
         self.structured_logger = StructuredLogger()
         self.audit_logger = AuditLogger()
-    
-    async def log_community_action(self, 
-                                 action: str, 
-                                 user_id: int, 
+
+    async def log_community_action(self,
+                                 action: str,
+                                 user_id: int,
                                  context: Dict[str, Any],
                                  islamic_context: str = None):
         """Log actions with Islamic mindfulness and community focus"""
-        
+
         log_entry = {
             'timestamp': datetime.now(pytz.UTC).isoformat(),
             'action': action,
@@ -1022,7 +1019,7 @@ class IslamicLogger:
             'islamic_principle': islamic_context or self._get_relevant_principle(action),
             'community_impact': await self._assess_community_impact(action, context)
         }
-        
+
         # Beautiful tree-style logging
         await self.tree_logger.log_perfect_tree_section(
             f"Community Action: {action}",
@@ -1034,10 +1031,10 @@ class IslamicLogger:
             ],
             "🕌"
         )
-        
+
         # Structured logging for analysis
         await self.structured_logger.log(log_entry)
-        
+
         # Audit trail for accountability (amanah)
         await self.audit_logger.record_action(log_entry)
 ```
@@ -1050,7 +1047,7 @@ class IslamicLogger:
 
 ```yaml
 # docker-compose.yml for Islamic bot deployment
-version: '3.8'
+version: "3.8"
 
 services:
   quranbot:
@@ -1066,30 +1063,22 @@ services:
     depends_on:
       - redis
       - monitoring
-    
-  dashboard:
-    build: ./web_dashboard
-    ports:
-      - "8080:8080"
-    environment:
-      - ISLAMIC_VALUES=true
-      - COMMUNITY_SERVICE=enabled
-    depends_on:
-      - quranbot
-    
+
+
+
   redis:
     image: redis:alpine
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
-    
+
   monitoring:
     image: prometheus:latest
     ports:
       - "9090:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-    
+
   nginx:
     image: nginx:alpine
     ports:
@@ -1098,7 +1087,7 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
     depends_on:
-      - dashboard
+      - quranbot
 
 volumes:
   redis_data:
@@ -1122,30 +1111,30 @@ jobs:
     steps:
       - name: Checkout with Basmala
         uses: actions/checkout@v3
-        
+
       - name: Setup Python with Islamic Excellence
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
-          
+          python-version: "3.11"
+
       - name: Install Dependencies with Trust (Amanah)
         run: |
-          pip install -r requirements.txt
-          pip install pytest black mypy
-          
+          pip install poetry
+          poetry install
+
       - name: Code Quality Check (Ihsan)
         run: |
           black --check src/ tests/
           mypy src/
-          
+
       - name: Islamic Content Validation
         run: |
           python tests/validate_islamic_content.py
-          
+
       - name: Test with Community Focus
         run: |
           pytest tests/ -v --cov=src/
-          
+
   deploy-with-wisdom:
     needs: islamic-quality-check
     runs-on: ubuntu-latest
@@ -1182,8 +1171,8 @@ This architecture embodies Islamic principles of excellence (Ihsan), trust (Aman
 
 ---
 
-*"And Allah loves those who do good with excellence (ihsan)."* - **Quran 2:195**
+_"And Allah loves those who do good with excellence (ihsan)."_ - **Quran 2:195**
 
 May this architecture serve as a foundation for continuous improvement and benefit to the Muslim ummah worldwide. Every line of code written with Islamic consciousness becomes an act of worship and service to the community.
 
-**"And whoever does good deeds, whether male or female, while being a believer - those will enter Paradise and will not be wronged even as much as the speck on a date seed."** - *Quran 4:124* 
+**"And whoever does good deeds, whether male or female, while being a believer - those will enter Paradise and will not be wronged even as much as the speck on a date seed."** - _Quran 4:124_

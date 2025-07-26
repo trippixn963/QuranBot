@@ -8,9 +8,9 @@
 
 import argparse
 import os
+from pathlib import Path
 import re
 import sys
-from pathlib import Path
 
 
 def validate_version(version_string):
@@ -77,10 +77,10 @@ def update_readme_version_history():
         return False
 
     # Read files
-    with open(readme_file, "r", encoding="utf-8") as f:
+    with open(readme_file, encoding="utf-8") as f:
         readme_content = f.read()
 
-    with open(changelog_file, "r", encoding="utf-8") as f:
+    with open(changelog_file, encoding="utf-8") as f:
         changelog_content = f.read()
 
     # Extract version information from changelog
@@ -149,7 +149,7 @@ def update_version_file(version_string):
     major, minor, patch = map(int, version_string.split("."))
 
     # Read current content
-    with open(version_file, "r", encoding="utf-8") as f:
+    with open(version_file, encoding="utf-8") as f:
         content = f.read()
 
     # Update version components
@@ -181,7 +181,7 @@ def update_fallback_version(version_string):
     major, minor, patch = map(int, version_string.split("."))
 
     # Read current content
-    with open(utils_init, "r", encoding="utf-8") as f:
+    with open(utils_init, encoding="utf-8") as f:
         content = f.read()
 
     # Update fallback version
@@ -214,7 +214,7 @@ def update_author(author_string):
 
     # Update main version file
     if version_file.exists():
-        with open(version_file, "r", encoding="utf-8") as f:
+        with open(version_file, encoding="utf-8") as f:
             content = f.read()
 
         content = re.sub(
@@ -231,7 +231,7 @@ def update_author(author_string):
 
     # Update fallback in utils
     if utils_init.exists():
-        with open(utils_init, "r", encoding="utf-8") as f:
+        with open(utils_init, encoding="utf-8") as f:
             content = f.read()
 
         content = re.sub(
@@ -267,12 +267,6 @@ def verify_version_consistency():
         ),
         ("src", "from src import __version__, __author__", True, True),
         ("src.utils", "from src.utils import BOT_VERSION, __author__", True, True),
-        (
-            "src.bot.main",
-            "from src.bot.main import BOT_VERSION",
-            True,
-            False,
-        ),  # No author export
         (
             "src.commands.credits",
             "from src.commands.credits import BOT_VERSION",
@@ -322,7 +316,7 @@ def verify_version_consistency():
                         authors_found.add(author)
                         print(f"     👤 Author: {author}")
                     else:
-                        print(f"     ❌ No author found")
+                        print("     ❌ No author found")
                         success = False
                 else:
                     # Module doesn't export author - that's OK
@@ -330,7 +324,7 @@ def verify_version_consistency():
                         authors_found.add(author)
                         print(f"     👤 Author: {author}")
                     else:
-                        print(f"     ℹ️ No author export (expected)")
+                        print("     ℹ️ No author export (expected)")
 
             except Exception as e:
                 print(f"  ❌ {module_name}: Import failed - {e}")
@@ -344,14 +338,14 @@ def verify_version_consistency():
 
     # Check consistency
     if len(versions_found) > 1:
-        print(f"\n❌ Version inconsistency detected!")
+        print("\n❌ Version inconsistency detected!")
         print(f"   Found versions: {', '.join(sorted(versions_found))}")
         success = False
     elif len(versions_found) == 1:
         print(f"\n✅ All modules using consistent version: {list(versions_found)[0]}")
 
     if len(authors_found) > 1:
-        print(f"\n❌ Author inconsistency detected!")
+        print("\n❌ Author inconsistency detected!")
         print(f"   Found authors: {', '.join(sorted(authors_found))}")
         success = False
     elif len(authors_found) == 1:

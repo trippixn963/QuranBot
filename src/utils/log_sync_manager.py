@@ -6,11 +6,8 @@
 # =============================================================================
 
 import asyncio
-import os
-import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 from .tree_log import log_error_with_traceback, log_perfect_tree_section
 
@@ -18,16 +15,22 @@ from .tree_log import log_error_with_traceback, log_perfect_tree_section
 class LogSyncManager:
     """Integrated log sync manager that runs as part of the bot"""
 
-    def __init__(self, vps_host: Optional[str] = None, sync_interval: int = 30):
-        self.vps_host = vps_host or os.getenv("VPS_HOST")
+    def __init__(self, vps_host: str | None = None, sync_interval: int = 30):
+        if vps_host is None:
+            from src.config import get_config_service
+
+            config = get_config_service().config
+            self.vps_host = config.VPS_HOST
+        else:
+            self.vps_host = vps_host
         self.sync_interval = sync_interval
-        self.sync_task: Optional[asyncio.Task] = None
+        self.sync_task: asyncio.Task | None = None
         self.is_running = False
-        
+
         # Paths
         self.local_logs_dir = Path("logs")
         self.vps_logs_path = "/opt/DiscordBots/QuranBot/logs/"
-        
+
         # Stats
         self.sync_count = 0
         self.last_sync_time = None
@@ -128,7 +131,14 @@ class LogSyncManager:
                 [
                     ("status", "🛑 Log sync stopped"),
                     ("total_syncs", self.sync_count),
-                    ("last_sync", self._format_time(self.last_sync_time) if self.last_sync_time else "Never"),
+                    (
+                        "last_sync",
+                        (
+                            self._format_time(self.last_sync_time)
+                            if self.last_sync_time
+                            else "Never"
+                        ),
+                    ),
                 ],
                 "📡",
             )
@@ -141,7 +151,7 @@ class LogSyncManager:
         try:
             # Initial sync
             await self._perform_sync()
-            
+
             while self.is_running:
                 try:
                     await asyncio.sleep(self.sync_interval)
@@ -172,9 +182,14 @@ class LogSyncManager:
         try:
             # Get current date directories to sync
             today = datetime.now().strftime("%Y-%m-%d")
-            yesterday = (datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).timestamp() - 86400)
+            yesterday = (
+                datetime.now()
+                .replace(hour=0, minute=0, second=0, microsecond=0)
+                .timestamp()
+                - 86400
+            )
             yesterday_str = datetime.fromtimestamp(yesterday).strftime("%Y-%m-%d")
-            
+
             dates_to_sync = [today, yesterday_str]
             synced_dates = []
 
@@ -183,37 +198,39 @@ class LogSyncManager:
                     # Check if VPS directory exists
                     vps_date_path = f"{self.vps_logs_path}{date_str}/"
                     check_cmd = f"ssh {self.vps_host} 'test -d {vps_date_path}'"
-                    
+
                     result = await asyncio.create_subprocess_shell(
                         check_cmd,
                         stdout=asyncio.subprocess.DEVNULL,
-                        stderr=asyncio.subprocess.DEVNULL
+                        stderr=asyncio.subprocess.DEVNULL,
                     )
                     await result.wait()
-                    
+
                     if result.returncode != 0:
                         continue  # Directory doesn't exist, skip
-                    
+
                     # Create local directory
                     local_date_dir = self.local_logs_dir / date_str
                     local_date_dir.mkdir(exist_ok=True)
-                    
+
                     # Sync the directory
                     rsync_cmd = f"rsync -az --timeout=30 {self.vps_host}:{vps_date_path} {local_date_dir}/"
-                    
+
                     result = await asyncio.create_subprocess_shell(
                         rsync_cmd,
                         stdout=asyncio.subprocess.DEVNULL,
-                        stderr=asyncio.subprocess.PIPE
+                        stderr=asyncio.subprocess.PIPE,
                     )
-                    
+
                     _, stderr = await result.communicate()
-                    
+
                     if result.returncode == 0:
                         synced_dates.append(date_str)
                     else:
                         error_msg = stderr.decode() if stderr else "Unknown rsync error"
-                        log_error_with_traceback(f"Rsync failed for {date_str}", Exception(error_msg))
+                        log_error_with_traceback(
+                            f"Rsync failed for {date_str}", Exception(error_msg)
+                        )
 
                 except Exception as e:
                     log_error_with_traceback(f"Error syncing date {date_str}", e)
@@ -244,14 +261,14 @@ class LogSyncManager:
         """Test if we can connect to the VPS"""
         try:
             test_cmd = f"ssh -o ConnectTimeout=10 {self.vps_host} 'echo test'"
-            
+
             result = await asyncio.create_subprocess_shell(
                 test_cmd,
                 stdout=asyncio.subprocess.DEVNULL,
-                stderr=asyncio.subprocess.DEVNULL
+                stderr=asyncio.subprocess.DEVNULL,
             )
             await result.wait()
-            
+
             return result.returncode == 0
 
         except Exception:
@@ -266,7 +283,7 @@ class LogSyncManager:
         except Exception:
             return False
 
-    def _format_time(self, dt: Optional[datetime]) -> str:
+    def _format_time(self, dt: datetime | None) -> str:
         """Format datetime for display"""
         if not dt:
             return "Never"
@@ -285,21 +302,23 @@ class LogSyncManager:
 
 
 # Global instance
-_log_sync_manager: Optional[LogSyncManager] = None
+_log_sync_manager: LogSyncManager | None = None
 
 
-def get_log_sync_manager() -> Optional[LogSyncManager]:
+def get_log_sync_manager() -> LogSyncManager | None:
     """Get the global log sync manager instance"""
     return _log_sync_manager
 
 
-async def start_integrated_log_sync(vps_host: Optional[str] = None, sync_interval: int = 30):
+async def start_integrated_log_sync(
+    vps_host: str | None = None, sync_interval: int = 30
+):
     """Start integrated log syncing"""
     global _log_sync_manager
-    
+
     if _log_sync_manager and _log_sync_manager.is_running:
         return _log_sync_manager
-    
+
     _log_sync_manager = LogSyncManager(vps_host, sync_interval)
     await _log_sync_manager.start()
     return _log_sync_manager
@@ -308,7 +327,7 @@ async def start_integrated_log_sync(vps_host: Optional[str] = None, sync_interva
 async def stop_integrated_log_sync():
     """Stop integrated log syncing"""
     global _log_sync_manager
-    
+
     if _log_sync_manager:
         await _log_sync_manager.stop()
-        _log_sync_manager = None 
+        _log_sync_manager = None

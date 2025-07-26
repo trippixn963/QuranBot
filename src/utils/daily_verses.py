@@ -37,16 +37,15 @@
 # =============================================================================
 
 import asyncio
-import json
-import os
-import random
 from datetime import datetime, timedelta
+import json
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+import random
 
 import discord
 import pytz
 
+from .discord_logger import get_discord_logger
 from .tree_log import (
     log_error_with_traceback,
     log_perfect_tree_section,
@@ -113,7 +112,7 @@ class DailyVerseManager:
     ```
     """
 
-    def __init__(self, data_dir: Union[str, Path]):
+    def __init__(self, data_dir: str | Path):
         """
         Initialize the daily content manager.
 
@@ -137,7 +136,7 @@ class DailyVerseManager:
         self.last_sent_time = None  # Last delivery timestamp
 
         # Anti-duplicate system
-        self.recent_verses: List[str] = []  # Track recent IDs
+        self.recent_verses: list[str] = []  # Track recent IDs
         self.max_recent_verses = 20  # Anti-duplicate buffer size
 
         # Ensure data storage exists
@@ -151,7 +150,7 @@ class DailyVerseManager:
         """Get the current verse interval in hours from config"""
         try:
             if self.verses_state_file.exists():
-                with open(self.verses_state_file, "r") as f:
+                with open(self.verses_state_file) as f:
                     data = json.load(f)
                     return data.get("schedule_config", {}).get(
                         "send_interval_hours", 3.0
@@ -167,20 +166,22 @@ class DailyVerseManager:
             # Load existing config or create new one
             config_data = {}
             if self.verses_state_file.exists():
-                with open(self.verses_state_file, "r") as f:
+                with open(self.verses_state_file) as f:
                     config_data = json.load(f)
-            
+
             # Update the schedule config
             if "schedule_config" not in config_data:
                 config_data["schedule_config"] = {}
-            
+
             config_data["schedule_config"]["send_interval_hours"] = hours
-            config_data["schedule_config"]["last_updated"] = datetime.now(pytz.UTC).isoformat()
-            
+            config_data["schedule_config"]["last_updated"] = datetime.now(
+                pytz.UTC
+            ).isoformat()
+
             # Save the updated config
             with open(self.verses_state_file, "w") as f:
                 json.dump(config_data, f, indent=2)
-            
+
             return True
         except Exception as e:
             log_error_with_traceback("Error saving verse interval config", e)
@@ -303,7 +304,7 @@ class DailyVerseManager:
             log_error_with_traceback("Error adding verse", e)
             return False
 
-    def get_verse_by_number(self, surah: int, verse: int) -> Optional[Dict]:
+    def get_verse_by_number(self, surah: int, verse: int) -> dict | None:
         """Get a specific verse by number"""
         try:
             for verse_entry in self.verse_pool:
@@ -314,7 +315,7 @@ class DailyVerseManager:
             log_error_with_traceback("Error getting verse by number", e)
             return None
 
-    def get_random_verse(self) -> Optional[Dict]:
+    def get_random_verse(self) -> dict | None:
         """Get a random verse from the pool, avoiding recently sent verses"""
         try:
             if not self.verse_pool:
@@ -389,7 +390,7 @@ class DailyVerseManager:
         except Exception as e:
             log_error_with_traceback("Error adding to recent verses", e)
 
-    def get_recent_verses_info(self) -> Dict:
+    def get_recent_verses_info(self) -> dict:
         """Get information about recently sent verses"""
         try:
             return {
@@ -459,9 +460,9 @@ class DailyVerseManager:
             # Load existing verse statistics
             stats_data = {}
             if self.verses_state_file.exists():
-                with open(self.verses_state_file, "r") as f:
+                with open(self.verses_state_file) as f:
                     stats_data = json.load(f)
-            
+
             # Initialize statistics if not exists
             if "total_dua_reactions" not in stats_data:
                 stats_data["total_dua_reactions"] = 0
@@ -469,29 +470,32 @@ class DailyVerseManager:
                 stats_data["user_reactions"] = {}
             if "surah_stats" not in stats_data:
                 stats_data["surah_stats"] = {}
-            
+
             # Update statistics
             stats_data["total_dua_reactions"] += 1
-            
+
             # Track user reactions
             user_id_str = str(user_id)
             if user_id_str not in stats_data["user_reactions"]:
                 stats_data["user_reactions"][user_id_str] = 0
             stats_data["user_reactions"][user_id_str] += 1
-            
+
             # Track surah statistics
             surah_str = str(surah)
             if surah_str not in stats_data["surah_stats"]:
-                stats_data["surah_stats"][surah_str] = {"reactions": 0, "verses_sent": 0}
+                stats_data["surah_stats"][surah_str] = {
+                    "reactions": 0,
+                    "verses_sent": 0,
+                }
             stats_data["surah_stats"][surah_str]["reactions"] += 1
-            
+
             # Update timestamp
             stats_data["last_updated"] = datetime.now(pytz.UTC).isoformat()
-            
+
             # Save updated statistics
             with open(self.verses_state_file, "w") as f:
                 json.dump(stats_data, f, indent=2)
-            
+
             log_perfect_tree_section(
                 "Verse Statistics Updated",
                 [
@@ -504,7 +508,7 @@ class DailyVerseManager:
                 ],
                 "🤲",
             )
-            
+
             return True
         except Exception as e:
             log_error_with_traceback("Error recording dua reaction", e)
@@ -516,31 +520,34 @@ class DailyVerseManager:
             # Load existing verse statistics
             stats_data = {}
             if self.verses_state_file.exists():
-                with open(self.verses_state_file, "r") as f:
+                with open(self.verses_state_file) as f:
                     stats_data = json.load(f)
-            
+
             # Initialize statistics if not exists
             if "total_verses_sent" not in stats_data:
                 stats_data["total_verses_sent"] = 0
             if "surah_stats" not in stats_data:
                 stats_data["surah_stats"] = {}
-            
+
             # Update statistics
             stats_data["total_verses_sent"] += 1
-            
+
             # Track surah statistics
             surah_str = str(surah)
             if surah_str not in stats_data["surah_stats"]:
-                stats_data["surah_stats"][surah_str] = {"reactions": 0, "verses_sent": 0}
+                stats_data["surah_stats"][surah_str] = {
+                    "reactions": 0,
+                    "verses_sent": 0,
+                }
             stats_data["surah_stats"][surah_str]["verses_sent"] += 1
-            
+
             # Update timestamp
             stats_data["last_updated"] = datetime.now(pytz.UTC).isoformat()
-            
+
             # Save updated statistics
             with open(self.verses_state_file, "w") as f:
                 json.dump(stats_data, f, indent=2)
-            
+
             return True
         except Exception as e:
             log_error_with_traceback("Error recording verse sent", e)
@@ -550,7 +557,7 @@ class DailyVerseManager:
         """Load state from file"""
         try:
             if self.state_file.exists():
-                with open(self.state_file, "r", encoding="utf-8") as f:
+                with open(self.state_file, encoding="utf-8") as f:
                     data = json.load(f)
 
                 # Handle both old format (direct verse) and new format (with timestamps)
@@ -628,7 +635,7 @@ class DailyVerseManager:
         """Load verses from file"""
         try:
             if self.verses_file.exists():
-                with open(self.verses_file, "r", encoding="utf-8") as f:
+                with open(self.verses_file, encoding="utf-8") as f:
                     data = json.load(f)
 
                 # Handle different file formats
@@ -649,16 +656,23 @@ class DailyVerseManager:
                                 "verse": verse_data.get(
                                     "ayah", verse_data.get("verse")
                                 ),  # Handle both field names
-                                "ayah": verse_data.get("ayah", verse_data.get("verse")),  # Keep ayah field
+                                "ayah": verse_data.get(
+                                    "ayah", verse_data.get("verse")
+                                ),  # Keep ayah field
                                 "text": verse_data.get(
                                     "arabic", verse_data.get("text", "")
                                 ),
-                                "arabic": verse_data.get("arabic", verse_data.get("text", "")),  # Keep arabic field
+                                "arabic": verse_data.get(
+                                    "arabic", verse_data.get("text", "")
+                                ),  # Keep arabic field
                                 "translation": verse_data.get("translation", ""),
                                 "transliteration": verse_data.get(
                                     "transliteration", ""
                                 ),
-                                "surah_name": verse_data.get("surah_name", f"Surah {verse_data.get('surah', 'Unknown')}"),
+                                "surah_name": verse_data.get(
+                                    "surah_name",
+                                    f"Surah {verse_data.get('surah', 'Unknown')}",
+                                ),
                                 "arabic_name": verse_data.get("arabic_name", ""),
                             }
 
@@ -667,7 +681,7 @@ class DailyVerseManager:
                                 self.verse_pool.append(verse_entry)
 
                         except Exception as e:
-                            log_error_with_traceback(f"Error processing verse entry", e)
+                            log_error_with_traceback("Error processing verse entry", e)
                             continue
                 else:
                     # Unknown format - initialize empty
@@ -797,17 +811,15 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
 
                     # Set footer with creator information like in screenshot
                     try:
-                        # Get developer ID from environment
-                        DEVELOPER_ID = int(os.getenv("DEVELOPER_ID") or "0")
-                        if DEVELOPER_ID != 0:
-                            admin_user = await bot.fetch_user(DEVELOPER_ID)
-                            if admin_user and admin_user.avatar:
-                                embed.set_footer(
-                                    text="created by حَـــــنَّـــــا",
-                                    icon_url=admin_user.avatar.url,
-                                )
-                            else:
-                                embed.set_footer(text="created by حَـــــنَّـــــا")
+                        from src.config import get_config_service
+
+                        config = get_config_service().config
+                        admin_user = await bot.fetch_user(config.DEVELOPER_ID)
+                        if admin_user and admin_user.avatar:
+                            embed.set_footer(
+                                text="created by حَـــــنَّـــــا",
+                                icon_url=admin_user.avatar.url,
+                            )
                         else:
                             embed.set_footer(text="created by حَـــــنَّـــــا")
                     except Exception:
@@ -816,7 +828,7 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
 
                     # Send message
                     message = await channel.send(embed=embed)
-                    
+
                     # Record verse sent in statistics
                     daily_verse_manager.record_verse_sent(verse["surah"])
 
@@ -869,7 +881,7 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
 
                                     # Remove unwanted reaction
                                     await reaction.remove(user)
-                            except asyncio.TimeoutError:
+                            except TimeoutError:
                                 pass  # Stop monitoring after timeout
                             except Exception:
                                 pass  # Ignore errors in monitoring
@@ -886,9 +898,9 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
 
                                     # Record dua reaction in statistics
                                     daily_verse_manager.record_dua_reaction(
-                                        user.id, 
-                                        verse["surah"], 
-                                        verse.get("ayah", verse["verse"])
+                                        user.id,
+                                        verse["surah"],
+                                        verse.get("ayah", verse["verse"]),
                                     )
 
                                     # Log user interaction for dua reaction
@@ -896,7 +908,7 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
                                         interaction_type="daily_verse_dua_reaction",
                                         user_name=user.display_name,
                                         user_id=user.id,
-                                        action_description=f"Added dua reaction 🤲 to daily verse",
+                                        action_description="Added dua reaction 🤲 to daily verse",
                                         details={
                                             "reaction_emoji": "🤲",
                                             "surah": verse["surah"],
@@ -908,29 +920,39 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
                                     )
 
                                     # Log to Discord with user profile picture
-                                    from src.utils.discord_logger import get_discord_logger
+
                                     discord_logger = get_discord_logger()
                                     if discord_logger:
                                         try:
-                                            user_avatar_url = user.avatar.url if user.avatar else user.default_avatar.url
+                                            user_avatar_url = (
+                                                user.avatar.url
+                                                if user.avatar
+                                                else user.default_avatar.url
+                                            )
                                             await discord_logger.log_user_interaction(
                                                 "dua_reaction",
                                                 user.display_name,
                                                 user.id,
-                                                f"made dua (🤲) on daily verse",
+                                                "made dua (🤲) on daily verse",
                                                 {
                                                     "Reaction": "🤲",
                                                     "Surah": str(verse["surah"]),
-                                                    "Ayah": str(verse.get("ayah", verse["verse"])),
-                                                    "Reaction Time": datetime.now(pytz.timezone("US/Eastern")).strftime("%m/%d %I:%M %p EST"),
-                                                    "Verse Type": "Daily Verse"
+                                                    "Ayah": str(
+                                                        verse.get(
+                                                            "ayah", verse["verse"]
+                                                        )
+                                                    ),
+                                                    "Reaction Time": datetime.now(
+                                                        pytz.timezone("US/Eastern")
+                                                    ).strftime("%m/%d %I:%M %p EST"),
+                                                    "Verse Type": "Daily Verse",
                                                 },
-                                                user_avatar_url
+                                                user_avatar_url,
                                             )
                                         except:
                                             pass
 
-                            except asyncio.TimeoutError:
+                            except TimeoutError:
                                 pass  # Stop monitoring after timeout
                             except Exception:
                                 pass  # Ignore errors in monitoring
@@ -953,7 +975,7 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
                     )
 
                     # Log daily verse posting to Discord
-                    from src.utils.discord_logger import get_discord_logger
+
                     discord_logger = get_discord_logger()
                     if discord_logger:
                         try:
@@ -965,8 +987,8 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
                                     "Verse": str(verse.get("ayah", verse["verse"])),
                                     "Channel ID": str(channel_id),
                                     "Verse Type": "Daily Verse",
-                                    "Action": "Automatic posting"
-                                }
+                                    "Action": "Automatic posting",
+                                },
                             )
                         except:
                             pass
@@ -1036,17 +1058,15 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
 
                     # Set footer with creator information like in screenshot
                     try:
-                        # Get developer ID from environment
-                        DEVELOPER_ID = int(os.getenv("DEVELOPER_ID") or "0")
-                        if DEVELOPER_ID != 0:
-                            admin_user = await bot.fetch_user(DEVELOPER_ID)
-                            if admin_user and admin_user.avatar:
-                                embed.set_footer(
-                                    text="created by حَـــــنَّـــــا",
-                                    icon_url=admin_user.avatar.url,
-                                )
-                            else:
-                                embed.set_footer(text="created by حَـــــنَّـــــا")
+                        from src.config import get_config_service
+
+                        config = get_config_service().config
+                        admin_user = await bot.fetch_user(config.DEVELOPER_ID)
+                        if admin_user and admin_user.avatar:
+                            embed.set_footer(
+                                text="created by حَـــــنَّـــــا",
+                                icon_url=admin_user.avatar.url,
+                            )
                         else:
                             embed.set_footer(text="created by حَـــــنَّـــــا")
                     except Exception:
@@ -1105,7 +1125,7 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
 
                                     # Remove unwanted reaction
                                     await reaction.remove(user)
-                            except asyncio.TimeoutError:
+                            except TimeoutError:
                                 pass  # Stop monitoring after timeout
                             except Exception:
                                 pass  # Ignore errors in monitoring
@@ -1122,9 +1142,9 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
 
                                     # Record dua reaction in statistics
                                     daily_verse_manager.record_dua_reaction(
-                                        user.id, 
-                                        verse["surah"], 
-                                        verse.get("ayah", verse["verse"])
+                                        user.id,
+                                        verse["surah"],
+                                        verse.get("ayah", verse["verse"]),
                                     )
 
                                     # Log user interaction for dua reaction
@@ -1132,7 +1152,7 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
                                         interaction_type="scheduled_verse_dua_reaction",
                                         user_name=user.display_name,
                                         user_id=user.id,
-                                        action_description=f"Added dua reaction 🤲 to scheduled verse",
+                                        action_description="Added dua reaction 🤲 to scheduled verse",
                                         details={
                                             "reaction_emoji": "🤲",
                                             "surah": verse["surah"],
@@ -1144,29 +1164,39 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
                                     )
 
                                     # Log to Discord with user profile picture
-                                    from src.utils.discord_logger import get_discord_logger
+
                                     discord_logger = get_discord_logger()
                                     if discord_logger:
                                         try:
-                                            user_avatar_url = user.avatar.url if user.avatar else user.default_avatar.url
+                                            user_avatar_url = (
+                                                user.avatar.url
+                                                if user.avatar
+                                                else user.default_avatar.url
+                                            )
                                             await discord_logger.log_user_interaction(
                                                 "dua_reaction",
                                                 user.display_name,
                                                 user.id,
-                                                f"made dua (🤲) on scheduled verse",
+                                                "made dua (🤲) on scheduled verse",
                                                 {
                                                     "Reaction": "🤲",
                                                     "Surah": str(verse["surah"]),
-                                                    "Ayah": str(verse.get("ayah", verse["verse"])),
-                                                    "Reaction Time": datetime.now(pytz.timezone("US/Eastern")).strftime("%m/%d %I:%M %p EST"),
-                                                    "Verse Type": "Scheduled Verse"
+                                                    "Ayah": str(
+                                                        verse.get(
+                                                            "ayah", verse["verse"]
+                                                        )
+                                                    ),
+                                                    "Reaction Time": datetime.now(
+                                                        pytz.timezone("US/Eastern")
+                                                    ).strftime("%m/%d %I:%M %p EST"),
+                                                    "Verse Type": "Scheduled Verse",
                                                 },
-                                                user_avatar_url
+                                                user_avatar_url,
                                             )
                                         except:
                                             pass
 
-                            except asyncio.TimeoutError:
+                            except TimeoutError:
                                 pass  # Stop monitoring after timeout
                             except Exception:
                                 pass  # Ignore errors in monitoring
@@ -1196,7 +1226,7 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
                     )
 
                     # Log scheduled verse posting to Discord
-                    from src.utils.discord_logger import get_discord_logger
+
                     discord_logger = get_discord_logger()
                     if discord_logger:
                         try:
@@ -1209,8 +1239,8 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
                                     "Channel ID": str(channel_id),
                                     "Verse Type": "Scheduled Verse",
                                     "Interval": f"{daily_verse_manager.get_interval_hours()}h",
-                                    "Action": "Automatic posting"
-                                }
+                                    "Action": "Automatic posting",
+                                },
                             )
                         except:
                             pass

@@ -7,9 +7,9 @@
 
 import json
 import os
-import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+import sys
+from unittest.mock import patch
 
 import discord
 import pytest
@@ -22,14 +22,9 @@ from utils.surah_mapper import (
     SurahInfo,
     format_now_playing,
     format_surah_embed,
-    get_all_surahs,
-    get_long_surahs,
     get_meccan_surahs,
     get_medinan_surahs,
     get_quran_statistics,
-    get_random_surah,
-    get_short_surahs,
-    get_surah_display,
     get_surah_info,
     get_surah_name,
     load_surah_database,
@@ -95,6 +90,7 @@ class TestSurahMapper:
         # Clean up
         if self.test_dir.exists():
             import shutil
+
             shutil.rmtree(self.test_dir)
 
     def test_surah_info_class(self):

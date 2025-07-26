@@ -5,12 +5,10 @@
 # Comprehensive tests for quiz functionality
 # =============================================================================
 
-import json
 import os
+from pathlib import Path
 import sys
 import tempfile
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -131,7 +129,7 @@ class TestQuizManager:
         users = ["user1", "user2", "user3"]
         scores = [(3, 1), (2, 1), (1, 1)]  # (correct, incorrect) pairs
 
-        for user, (correct, incorrect) in zip(users, scores):
+        for user, (correct, incorrect) in zip(users, scores, strict=False):
             for _ in range(correct):
                 self.quiz_manager.update_user_score(user, True)
             for _ in range(incorrect):

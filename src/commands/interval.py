@@ -4,32 +4,29 @@
 # Administrative command to adjust quiz and verse intervals using Discord.py Cogs
 # =============================================================================
 
-import os
+from datetime import UTC, datetime, timedelta
 import re
-from datetime import datetime, timedelta, timezone
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.utils.tree_log import (
-    log_error_with_traceback,
-    log_perfect_tree_section,
-    log_user_interaction,
+# Import configuration service
+from src.config import get_config_service
+from src.core.exceptions import (
+    ValidationError,
 )
-
-# Environment variables
-DEVELOPER_ID = int(os.getenv("DEVELOPER_ID", "0"))
-
-# Validate required environment variables
-if DEVELOPER_ID == 0:
-    raise ValueError("DEVELOPER_ID environment variable must be set")
+from src.core.security import rate_limit, require_admin, validate_input
+from src.utils import daily_verses
+from src.utils import quiz_manager as quiz_mgr
+from src.utils.discord_logger import get_discord_logger
+from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
 
 
 def parse_time_string(time_str: str) -> float:
     """
     Parse a time string into hours.
-    
+
     Supported formats:
     - "30m" -> 0.5 hours
     - "2h" -> 2.0 hours
@@ -37,10 +34,10 @@ def parse_time_string(time_str: str) -> float:
     - "90m" -> 1.5 hours
     - "2.5h" -> 2.5 hours
     - "120" -> 2.0 hours (assumes minutes if no unit)
-    
+
     Returns:
         float: Time in hours
-        
+
     Raises:
         ValueError: If format is invalid
     """
@@ -53,11 +50,16 @@ def parse_time_string(time_str: str) -> float:
             ],
             "⏰",
         )
-        raise ValueError("Time string cannot be empty")
-    
+        raise ValidationError(
+            "Time string cannot be empty",
+            field_name="time_string",
+            field_value=time_str,
+            validation_rule="cannot be empty",
+        )
+
     original_input = time_str
     time_str = time_str.lower().strip()
-    
+
     log_perfect_tree_section(
         "Time Parsing - Started",
         [
@@ -67,45 +69,49 @@ def parse_time_string(time_str: str) -> float:
         ],
         "⏰",
     )
-    
+
     # Pattern to match combinations like "1h30m", "2h", "30m", "2.5h", etc.
-    pattern = r'^(?:(\d+(?:\.\d+)?)h)?(?:(\d+(?:\.\d+)?)m)?$'
+    pattern = r"^(?:(\d+(?:\.\d+)?)h)?(?:(\d+(?:\.\d+)?)m)?$"
     match = re.match(pattern, time_str)
-    
+
     if match:
         hours_str, minutes_str = match.groups()
         total_hours = 0.0
-        
+
         parsing_details = [
             ("pattern_match", "✅ Regex pattern matched"),
             ("hours_component", hours_str if hours_str else "None"),
             ("minutes_component", minutes_str if minutes_str else "None"),
         ]
-        
+
         if hours_str:
             hours_value = float(hours_str)
             total_hours += hours_value
             parsing_details.append(("hours_parsed", f"{hours_value}h"))
-        
+
         if minutes_str:
             minutes_value = float(minutes_str)
             total_hours += minutes_value / 60.0
-            parsing_details.append(("minutes_parsed", f"{minutes_value}m ({minutes_value/60.0:.3f}h)"))
-            
+            parsing_details.append(
+                ("minutes_parsed", f"{minutes_value}m ({minutes_value/60.0:.3f}h)")
+            )
+
         if total_hours > 0:
-            parsing_details.extend([
-                ("total_hours", f"{total_hours:.3f}"),
-                ("formatted_display", format_time_display(total_hours)),
-                ("status", "✅ Successfully parsed"),
-            ])
-            
+            parsing_details.extend(
+                [
+                    ("total_hours", f"{total_hours:.3f}"),
+                    ("formatted_display", format_time_display(total_hours)),
+                    ("status", "✅ Successfully parsed"),
+                ]
+            )
+
             log_perfect_tree_section(
                 "Time Parsing - Success (Pattern Match)",
                 parsing_details,
                 "✅",
             )
             return total_hours
-    
+
     # Try parsing as just a number (assume minutes)
     try:
         number = float(time_str)
@@ -118,7 +124,7 @@ def parse_time_string(time_str: str) -> float:
             else:
                 result_hours = number / 60.0
                 interpretation = "minutes (number > 24)"
-            
+
             log_perfect_tree_section(
                 "Time Parsing - Success (Number)",
                 [
@@ -141,7 +147,7 @@ def parse_time_string(time_str: str) -> float:
             ],
             "❌",
         )
-    
+
     # All parsing methods failed
     log_perfect_tree_section(
         "Time Parsing - Failed",
@@ -154,17 +160,22 @@ def parse_time_string(time_str: str) -> float:
         ],
         "❌",
     )
-    
-    raise ValueError(f"Invalid time format: '{original_input}'. Use formats like '30m', '2h', '1h30m', or '90'")
+
+    raise ValidationError(
+        f"Invalid time format: '{original_input}'. Use formats like '30m', '2h', '1h30m', or '90'",
+        field_name="time_format",
+        field_value=original_input,
+        validation_rule="must match formats like '30m', '2h', '1h30m', or '90'",
+    )
 
 
 def format_time_display(hours: float) -> str:
     """
     Format hours into a readable string.
-    
+
     Args:
         hours: Time in hours
-        
+
     Returns:
         str: Formatted time string like "1h 30m" or "30m"
     """
@@ -179,18 +190,18 @@ def format_time_display(hours: float) -> str:
             "⏰",
         )
         return "Invalid"
-    
+
     total_minutes = int(hours * 60)
     display_hours = total_minutes // 60
     display_minutes = total_minutes % 60
-    
+
     if display_hours > 0 and display_minutes > 0:
         result = f"{display_hours}h {display_minutes}m"
     elif display_hours > 0:
         result = f"{display_hours}h"
     else:
         result = f"{display_minutes}m"
-    
+
     log_perfect_tree_section(
         "Time Formatting - Success",
         [
@@ -203,29 +214,25 @@ def format_time_display(hours: float) -> str:
         ],
         "✅",
     )
-    
+
     return result
 
 
 def get_quiz_manager():
     """Get quiz manager instance"""
     try:
-        from src.utils.quiz_manager import quiz_manager
-
-        return quiz_manager
+        return quiz_mgr.quiz_manager
     except Exception as e:
-        log_error_with_traceback("Failed to import quiz_manager", e)
+        log_error_with_traceback("Failed to access quiz_manager", e)
         return None
 
 
 def get_daily_verses_manager():
     """Get daily verses manager instance"""
     try:
-        from src.utils.daily_verses import daily_verse_manager
-
-        return daily_verse_manager
+        return daily_verses.daily_verse_manager
     except Exception as e:
-        log_error_with_traceback("Failed to import daily_verse_manager", e)
+        log_error_with_traceback("Failed to access daily_verse_manager", e)
         return None
 
 
@@ -237,8 +244,9 @@ def get_daily_verses_manager():
 class IntervalCog(commands.Cog):
     """Interval command cog for adjusting quiz and verse intervals"""
 
-    def __init__(self, bot):
+    def __init__(self, bot, container=None):
         self.bot = bot
+        self.container = container
 
     @app_commands.command(
         name="interval",
@@ -247,6 +255,13 @@ class IntervalCog(commands.Cog):
     @app_commands.describe(
         quiz_time="Quiz interval (e.g., '30m', '2h', '1h30m', '90m')",
         verse_time="Verse interval (e.g., '3h', '2h30m', '180m')",
+    )
+    @require_admin
+    @rate_limit(
+        user_limit=5, user_window=300
+    )  # 5 requests per 5 minutes for interval changes
+    @validate_input(
+        quiz_time={"type": "time_interval"}, verse_time={"type": "time_interval"}
     )
     async def interval(
         self,
@@ -302,7 +317,8 @@ class IntervalCog(commands.Cog):
 
         try:
             # Check if user is the developer/admin
-            if interaction.user.id != DEVELOPER_ID:
+            config = get_config_service().config
+            if interaction.user.id != config.DEVELOPER_ID:
                 log_perfect_tree_section(
                     "Interval Command - Permission Denied",
                     [
@@ -310,7 +326,7 @@ class IntervalCog(commands.Cog):
                             "user",
                             f"{interaction.user.display_name} ({interaction.user.id})",
                         ),
-                        ("required_id", str(DEVELOPER_ID)),
+                        ("required_id", str(config.DEVELOPER_ID)),
                         ("status", "❌ Unauthorized access attempt"),
                         ("action", "🚫 Command execution denied"),
                     ],
@@ -325,7 +341,9 @@ class IntervalCog(commands.Cog):
 
                 # Set footer with admin profile picture
                 try:
-                    admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
+                    admin_user = await interaction.client.fetch_user(
+                        config.DEVELOPER_ID
+                    )
                     if admin_user and admin_user.avatar:
                         embed.set_footer(
                             text="Created by حَـــــنَـــــا",
@@ -333,7 +351,8 @@ class IntervalCog(commands.Cog):
                         )
                     else:
                         embed.set_footer(text="Created by حَـــــنَـــــا")
-                except Exception:
+                except (discord.HTTPException, discord.NotFound, AttributeError):
+                    # Failed to fetch admin user or set footer
                     embed.set_footer(text="Created by حَـــــنَـــــا")
 
                 await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -348,7 +367,7 @@ class IntervalCog(commands.Cog):
             # Parse and validate time formats
             quiz_hours = None
             verse_hours = None
-            
+
             if quiz_time is not None:
                 log_perfect_tree_section(
                     "Quiz Time Validation - Started",
@@ -359,10 +378,10 @@ class IntervalCog(commands.Cog):
                     ],
                     "📝",
                 )
-                
+
                 try:
                     quiz_hours = parse_time_string(quiz_time)
-                    
+
                     log_perfect_tree_section(
                         "Quiz Time Validation - Parsed",
                         [
@@ -373,8 +392,8 @@ class IntervalCog(commands.Cog):
                         ],
                         "📝",
                     )
-                    
-                    if quiz_hours < (1/60) or quiz_hours > 24:  # 1 minute to 24 hours
+
+                    if quiz_hours < (1 / 60) or quiz_hours > 24:  # 1 minute to 24 hours
                         log_perfect_tree_section(
                             "Quiz Time Validation - Out of Range",
                             [
@@ -386,7 +405,7 @@ class IntervalCog(commands.Cog):
                             ],
                             "❌",
                         )
-                        
+
                         error_embed = discord.Embed(
                             title="❌ Invalid Quiz Time",
                             description=f"Quiz time must be between 1 minute and 24 hours.\nYou entered: `{quiz_time}` = {format_time_display(quiz_hours)}",
@@ -395,7 +414,7 @@ class IntervalCog(commands.Cog):
                         error_embed.add_field(
                             name="💡 Valid Examples",
                             value="• ⏰ `30m` (30 minutes)\n• 🕐 `2h` (2 hours)\n• ⏳ `1h30m` (1 hour 30 minutes)\n• 📅 `90m` (90 minutes)",
-                            inline=False
+                            inline=False,
                         )
                         await interaction.response.send_message(
                             embed=error_embed, ephemeral=True
@@ -413,7 +432,7 @@ class IntervalCog(commands.Cog):
                             ],
                             "✅",
                         )
-                        
+
                 except ValueError as e:
                     log_perfect_tree_section(
                         "Quiz Time Validation - Parse Error",
@@ -424,7 +443,7 @@ class IntervalCog(commands.Cog):
                         ],
                         "❌",
                     )
-                    
+
                     error_embed = discord.Embed(
                         title="❌ Invalid Quiz Time Format",
                         description=str(e),
@@ -433,7 +452,7 @@ class IntervalCog(commands.Cog):
                     error_embed.add_field(
                         name="💡 Valid Examples",
                         value="• ⏰ `30m` (30 minutes)\n• 🕐 `2h` (2 hours)\n• ⏳ `1h30m` (1 hour 30 minutes)\n• 📅 `90m` (90 minutes)\n• 🕑 `2.5h` (2.5 hours)",
-                        inline=False
+                        inline=False,
                     )
                     await interaction.response.send_message(
                         embed=error_embed, ephemeral=True
@@ -450,10 +469,10 @@ class IntervalCog(commands.Cog):
                     ],
                     "📖",
                 )
-                
+
                 try:
                     verse_hours = parse_time_string(verse_time)
-                    
+
                     log_perfect_tree_section(
                         "Verse Time Validation - Parsed",
                         [
@@ -464,8 +483,10 @@ class IntervalCog(commands.Cog):
                         ],
                         "📖",
                     )
-                    
-                    if verse_hours < (1/60) or verse_hours > 24:  # 1 minute to 24 hours
+
+                    if (
+                        verse_hours < (1 / 60) or verse_hours > 24
+                    ):  # 1 minute to 24 hours
                         log_perfect_tree_section(
                             "Verse Time Validation - Out of Range",
                             [
@@ -477,7 +498,7 @@ class IntervalCog(commands.Cog):
                             ],
                             "❌",
                         )
-                        
+
                         error_embed = discord.Embed(
                             title="❌ Invalid Verse Time",
                             description=f"Verse time must be between 1 minute and 24 hours.\nYou entered: `{verse_time}` = {format_time_display(verse_hours)}",
@@ -486,7 +507,7 @@ class IntervalCog(commands.Cog):
                         error_embed.add_field(
                             name="💡 Valid Examples",
                             value="• 🕒 `3h` (3 hours)\n• ⏰ `2h30m` (2 hours 30 minutes)\n• 📅 `180m` (180 minutes)\n• 🕓 `4h` (4 hours)",
-                            inline=False
+                            inline=False,
                         )
                         await interaction.response.send_message(
                             embed=error_embed, ephemeral=True
@@ -504,7 +525,7 @@ class IntervalCog(commands.Cog):
                             ],
                             "✅",
                         )
-                        
+
                 except ValueError as e:
                     log_perfect_tree_section(
                         "Verse Time Validation - Parse Error",
@@ -515,7 +536,7 @@ class IntervalCog(commands.Cog):
                         ],
                         "❌",
                     )
-                    
+
                     error_embed = discord.Embed(
                         title="❌ Invalid Verse Time Format",
                         description=str(e),
@@ -524,7 +545,7 @@ class IntervalCog(commands.Cog):
                     error_embed.add_field(
                         name="💡 Valid Examples",
                         value="• 🕒 `3h` (3 hours)\n• ⏰ `2h30m` (2 hours 30 minutes)\n• 📅 `180m` (180 minutes)\n• 🕓 `4.5h` (4.5 hours)",
-                        inline=False
+                        inline=False,
                     )
                     await interaction.response.send_message(
                         embed=error_embed, ephemeral=True
@@ -540,8 +561,14 @@ class IntervalCog(commands.Cog):
                         f"{interaction.user.display_name} ({interaction.user.id})",
                     ),
                     ("permission_level", "✅ Administrator"),
-                    ("quiz_hours", f"{quiz_hours} hours" if quiz_hours else "unchanged"),
-                    ("verse_hours", f"{verse_hours} hours" if verse_hours else "unchanged"),
+                    (
+                        "quiz_hours",
+                        f"{quiz_hours} hours" if quiz_hours else "unchanged",
+                    ),
+                    (
+                        "verse_hours",
+                        f"{verse_hours} hours" if verse_hours else "unchanged",
+                    ),
                     ("status", "🔓 Access granted"),
                     ("action", "🚀 Proceeding with interval updates"),
                 ],
@@ -586,7 +613,7 @@ class IntervalCog(commands.Cog):
                         errors.append("Failed to get quiz manager")
                 except Exception as e:
                     log_error_with_traceback("Failed to update quiz interval", e)
-                    errors.append(f"Quiz interval update failed: {str(e)}")
+                    errors.append(f"Quiz interval update failed: {e!s}")
 
             # Update verse interval
             if verse_hours is not None:
@@ -613,7 +640,7 @@ class IntervalCog(commands.Cog):
                         errors.append("Failed to get daily verses manager")
                 except Exception as e:
                     log_error_with_traceback("Failed to update verse interval", e)
-                    errors.append(f"Verse interval update failed: {str(e)}")
+                    errors.append(f"Verse interval update failed: {e!s}")
 
             # Create response embed
             if changes_made and not errors:
@@ -633,7 +660,7 @@ class IntervalCog(commands.Cog):
 
                 # Add next scheduled times
                 try:
-                    now = datetime.now(timezone.utc)
+                    now = datetime.now(UTC)
                     if quiz_hours is not None:
                         next_quiz = now + timedelta(hours=quiz_hours)
                         embed.add_field(
@@ -649,7 +676,8 @@ class IntervalCog(commands.Cog):
                             value=f"<t:{int(next_verse.timestamp())}:R>",
                             inline=True,
                         )
-                except Exception:
+                except (AttributeError, TypeError, ValueError, OverflowError):
+                    # Skip timing calculations if data is invalid
                     pass
 
                 # Add format examples
@@ -667,8 +695,22 @@ class IntervalCog(commands.Cog):
                             f"{interaction.user.display_name} ({interaction.user.id})",
                         ),
                         ("changes_made", len(changes_made)),
-                        ("quiz_time", f"{quiz_time} ({format_time_display(quiz_hours)})" if quiz_hours else "unchanged"),
-                        ("verse_time", f"{verse_time} ({format_time_display(verse_hours)})" if verse_hours else "unchanged"),
+                        (
+                            "quiz_time",
+                            (
+                                f"{quiz_time} ({format_time_display(quiz_hours)})"
+                                if quiz_hours
+                                else "unchanged"
+                            ),
+                        ),
+                        (
+                            "verse_time",
+                            (
+                                f"{verse_time} ({format_time_display(verse_hours)})"
+                                if verse_hours
+                                else "unchanged"
+                            ),
+                        ),
                         ("status", "✅ All intervals updated successfully"),
                     ],
                     "🏆",
@@ -717,7 +759,6 @@ class IntervalCog(commands.Cog):
             await interaction.followup.send(embed=embed, ephemeral=True)
 
             # Send success notification to Discord logger
-            from src.utils.discord_logger import get_discord_logger
             discord_logger = get_discord_logger()
             if discord_logger and changes_made:
                 try:
@@ -730,8 +771,8 @@ class IntervalCog(commands.Cog):
                         {
                             "Admin": interaction.user.display_name,
                             "User ID": str(interaction.user.id),
-                            "Changes Count": str(len(changes_made))
-                        }
+                            "Changes Count": str(len(changes_made)),
+                        },
                     )
                 except:
                     pass
@@ -850,11 +891,19 @@ class IntervalCog(commands.Cog):
                     ),
                     (
                         "quiz_interval",
-                        format_time_display(quiz_interval) if quiz_interval else "Unknown",
+                        (
+                            format_time_display(quiz_interval)
+                            if quiz_interval
+                            else "Unknown"
+                        ),
                     ),
                     (
                         "verse_interval",
-                        format_time_display(verse_interval) if verse_interval else "Unknown",
+                        (
+                            format_time_display(verse_interval)
+                            if verse_interval
+                            else "Unknown"
+                        ),
                     ),
                     ("status", "✅ Current settings displayed"),
                 ],
@@ -877,8 +926,8 @@ class IntervalCog(commands.Cog):
 # =============================================================================
 
 
-async def setup(bot):
-    """Set up the Interval cog with comprehensive error handling and logging"""
+async def setup(bot, container=None):
+    """Set up the Interval cog"""
     try:
         log_perfect_tree_section(
             "Interval Cog Setup - Starting",
@@ -890,7 +939,7 @@ async def setup(bot):
             "🚀",
         )
 
-        await bot.add_cog(IntervalCog(bot))
+        await bot.add_cog(IntervalCog(bot, container))
 
         log_perfect_tree_section(
             "Interval Cog Setup - Complete",
@@ -898,9 +947,15 @@ async def setup(bot):
                 ("status", "✅ Interval cog loaded successfully"),
                 ("cog_name", "IntervalCog"),
                 ("command_name", "/interval"),
-                ("description", "Adjust quiz and verse intervals with flexible time formats"),
+                (
+                    "description",
+                    "Adjust quiz and verse intervals with flexible time formats",
+                ),
                 ("permission_level", "🔒 Admin only"),
-                ("parameters", "quiz_time (e.g., '30m', '2h', '1h30m'), verse_time (e.g., '3h', '2h30m')"),
+                (
+                    "parameters",
+                    "quiz_time (e.g., '30m', '2h', '1h30m'), verse_time (e.g., '3h', '2h30m')",
+                ),
                 ("time_formats", "Minutes, hours, combined formats, decimal hours"),
                 ("error_handling", "✅ Comprehensive traceback and logging"),
                 ("tree_logging", "✅ Perfect tree logging implemented"),
@@ -931,9 +986,9 @@ async def setup(bot):
 
 __all__ = [
     "IntervalCog",
-    "get_quiz_manager",
-    "get_daily_verses_manager",
-    "parse_time_string",
     "format_time_display",
+    "get_daily_verses_manager",
+    "get_quiz_manager",
+    "parse_time_string",
     "setup",
 ]

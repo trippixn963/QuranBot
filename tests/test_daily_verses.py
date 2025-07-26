@@ -5,15 +5,13 @@
 # Comprehensive tests for daily verses functionality
 # =============================================================================
 
-import json
+from datetime import datetime, timedelta
 import os
+from pathlib import Path
 import sys
 import tempfile
-from datetime import datetime, timedelta
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
-import pytest
 import pytz
 
 # Add src to path for imports

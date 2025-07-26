@@ -5,12 +5,12 @@
 # Comprehensive tests for tree-style logging functionality
 # =============================================================================
 
+from datetime import datetime
 import json
 import os
-import sys
-from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+import sys
+from unittest.mock import patch
 
 import pytest
 import pytz
@@ -18,20 +18,8 @@ import pytz
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from utils.tree_log import (
-    TreeLogger,
-    TREE_SYMBOLS,
-    log_error_with_traceback,
-    log_perfect_tree_section,
-    log_progress,
-    log_status,
-    log_tree_group,
-    log_user_interaction,
-    log_voice_activity_tree,
-    log_version_info,
-    log_warning_with_context,
-    write_to_log_files,
-)
+from utils.tree_log import TREE_SYMBOLS, TreeLogger
+
 
 class TestTreeLog:
     """Test suite for tree-style logging functionality"""
@@ -81,6 +69,7 @@ class TestTreeLog:
         self.datetime_patcher.stop()
         if self.test_dir.exists():
             import shutil
+
             shutil.rmtree(self.test_dir)
 
     def test_tree_structure(self):
@@ -91,8 +80,14 @@ class TestTreeLog:
 
         # Test nested level
         self.logger.start_tree_section()
-        assert self.logger.get_tree_prefix() == TREE_SYMBOLS["pipe"] + TREE_SYMBOLS["branch"]
-        assert self.logger.get_tree_prefix(is_last_item=True) == TREE_SYMBOLS["pipe"] + TREE_SYMBOLS["last"]
+        assert (
+            self.logger.get_tree_prefix()
+            == TREE_SYMBOLS["pipe"] + TREE_SYMBOLS["branch"]
+        )
+        assert (
+            self.logger.get_tree_prefix(is_last_item=True)
+            == TREE_SYMBOLS["pipe"] + TREE_SYMBOLS["last"]
+        )
 
         # Test multiple levels
         self.logger.start_tree_section()

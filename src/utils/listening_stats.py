@@ -35,14 +35,14 @@
 # =============================================================================
 
 import asyncio
+from datetime import UTC, datetime
 import json
 import os
-import shutil
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 import discord
+
+from src.core.exceptions import StateError
 
 from .tree_log import log_error_with_traceback, log_perfect_tree_section
 
@@ -104,9 +104,9 @@ class UserStats:
         self.user_id = user_id
         self.total_time = total_time  # Total time in seconds
         self.sessions = sessions  # Completed sessions count
-        self.last_seen = datetime.now(timezone.utc).isoformat()
+        self.last_seen = datetime.now(UTC).isoformat()
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """
         Convert to JSON-serializable dictionary.
 
@@ -121,7 +121,7 @@ class UserStats:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "UserStats":
+    def from_dict(cls, data: dict) -> "UserStats":
         """
         Create UserStats from dictionary with validation.
 
@@ -141,7 +141,7 @@ class UserStats:
             total_time=data.get("total_time", 0.0),
             sessions=data.get("sessions", 0),
         )
-        stats.last_seen = data.get("last_seen", datetime.now(timezone.utc).isoformat())
+        stats.last_seen = data.get("last_seen", datetime.now(UTC).isoformat())
         return stats
 
 
@@ -179,9 +179,9 @@ class ActiveSession:
         - Handles timezone conversion
         - Returns precise float
         """
-        return (datetime.now(timezone.utc) - self.start_time).total_seconds()
+        return (datetime.now(UTC) - self.start_time).total_seconds()
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """
         Convert to JSON-serializable dictionary.
 
@@ -191,7 +191,7 @@ class ActiveSession:
         return {"user_id": self.user_id, "start_time": self.start_time.isoformat()}
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "ActiveSession":
+    def from_dict(cls, data: dict) -> "ActiveSession":
         """
         Create ActiveSession from dictionary with validation.
 
@@ -274,8 +274,8 @@ class ListeningStatsManager:
     """
 
     def __init__(self):
-        self.users: Dict[int, UserStats] = {}
-        self.active_sessions: Dict[int, ActiveSession] = {}
+        self.users: dict[int, UserStats] = {}
+        self.active_sessions: dict[int, ActiveSession] = {}
         self.total_listening_time = 0.0
         self.total_sessions = 0
         self.last_updated = None
@@ -301,27 +301,48 @@ class ListeningStatsManager:
             if STATS_FILE.exists():
                 # Try to load main file
                 try:
-                    with open(STATS_FILE, "r", encoding="utf-8") as f:
+                    with open(STATS_FILE, encoding="utf-8") as f:
                         data = json.load(f)
 
                     # Validate data integrity
                     if not isinstance(data, dict):
-                        raise ValueError(
-                            "Invalid data format: root is not a dictionary"
+                        raise StateError(
+                            "Invalid data format: root is not a dictionary",
+                            state_type="listening_stats",
+                            operation="load",
+                            context={
+                                "expected_type": "dict",
+                                "actual_type": type(data).__name__,
+                            },
                         )
 
                     required_keys = ["users", "active_sessions", "total_stats"]
                     missing_keys = [key for key in required_keys if key not in data]
                     if missing_keys:
-                        raise ValueError(f"Missing required keys: {missing_keys}")
+                        raise StateError(
+                            f"Missing required keys: {missing_keys}",
+                            state_type="listening_stats",
+                            operation="load",
+                            context={
+                                "missing_keys": missing_keys,
+                                "required_keys": required_keys,
+                            },
+                        )
 
                     # Load user stats with improved error handling
                     for user_id_str, user_data in data.get("users", {}).items():
                         try:
                             user_id = int(user_id_str)
                             if not isinstance(user_data, dict):
-                                raise ValueError(
-                                    f"User data for {user_id} is not a dictionary"
+                                raise StateError(
+                                    f"User data for {user_id} is not a dictionary",
+                                    state_type="listening_stats",
+                                    operation="load",
+                                    context={
+                                        "user_id": user_id,
+                                        "expected_type": "dict",
+                                        "actual_type": type(user_data).__name__,
+                                    },
                                 )
                             self.users[user_id] = UserStats.from_dict(user_data)
                         except (ValueError, KeyError, TypeError) as user_error:
@@ -341,8 +362,15 @@ class ListeningStatsManager:
                         try:
                             user_id = int(user_id_str)
                             if not isinstance(session_data, dict):
-                                raise ValueError(
-                                    f"Session data for {user_id} is not a dictionary"
+                                raise StateError(
+                                    f"Session data for {user_id} is not a dictionary",
+                                    state_type="listening_stats",
+                                    operation="load",
+                                    context={
+                                        "user_id": user_id,
+                                        "expected_type": "dict",
+                                        "actual_type": type(session_data).__name__,
+                                    },
                                 )
                             self.active_sessions[user_id] = ActiveSession.from_dict(
                                 session_data
@@ -358,7 +386,15 @@ class ListeningStatsManager:
                     # Load total stats with validation
                     total_stats = data.get("total_stats", {})
                     if not isinstance(total_stats, dict):
-                        raise ValueError("Total stats is not a dictionary")
+                        raise StateError(
+                            "Total stats is not a dictionary",
+                            state_type="listening_stats",
+                            operation="load",
+                            context={
+                                "expected_type": "dict",
+                                "actual_type": type(total_stats).__name__,
+                            },
+                        )
 
                     self.total_listening_time = float(
                         total_stats.get("total_listening_time", 0.0)
@@ -366,7 +402,7 @@ class ListeningStatsManager:
                     self.total_sessions = int(total_stats.get("total_sessions", 0))
 
                     # Update last loaded timestamp
-                    self.last_updated = datetime.now(timezone.utc)
+                    self.last_updated = datetime.now(UTC)
 
                 except (
                     json.JSONDecodeError,
@@ -384,11 +420,19 @@ class ListeningStatsManager:
                     backup_file = TEMP_BACKUP_DIR / f"{STATS_FILE.stem}.backup"
                     if backup_file.exists():
                         try:
-                            with open(backup_file, "r", encoding="utf-8") as f:
+                            with open(backup_file, encoding="utf-8") as f:
                                 backup_data = json.load(f)
 
                             if not isinstance(backup_data, dict):
-                                raise ValueError("Backup data is not a dictionary")
+                                raise StateError(
+                                    "Backup data is not a dictionary",
+                                    state_type="listening_stats",
+                                    operation="load_backup",
+                                    context={
+                                        "expected_type": "dict",
+                                        "actual_type": type(backup_data).__name__,
+                                    },
+                                )
 
                             # Load from backup using same validation logic
                             for user_id_str, user_data in backup_data.get(
@@ -397,8 +441,15 @@ class ListeningStatsManager:
                                 try:
                                     user_id = int(user_id_str)
                                     if not isinstance(user_data, dict):
-                                        raise ValueError(
-                                            f"Backup user data for {user_id} is not a dictionary"
+                                        raise StateError(
+                                            f"Backup user data for {user_id} is not a dictionary",
+                                            state_type="listening_stats",
+                                            operation="load_backup",
+                                            context={
+                                                "user_id": user_id,
+                                                "expected_type": "dict",
+                                                "actual_type": type(user_data).__name__,
+                                            },
                                         )
                                     self.users[user_id] = UserStats.from_dict(user_data)
                                 except (
@@ -420,8 +471,17 @@ class ListeningStatsManager:
                                 try:
                                     user_id = int(user_id_str)
                                     if not isinstance(session_data, dict):
-                                        raise ValueError(
-                                            f"Backup session data for {user_id} is not a dictionary"
+                                        raise StateError(
+                                            f"Backup session data for {user_id} is not a dictionary",
+                                            state_type="listening_stats",
+                                            operation="load_backup",
+                                            context={
+                                                "user_id": user_id,
+                                                "expected_type": "dict",
+                                                "actual_type": type(
+                                                    session_data
+                                                ).__name__,
+                                            },
                                         )
                                     self.active_sessions[
                                         user_id
@@ -441,8 +501,14 @@ class ListeningStatsManager:
                             # Load backup total stats with validation
                             total_stats = backup_data.get("total_stats", {})
                             if not isinstance(total_stats, dict):
-                                raise ValueError(
-                                    "Backup total stats is not a dictionary"
+                                raise StateError(
+                                    "Backup total stats is not a dictionary",
+                                    state_type="listening_stats",
+                                    operation="load_backup",
+                                    context={
+                                        "expected_type": "dict",
+                                        "actual_type": type(total_stats).__name__,
+                                    },
                                 )
 
                             self.total_listening_time = float(
@@ -499,7 +565,7 @@ class ListeningStatsManager:
         self.active_sessions = {}
         self.total_listening_time = 0.0
         self.total_sessions = 0
-        self.last_updated = datetime.now(timezone.utc)
+        self.last_updated = datetime.now(UTC)
 
         log_perfect_tree_section(
             "Fresh State Initialization",
@@ -530,15 +596,15 @@ class ListeningStatsManager:
                 "total_stats": {
                     "total_listening_time": self.total_listening_time,
                     "total_sessions": self.total_sessions,
-                    "last_updated": datetime.now(timezone.utc).isoformat(),
+                    "last_updated": datetime.now(UTC).isoformat(),
                 },
                 "leaderboard_cache": {
-                    "last_calculated": datetime.now(timezone.utc).isoformat(),
+                    "last_calculated": datetime.now(UTC).isoformat(),
                     "top_users": self.get_top_users(10),
                 },
                 "metadata": {
                     "version": "2.2.0",
-                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "created_at": datetime.now(UTC).isoformat(),
                     "total_users_tracked": len(self.users),
                     "active_sessions_count": len(self.active_sessions),
                 },
@@ -556,7 +622,7 @@ class ListeningStatsManager:
                 # Atomic rename (this is atomic on most filesystems)
                 temp_file.replace(STATS_FILE)
 
-                self.last_updated = datetime.now(timezone.utc).isoformat()
+                self.last_updated = datetime.now(UTC).isoformat()
 
                 log_perfect_tree_section(
                     "Listening Stats - Saved Successfully",
@@ -613,7 +679,7 @@ class ListeningStatsManager:
                     json.dump(
                         {
                             "emergency_save": True,
-                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "timestamp": datetime.now(UTC).isoformat(),
                             "users": {
                                 str(k): v.to_dict() for k, v in self.users.items()
                             },
@@ -674,7 +740,7 @@ class ListeningStatsManager:
 
             # Start new session
             self.active_sessions[user_id] = ActiveSession(
-                user_id=user_id, start_time=datetime.now(timezone.utc)
+                user_id=user_id, start_time=datetime.now(UTC)
             )
 
             # Initialize user stats if not exists
@@ -698,7 +764,7 @@ class ListeningStatsManager:
                     ("user_id", f"👤 User {user_id} joined voice channel"),
                     (
                         "session_start",
-                        f"⏰ Session started at {datetime.now(timezone.utc).strftime('%I:%M:%S %p')}",
+                        f"⏰ Session started at {datetime.now(UTC).strftime('%I:%M:%S %p')}",
                     ),
                     ("total_users", f"📊 {len(self.active_sessions)} users in voice"),
                     ("data_saved", "💾 Active session saved to disk"),
@@ -727,7 +793,7 @@ class ListeningStatsManager:
 
             self.users[user_id].total_time += duration
             self.users[user_id].sessions += 1
-            self.users[user_id].last_seen = datetime.now(timezone.utc).isoformat()
+            self.users[user_id].last_seen = datetime.now(UTC).isoformat()
 
             # Update total stats
             self.total_listening_time += duration
@@ -754,7 +820,7 @@ class ListeningStatsManager:
                         "session_duration": duration,
                         "total_time": self.users[user_id].total_time,
                         "total_sessions": self.users[user_id].sessions,
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "timestamp": datetime.now(UTC).isoformat(),
                     }
 
                     # Try to write emergency log
@@ -814,11 +880,11 @@ class ListeningStatsManager:
             )
             return 0.0
 
-    def get_user_stats(self, user_id: int) -> Optional[UserStats]:
+    def get_user_stats(self, user_id: int) -> UserStats | None:
         """Get statistics for a specific user"""
         return self.users.get(user_id)
 
-    def get_top_users(self, limit: int = 10) -> List[Tuple[int, float, int]]:
+    def get_top_users(self, limit: int = 10) -> list[tuple[int, float, int]]:
         """Get top users by listening time"""
         # Include active session time for current rankings
         user_times = []
@@ -854,7 +920,7 @@ class ListeningStatsManager:
                 remaining_hours = int(hours % 24)
                 return f"{days}d {remaining_hours}h"
 
-    def get_leaderboard_data(self) -> Dict:
+    def get_leaderboard_data(self) -> dict:
         """Get comprehensive leaderboard data"""
         top_users = self.get_top_users(10)
 
@@ -955,7 +1021,7 @@ class ListeningStatsManager:
                 title="🏆 Quran Listening Leaderboard",
                 description="*Top listeners in the Quran voice channel*",
                 color=0x00D4AA,
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
             )
 
             # Medal emojis for top 3
@@ -1081,29 +1147,30 @@ def track_voice_leave(user_id: int) -> float:
     return listening_stats_manager.user_left_voice(user_id)
 
 
-def get_user_listening_stats(user_id: int) -> Optional[UserStats]:
+def get_user_listening_stats(user_id: int) -> UserStats | None:
     """Get listening statistics for a user (loads fresh data from file)"""
     try:
         # Load fresh data from file each time (like quiz stats)
         if STATS_FILE.exists():
-            with open(STATS_FILE, "r", encoding="utf-8") as f:
+            with open(STATS_FILE, encoding="utf-8") as f:
                 data = json.load(f)
-            
+
             users_data = data.get("users", {})
             user_data = users_data.get(str(user_id))
-            
+
             if user_data:
                 return UserStats.from_dict(user_data)
-        
+
         return None
     except Exception as e:
         # Log error but don't crash - return None for missing data
         from .tree_log import log_error_with_traceback
+
         log_error_with_traceback(f"Error loading listening stats for user {user_id}", e)
         return None
 
 
-def get_leaderboard_data() -> Dict:
+def get_leaderboard_data() -> dict:
     """Get leaderboard data for display"""
     return listening_stats_manager.get_leaderboard_data()
 
@@ -1186,7 +1253,7 @@ def verify_data_integrity() -> bool:
             return False
 
         # Try to load and validate the file
-        with open(STATS_FILE, "r", encoding="utf-8") as f:
+        with open(STATS_FILE, encoding="utf-8") as f:
             data = json.load(f)
 
         # Check required structure
@@ -1254,7 +1321,7 @@ def verify_data_integrity() -> bool:
         return False
 
 
-def get_data_protection_status() -> Dict:
+def get_data_protection_status() -> dict:
     """Get comprehensive data protection status"""
     try:
         # Use temp backup directory for .backup files (keeps data/ clean)

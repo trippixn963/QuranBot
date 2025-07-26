@@ -23,7 +23,6 @@
 # =============================================================================
 
 # Import all utility components
-from .audio_manager import AudioManager
 from .control_panel import (
     ReciterSelect,
     SimpleControlPanelView,
@@ -32,33 +31,20 @@ from .control_panel import (
     create_control_panel,
     setup_control_panel,
 )
+
+# Discord logging for VPS monitoring
+from .discord_logger import (
+    discord_log_critical,
+    discord_log_error,
+    discord_log_success,
+    discord_log_system,
+    discord_log_user,
+    discord_log_vps_status,
+    discord_log_warning,
+    get_discord_logger,
+    setup_discord_logger,
+)
 from .rich_presence import RichPresenceManager, validate_rich_presence_dependencies
-from .state_manager import state_manager
-
-# Import state manager data protection utilities
-try:
-    from .state_manager import StateManager
-
-    # Add data protection methods to state_manager instance
-    state_manager_verify_data_integrity = state_manager.verify_data_integrity
-    state_manager_get_data_protection_status = state_manager.get_data_protection_status
-    state_manager_cleanup_old_backups = state_manager.cleanup_old_backups
-
-except ImportError:
-    # Fallback functions if state manager is not available
-    def state_manager_verify_data_integrity():
-        return False
-
-    def state_manager_get_data_protection_status():
-        return {"error": "State manager not available"}
-
-    def state_manager_cleanup_old_backups(keep_days=7):
-        return 0
-
-    class StateManager:
-        pass
-
-
 from .surah_mapper import (
     format_now_playing,
     get_surah_display,
@@ -79,19 +65,6 @@ from .tree_log import (
     log_voice_activity_tree,
     log_warning_with_context,
     write_to_log_files,
-)
-
-# Discord logging for VPS monitoring
-from .discord_logger import (
-    setup_discord_logger,
-    get_discord_logger,
-    discord_log_error,
-    discord_log_critical,
-    discord_log_warning,
-    discord_log_system,
-    discord_log_user,
-    discord_log_success,
-    discord_log_vps_status,
 )
 
 # Import listening stats utilities
@@ -193,8 +166,6 @@ except ImportError:
 
 # Export main utility classes and functions
 __all__ = [
-    # Audio Management
-    "AudioManager",
     # Control Panel Components
     "SimpleControlPanelView",
     "SurahSelect",
@@ -205,9 +176,6 @@ __all__ = [
     # Rich Presence Management
     "RichPresenceManager",
     "validate_rich_presence_dependencies",
-    # State Management
-    "state_manager",
-    "StateManager",
     # Surah Mapping and Metadata
     "get_surah_info",
     "get_surah_display",
@@ -240,10 +208,6 @@ __all__ = [
     "start_backup_scheduler",
     "stop_backup_scheduler",
     "get_backup_status",
-    # Data Protection Utilities (State Manager)
-    "state_manager_verify_data_integrity",
-    "state_manager_get_data_protection_status",
-    "state_manager_cleanup_old_backups",
     # Version Information
     "BOT_NAME",
     "BOT_VERSION",

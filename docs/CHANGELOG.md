@@ -10,7 +10,7 @@ All notable changes to QuranBot will be documented in this file. This project fo
 
 ### 🆕 Major Features Added
 
-#### **Comprehensive Web Dashboard Enhancement**
+#### **Comprehensive Bot Monitoring Enhancement**
 - **Real-time Audio Controls**: Added current track display, voice channel status, and play/pause/skip buttons
 - **Interval Management GUI**: Interactive sliders for quiz/verse intervals (15min-24h) with real-time preview
 - **Enhanced Statistics Panel**: Quiz stats (total questions, accuracy rate, user participation) and Verse stats (total sent, dua reactions, engagement metrics)
@@ -19,11 +19,11 @@ All notable changes to QuranBot will be documented in this file. This project fo
 - **Leaderboard Panel**: Real-time leaderboard with top quiz performers, medals, streaks, and listening time integration
 
 #### **Tree Logging System**
-- **Dashboard Interaction Logging**: Comprehensive logging for view dashboard, bot controls, interval updates, audio controls, status checks, and log searches
+- **Bot Interaction Logging**: Comprehensive logging for bot controls, interval updates, audio controls, status checks, and log searches
 - **Rich Information Capture**: User IP address, EST timezone timestamps, user agent, action details, and endpoint access tracking
 - **Beautiful Tree Format**: Hierarchical logging with tree characters (├─, └─) matching bot's existing format
 - **Status Messages**: Success (✅), warnings (⚠️), errors (❌), settings (⚙️), audio (🎵) with emojis
-- **Separate Log Files**: Dashboard logs stored in dedicated directory structure
+- **Separate Log Files**: Monitoring logs stored in dedicated directory structure
 
 #### **Enhanced Log Management System**
 - **Improved Log Scripts**: Enhanced log management with comprehensive error handling
@@ -45,12 +45,12 @@ All notable changes to QuranBot will be documented in this file. This project fo
 - **Enhanced Error Context**: Detailed logging with user IDs, role IDs, and specific error messages
 - **Fixed "Listening to Quran" Role Bug**: Users no longer keep role after leaving voice channel
 
-#### **Dashboard Data Display Issues**
+#### **Bot Data Display Issues**
 - **Audio Status Enhancement**: Fixed audio controls showing "None" for current track and "Not connected" for voice channel
 - **Surah Name Integration**: Connected with bot's surahs.json file for proper transliterated names (e.g., "An-Nisa" instead of "Surah 4")
 - **Voice Connection Detection**: Intelligent analysis of recent logs for accurate voice connection indicators
-- **Timezone Synchronization**: Fixed dashboard timezone mismatch by aligning with bot's EST timezone
-- **Real-time Data Updates**: Improved synchronization between bot and dashboard data
+- **Timezone Synchronization**: Fixed monitoring timezone mismatch by aligning with bot's EST timezone
+- **Real-time Data Updates**: Improved synchronization between bot services and monitoring data
 
 #### **Quiz System Improvements**
 - **Explanation Box Fix**: Added missing explanation field to automated quiz scheduler
@@ -59,14 +59,14 @@ All notable changes to QuranBot will be documented in this file. This project fo
 
 #### **Audio System Enhancements**
 - **Enhanced Audio Status**: Improved detection and display of current audio playback state
-- **Surah Name Display**: Proper transliteration display in dashboard and logs
+- **Surah Name Display**: Proper transliteration display in monitoring and logs
 - **Voice Connection Status**: More reliable detection of voice channel connection state
 - **Position Tracking**: Enhanced audio position tracking and resume functionality
 
 ### 🎨 UI/UX Improvements
 
-#### **Dashboard Visual Enhancements**
-- **Modern Card Layout**: Clean, responsive dashboard grid with beautiful card-based design
+#### **Monitoring Visual Enhancements**
+- **Modern Log Layout**: Clean, structured logging with beautiful tree-based design
 - **Real-time Updates**: All panels refresh every 5 seconds with smooth transitions
 - **Interactive Controls**: Intuitive buttons and sliders with immediate feedback
 - **Color-coded Status**: Visual indicators for different states and activity types
@@ -76,7 +76,7 @@ All notable changes to QuranBot will be documented in this file. This project fo
 - **Medal System**: Automatic 🥇🥈🥉 for top 3 positions with special highlighting
 - **User-friendly Display**: Shows position, avatar, name, stats in organized layout
 - **Comprehensive Stats**: Points, streaks, accuracy, total questions, and listening time per user
-- **Real-time Updates**: Leaderboard refreshes with other dashboard data
+- **Real-time Updates**: Leaderboard refreshes with other monitoring data
 
 ### 📊 Data Management Improvements
 
@@ -131,7 +131,7 @@ All notable changes to QuranBot will be documented in this file. This project fo
 ## [3.5.0] - Previous Release
 
 ### Features
-- Initial web dashboard implementation
+- Initial monitoring system implementation
 - Basic audio playback system
 - Quiz management functionality
 - State persistence system
@@ -220,7 +220,7 @@ This project is developed with the intention of serving the Muslim ummah and spr
 
 ## 📜 Version History
 
-- **v3.6.0** (2024-07-12): Major dashboard enhancements, bug fixes, and system improvements
+- **v3.6.0** (2024-07-12): Major monitoring enhancements, bug fixes, and system improvements
 - **v3.5.0** (2024-07-10): Initial comprehensive release with core functionality
 - **v3.4.x** (2024-07-08): Beta releases with testing and optimization
 - **v3.3.x** (2024-07-05): Alpha releases with core development

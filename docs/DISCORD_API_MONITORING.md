@@ -4,7 +4,7 @@
 
 ## Overview
 
-The Discord API Health Monitoring system provides comprehensive real-time tracking of Discord API performance, rate limits, gateway health, and overall system status. This monitoring is integrated into the QuranBot web dashboard for easy visualization and alerting.
+The Discord API Health Monitoring system provides comprehensive real-time tracking of Discord API performance, rate limits, gateway health, and overall system status. This monitoring provides detailed logging and alerting capabilities.
 
 ---
 
@@ -22,10 +22,10 @@ The Discord API Health Monitoring system provides comprehensive real-time tracki
 - **Reconnection Tracking**: Count and log reconnection events
 - **Heartbeat Monitoring**: Track gateway heartbeat health
 
-### **Web Dashboard Integration**
-- **Real-time Panels**: Live Discord API health status in dashboard
+### **Bot Integration**
+- **Real-time Monitoring**: Live Discord API health status in bot logs
 - **Visual Indicators**: Color-coded status indicators (healthy/warning/critical)
-- **API Endpoints**: RESTful endpoints for external monitoring
+- **Structured Logging**: JSON and tree-formatted monitoring data
 - **Historical Data**: 24-hour data retention with trend analysis
 
 ### **Intelligent Alerting**
@@ -36,9 +36,9 @@ The Discord API Health Monitoring system provides comprehensive real-time tracki
 
 ---
 
-## 📊 **Dashboard Panels**
+## 📊 **Log Monitoring**
 
-### **Discord API Health Panel**
+### **Discord API Health Logs**
 ```
 🔗 Discord API Health              [🟢]
 ├─ API Status: ✅ Healthy
@@ -83,27 +83,18 @@ health = discord_monitor.get_current_health()
 - **Atomic Writes**: Corruption-resistant data persistence
 - **Background Tasks**: Automatic data saving every 30 seconds
 
-### **Web Dashboard Integration**
+### **Monitoring Integration**
 
-#### **API Endpoints**
-```bash
-# Discord API health status
-GET /api/discord/health
-
-# API metrics summary  
-GET /api/discord/metrics
-
-# Gateway connection status
-GET /api/discord/gateway
-```
-
-#### **Dashboard Functions**
+#### **Health Check Functions**
 ```python
-# Get Discord API health for dashboard
+# Get Discord API health status
 health = get_discord_api_health()
 
-# Get gateway status for dashboard  
+# Get gateway connection status  
 gateway = get_discord_gateway_status()
+
+# Monitor rate limits
+rate_limits = monitor_rate_limits()
 ```
 
 ---
@@ -115,8 +106,8 @@ gateway = get_discord_gateway_status()
 # Optional: VPS host for remote monitoring
 VPS_HOST=root@your.vps.ip
 
-# Optional: Dashboard URL for monitoring links
-DASHBOARD_URL=http://your.dashboard.url:8080
+# Optional: Remote monitoring host
+MONITORING_HOST=your.monitoring.server
 ```
 
 ### **Monitoring Thresholds**
@@ -242,13 +233,13 @@ python tools/test_discord_api_monitor.py
 
 ### **Test Coverage**
 - ✅ **Discord Monitor Core**: Monitor initialization and data collection
-- ✅ **Web Dashboard Integration**: Dashboard functions and API endpoints
+- ✅ **Monitoring Integration**: Health check functions and data collection
 - ✅ **Data Persistence**: File storage and data integrity
 
 ### **Expected Test Results**
 ```
 📋 Test Results Summary:
-✅ PASS - Web Dashboard Integration
+✅ PASS - Monitoring Integration
 ✅ PASS - Data Persistence  
 ❌ FAIL - Discord Monitor Core (expected when bot not running)
 ```
@@ -269,25 +260,25 @@ if monitor:
     print(f"Response Time: {health['avg_response_time']:.3f}s")
 ```
 
-### **Dashboard Integration**
+### **Bot Integration**
 ```python
-# Get data for web dashboard
-from tools.web_dashboard import get_discord_api_health
+# Get monitoring data for bot logs
+from src.utils.discord_api_monitor import get_discord_api_health
 
 health = get_discord_api_health()
 status_indicator = "online" if health.get('is_healthy') else "warning"
 ```
 
-### **API Monitoring**
+### **Log Monitoring**
 ```bash
-# Check Discord API health via REST API
-curl http://localhost:8080/api/discord/health
+# Check Discord API health in logs
+tail -f logs/quranbot.log | grep "Discord API"
 
-# Get API metrics summary
-curl http://localhost:8080/api/discord/metrics
+# Monitor connection status
+tail -f logs/quranbot.log | grep "Gateway"
 
-# Check gateway status
-curl http://localhost:8080/api/discord/gateway
+# Watch for rate limit warnings
+tail -f logs/quranbot.log | grep "Rate Limit"
 ```
 
 ---
@@ -295,7 +286,7 @@ curl http://localhost:8080/api/discord/gateway
 ## 🔮 **Future Enhancements**
 
 ### **Planned Features**
-- **Historical Charts**: Graphical trend analysis in dashboard
+- **Historical Analysis**: Enhanced trend analysis and reporting
 - **Email Alerts**: SMTP notifications for critical issues
 - **Slack Integration**: Webhook notifications to Slack channels
 - **Custom Thresholds**: User-configurable alert thresholds
@@ -313,7 +304,7 @@ curl http://localhost:8080/api/discord/gateway
 
 ### **Monitoring Strategy**
 1. **Monitor Proactively**: Set up alerts before issues occur
-2. **Review Regularly**: Check dashboard daily for trends
+2. **Review Regularly**: Check logs daily for trends
 3. **Optimize Performance**: Use metrics to identify bottlenecks
 4. **Plan Capacity**: Monitor rate limits to plan usage
 
@@ -336,10 +327,10 @@ curl http://localhost:8080/api/discord/gateway
 The Discord API Health Monitoring system provides comprehensive real-time monitoring of QuranBot's Discord integration:
 
 - **✅ Real-time Monitoring**: API response times, rate limits, gateway health
-- **✅ Web Dashboard**: Beautiful visual panels with status indicators  
+- **✅ Structured Logging**: Beautiful tree-formatted logs with status indicators  
 - **✅ Intelligent Alerting**: Proactive warnings and critical alerts
 - **✅ Data Persistence**: 24-hour historical data with automatic cleanup
-- **✅ RESTful APIs**: External integration capabilities
+- **✅ Health Check APIs**: Internal monitoring capabilities
 - **✅ Perfect Tree Logging**: Beautiful formatted logs for troubleshooting
 
 This monitoring system ensures QuranBot maintains optimal Discord API performance while serving the Islamic community 24/7 with reliability and excellence. 🕌✨ 

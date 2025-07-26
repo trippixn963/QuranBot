@@ -33,19 +33,18 @@
 # - pytz: Timezone handling
 # =============================================================================
 
+from datetime import datetime
 import json
-import os
+from pathlib import Path
 import secrets
 import traceback
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import pytz
 
 # Global state tracking for tree structure
 _is_first_section = True  # Controls top-level spacing
-_tree_stack: List[bool] = []  # Tracks which levels have siblings
+_tree_stack: list[bool] = []  # Tracks which levels have siblings
 _current_depth = 0  # Current nesting level
 
 # Unicode symbols for perfect tree structure
@@ -134,12 +133,12 @@ class TreeLogger:
             project_root = Path(__file__).parent.parent.parent
             main_log_dir = project_root / "logs"
             main_log_dir.mkdir(parents=True, exist_ok=True)
-            
+
             # Create today's date subdirectory
             date_str = self._get_log_date()
             date_log_dir = main_log_dir / date_str
             date_log_dir.mkdir(parents=True, exist_ok=True)
-            
+
             return date_log_dir
         except Exception as e:
             print(f"Warning: Could not create log directory: {e}")
@@ -151,7 +150,7 @@ class TreeLogger:
 
     def _get_log_date(self) -> str:
         """Get current date for log file naming (YYYY-MM-DD format)."""
-        if hasattr(self, 'mock_date') and self.mock_date:
+        if hasattr(self, "mock_date") and self.mock_date:
             now = self.mock_date
             return now.strftime("%Y-%m-%d")
         else:
@@ -173,7 +172,7 @@ class TreeLogger:
 
     def _get_timestamp(self) -> str:
         """Get current timestamp in EST timezone with custom format."""
-        if hasattr(self, 'mock_date') and self.mock_date:
+        if hasattr(self, "mock_date") and self.mock_date:
             now = self.mock_date
             formatted_time = now.strftime("%m/%d %I:%M %p EST")
             return f"[{formatted_time}]"
@@ -515,7 +514,7 @@ class TreeLogger:
         user_name: str,
         user_id: int,
         action_description: str,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ):
         """
         Log user interactions in a dedicated tree section for easy identification.
@@ -572,7 +571,7 @@ class TreeLogger:
         except Exception as e:
             timestamp = self._get_timestamp()
             error_line = (
-                f"├─ user_interaction_log_error: Failed to log interaction: {str(e)}"
+                f"├─ user_interaction_log_error: Failed to log interaction: {e!s}"
             )
             print(f"{timestamp} {error_line}")
             self._write_to_log_files(error_line, "ERROR", "user_interaction")
@@ -600,7 +599,7 @@ class TreeLogger:
         """Log status with emoji and message."""
         if status != "INFO":
             self.log_perfect_tree_section(
-                f"Status Update", [("message", message), ("level", status)], emoji
+                "Status Update", [("message", message), ("level", status)], emoji
             )
         else:
             timestamp = self._get_timestamp()
@@ -643,12 +642,12 @@ class TreeLogger:
             print(f"{timestamp} {exception_details}")
             self._write_to_log_files(exception_details, level, "error")
 
-            exception_message = f"├─ exception_message: {str(exception)}"
+            exception_message = f"├─ exception_message: {exception!s}"
             print(f"{timestamp} {exception_message}")
             self._write_to_log_files(exception_message, level, "error")
 
             # Log full traceback with tree formatting
-            traceback_header = f"└─ full_traceback:"
+            traceback_header = "└─ full_traceback:"
             print(f"{timestamp} {traceback_header}")
             self._write_to_log_files(traceback_header, level, "error")
 
@@ -779,7 +778,7 @@ class TreeLogger:
         user_name: str,
         user_id: int,
         action_description: str,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ):
         """
         Log user interactions in a dedicated tree section for easy identification.
@@ -836,7 +835,7 @@ class TreeLogger:
         except Exception as e:
             timestamp = self._get_timestamp()
             error_line = (
-                f"├─ user_interaction_log_error: Failed to log interaction: {str(e)}"
+                f"├─ user_interaction_log_error: Failed to log interaction: {e!s}"
             )
             print(f"{timestamp} {error_line}")
             self._write_to_log_files(error_line, "ERROR", "user_interaction")
@@ -880,18 +879,20 @@ class TreeLogger:
                 project_root = Path(__file__).parent.parent.parent
                 main_log_dir = project_root / "logs"
                 main_log_dir.mkdir(parents=True, exist_ok=True)
-                
+
                 new_date_log_dir = main_log_dir / current_date
                 new_date_log_dir.mkdir(parents=True, exist_ok=True)
-                
+
                 # Update the log directory
                 old_date = self.log_dir.name if self.log_dir else "None"
                 self.log_dir = new_date_log_dir
-                
+
                 # Log the date change (but avoid infinite recursion)
                 if old_date != "None" and old_date != current_date:
                     timestamp = self._get_timestamp()
-                    print(f"{timestamp} [INFO] 📅 Log date changed: {old_date} → {current_date}")
+                    print(
+                        f"{timestamp} [INFO] 📅 Log date changed: {old_date} → {current_date}"
+                    )
 
             if not self.log_dir:
                 return
@@ -927,9 +928,9 @@ class TreeLogger:
                     "category": log_type,
                     "message": message.strip(),
                     "run_id": self.run_id,
-                    "iso_datetime": self.current_datetime_iso
+                    "iso_datetime": self.current_datetime_iso,
                 }
-                
+
                 # Append JSON entry as a single line
                 with open(json_log_file, "a", encoding="utf-8") as f:
                     f.write(json.dumps(json_entry) + "\n")
@@ -963,45 +964,56 @@ def log_version_info(bot_name, version, additional_info=None):
     """Log version information."""
     return _global_logger.log_version_info(bot_name, version, additional_info)
 
+
 def log_tree_group(title, items, emoji="🎯"):
     """Log a group of items in tree format."""
     return _global_logger.log_tree_group(title, items, emoji)
+
 
 def log_perfect_tree_section(title, items, emoji="🎯", nested_groups=None):
     """Log a perfect tree section."""
     return _global_logger.log_perfect_tree_section(title, items, emoji, nested_groups)
 
+
 def log_error_with_traceback(message, exception=None, level="ERROR"):
     """Log an error with traceback."""
     return _global_logger.log_error_with_traceback(message, exception, level)
+
 
 def log_critical_error(message, exception=None):
     """Log a critical error."""
     return _global_logger.log_critical_error(message, exception)
 
+
 def log_warning_with_context(message, context=None):
     """Log a warning with context."""
     return _global_logger.log_warning_with_context(message, context)
+
 
 def log_async_error(function_name, exception, additional_context=None):
     """Log an async error."""
     return _global_logger.log_async_error(function_name, exception, additional_context)
 
+
 def log_discord_error(event_name, exception, guild_id=None, channel_id=None):
     """Log a Discord error."""
     return _global_logger.log_discord_error(event_name, exception, guild_id, channel_id)
+
 
 def log_spacing():
     """Add spacing in logs."""
     return _global_logger.log_spacing()
 
+
 def log_status(message, status="INFO", emoji="📍"):
     """Log a status message."""
     return _global_logger.log_status(message, status, emoji)
 
+
 def log_progress(current, total, emoji="🎶"):
     """Log progress."""
     return _global_logger.log_progress(current, total, emoji)
+
 
 def log_user_interaction(
     interaction_type, user_name, user_id, action_description, details=None
@@ -1011,25 +1023,31 @@ def log_user_interaction(
         interaction_type, user_name, user_id, action_description, details
     )
 
+
 def log_voice_activity_tree(user_name, activity_type, details):
     """Log voice activity."""
     return _global_logger.log_voice_activity_tree(user_name, activity_type, details)
+
 
 def log_run_separator():
     """Log a run separator."""
     return _global_logger.log_run_separator()
 
+
 def log_run_header(bot_name, version, run_id=None):
     """Log a run header."""
     return _global_logger.log_run_header(bot_name, version, run_id)
+
 
 def log_run_end(run_id, reason="Normal shutdown"):
     """Log a run end."""
     return _global_logger.log_run_end(run_id, reason)
 
+
 def get_timestamp():
     """Get current timestamp."""
     return _global_logger._get_timestamp()
+
 
 def write_to_log_files(message: str, level: str, category: str) -> None:
     """Write to log files."""

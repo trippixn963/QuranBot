@@ -1,0 +1,208 @@
+# =============================================================================
+# QuranBot Pre-commit Hooks Configuration
+# =============================================================================
+# Automated code quality checks that run before each commit
+# Install with: pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # Built-in hooks for basic file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        description: Trim trailing whitespace
+      - id: end-of-file-fixer
+        description: Ensure files end with newline
+      - id: check-yaml
+        description: Check YAML file syntax
+      - id: check-toml
+        description: Check TOML file syntax
+      - id: check-json
+        description: Check JSON file syntax
+      - id: check-merge-conflict
+        description: Check for merge conflict markers
+      - id: check-added-large-files
+        description: Prevent large files from being committed
+        args: ["--maxkb=10240"] # 10MB limit
+      - id: check-case-conflict
+        description: Check for case conflicts
+      - id: check-symlinks
+        description: Check for broken symlinks
+      - id: destroyed-symlinks
+        description: Check for destroyed symlinks
+      - id: check-docstring-first
+        description: Check docstring comes first
+      - id: check-executables-have-shebangs
+        description: Check executables have shebangs
+      - id: check-shebang-scripts-are-executable
+        description: Check shebang scripts are executable
+      - id: fix-byte-order-marker
+        description: Remove UTF-8 byte order marker
+
+  # Python-specific hooks
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+      - id: python-check-blanket-noqa
+        description: Check for blanket noqa comments
+      - id: python-check-blanket-type-ignore
+        description: Check for blanket type ignore comments
+      - id: python-no-log-warn
+        description: Check for deprecated log.warn usage
+      - id: python-use-type-annotations
+        description: Enforce type annotations over comments
+      - id: rst-backticks
+        description: Check RST backticks
+      - id: rst-directive-colons
+        description: Check RST directive colons
+      - id: rst-inline-touching-normal
+        description: Check RST inline code
+
+  # Code formatting with Black
+  - repo: https://github.com/psf/black
+    rev: 24.1.1
+    hooks:
+      - id: black
+        description: Format Python code with Black
+        language_version: python3.11
+        types: [python]
+
+  # Import sorting with isort (integrated with Black)
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        description: Sort Python imports
+        args: ["--profile", "black", "--filter-files"]
+        types: [python]
+
+  # Linting and code quality with Ruff
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.14
+    hooks:
+      - id: ruff
+        description: Run Ruff linter
+        args: [--fix, --exit-non-zero-on-fix]
+        types: [python]
+      - id: ruff-format
+        description: Run Ruff formatter
+        types: [python]
+
+  # Type checking with mypy
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        description: Run mypy type checker
+        additional_dependencies:
+          [
+            types-requests,
+            types-PyYAML,
+            types-python-dateutil,
+            pydantic,
+            discord.py,
+          ]
+        args: [--strict, --ignore-missing-imports]
+        types: [python]
+
+  # Security scanning with bandit
+  - repo: https://github.com/pycqa/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        description: Run Bandit security linter
+        args: ["-c", "pyproject.toml"]
+        additional_dependencies: ["bandit[toml]"]
+        types: [python]
+
+  # Documentation checks
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 6.3.0
+    hooks:
+      - id: pydocstyle
+        description: Check docstring style
+        args: [--convention=google]
+        types: [python]
+
+  # YAML formatting
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        description: Format YAML, JSON, and Markdown files
+        types_or: [yaml, json, markdown]
+        exclude: ^(logs/|audio/|backup/)
+
+  # Dockerfile linting
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint
+        description: Lint Dockerfiles
+        types: [dockerfile]
+
+  # Shell script linting
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.6
+    hooks:
+      - id: shellcheck
+        description: Lint shell scripts
+        types: [shell]
+
+  # Commit message formatting
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.13.0
+    hooks:
+      - id: commitizen
+        description: Check commit message format
+        stages: [commit-msg]
+
+  # Remove unused imports and variables
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v2.2.1
+    hooks:
+      - id: autoflake
+        description: Remove unused imports and variables
+        args:
+          - --remove-all-unused-imports
+          - --remove-unused-variables
+          - --remove-duplicate-keys
+          - --ignore-init-module-imports
+        types: [python]
+
+  # Upgrade Python syntax
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.15.0
+    hooks:
+      - id: pyupgrade
+        description: Upgrade Python syntax
+        args: [--py311-plus]
+        types: [python]
+
+  # Check for common security issues
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        description: Detect secrets in code
+        args: ["--baseline", ".secrets.baseline"]
+        exclude: ^(tests/|docs/|\.secrets\.baseline$)
+
+# Global configuration
+default_stages: [pre-commit]
+fail_fast: false
+minimum_pre_commit_version: "3.0.0"
+
+# CI configuration
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ""
+  autoupdate_commit_msg: "[pre-commit.ci] pre-commit autoupdate"
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

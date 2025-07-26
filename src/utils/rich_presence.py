@@ -34,10 +34,9 @@
 # - pytz: Timezone handling
 # =============================================================================
 
-import json
 from datetime import datetime, timedelta
+import json
 from pathlib import Path
-from typing import Dict, Optional, Union
 
 import discord
 import pytz
@@ -170,7 +169,7 @@ class RichPresenceManager:
         },
     }
 
-    def __init__(self, client: discord.Client, data_dir: Union[str, Path]):
+    def __init__(self, client: discord.Client, data_dir: str | Path):
         """Initialize the rich presence manager"""
         self.client = client
         self.data_dir = Path(data_dir)
@@ -198,7 +197,7 @@ class RichPresenceManager:
         details: str,
         state: str,
         activity_type: str = "playing",
-        start_time: Optional[datetime] = None,
+        start_time: datetime | None = None,
         silent: bool = False,
     ) -> bool:
         """Update Discord rich presence"""
@@ -273,8 +272,8 @@ class RichPresenceManager:
     def update_presence_with_template(
         self,
         template_name: str,
-        data: Dict[str, str],
-        start_time: Optional[datetime] = None,
+        data: dict[str, str],
+        start_time: datetime | None = None,
         silent: bool = False,
     ) -> bool:
         """Update presence using a predefined template"""
@@ -380,7 +379,7 @@ class RichPresenceManager:
             log_error_with_traceback("Error clearing rich presence", e)
             return False
 
-    def get_elapsed_time(self) -> Optional[timedelta]:
+    def get_elapsed_time(self) -> timedelta | None:
         """Get elapsed time since presence start"""
         try:
             if not self.start_time:
@@ -425,7 +424,7 @@ class RichPresenceManager:
         """Load state from file"""
         try:
             if self.state_file.exists():
-                with open(self.state_file, "r", encoding="utf-8") as f:
+                with open(self.state_file, encoding="utf-8") as f:
                     state = json.load(f)
 
                 self.is_enabled = state.get("is_enabled", True)

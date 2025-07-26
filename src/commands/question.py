@@ -6,32 +6,15 @@
 # Mirrors the functionality of /verse command
 # =============================================================================
 
-import asyncio
-import os
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 
 import discord
-import pytz
 from discord import app_commands
 from discord.ext import commands
 
-from src.utils.tree_log import (
-    log_error_with_traceback,
-    log_perfect_tree_section,
-    log_user_interaction,
-)
+from src.config import get_config_service
 from src.utils.quiz_manager import QuizView
-
-# Environment variables with validation
-DEVELOPER_ID = int(os.getenv("DEVELOPER_ID", "0"))
-DAILY_VERSE_CHANNEL_ID = int(os.getenv("DAILY_VERSE_CHANNEL_ID", "0"))
-
-# Validate required environment variables
-if DEVELOPER_ID == 0:
-    raise ValueError("DEVELOPER_ID environment variable must be set")
-if DAILY_VERSE_CHANNEL_ID == 0:
-    raise ValueError("DAILY_VERSE_CHANNEL_ID environment variable must be set")
-
+from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
 
 # =============================================================================
 # Utility Functions
@@ -42,6 +25,7 @@ def get_daily_verses_manager():
     """Get daily verses manager instance"""
     try:
         from src.utils.daily_verses import DailyVersesManager
+
         return DailyVersesManager()
     except ImportError:
         # Fallback if daily verses module is not available
@@ -54,9 +38,10 @@ def get_daily_verses_manager():
 def get_quiz_manager():
     """Get quiz manager instance"""
     try:
-        from src.utils.quiz_manager import QuizManager
         from pathlib import Path
-        
+
+        from src.utils.quiz_manager import QuizManager
+
         # Use the data directory from the project root
         data_dir = Path(__file__).parent.parent.parent / "data"
         return QuizManager(data_dir)
@@ -123,8 +108,11 @@ class QuestionCog(commands.Cog):
         )
 
         try:
+            # Get configuration
+            config = get_config_service().config
+
             # Check if user is the developer/admin
-            if interaction.user.id != DEVELOPER_ID:
+            if interaction.user.id != config.DEVELOPER_ID:
                 log_perfect_tree_section(
                     "Question Command - Permission Denied",
                     [
@@ -132,7 +120,7 @@ class QuestionCog(commands.Cog):
                             "user",
                             f"{interaction.user.display_name} ({interaction.user.id})",
                         ),
-                        ("required_id", str(DEVELOPER_ID)),
+                        ("required_id", str(config.DEVELOPER_ID)),
                         ("status", "❌ Unauthorized access attempt"),
                         ("action", "🚫 Command execution denied"),
                     ],
@@ -146,7 +134,9 @@ class QuestionCog(commands.Cog):
                 )
 
                 try:
-                    admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
+                    admin_user = await interaction.client.fetch_user(
+                        config.DEVELOPER_ID
+                    )
                     if admin_user and admin_user.avatar:
                         embed.set_footer(
                             text="Created by حَـــــنَـــــا",
@@ -212,14 +202,16 @@ class QuestionCog(commands.Cog):
 
             # Get the channel
             try:
-                channel = interaction.client.get_channel(DAILY_VERSE_CHANNEL_ID)
+                channel_id = config.DAILY_VERSE_CHANNEL_ID
+                if not channel_id:
+                    raise ValueError("DAILY_VERSE_CHANNEL_ID not configured")
+
+                channel = interaction.client.get_channel(channel_id)
                 if not channel:
-                    channel = await interaction.client.fetch_channel(
-                        DAILY_VERSE_CHANNEL_ID
-                    )
+                    channel = await interaction.client.fetch_channel(channel_id)
 
                 if not channel:
-                    raise ValueError(f"Channel {DAILY_VERSE_CHANNEL_ID} not found")
+                    raise ValueError(f"Channel {channel_id} not found")
 
             except Exception as e:
                 log_error_with_traceback("Failed to get quiz channel", e)
@@ -289,14 +281,14 @@ class QuestionCog(commands.Cog):
             if isinstance(question_text, dict):
                 arabic_text = question_text.get("arabic", "")
                 english_text = question_text.get("english", "")
-                
+
                 if arabic_text:
                     embed.add_field(
                         name="🕌 **Question**",
                         value=f"```\n{arabic_text}\n```",
                         inline=False,
                     )
-                
+
                 # Add English translation right after Arabic (if both exist)
                 if english_text:
                     embed.add_field(
@@ -308,7 +300,7 @@ class QuestionCog(commands.Cog):
                 # If it's just a string, display it as the question
                 embed.add_field(
                     name="❓ **Question**",
-                    value=f"```\n{str(question_text)}\n```",
+                    value=f"```\n{question_text!s}\n```",
                     inline=False,
                 )
 
@@ -336,7 +328,7 @@ class QuestionCog(commands.Cog):
                     difficulty_display = str(difficulty_value)
             else:
                 difficulty_display = str(difficulty_value)
-            
+
             embed.add_field(
                 name="⭐ Difficulty",
                 value=difficulty_display,
@@ -366,13 +358,15 @@ class QuestionCog(commands.Cog):
                     if isinstance(choice_data, dict):
                         english_choice = choice_data.get("english", "")
                         arabic_choice = choice_data.get("arabic", "")
-                        
+
                         if english_choice and arabic_choice:
                             choice_text += f"**{letter}.** {english_choice}\n```\n{arabic_choice}\n```\n\n"
                         elif english_choice:
                             choice_text += f"**{letter}.** {english_choice}\n\n"
                         elif arabic_choice:
-                            choice_text += f"**{letter}.** ```\n{arabic_choice}\n```\n\n"
+                            choice_text += (
+                                f"**{letter}.** ```\n{arabic_choice}\n```\n\n"
+                            )
                     else:
                         choice_text += f"**{letter}.** {choice_data}\n\n"
 
@@ -399,7 +393,7 @@ class QuestionCog(commands.Cog):
 
             # Set footer with admin profile picture
             try:
-                admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
+                admin_user = await interaction.client.fetch_user(config.DEVELOPER_ID)
                 if admin_user and admin_user.avatar:
                     embed.set_footer(
                         text="Created by حَـــــنَـــــا",
@@ -425,17 +419,19 @@ class QuestionCog(commands.Cog):
 
                 # Send answer DM to admin
                 try:
-                    admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
+                    admin_user = await interaction.client.fetch_user(
+                        config.DEVELOPER_ID
+                    )
                     if admin_user:
                         # Create answer embed for DM
                         choices = question_data.get("choices", {})
                         correct_choice = choices.get(correct_answer, "Unknown")
-                        
+
                         # Format the correct answer
                         if isinstance(correct_choice, dict):
                             english_text = correct_choice.get("english", "")
                             arabic_text = correct_choice.get("arabic", "")
-                            
+
                             if english_text and arabic_text:
                                 answer_display = f"**{correct_answer}: {english_text}**\n{arabic_text}"
                             elif english_text:
@@ -443,39 +439,44 @@ class QuestionCog(commands.Cog):
                             elif arabic_text:
                                 answer_display = f"**{correct_answer}:** {arabic_text}"
                             else:
-                                answer_display = f"**{correct_answer}:** Answer not available"
+                                answer_display = (
+                                    f"**{correct_answer}:** Answer not available"
+                                )
                         else:
-                            answer_display = f"**{correct_answer}: {str(correct_choice)}**"
+                            answer_display = f"**{correct_answer}: {correct_choice!s}**"
 
                         dm_embed = discord.Embed(
                             title="🔑 Quiz Answer",
                             description=f"The correct answer for the quiz you just sent:\n\n{answer_display}",
                             color=0x00D4AA,
                         )
-                        
+
                         # Add question details
                         dm_embed.add_field(
                             name="📝 Question Details",
                             value=f"• **Category:** {question_data.get('category', 'Unknown')}\n• **Difficulty:** {question_data.get('difficulty', 'Unknown')}\n• **ID:** {question_data.get('id', 'Unknown')}",
-                            inline=False
+                            inline=False,
                         )
-                        
+
                         # Add message link for easy navigation
                         message_link = f"https://discord.com/channels/{message.guild.id}/{message.channel.id}/{message.id}"
                         dm_embed.add_field(
                             name="🔗 Go to Question",
                             value=f"[Click here to jump to the quiz]({message_link})",
-                            inline=False
+                            inline=False,
                         )
-                        
+
                         dm_embed.set_footer(text="Created by حَـــــنَّـــــا")
-                        
+
                         await admin_user.send(embed=dm_embed)
-                        
+
                         log_perfect_tree_section(
                             "Question Command - Answer DM Sent",
                             [
-                                ("recipient", f"{admin_user.display_name} ({admin_user.id})"),
+                                (
+                                    "recipient",
+                                    f"{admin_user.display_name} ({admin_user.id})",
+                                ),
                                 ("question_id", question_data.get("id", "Unknown")),
                                 ("correct_answer", correct_answer),
                                 ("status", "✅ Answer DM sent successfully"),
@@ -519,6 +520,7 @@ class QuestionCog(commands.Cog):
 
                 # Send success notification to Discord logger
                 from src.utils.discord_logger import get_discord_logger
+
                 discord_logger = get_discord_logger()
                 if discord_logger:
                     try:
@@ -535,8 +537,8 @@ class QuestionCog(commands.Cog):
                                 "Admin": interaction.user.display_name,
                                 "User ID": str(interaction.user.id),
                                 "Question ID": str(question_data.get("id", "Unknown")),
-                                "Message ID": str(message.id)
-                            }
+                                "Message ID": str(message.id),
+                            },
                         )
                     except:
                         pass
@@ -616,7 +618,7 @@ class QuestionCog(commands.Cog):
 # =============================================================================
 
 
-async def setup(bot):
+async def setup(bot, container=None):
     """Set up the Question cog with comprehensive error handling and logging"""
     try:
         log_perfect_tree_section(

@@ -1,0 +1,19 @@
+{
+  "timestamp": "2025-07-25T12:53:43.966463+00:00",
+  "system_metrics": {
+    "cpu_percent": 0.0,
+    "memory_percent": 0.0,
+    "memory_rss_mb": 0.0,
+    "open_file_descriptors": 0,
+    "thread_count": 0
+  },
+  "application_metrics": {
+    "discord_api_latency_ms": 0.0,
+    "cache_hit_rate": 0.0,
+    "active_connections": 0,
+    "error_rate": 0.0,
+    "commands_per_minute": 0.0
+  },
+  "operation_stats": {},
+  "triggered_alerts": 0
+}

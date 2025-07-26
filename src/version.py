@@ -10,7 +10,7 @@
 # =============================================================================
 
 # Main version number - update this single line for new releases
-__version__ = "3.5.4"
+__version__ = "4.0.1"
 
 # Bot name and branding
 BOT_NAME = "QuranBot"
@@ -20,15 +20,61 @@ __author__ = "John (Discord: Trippixn)"
 BOT_AUTHOR = __author__  # For backward compatibility
 
 # Version components for programmatic access
-VERSION_MAJOR = 3
-VERSION_MINOR = 5
-VERSION_PATCH = 4
+VERSION_MAJOR = 4
+VERSION_MINOR = 0
+VERSION_PATCH = 1
 
 # Pre-release identifiers (empty for stable releases)
 VERSION_PRERELEASE = ""  # e.g., "alpha", "beta", "rc1"
 
 # Build metadata (empty for standard releases)
 VERSION_BUILD = ""  # e.g., "20231201", "commit-abc123"
+
+# =============================================================================
+# Release Information
+# =============================================================================
+
+RELEASE_NAME = "Stability & Enhancement Update"
+RELEASE_DATE = "2025-01-27"
+
+RELEASE_NOTES = """
+QuranBot 4.0.1 - Stability & Enhancement Update
+
+🔧 BUG FIXES & IMPROVEMENTS:
+• Fixed /question command functionality with complete restoration from stable version
+• Resolved QuizView constructor parameter naming issues
+• Fixed signal handling for proper Ctrl+C graceful shutdown
+• Corrected configuration service integration across all commands
+• Resolved dependency resolution conflicts
+
+📩 NEW FEATURES:
+• Admin DM integration - automatic quiz answer delivery with rich embeds
+• Enhanced quiz results with admin profile picture in footers
+• Direct message links for easy navigation back to quiz messages
+• Improved error handling with comprehensive fallback behavior
+
+⚡ SYSTEM STABILITY:
+• All legacy compatibility issues resolved
+• Command loading system fully stabilized
+• Audio system optimized for seamless operation
+• Configuration unified under single source of truth
+• Comprehensive testing completed across all components
+
+🏗️ ARCHITECTURE ENHANCEMENTS:
+• Dependency injection container fully operational
+• Service lifecycle management improved
+• Resource management optimized
+• Error reporting enhanced with detailed logging
+• Performance monitoring refined
+
+📚 DOCUMENTATION:
+• README updated with latest changes and improvements
+• Version management centralized and automated
+• Deployment guides verified and updated
+
+This release focuses on stability, bug fixes, and user experience improvements
+while maintaining the robust modernized architecture introduced in 4.0.0.
+"""
 
 # =============================================================================
 # Version Formatting Functions
@@ -40,7 +86,7 @@ def get_version_string():
     Get the complete version string with optional pre-release and build info.
 
     Returns:
-        str: Complete version string (e.g., "2.0.0", "2.1.0-beta", "2.0.1+build123")
+        str: Complete version string (e.g., "4.0.0", "4.1.0-beta", "4.0.1+build123")
     """
     version = __version__
 
@@ -81,6 +127,9 @@ def get_version_info():
         "tuple": get_version_tuple(),
         "author": __author__,
         "bot_name": BOT_NAME,
+        "release_name": RELEASE_NAME,
+        "release_date": RELEASE_DATE,
+        "release_notes": RELEASE_NOTES,
     }
 
 
@@ -94,18 +143,21 @@ VERSION = __version__  # Alternative access
 
 # Export all version-related items
 __all__ = [
-    "__version__",
-    "__author__",
-    "BOT_NAME",
     "BOT_AUTHOR",
+    "BOT_NAME",
     "BOT_VERSION",
+    "RELEASE_DATE",
+    "RELEASE_NAME",
+    "RELEASE_NOTES",
     "VERSION",
+    "VERSION_BUILD",
     "VERSION_MAJOR",
     "VERSION_MINOR",
     "VERSION_PATCH",
     "VERSION_PRERELEASE",
-    "VERSION_BUILD",
+    "__author__",
+    "__version__",
+    "get_version_info",
     "get_version_string",
     "get_version_tuple",
-    "get_version_info",
 ]

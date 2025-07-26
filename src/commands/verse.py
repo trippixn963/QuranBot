@@ -32,15 +32,16 @@
 # =============================================================================
 
 import asyncio
-import os
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import datetime
 
 import discord
-import pytz
 from discord import app_commands
 from discord.ext import commands
 
+from src.core.exceptions import ConfigurationError
+from src.core.security import rate_limit, require_admin
+from src.utils import daily_verses
+from src.utils.discord_logger import get_discord_logger
 from src.utils.tree_log import (
     log_error_with_traceback,
     log_perfect_tree_section,
@@ -57,7 +58,7 @@ def get_daily_verses_manager():
     prevent circular imports and provides graceful fallback.
 
     Returns:
-        Optional[DailyVersesManager]: The manager instance or None if error
+        Optional[DailyVerseManager]: The manager instance or None if error
 
     Implementation Notes:
     - Uses lazy imports to prevent circular dependencies
@@ -65,11 +66,10 @@ def get_daily_verses_manager():
     - Returns None instead of raising exceptions
     """
     try:
-        from src.utils.daily_verses import daily_verse_manager
-
-        return daily_verse_manager
+        # Access the global manager from the daily_verses module
+        return daily_verses.daily_verse_manager
     except Exception as e:
-        log_error_with_traceback("Failed to import daily_verse_manager", e)
+        log_error_with_traceback("Failed to access daily_verse_manager", e)
         return None
 
 
@@ -81,13 +81,18 @@ def get_daily_verses_manager():
 class VerseCog(commands.Cog):
     """Verse command cog for manual daily verse delivery"""
 
-    def __init__(self, bot):
+    def __init__(self, bot, container=None):
         self.bot = bot
+        self.container = container
 
     @app_commands.command(
         name="verse",
         description="Send a daily verse manually and reset the 3-hour timer (Admin only)",
     )
+    @require_admin
+    @rate_limit(
+        user_limit=2, user_window=60
+    )  # 2 requests per minute for admin commands
     async def verse(self, interaction: discord.Interaction):
         """
         Administrative command to manually trigger daily verse delivery.
@@ -167,81 +172,7 @@ class VerseCog(commands.Cog):
                 )
                 return
 
-            # Get developer ID from environment with error handling
-            try:
-                DEVELOPER_ID = int(os.getenv("DEVELOPER_ID") or "0")
-                if DEVELOPER_ID == 0:
-                    raise ValueError("DEVELOPER_ID not set in environment")
-            except (ValueError, TypeError) as e:
-                log_error_with_traceback(
-                    "Failed to get DEVELOPER_ID from environment", e
-                )
-
-                log_perfect_tree_section(
-                    "Verse Command - Configuration Error",
-                    [
-                        ("error", "❌ DEVELOPER_ID not configured"),
-                        (
-                            "user",
-                            f"{interaction.user.display_name} ({interaction.user.id})",
-                        ),
-                        ("status", "🚨 Command execution aborted"),
-                    ],
-                    "⚠️",
-                )
-
-                error_embed = discord.Embed(
-                    title="❌ Configuration Error",
-                    description="Bot configuration error: Developer ID not set. Please contact the administrator.",
-                    color=0xFF6B6B,
-                )
-                await interaction.response.send_message(
-                    embed=error_embed, ephemeral=True
-                )
-                return
-
-            # Check if user is the developer/admin
-            if interaction.user.id != DEVELOPER_ID:
-                log_perfect_tree_section(
-                    "Verse Command - Permission Denied",
-                    [
-                        (
-                            "user",
-                            f"{interaction.user.display_name} ({interaction.user.id})",
-                        ),
-                        ("required_id", str(DEVELOPER_ID)),
-                        ("status", "❌ Unauthorized access attempt"),
-                        ("action", "🚫 Command execution denied"),
-                    ],
-                    "🔒",
-                )
-
-                embed = discord.Embed(
-                    title="❌ Permission Denied",
-                    description="This command is only available to the bot administrator.",
-                    color=0xFF6B6B,
-                )
-
-                # Set footer with admin profile picture with error handling
-                try:
-                    admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
-                    if admin_user and admin_user.avatar:
-                        embed.set_footer(
-                            text="Created by حَـــــنَـــــا",
-                            icon_url=admin_user.avatar.url,
-                        )
-                    else:
-                        embed.set_footer(text="Created by حَـــــنَـــــا")
-                except Exception as avatar_error:
-                    log_error_with_traceback(
-                        "Failed to fetch admin avatar for permission denied message",
-                        avatar_error,
-                    )
-                    embed.set_footer(text="Created by حَـــــنَـــــا")
-
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-                return
-
+            # Permission checking is now handled by @require_admin decorator
             # Log authorized access
             log_perfect_tree_section(
                 "Verse Command - Authorized Access",
@@ -263,23 +194,27 @@ class VerseCog(commands.Cog):
                 description="Processing your verse request...",
                 color=0x3498DB,
             )
-            ack_embed.set_footer(text="Created by حَـــــنَّـــــا")
+            ack_embed.set_footer(text="Created by حَـــــنَـــــا")
             await interaction.response.send_message(embed=ack_embed, ephemeral=True)
 
             # Get the daily verse channel
             try:
-                DAILY_VERSE_CHANNEL_ID = int(os.getenv("DAILY_VERSE_CHANNEL_ID") or "0")
-                if DAILY_VERSE_CHANNEL_ID == 0:
-                    raise ValueError("DAILY_VERSE_CHANNEL_ID not set in environment")
+                from src.config import get_config_service
 
-                channel = interaction.client.get_channel(DAILY_VERSE_CHANNEL_ID)
+                config = get_config_service().config
+
+                channel = interaction.client.get_channel(config.DAILY_VERSE_CHANNEL_ID)
                 if not channel:
                     channel = await interaction.client.fetch_channel(
-                        DAILY_VERSE_CHANNEL_ID
+                        config.DAILY_VERSE_CHANNEL_ID
                     )
 
                 if not channel:
-                    raise ValueError(f"Channel {DAILY_VERSE_CHANNEL_ID} not found")
+                    raise ConfigurationError(
+                        f"Channel {config.DAILY_VERSE_CHANNEL_ID} not found",
+                        config_field="DAILY_VERSE_CHANNEL_ID",
+                        config_value=config.DAILY_VERSE_CHANNEL_ID,
+                    )
 
             except Exception as e:
                 log_error_with_traceback("Failed to get daily verse channel", e)
@@ -332,9 +267,11 @@ class VerseCog(commands.Cog):
             )
 
             # Create the verse embed (matching the proper format)
-            surah_name = verse_data.get("surah_name", f"Surah {verse_data.get('surah', 'Unknown')}")
+            surah_name = verse_data.get(
+                "surah_name", f"Surah {verse_data.get('surah', 'Unknown')}"
+            )
             arabic_name = verse_data.get("arabic_name", "")
-            
+
             # Format the title like in the screenshot
             if arabic_name:
                 title = f"📖 Daily Verse - {surah_name} ({arabic_name})"
@@ -347,7 +284,9 @@ class VerseCog(commands.Cog):
             )
 
             # Add Ayah number as description
-            embed.description = f"Ayah {verse_data.get('ayah', verse_data.get('verse', 'Unknown'))}"
+            embed.description = (
+                f"Ayah {verse_data.get('ayah', verse_data.get('verse', 'Unknown'))}"
+            )
 
             # Add Arabic text with moon emoji and code block formatting
             arabic_text = verse_data.get("arabic", "Arabic text not available")
@@ -358,7 +297,9 @@ class VerseCog(commands.Cog):
             )
 
             # Add English translation with scroll emoji and code block formatting
-            english_text = verse_data.get("translation", "English translation not available")
+            english_text = verse_data.get(
+                "translation", "English translation not available"
+            )
             embed.add_field(
                 name="📝 Translation",
                 value=f"```{english_text}```",
@@ -377,8 +318,9 @@ class VerseCog(commands.Cog):
             try:
                 if interaction.client.user and interaction.client.user.avatar:
                     embed.set_thumbnail(url=interaction.client.user.avatar.url)
-            except Exception:
-                pass  # Continue without thumbnail if it fails
+            except (AttributeError, discord.HTTPException):
+                # Continue without thumbnail if it fails
+                pass
 
             # Set footer with admin profile picture
             try:
@@ -401,9 +343,10 @@ class VerseCog(commands.Cog):
                 message = await channel.send(embed=embed)
 
                 # Record verse sent in statistics
-                from src.utils.daily_verses import daily_verse_manager
-                if daily_verse_manager:
-                    daily_verse_manager.record_verse_sent(verse_data.get("surah", 1))
+                if daily_verses.daily_verse_manager:
+                    daily_verses.daily_verse_manager.record_verse_sent(
+                        verse_data.get("surah", 1)
+                    )
 
                 # Add only the dua emoji for user interaction
                 await message.add_reaction("🤲")  # Dua emoji only
@@ -444,7 +387,9 @@ class VerseCog(commands.Cog):
                                     "allowed_reaction": "🤲",
                                     "verse_id": verse_data.get("id", "Unknown"),
                                     "surah": verse_data.get("surah", "Unknown"),
-                                    "verse_number": verse_data.get("ayah", verse_data.get("verse", "Unknown")),
+                                    "verse_number": verse_data.get(
+                                        "ayah", verse_data.get("verse", "Unknown")
+                                    ),
                                     "message_id": message.id,
                                     "channel_id": channel.id,
                                 },
@@ -456,11 +401,11 @@ class VerseCog(commands.Cog):
                             except discord.Forbidden:
                                 # Bot doesn't have permission to remove reactions
                                 pass
-                            except Exception:
-                                # Ignore other reaction removal errors
+                            except (discord.HTTPException, discord.NotFound):
+                                # Ignore other reaction removal errors (message deleted, etc.)
                                 pass
 
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         # Timeout reached, stop monitoring
                         pass
                     except Exception as e:
@@ -488,7 +433,9 @@ class VerseCog(commands.Cog):
                                     "reaction": "🤲",
                                     "verse_id": verse_data.get("id", "Unknown"),
                                     "surah": verse_data.get("surah", "Unknown"),
-                                    "verse_number": verse_data.get("ayah", verse_data.get("verse", "Unknown")),
+                                    "verse_number": verse_data.get(
+                                        "ayah", verse_data.get("verse", "Unknown")
+                                    ),
                                     "message_id": message.id,
                                     "channel_id": channel.id,
                                     "spiritual_activity": "dua_made",
@@ -496,46 +443,55 @@ class VerseCog(commands.Cog):
                             )
 
                             # Record dua reaction in statistics
-                            from src.utils.daily_verses import daily_verse_manager
-                            if daily_verse_manager:
-                                daily_verse_manager.record_dua_reaction(
-                                    user.id, 
-                                    verse_data.get("surah", 1), 
-                                    verse_data.get("ayah", verse_data.get("verse", 1))
-                            )
+                            if daily_verses.daily_verse_manager:
+                                daily_verses.daily_verse_manager.record_dua_reaction(
+                                    user.id,
+                                    verse_data.get("surah", 1),
+                                    verse_data.get("ayah", verse_data.get("verse", 1)),
+                                )
 
                             # Log to Discord with user profile picture
-                            from src.utils.discord_logger import get_discord_logger
                             discord_logger = get_discord_logger()
                             if discord_logger:
                                 try:
-                                    user_avatar_url = user.avatar.url if user.avatar else user.default_avatar.url
+                                    user_avatar_url = (
+                                        user.avatar.url
+                                        if user.avatar
+                                        else user.default_avatar.url
+                                    )
                                     await discord_logger.log_user_interaction(
                                         "dua_reaction",
                                         user.display_name,
                                         user.id,
-                                        f"made dua (🤲) on daily verse",
+                                        "made dua (🤲) on daily verse",
                                         {
                                             "Reaction": "🤲",
-                                            "Verse ID": str(verse_data.get("id", "Unknown")),
-                                            "Surah": str(verse_data.get("surah", "Unknown")),
-                                            "Verse Number": str(verse_data.get("ayah", verse_data.get("verse", "Unknown"))),
+                                            "Verse ID": str(
+                                                verse_data.get("id", "Unknown")
+                                            ),
+                                            "Surah": str(
+                                                verse_data.get("surah", "Unknown")
+                                            ),
+                                            "Verse Number": str(
+                                                verse_data.get(
+                                                    "ayah",
+                                                    verse_data.get("verse", "Unknown"),
+                                                )
+                                            ),
                                             "Message ID": str(message.id),
                                             "Channel ID": str(channel.id),
-                                            "Spiritual Activity": "Dua Made"
+                                            "Spiritual Activity": "Dua Made",
                                         },
-                                        user_avatar_url
+                                        user_avatar_url,
                                     )
                                 except:
                                     pass
 
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         # Timeout reached, stop monitoring
                         pass
                     except Exception as e:
-                        log_error_with_traceback(
-                            "Error monitoring dua reactions", e
-                        )
+                        log_error_with_traceback("Error monitoring dua reactions", e)
 
                 # Start monitoring tasks
                 asyncio.create_task(monitor_unauthorized_reactions())
@@ -543,9 +499,15 @@ class VerseCog(commands.Cog):
 
                 # Send confirmation to the user
                 try:
+                    # Create clickable link to the verse message
+                    guild_id = (
+                        interaction.guild.id if interaction.guild else channel.guild.id
+                    )
+                    verse_link = f"https://discord.com/channels/{guild_id}/{channel.id}/{message.id}"
+
                     success_embed = discord.Embed(
                         title="✅ Verse Sent Successfully",
-                        description=f"Daily verse has been sent to {channel.mention}.\n\n**Verse Details:**\n• Surah: {verse_data.get('surah', 'Unknown')}\n• Verse: {verse_data.get('ayah', verse_data.get('verse', 'Unknown'))}\n• Timer: Reset to 3 hours",
+                        description=f"Daily verse has been sent to {channel.mention}.\n\n**Verse Details:**\n• Surah: {verse_data.get('surah', 'Unknown')}\n• Verse: {verse_data.get('ayah', verse_data.get('verse', 'Unknown'))}\n• Timer: Reset to 3 hours\n\n📖 **[Click here to view the verse →]({verse_link})**",
                         color=0x00D4AA,
                     )
                     await interaction.followup.send(embed=success_embed, ephemeral=True)
@@ -565,7 +527,10 @@ class VerseCog(commands.Cog):
                         ("channel", f"#{channel.name}"),
                         ("verse_id", verse_data.get("id", "Unknown")),
                         ("surah", verse_data.get("surah", "Unknown")),
-                        ("verse_number", verse_data.get("ayah", verse_data.get("verse", "Unknown"))),
+                        (
+                            "verse_number",
+                            verse_data.get("ayah", verse_data.get("verse", "Unknown")),
+                        ),
                         ("message_id", message.id),
                         ("reactions_added", "🤲"),
                         ("timer_reset", "✅ 3 hours"),
@@ -575,7 +540,6 @@ class VerseCog(commands.Cog):
                 )
 
                 # Send success notification to Discord logger
-                from src.utils.discord_logger import get_discord_logger
                 discord_logger = get_discord_logger()
                 if discord_logger:
                     try:
@@ -592,8 +556,8 @@ class VerseCog(commands.Cog):
                                 "Admin": interaction.user.display_name,
                                 "User ID": str(interaction.user.id),
                                 "Verse ID": str(verse_data.get("id", "Unknown")),
-                                "Message ID": str(message.id)
-                            }
+                                "Message ID": str(message.id),
+                            },
                         )
                     except:
                         pass
@@ -680,8 +644,8 @@ class VerseCog(commands.Cog):
 # =============================================================================
 
 
-async def setup(bot):
-    """Set up the Verse cog with comprehensive error handling and logging"""
+async def setup(bot, container=None):
+    """Set up the Verse cog"""
     try:
         log_perfect_tree_section(
             "Verse Cog Setup - Starting",
@@ -693,7 +657,7 @@ async def setup(bot):
             "🚀",
         )
 
-        await bot.add_cog(VerseCog(bot))
+        await bot.add_cog(VerseCog(bot, container))
 
         log_perfect_tree_section(
             "Verse Cog Setup - Complete",

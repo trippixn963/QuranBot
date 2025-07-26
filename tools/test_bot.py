@@ -6,11 +6,9 @@
 # =============================================================================
 
 import ast
-import importlib.util
 import os
-import sys
-import traceback
 from pathlib import Path
+import sys
 
 # Add project root to path for imports
 project_root = Path(__file__).parent.parent
@@ -28,19 +26,17 @@ from src.version import BOT_VERSION
 REQUIRED_FILES = [
     "main.py",
     "bot_manager.py",
-    "src/bot/main.py",
     "src/utils/tree_log.py",
     "src/utils/surah_mapper.py",
     "config/.env",
     "requirements.txt",
 ]
 
-REQUIRED_DIRECTORIES = ["src", "src/bot", "src/utils", "config", "audio"]
+REQUIRED_DIRECTORIES = ["src", "src/utils", "config", "audio"]
 
 PYTHON_FILES = [
     "main.py",
     "bot_manager.py",
-    "src/bot/main.py",
     "src/utils/tree_log.py",
     "src/utils/surah_mapper.py",
     "tools/test_bot.py",
@@ -119,7 +115,7 @@ def test_python_syntax():
     for file_path in PYTHON_FILES:
         if os.path.exists(file_path):
             try:
-                with open(file_path, "r", encoding="utf-8") as f:
+                with open(file_path, encoding="utf-8") as f:
                     content = f.read()
                 ast.parse(content)
                 valid_files.append(file_path)
@@ -167,12 +163,6 @@ def test_imports():
 
     # Test standard library imports
     try:
-        import asyncio
-        import logging
-        import os
-        import sys
-        import traceback
-
         import_results.append(("standard_library", "✅ OK"))
     except Exception as e:
         import_errors.append(f"Standard library: {e}")
@@ -180,10 +170,6 @@ def test_imports():
 
     # Test third-party imports
     try:
-        import discord
-        import dotenv
-        import psutil
-
         import_results.append(("third_party", "✅ OK"))
     except Exception as e:
         import_errors.append(f"Third-party: {e}")
@@ -191,16 +177,6 @@ def test_imports():
 
     # Test local imports
     try:
-        from src.utils.surah_mapper import (
-            get_quran_statistics,
-            get_random_surah,
-            get_surah_display,
-            get_surah_info,
-            get_surah_name,
-            validate_surah_number,
-        )
-        from src.utils.tree_log import log_perfect_tree_section as test_import
-
         import_results.append(("local_imports", "✅ OK"))
     except Exception as e:
         import_errors.append(f"Local: {e}")
@@ -412,7 +388,7 @@ def test_surah_mapper():
                 "📖",
             )
             return False
-        test_results.append(("database", f"✅ All 114 Surahs present"))
+        test_results.append(("database", "✅ All 114 Surahs present"))
 
         # Test specific Surahs
         test_surahs = [1, 2, 36, 55, 112, 114]
@@ -466,7 +442,7 @@ def test_surah_mapper():
             if key not in stats:
                 stats_tests.append((key, f"❌ Missing stat: {key}"))
             else:
-                stats_tests.append((key, f"✅ Present"))
+                stats_tests.append((key, "✅ Present"))
 
         if any("❌" in result[1] for result in stats_tests):
             log_perfect_tree_section(

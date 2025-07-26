@@ -35,13 +35,9 @@
 # =============================================================================
 
 import asyncio
-import json
-import os
-import shutil
-import zipfile
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
+import zipfile
 
 from .tree_log import log_error_with_traceback, log_perfect_tree_section
 
@@ -166,7 +162,7 @@ class BackupManager:
         # Ensure temp backup directory exists
         self.temp_backup_dir.mkdir(parents=True, exist_ok=True)
 
-    def _discover_data_files(self) -> List[Path]:
+    def _discover_data_files(self) -> list[Path]:
         """
         Dynamically discover all data files in the data directory.
         Returns a list of Path objects for files that should be backed up.
@@ -278,7 +274,7 @@ class BackupManager:
                     ("zip_file", f"📦 Creating: {backup_filename}"),
                     ("files_to_backup", f"📁 Files to backup: {len(data_files)}"),
                     ("total_size", f"📊 Total size: {total_size} bytes"),
-                    ("compression", f"🗜️ Using ZIP_DEFLATED compression"),
+                    ("compression", "🗜️ Using ZIP_DEFLATED compression"),
                     ("backup_location", f"💾 {self.backup_dir}"),
                 ],
                 "🔄",
@@ -296,7 +292,7 @@ class BackupManager:
 
                         # Log individual file addition
                         log_perfect_tree_section(
-                            f"Backup Manager - File Added",
+                            "Backup Manager - File Added",
                             [
                                 ("file_name", f"📄 {data_file.name}"),
                                 ("file_size", f"📊 {original_size} bytes"),
@@ -314,7 +310,7 @@ class BackupManager:
                         )
 
             # Update last backup time
-            self.last_backup_time = datetime.now(timezone.utc)
+            self.last_backup_time = datetime.now(UTC)
 
             # Get EST time for logging
             now_est = datetime.now(EST)
@@ -410,7 +406,7 @@ class BackupManager:
             try:
                 # Get current EST time
                 now_est = datetime.now(EST)
-                now_utc = datetime.now(timezone.utc)
+                now_utc = datetime.now(UTC)
 
                 # Check if we're at the top of an hour (within the first 5 minutes)
                 should_backup = False
@@ -550,7 +546,7 @@ class BackupManager:
         except Exception as e:
             log_error_with_traceback("Backup Manager - Failed to stop scheduler", e)
 
-    def get_backup_status(self) -> Dict:
+    def get_backup_status(self) -> dict:
         """Get current backup system status"""
         try:
             backup_files = (
@@ -669,7 +665,7 @@ def stop_backup_scheduler():
     backup_manager.stop_backup_scheduler()
 
 
-def get_backup_status() -> Dict:
+def get_backup_status() -> dict:
     """Get current backup system status"""
     return backup_manager.get_backup_status()
 

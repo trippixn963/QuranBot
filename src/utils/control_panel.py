@@ -6,13 +6,13 @@
 # =============================================================================
 
 import asyncio
+from datetime import UTC, datetime
 import os
-from datetime import datetime, timezone
-from typing import Optional
 
 import discord
 from discord.ui import Button, Modal, Select, TextInput, View
 
+from .discord_logger import get_discord_logger
 from .surah_mapper import get_surah_info, search_surahs
 from .tree_log import (
     log_error_with_traceback,
@@ -439,7 +439,7 @@ class SurahConfirmationView(View):
 
             embed = discord.Embed(
                 title="🎵 Now Playing!",
-                description=f"Started playing your selected surah:",
+                description="Started playing your selected surah:",
                 color=0x00D4AA,
             )
 
@@ -607,11 +607,15 @@ class SurahSelect(Select):
             )
 
             # Log to Discord with user profile picture
-            from src.utils.discord_logger import get_discord_logger
+
             discord_logger = get_discord_logger()
             if discord_logger:
                 try:
-                    user_avatar_url = interaction.user.avatar.url if interaction.user.avatar else interaction.user.default_avatar.url
+                    user_avatar_url = (
+                        interaction.user.avatar.url
+                        if interaction.user.avatar
+                        else interaction.user.default_avatar.url
+                    )
                     await discord_logger.log_user_interaction(
                         "dropdown_surah",
                         interaction.user.display_name,
@@ -621,9 +625,9 @@ class SurahSelect(Select):
                             "Surah Number": str(selected_surah),
                             "Surah Name": surah_name,
                             "Page": str(self.page + 1),
-                            "Action": "Surah Selection"
+                            "Action": "Surah Selection",
                         },
-                        user_avatar_url
+                        user_avatar_url,
                     )
                 except:
                     pass
@@ -746,11 +750,15 @@ class ReciterSelect(Select):
             )
 
             # Log to Discord with user profile picture
-            from src.utils.discord_logger import get_discord_logger
+
             discord_logger = get_discord_logger()
             if discord_logger:
                 try:
-                    user_avatar_url = interaction.user.avatar.url if interaction.user.avatar else interaction.user.default_avatar.url
+                    user_avatar_url = (
+                        interaction.user.avatar.url
+                        if interaction.user.avatar
+                        else interaction.user.default_avatar.url
+                    )
                     await discord_logger.log_user_interaction(
                         "dropdown_reciter",
                         interaction.user.display_name,
@@ -759,10 +767,12 @@ class ReciterSelect(Select):
                         {
                             "Selected Reciter": selected_reciter,
                             "Reciter Display": reciter_display,
-                            "Previous Reciter": getattr(self.view, "current_reciter", "Unknown"),
-                            "Action": "Reciter Selection"
+                            "Previous Reciter": getattr(
+                                self.view, "current_reciter", "Unknown"
+                            ),
+                            "Action": "Reciter Selection",
                         },
-                        user_avatar_url
+                        user_avatar_url,
                     )
                 except:
                     pass
@@ -827,13 +837,13 @@ class SimpleControlPanelView(View):
     def _update_last_activity(self, user: discord.User, action: str):
         """Update last activity tracking"""
         self.last_activity_user = user
-        self.last_activity_time = datetime.now(timezone.utc)
+        self.last_activity_time = datetime.now(UTC)
         self.last_activity_action = action
 
     def _format_time_elapsed(self, activity_time: datetime) -> str:
         """Format time elapsed since activity"""
         try:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             elapsed = now - activity_time
 
             total_seconds = int(elapsed.total_seconds())
@@ -851,7 +861,8 @@ class SimpleControlPanelView(View):
                 days = total_seconds // 86400
                 hours = (total_seconds % 86400) // 3600
                 return f"{days}d {hours}h ago"
-        except Exception:
+        except (TypeError, ValueError, OverflowError):
+            # Handle time calculation errors gracefully
             return "just now"
 
     def start_updates(self):
@@ -865,7 +876,7 @@ class SimpleControlPanelView(View):
             try:
                 # Determine smart update interval based on audio state
                 update_interval = self._get_smart_update_interval()
-                
+
                 await asyncio.sleep(update_interval)
                 if self.panel_message:
                     await self.update_panel()
@@ -873,32 +884,34 @@ class SimpleControlPanelView(View):
                 break
             except Exception as e:
                 log_error_with_traceback("Error in update loop", e)
-    
+
     def _get_smart_update_interval(self) -> int:
         """Get smart update interval based on current audio state"""
         try:
             if not self.audio_manager:
                 return 30  # Fallback when no audio manager
-            
+
             status = self.audio_manager.get_playback_status()
             if not status:
                 return 30  # Fallback when no status
-            
+
             is_playing = status.get("is_playing", False)
             is_paused = status.get("is_paused", False)
             current_time = status.get("current_time", 0)
             total_time = status.get("total_time", 0)
-            
+
             # Check if audio is finished (at max progress)
-            if total_time > 0 and current_time >= total_time - 1:  # Within 1 second of end
+            if (
+                total_time > 0 and current_time >= total_time - 1
+            ):  # Within 1 second of end
                 return 60  # Finished audio: 60 seconds (reduce rate limiting)
             elif is_paused:
-                return 20  # Paused audio: 20 seconds  
+                return 20  # Paused audio: 20 seconds
             elif is_playing:
                 return 10  # Active playback: 10 seconds
             else:
                 return 30  # Fallback: 30 seconds
-                
+
         except Exception as e:
             log_error_with_traceback("Error calculating smart update interval", e)
             return 30  # Safe fallback
@@ -1028,11 +1041,13 @@ class SimpleControlPanelView(View):
     async def update_panel(self):
         """Update the control panel embed with monitoring and alerts"""
         global _control_panel_monitor
-        
+
         try:
             # Check if message still exists before trying to update it
             if not self.panel_message:
-                _control_panel_monitor.record_failure("no_message", "Panel message is None")
+                _control_panel_monitor.record_failure(
+                    "no_message", "Panel message is None"
+                )
                 return
 
             # Try to fetch the message to see if it still exists
@@ -1040,7 +1055,9 @@ class SimpleControlPanelView(View):
                 await self.panel_message.channel.fetch_message(self.panel_message.id)
             except discord.NotFound:
                 # Message was deleted, stop trying to update it
-                _control_panel_monitor.record_failure("message_deleted", "Control panel message was deleted")
+                _control_panel_monitor.record_failure(
+                    "message_deleted", "Control panel message was deleted"
+                )
                 log_perfect_tree_section(
                     "Control Panel - Message Deleted",
                     [
@@ -1056,7 +1073,9 @@ class SimpleControlPanelView(View):
                 return
             except discord.HTTPException as e:
                 # Other HTTP errors, wait and try again later
-                _control_panel_monitor.record_failure("http_error", f"HTTP {e.status}: {str(e)}")
+                _control_panel_monitor.record_failure(
+                    "http_error", f"HTTP {e.status}: {e!s}"
+                )
                 return
 
             # Create embed using helper method
@@ -1067,10 +1086,12 @@ class SimpleControlPanelView(View):
                 await self.panel_message.edit(embed=embed, view=self)
                 # Record successful update
                 _control_panel_monitor.record_success()
-                
+
             except discord.NotFound:
                 # Message was deleted during our update
-                _control_panel_monitor.record_failure("message_deleted_during_update", "Message deleted during update")
+                _control_panel_monitor.record_failure(
+                    "message_deleted_during_update", "Message deleted during update"
+                )
                 log_perfect_tree_section(
                     "Control Panel - Message Deleted",
                     [
@@ -1085,8 +1106,10 @@ class SimpleControlPanelView(View):
                 return
             except discord.HTTPException as e:
                 if e.status == 429:  # Rate limited
-                    retry_after = getattr(e, 'retry_after', 60)
-                    _control_panel_monitor.record_failure("rate_limited", f"Rate limited for {retry_after}s")
+                    retry_after = getattr(e, "retry_after", 60)
+                    _control_panel_monitor.record_failure(
+                        "rate_limited", f"Rate limited for {retry_after}s"
+                    )
                     log_perfect_tree_section(
                         "Control Panel - Rate Limited",
                         [
@@ -1097,9 +1120,9 @@ class SimpleControlPanelView(View):
                         ],
                         "⏱️",
                     )
-                    
+
                     # Send Discord notification about control panel rate limiting
-                    from src.utils.discord_logger import get_discord_logger
+
                     discord_logger = get_discord_logger()
                     if discord_logger:
                         try:
@@ -1109,15 +1132,20 @@ class SimpleControlPanelView(View):
                                 context={
                                     "Component": "Control Panel",
                                     "Action": "Panel Update",
-                                    "Impact": "Skipped update cycle"
-                                }
+                                    "Impact": "Skipped update cycle",
+                                },
                             )
                         except Exception as log_error:
-                            log_error_with_traceback("Failed to send control panel rate limit notification", log_error)
-                    
+                            log_error_with_traceback(
+                                "Failed to send control panel rate limit notification",
+                                log_error,
+                            )
+
                     return
                 else:
-                    _control_panel_monitor.record_failure("http_error", f"HTTP {e.status}: {str(e)}")
+                    _control_panel_monitor.record_failure(
+                        "http_error", f"HTTP {e.status}: {e!s}"
+                    )
                     raise
 
         except Exception as e:
@@ -1202,12 +1230,14 @@ class SimpleControlPanelView(View):
                     },
                 )
 
-                # Log to Discord with user profile picture
-                from src.utils.discord_logger import get_discord_logger
                 discord_logger = get_discord_logger()
                 if discord_logger:
                     try:
-                        user_avatar_url = interaction.user.avatar.url if interaction.user.avatar else interaction.user.default_avatar.url
+                        user_avatar_url = (
+                            interaction.user.avatar.url
+                            if interaction.user.avatar
+                            else interaction.user.default_avatar.url
+                        )
                         await discord_logger.log_user_interaction(
                             "button_navigation",
                             interaction.user.display_name,
@@ -1217,9 +1247,9 @@ class SimpleControlPanelView(View):
                                 "Old Page": str(old_page + 1),
                                 "New Page": str(self.current_page + 1),
                                 "Direction": "Previous",
-                                "Action": "Page Navigation"
+                                "Action": "Page Navigation",
                             },
-                            user_avatar_url
+                            user_avatar_url,
                         )
                     except:
                         pass
@@ -1281,21 +1311,22 @@ class SimpleControlPanelView(View):
             )
 
             # Log to Discord with user profile picture
-            from src.utils.discord_logger import get_discord_logger
+
             discord_logger = get_discord_logger()
             if discord_logger:
                 try:
-                    user_avatar_url = interaction.user.avatar.url if interaction.user.avatar else interaction.user.default_avatar.url
+                    user_avatar_url = (
+                        interaction.user.avatar.url
+                        if interaction.user.avatar
+                        else interaction.user.default_avatar.url
+                    )
                     await discord_logger.log_user_interaction(
                         "button_search",
                         interaction.user.display_name,
                         interaction.user.id,
-                        f"opened the surah search modal",
-                        {
-                            "Modal Type": "Surah Search",
-                            "Action": "Search Modal Opened"
-                        },
-                        user_avatar_url
+                        "opened the surah search modal",
+                        {"Modal Type": "Surah Search", "Action": "Search Modal Opened"},
+                        user_avatar_url,
                     )
                 except:
                     pass
@@ -1449,22 +1480,28 @@ class SimpleControlPanelView(View):
             )
 
             # Log to Discord with user profile picture
-            from src.utils.discord_logger import get_discord_logger
+
             discord_logger = get_discord_logger()
             if discord_logger:
                 try:
-                    user_avatar_url = interaction.user.avatar.url if interaction.user.avatar else interaction.user.default_avatar.url
+                    user_avatar_url = (
+                        interaction.user.avatar.url
+                        if interaction.user.avatar
+                        else interaction.user.default_avatar.url
+                    )
                     await discord_logger.log_user_interaction(
                         "button_skip",
                         interaction.user.display_name,
                         interaction.user.id,
-                        f"skipped to the next surah",
+                        "skipped to the next surah",
                         {
                             "Direction": "Next",
-                            "Audio Manager": "Available" if self.audio_manager else "Not Available",
-                            "Action": "Skip Next"
+                            "Audio Manager": (
+                                "Available" if self.audio_manager else "Not Available"
+                            ),
+                            "Action": "Skip Next",
                         },
-                        user_avatar_url
+                        user_avatar_url,
                     )
                 except:
                     pass
@@ -1527,7 +1564,7 @@ def cleanup_all_control_panels():
                     panel.cleanup()
                     cleaned_count += 1
                 except Exception as e:
-                    log_error_with_traceback(f"Error cleaning up individual panel", e)
+                    log_error_with_traceback("Error cleaning up individual panel", e)
 
         _active_panels.clear()
 
@@ -1550,59 +1587,61 @@ def cleanup_all_control_panels():
 # Control Panel Monitoring
 # =============================================================================
 
+
 class ControlPanelMonitor:
     """Monitor control panel health and send Discord alerts"""
-    
+
     def __init__(self):
         self.consecutive_failures = 0
-        self.last_successful_update = datetime.now(timezone.utc)
+        self.last_successful_update = datetime.now(UTC)
         self.last_alert_sent = None
         self.alert_cooldown = 300  # 5 minutes between alerts
         self.failure_threshold = 3  # Alert after 3 consecutive failures
         self.is_panel_healthy = True
-        
+
     def record_success(self):
         """Record a successful panel update"""
         if self.consecutive_failures > 0:
             # Panel recovered
             self.consecutive_failures = 0
-            self.last_successful_update = datetime.now(timezone.utc)
+            self.last_successful_update = datetime.now(UTC)
             if not self.is_panel_healthy:
                 self.is_panel_healthy = True
                 asyncio.create_task(self._send_recovery_alert())
         else:
-            self.last_successful_update = datetime.now(timezone.utc)
-    
+            self.last_successful_update = datetime.now(UTC)
+
     def record_failure(self, error_type: str, error_message: str):
         """Record a panel update failure"""
         self.consecutive_failures += 1
-        
+
         # Send alert if threshold reached and cooldown passed
-        if (self.consecutive_failures >= self.failure_threshold and 
-            self.is_panel_healthy and
-            self._should_send_alert()):
+        if (
+            self.consecutive_failures >= self.failure_threshold
+            and self.is_panel_healthy
+            and self._should_send_alert()
+        ):
             self.is_panel_healthy = False
             asyncio.create_task(self._send_failure_alert(error_type, error_message))
-    
+
     def _should_send_alert(self) -> bool:
         """Check if enough time has passed since last alert"""
         if not self.last_alert_sent:
             return True
-        
-        time_since_last = datetime.now(timezone.utc) - self.last_alert_sent
+
+        time_since_last = datetime.now(UTC) - self.last_alert_sent
         return time_since_last.total_seconds() >= self.alert_cooldown
-    
+
     async def _send_failure_alert(self, error_type: str, error_message: str):
         """Send Discord alert for control panel failure"""
         try:
-            from src.utils.discord_logger import get_discord_logger
             discord_logger = get_discord_logger()
             if discord_logger:
-                self.last_alert_sent = datetime.now(timezone.utc)
-                
-                time_since_success = datetime.now(timezone.utc) - self.last_successful_update
+                self.last_alert_sent = datetime.now(UTC)
+
+                time_since_success = datetime.now(UTC) - self.last_successful_update
                 minutes_down = int(time_since_success.total_seconds() / 60)
-                
+
                 await discord_logger.log_critical_error(
                     "Control Panel Failure Detected",
                     None,
@@ -1614,10 +1653,10 @@ class ControlPanelMonitor:
                         "Time Since Success": f"{minutes_down} minutes ago",
                         "Impact": "Control panel not updating - user interface affected",
                         "Status": "❌ Control Panel Down",
-                        "Action Required": "Check bot connection and restart if needed"
-                    }
+                        "Action Required": "Check bot connection and restart if needed",
+                    },
                 )
-                
+
                 log_perfect_tree_section(
                     "Control Panel Monitor - Alert Sent",
                     [
@@ -1630,11 +1669,10 @@ class ControlPanelMonitor:
                 )
         except Exception as e:
             log_error_with_traceback("Failed to send control panel failure alert", e)
-    
+
     async def _send_recovery_alert(self):
         """Send Discord alert for control panel recovery"""
         try:
-            from src.utils.discord_logger import get_discord_logger
             discord_logger = get_discord_logger()
             if discord_logger:
                 await discord_logger.log_success(
@@ -1642,22 +1680,26 @@ class ControlPanelMonitor:
                     {
                         "Component": "Control Panel",
                         "Status": "✅ Control Panel Restored",
-                        "Recovery Time": datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
-                        "Action": "Panel updates resumed successfully"
-                    }
+                        "Recovery Time": datetime.now(UTC).strftime("%H:%M:%S UTC"),
+                        "Action": "Panel updates resumed successfully",
+                    },
                 )
-                
+
                 log_perfect_tree_section(
                     "Control Panel Monitor - Recovery",
                     [
                         ("status", "✅ Panel recovered"),
-                        ("recovery_time", datetime.now(timezone.utc).strftime("%H:%M:%S")),
+                        (
+                            "recovery_time",
+                            datetime.now(UTC).strftime("%H:%M:%S"),
+                        ),
                         ("discord_alert", "✅ Sent"),
                     ],
                     "✅",
                 )
         except Exception as e:
             log_error_with_traceback("Failed to send control panel recovery alert", e)
+
 
 # Global monitor instance
 _control_panel_monitor = ControlPanelMonitor()
@@ -1670,7 +1712,7 @@ _control_panel_monitor = ControlPanelMonitor()
 
 async def create_control_panel(
     bot, channel: discord.TextChannel, audio_manager=None
-) -> Optional[discord.Message]:
+) -> discord.Message | None:
     """Create a simple control panel"""
     try:
         log_perfect_tree_section(
@@ -1715,7 +1757,7 @@ async def create_control_panel(
                     )
                 except discord.HTTPException as e:
                     if e.status == 429:  # Rate limited
-                        retry_after = getattr(e, 'retry_after', 2)
+                        retry_after = getattr(e, "retry_after", 2)
                         log_perfect_tree_section(
                             "Control Panel - Delete Rate Limited",
                             [
@@ -1725,9 +1767,9 @@ async def create_control_panel(
                             ],
                             "⏱️",
                         )
-                        
+
                         # Send Discord notification about message deletion rate limiting
-                        from src.utils.discord_logger import get_discord_logger
+
                         discord_logger = get_discord_logger()
                         if discord_logger:
                             try:
@@ -1737,12 +1779,15 @@ async def create_control_panel(
                                     context={
                                         "Component": "Control Panel",
                                         "Action": "Message Deletion",
-                                        "Impact": "Cleanup delayed"
-                                    }
+                                        "Impact": "Cleanup delayed",
+                                    },
                                 )
                             except Exception as log_error:
-                                log_error_with_traceback("Failed to send message deletion rate limit notification", log_error)
-                        
+                                log_error_with_traceback(
+                                    "Failed to send message deletion rate limit notification",
+                                    log_error,
+                                )
+
                         await asyncio.sleep(retry_after)
                         # Try to delete the message again after rate limit
                         try:
@@ -1835,7 +1880,7 @@ async def create_control_panel(
 
         except discord.HTTPException as e:
             if e.status == 429:  # Rate limited
-                retry_after = getattr(e, 'retry_after', 5)
+                retry_after = getattr(e, "retry_after", 5)
                 log_perfect_tree_section(
                     "Control Panel - Rate Limited on Creation",
                     [
@@ -1846,9 +1891,9 @@ async def create_control_panel(
                     ],
                     "⏱️",
                 )
-                
+
                 # Send Discord notification about panel creation rate limiting
-                from src.utils.discord_logger import get_discord_logger
+
                 discord_logger = get_discord_logger()
                 if discord_logger:
                     try:
@@ -1858,12 +1903,15 @@ async def create_control_panel(
                             context={
                                 "Component": "Control Panel",
                                 "Action": "Panel Creation",
-                                "Impact": "Creation delayed"
-                            }
+                                "Impact": "Creation delayed",
+                            },
                         )
                     except Exception as log_error:
-                        log_error_with_traceback("Failed to send panel creation rate limit notification", log_error)
-                
+                        log_error_with_traceback(
+                            "Failed to send panel creation rate limit notification",
+                            log_error,
+                        )
+
                 await asyncio.sleep(retry_after)
                 # Try again after rate limit
                 message = await channel.send(embed=embed, view=view)

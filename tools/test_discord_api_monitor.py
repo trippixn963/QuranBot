@@ -61,34 +61,30 @@ def test_discord_monitor():
         print(f"❌ Test error: {e}")
         return False
 
-def test_web_dashboard_integration():
-    """Test web dashboard integration"""
+def test_webhook_integration():
+    """Test Discord webhook integration"""
     try:
-        print("\n🌐 Testing Web Dashboard Integration...")
+        print("\n🔗 Testing Discord Webhook Integration...")
         
-        # Test if we can import the dashboard functions
-        sys.path.append(str(project_root / "tools"))
-        from web_dashboard import get_discord_api_health, get_discord_gateway_status
+        # Test if we can import the webhook logger
+        sys.path.append(str(project_root / "src" / "utils"))
+        from discord_webhook_logger import DiscordWebhookLogger
         
-        print("   ✅ Dashboard functions imported successfully")
+        print("   ✅ Webhook logger imported successfully")
         
-        # Test health function
-        print("\n📊 Testing Dashboard Health Function:")
-        health = get_discord_api_health()
-        print(f"   Status: {health.get('status', 'unknown')}")
-        print(f"   Is Healthy: {health.get('is_healthy', False)}")
+        # Test webhook URL validation
+        print("\n📊 Testing Webhook URL Validation:")
+        webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
+        if webhook_url:
+            print(f"   Webhook URL: {'✅ Configured' if webhook_url else '❌ Missing'}")
+        else:
+            print("   Webhook URL: ❌ Not configured in environment")
         
-        # Test gateway function
-        print("\n🌐 Testing Dashboard Gateway Function:")
-        gateway = get_discord_gateway_status()
-        print(f"   Connected: {gateway.get('connected', False)}")
-        print(f"   Latency: {gateway.get('latency', 'N/A')}")
-        
-        print("\n✅ Web dashboard integration test completed!")
+        print("\n✅ Webhook integration test completed!")
         return True
         
     except Exception as e:
-        print(f"❌ Dashboard integration test error: {e}")
+        print(f"❌ Webhook integration test error: {e}")
         return False
 
 def test_data_persistence():
@@ -128,7 +124,7 @@ def main():
     
     tests = [
         ("Discord Monitor Core", test_discord_monitor),
-        ("Web Dashboard Integration", test_web_dashboard_integration),
+        ("Discord Webhook Integration", test_webhook_integration),
         ("Data Persistence", test_data_persistence),
     ]
     
