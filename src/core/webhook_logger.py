@@ -643,9 +643,7 @@ class ModernWebhookLogger:
             description=description,
             level=LogLevel.USER,
             fields=fields,
-            author_name=user_name,
-            author_icon_url=user_avatar_url,
-            author_url=user_profile_url,
+            thumbnail_url=user_avatar_url,  # Use user avatar as thumbnail instead of author
         )
 
         return await self._send_message(message)
@@ -697,9 +695,7 @@ class ModernWebhookLogger:
             description=f"**{user_name}** used `!{command_name}` command",
             level=LogLevel.USER,
             fields=fields,
-            author_name=user_name,
-            author_icon_url=user_avatar_url,
-            author_url=f"https://discord.com/users/{user_id}",
+            thumbnail_url=user_avatar_url,  # Use user avatar as thumbnail instead of author
         )
 
         return await self._send_message(message)
@@ -746,9 +742,7 @@ class ModernWebhookLogger:
             description=f"**{user_name}** {action_text} QuranBot voice channel",
             level=LogLevel.USER,
             fields=fields,
-            author_name=user_name,
-            author_icon_url=user_avatar_url,
-            author_url=f"https://discord.com/users/{user_id}",
+            thumbnail_url=user_avatar_url,  # Use user avatar as thumbnail instead of author
         )
 
         return await self._send_message(message)
@@ -808,9 +802,7 @@ class ModernWebhookLogger:
             description=f"**{user_name}** {action_performed.lower()} via control panel",
             level=LogLevel.USER,
             fields=fields,
-            author_name=user_name,
-            author_icon_url=user_avatar_url,
-            author_url=f"https://discord.com/users/{user_id}",
+            thumbnail_url=user_avatar_url,  # Use user avatar as thumbnail instead of author
         )
 
         return await self._send_message(message)
@@ -862,9 +854,7 @@ class ModernWebhookLogger:
             description=f"**{user_name}** answered a Quran quiz question",
             level=LogLevel.USER,
             fields=fields,
-            author_name=user_name,
-            author_icon_url=user_avatar_url,
-            author_url=f"https://discord.com/users/{user_id}",
+            thumbnail_url=user_avatar_url,  # Use user avatar as thumbnail instead of author
         )
 
         return await self._send_message(message)

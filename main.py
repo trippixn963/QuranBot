@@ -627,6 +627,26 @@ class ModernizedQuranBot:
             try:
                 webhook_logger = self.container.get(ModernWebhookLogger)
                 if webhook_logger and webhook_logger.initialized:
+                    # Update webhook logger's bot reference now that bot is ready and has user info
+                    webhook_logger.bot = self.bot
+                    webhook_logger.formatter.bot = self.bot
+                    
+                    # Debug: Log bot avatar info
+                    if self.bot.user and self.bot.user.avatar:
+                        await self.logger.info(
+                            "Webhook logger bot avatar updated",
+                            {
+                                "bot_name": self.bot.user.name,
+                                "avatar_url": self.bot.user.avatar.url,
+                                "webhook_ready": "✅ Bot avatar available"
+                            }
+                        )
+                    else:
+                        await self.logger.warning(
+                            "Bot avatar not available for webhook",
+                            {"bot_user": str(self.bot.user) if self.bot.user else "None"}
+                        )
+
                     await webhook_logger.log_bot_startup(
                         version=BOT_VERSION,
                         startup_duration=startup_duration,
