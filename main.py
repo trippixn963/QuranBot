@@ -463,6 +463,7 @@ class ModernizedQuranBot:
                         config=webhook_config,
                         logger=self.logger,
                         container=self.container,
+                        bot=self,
                     )
                     self.container.register_singleton(
                         ModernWebhookLogger, webhook_factory

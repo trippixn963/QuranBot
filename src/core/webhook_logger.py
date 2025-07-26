@@ -176,8 +176,9 @@ class WebhookFormatter:
         LogLevel.USER: "👤",
     }
 
-    def __init__(self, config: WebhookConfig):
+    def __init__(self, config: WebhookConfig, bot: Any | None = None):
         self.config = config
+        self.bot = bot
         self.timezone = pytz.timezone(config.timezone)
 
     def format_message(self, message: WebhookMessage) -> dict[str, Any]:
@@ -224,10 +225,14 @@ class WebhookFormatter:
                 )
 
         # Prepare payload
+        bot_avatar_url = "https://cdn.discordapp.com/attachments/1044035927281262673/1044036084692160512/PFP_Cropped_-_Animated.gif"
+        if self.bot and hasattr(self.bot, 'user') and self.bot.user and self.bot.user.avatar:
+            bot_avatar_url = self.bot.user.avatar.url
+            
         payload = {
             "embeds": [embed],
             "username": "QuranBot",
-            "avatar_url": "https://cdn.discordapp.com/attachments/1044035927281262673/1044036084692160512/PFP_Cropped_-_Animated.gif",
+            "avatar_url": bot_avatar_url,
         }
 
         # Add content for pings if specified
@@ -354,16 +359,18 @@ class ModernWebhookLogger:
         config: WebhookConfig,
         logger: StructuredLogger,
         container: Any | None = None,
+        bot: Any | None = None,
     ):
         self.config = config
         self.logger = logger
         self.container = container
+        self.bot = bot
 
         # Initialize components
         self.rate_limiter = RateLimitTracker(
             config.max_logs_per_minute, config.rate_limit_window
         )
-        self.formatter = WebhookFormatter(config)
+        self.formatter = WebhookFormatter(config, bot)
         self.sender = WebhookSender(config, logger)
 
         # State tracking
