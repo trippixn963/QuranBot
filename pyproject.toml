@@ -23,16 +23,30 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.11"
-# Discord Bot Framework - Development version with 4006 fix
-discord-py = {git = "https://github.com/Rapptz/discord.py"}
+# Discord Bot Framework
+"discord.py" = "^2.4.0"
+# Async File Operations
+aiofiles = "^24.1.0"
+# Time Zone Support
+pytz = "^2024.1"
+# HTTP Requests
+requests = "^2.31.0"
+# Async HTTP Requests
+aiohttp = "^3.9.0"
+# Environment Variables
+python-dotenv = "^1.0.1"
+# OpenAI API for Islamic AI Assistant
+openai = "^1.0.0"
+# Backup and Compression
+py7zr = "^0.21.0"
 # Audio Processing
 pynacl = "^1.5.0"
-# Async HTTP Client
-aiohttp = "^3.12.13"
 # File System Operations
 aiofiles = "^24.1.0"
 # Time Zone Support
 pytz = "^2024.1"
+# HTTP Requests
+requests = "^2.31.0"
 # Environment Variables
 python-dotenv = "^1.0.1"
 # Backup and Compression

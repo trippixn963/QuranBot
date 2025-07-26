@@ -139,13 +139,13 @@ class QuestionCog(commands.Cog):
                     )
                     if admin_user and admin_user.avatar:
                         embed.set_footer(
-                            text="Created by حَـــــنَـــــا",
+                            text="Created by حَـــــنَّـــــا",
                             icon_url=admin_user.avatar.url,
                         )
                     else:
-                        embed.set_footer(text="Created by حَـــــنَـــــا")
+                        embed.set_footer(text="Created by حَـــــنَّـــــا")
                 except Exception:
-                    embed.set_footer(text="Created by حَـــــنَـــــا")
+                    embed.set_footer(text="Created by حَـــــنَّـــــا")
 
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
@@ -396,13 +396,13 @@ class QuestionCog(commands.Cog):
                 admin_user = await interaction.client.fetch_user(config.DEVELOPER_ID)
                 if admin_user and admin_user.avatar:
                     embed.set_footer(
-                        text="Created by حَـــــنَـــــا",
+                        text="Created by حَـــــنَّـــــا",
                         icon_url=admin_user.avatar.url,
                     )
                 else:
-                    embed.set_footer(text="Created by حَـــــنَـــــا")
+                    embed.set_footer(text="Created by حَـــــنَّـــــا")
             except Exception:
-                embed.set_footer(text="Created by حَـــــنَـــــا")
+                embed.set_footer(text="Created by حَـــــنَّـــــا")
 
             # Create quiz view with quiz manager instance for score tracking
             correct_answer = question_data.get("correct_answer", "A")

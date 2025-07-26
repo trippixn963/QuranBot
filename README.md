@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
 [![Discord.py](https://img.shields.io/badge/Discord.py-2.0+-blue.svg)](https://discordpy.readthedocs.io/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-4.0.1-orange.svg)](src/version.py)
+[![Version](https://img.shields.io/badge/Version-4.1.0-orange.svg)](src/version.py)
 
 A professional Discord bot that provides **100% automated** 24/7 Quranic recitation with optional interactive features. Built with modern Python architecture featuring dependency injection, microservices, and enterprise-grade reliability.
 
@@ -12,7 +12,25 @@ This project was created by an Orthodox Christian developer (ME) who grew up in 
 
 ![QuranBot Banner](<images/BANNER%20(Still).png>)
 
-## 🚀 Latest Updates (v4.0.1)
+## 🚀 Latest Updates (v4.1.0)
+
+### 🤖 **NEW: Advanced AI Assistant** 
+
+- **🧠 OpenAI GPT-3.5 Integration**: Natural conversation AI with Islamic knowledge
+- **💬 Mention-Based Interaction**: Simply mention @QuranBot for intelligent responses
+- **🌍 Multilingual Support**: Understands Arabic/English, translates to 4 languages
+- **⏰ Smart Rate Limiting**: 1 question per hour (admin exempt) with exact reset times
+- **🎯 Enhanced Knowledge**: Hadith search, verse lookup, practical Islamic tools
+- **🧠 Conversation Memory**: Personalized responses based on user history and preferences
+- **🇸🇾 Cultural Awareness**: Syrian context sensitivity with current affairs awareness
+- **🇵🇸 Palestinian Solidarity**: Principled stance supporting Palestinian rights
+
+### 🕌 **Prayer Time Integration**
+
+- **⏰ Mecca Prayer Notifications**: Real-time prayer alerts with beautiful embeds
+- **🤲 Time-Based Duas**: Contextual duas for morning, evening, Friday, Ramadan, Hajj
+- **🎨 Interactive UI**: Dua emoji reactions with automatic moderation
+- **📅 Islamic Calendar**: Full Hijri date awareness and event tracking
 
 ### ✅ **Recently Fixed & Enhanced**
 
@@ -23,6 +41,8 @@ This project was created by an Orthodox Christian developer (ME) who grew up in 
 - **🏗️ Dependency Resolution**: Resolved configuration service integration issues
 - **🎯 Command Loading**: Fixed QuizView constructor and method naming inconsistencies
 - **📱 Error Handling**: Improved error messages and fallback behavior
+- **🎵 State Persistence**: Audio playback position now survives bot restarts
+- **👥 Role Management**: Automatic role assignment for voice channel participants
 
 ### 🔄 **Modernization Complete**
 
@@ -60,6 +80,32 @@ This project was created by an Orthodox Christian developer (ME) who grew up in 
 - **Slash Commands**: Modern Discord slash command integration
 - **Admin DM Integration**: Automatic answer delivery to administrators
 - **Enhanced Quiz Results**: Profile picture integration in quiz footers
+
+### 🤖 **Advanced AI Assistant**
+
+- **Natural Conversation**: Mention the bot for natural Islamic Q&A discussions
+- **Bilingual Support**: Understands Arabic and English, responds in English
+- **Rate Limiting**: Smart 1-question-per-hour limit (admin exempt) to prevent token abuse
+- **Enhanced Knowledge Base**: 
+  - 🔍 **Hadith Integration**: Access to 12+ authentic hadith sources
+  - 📖 **Verse Lookup**: Contextual Quran verse search and explanations
+  - 🎯 **Topic Deep Dives**: Comprehensive Islamic topic explanations
+  - 🌍 **Practical Tools**: Prayer times, Qibla direction, Zakat calculations
+- **Conversation Memory**: Tracks user preferences, learning focus, and conversation history
+- **Cultural Sensitivity**: Adapts to Syrian cultural context and current affairs awareness
+- **Multilingual Translation**: Instant translation to Arabic, German, Spanish with GPT-powered accuracy
+- **Personalized Responses**: AI learns user interests and tailors responses accordingly
+- **Bot Feature Awareness**: Knowledgeable about all bot commands and capabilities for help requests
+- **Islamic Calendar Integration**: Aware of Hijri dates and Islamic events
+- **Palestinian Solidarity**: Principled stance supporting Palestinian rights and justice
+
+### 🕌 **Mecca Prayer Notifications**
+
+- **Automated Prayer Alerts**: Real-time Mecca prayer time notifications
+- **Beautiful Embeds**: Rich formatting with prayer times in AST format
+- **Interactive Reactions**: Dua emoji reactions with automatic moderation
+- **Time-Based Duas**: Contextual duas selected for specific prayer times
+- **Community Engagement**: Encourages collective remembrance and prayer
 
 ### 📖 **Daily Verses**
 
@@ -231,6 +277,9 @@ GUILD_ID=your_server_id
 ADMIN_USER_ID=your_user_id
 DEVELOPER_ID=your_user_id
 PANEL_ACCESS_ROLE_ID=panel_role_id
+
+# AI Configuration
+OPENAI_API_KEY=your_openai_api_key_here
 
 # Discord Channel IDs
 TARGET_CHANNEL_ID=voice_channel_id

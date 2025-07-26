@@ -5,6 +5,7 @@
 # =============================================================================
 
 # Import all command cogs
+
 from .credits import CreditsCog
 from .credits import setup as setup_credits
 from .interval import IntervalCog
@@ -13,6 +14,8 @@ from .leaderboard import LeaderboardCog
 from .leaderboard import setup as setup_leaderboard
 from .question import QuestionCog
 from .question import setup as setup_question
+from .test_prayer import TestPrayerCog
+from .test_prayer import setup as setup_test_prayer
 from .verse import VerseCog
 from .verse import setup as setup_verse
 
@@ -21,18 +24,13 @@ from .verse import setup as setup_verse
 # =============================================================================
 
 
-async def load_commands(bot, container=None):
-    """Load all command cogs into the bot.
-
-    Args:
-        bot: Discord bot instance
-        container: Dependency injection container (optional)
-    """
-    # Load all command cogs
+async def load_commands(bot, container):
+    """Load all command cogs with dependency injection"""
     await setup_credits(bot, container)
     await setup_interval(bot, container)
     await setup_leaderboard(bot, container)
     await setup_question(bot, container)
+    # await setup_test_prayer(bot, container)  # Commented out - test command not needed in production
     await setup_verse(bot, container)
 
 
@@ -43,12 +41,14 @@ __all__ = [
     "IntervalCog",
     "LeaderboardCog",
     "QuestionCog",
+    "TestPrayerCog",
     "VerseCog",
     # Setup functions
     "setup_credits",
     "setup_interval",
     "setup_leaderboard",
     "setup_question",
+    "setup_test_prayer",
     "setup_verse",
     # Command loading
     "load_commands",

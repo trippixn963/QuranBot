@@ -180,6 +180,15 @@ class BotConfig(BaseSettings):
     VPS_HOST: str | None = Field(None, description="VPS host for deployment")
 
     # =============================================================================
+    # OpenAI Configuration (for Islamic AI Assistant)
+    # =============================================================================
+    OPENAI_API_KEY: str | None = Field(
+        None, 
+        description="OpenAI API key for Islamic AI Assistant (GPT-3.5 Turbo)",
+        min_length=50  # OpenAI API keys are typically 51 characters
+    )
+
+    # =============================================================================
     # Validators
     # =============================================================================
 

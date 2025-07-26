@@ -34,6 +34,7 @@ from src.data.models import (
 )
 
 from .metadata_cache import MetadataCache
+from src.services.state_service import StateService
 
 
 class AudioService:
@@ -110,6 +111,9 @@ class AudioService:
             # Initialize metadata cache
             await self._cache.initialize()
 
+            # Load saved playback state
+            await self._load_saved_state()
+
             # Discover available reciters
             await self._discover_reciters()
 
@@ -125,6 +129,8 @@ class AudioService:
                     "available_reciters": len(self._available_reciters),
                     "default_reciter": self._config.default_reciter,
                     "cache_enabled": self._config.cache_enabled,
+                    "restored_surah": self._current_state.current_position.surah_number,
+                    "restored_position": f"{self._current_state.current_position.position_seconds:.1f}s",
                 },
             )
 
@@ -682,6 +688,30 @@ class AudioService:
             await self._logger.warning(
                 "Failed to load bot configuration", {"error": str(e)}
             )
+
+    async def _load_saved_state(self) -> None:
+        """Load saved playback state from StateService"""
+        try:
+            state_service = self._container.get(StateService)
+            saved_state = await state_service.load_playback_state()
+            
+            # Update current state with saved data
+            self._current_state = saved_state
+            
+            await self._logger.info(
+                "Loaded saved playback state",
+                {
+                    "surah": saved_state.current_position.surah_number,
+                    "position": f"{saved_state.current_position.position_seconds:.1f}s",
+                    "reciter": saved_state.current_reciter,
+                    "last_updated": saved_state.last_updated.isoformat() if saved_state.last_updated else "N/A",
+                },
+            )
+        except Exception as e:
+            await self._logger.warning(
+                "Failed to load saved state, using defaults", {"error": str(e)}
+            )
+            # Keep the default state if loading fails
 
     async def _start_background_tasks(self) -> None:
         """Start background monitoring and maintenance tasks"""

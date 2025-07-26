@@ -662,6 +662,51 @@ class ModernizedQuranBot:
                     "Failed to initialize daily verses system", {"error": str(e)}
                 )
 
+            # Initialize quiz system
+            try:
+                daily_verse_channel_id = self.config.DAILY_VERSE_CHANNEL_ID
+                if daily_verse_channel_id:
+                    from src.utils.quiz_manager import setup_quiz_system
+                    await setup_quiz_system(self.bot, daily_verse_channel_id)
+                    await self.logger.info(
+                        "Quiz system initialized",
+                        {"channel_id": daily_verse_channel_id},
+                    )
+                else:
+                    await self.logger.warning(
+                        "Quiz system not initialized - channel ID not configured"
+                    )
+            except Exception as e:
+                await self.logger.error(
+                    "Failed to initialize quiz system", {"error": str(e)}
+                )
+
+            # Initialize Mecca prayer notifications
+            try:
+                from src.utils.mecca_prayer_times import setup_mecca_prayer_notifications
+                await setup_mecca_prayer_notifications(self.bot)
+                await self.logger.info(
+                    "Mecca prayer notification system initialized",
+                    {"monitoring": "5 daily prayers in Holy City"},
+                )
+            except Exception as e:
+                await self.logger.error(
+                    "Failed to initialize Mecca prayer notifications", {"error": str(e)}
+                )
+
+            # Initialize Islamic AI mention listener
+            try:
+                from src.utils.islamic_ai_listener import setup_islamic_ai_listener
+                await setup_islamic_ai_listener(self.bot, self.container)
+                await self.logger.info(
+                    "Islamic AI mention listener initialized",
+                    {"trigger": "bot mentions", "model": "GPT-3.5 Turbo", "languages": "English + Arabic input", "rate_limit": "1 question/hour per user"},
+                )
+            except Exception as e:
+                await self.logger.error(
+                    "Failed to initialize Islamic AI listener", {"error": str(e)}
+                )
+
         @self.bot.event
         async def on_error(event, *args, **kwargs):
             """Global error handler with modern logging."""
@@ -708,7 +753,7 @@ class ModernizedQuranBot:
 
         @self.bot.event
         async def on_voice_state_update(member, before, after):
-            """Handle voice state changes for QuranBot voice channel activity."""
+            """Handle voice state changes for QuranBot voice channel activity and role management."""
             try:
                 # Get services
                 webhook_logger = self.container.get(ModernWebhookLogger)
@@ -730,6 +775,9 @@ class ModernizedQuranBot:
                     and before.channel.id == target_channel_id
                     and (after.channel is None or after.channel.id != target_channel_id)
                 )
+
+                # Handle role management for Quran voice channel
+                await self._handle_voice_channel_roles(member, before, after, target_channel_id)
 
                 if joined_quran_vc:
                     # User joined QuranBot voice channel
@@ -798,6 +846,165 @@ class ModernizedQuranBot:
                     "Error in voice state update handler",
                     {"member_id": member.id if member else "unknown", "error": str(e)},
                 )
+
+    async def _handle_voice_channel_roles(self, member, before, after, target_channel_id):
+        """Handle role assignment/removal for voice channel activity."""
+        try:
+            # Skip role management for bots
+            if member.bot:
+                return
+
+            # Get panel access role ID from config
+            panel_access_role_id = self.config.PANEL_ACCESS_ROLE_ID
+            if not panel_access_role_id:
+                return  # Role management disabled
+
+            # Get the guild and role
+            guild = member.guild
+            if not guild:
+                return
+
+            panel_role = guild.get_role(panel_access_role_id)
+            if not panel_role:
+                await self.logger.warning(
+                    "Panel access role not found",
+                    {"role_id": panel_access_role_id, "guild_id": guild.id}
+                )
+                return
+
+            # Check if user joined a voice channel (wasn't in VC, now is)
+            if not before.channel and after.channel:
+                # Only assign role if they joined the Quran voice channel specifically
+                if after.channel.id == target_channel_id:
+                    await self._assign_panel_access_role(member, panel_role, after.channel)
+
+            # Check if user left all voice channels (was in VC, now isn't)
+            elif before.channel and not after.channel:
+                # Only remove role if they left the Quran voice channel
+                if before.channel.id == target_channel_id:
+                    await self._remove_panel_access_role(member, panel_role, before.channel)
+
+            # Check if user moved between voice channels
+            elif before.channel and after.channel and before.channel != after.channel:
+                # If they left the Quran voice channel, remove role
+                if before.channel.id == target_channel_id:
+                    await self._remove_panel_access_role(member, panel_role, before.channel)
+
+                # If they joined the Quran voice channel, assign role
+                if after.channel.id == target_channel_id:
+                    await self._assign_panel_access_role(member, panel_role, after.channel)
+
+        except Exception as e:
+            await self.logger.error(
+                "Error in voice channel role management",
+                {"member_id": member.id, "error": str(e)},
+            )
+
+    async def _assign_panel_access_role(self, member, panel_role, channel):
+        """Assign the panel access role to a user who joined the Quran voice channel."""
+        try:
+            # Check if user already has the role
+            if panel_role in member.roles:
+                await self.logger.debug(
+                    "User already has panel access role",
+                    {"user": member.display_name, "role": panel_role.name}
+                )
+                return
+
+            # Assign the role
+            await member.add_roles(panel_role, reason="Joined Quran voice channel")
+            
+            await self.logger.info(
+                "Panel access role assigned",
+                {
+                    "user": member.display_name,
+                    "user_id": member.id,
+                    "role": panel_role.name,
+                    "role_id": panel_role.id,
+                    "channel": channel.name,
+                }
+            )
+
+        except discord.Forbidden:
+            await self.logger.error(
+                "No permission to assign panel access role",
+                {
+                    "user": member.display_name,
+                    "role": panel_role.name,
+                    "role_id": panel_role.id,
+                }
+            )
+        except discord.HTTPException as e:
+            await self.logger.error(
+                "HTTP error while assigning panel access role",
+                {
+                    "user": member.display_name,
+                    "error": str(e),
+                    "role_id": panel_role.id,
+                }
+            )
+        except Exception as e:
+            await self.logger.error(
+                "Unexpected error while assigning panel access role",
+                {
+                    "user": member.display_name,
+                    "error": str(e),
+                    "role_id": panel_role.id,
+                }
+            )
+
+    async def _remove_panel_access_role(self, member, panel_role, channel):
+        """Remove the panel access role from a user who left the Quran voice channel."""
+        try:
+            # Check if user has the role
+            if panel_role not in member.roles:
+                await self.logger.debug(
+                    "User doesn't have panel access role to remove",
+                    {"user": member.display_name, "role": panel_role.name}
+                )
+                return
+
+            # Remove the role
+            await member.remove_roles(panel_role, reason="Left Quran voice channel")
+            
+            await self.logger.info(
+                "Panel access role removed",
+                {
+                    "user": member.display_name,
+                    "user_id": member.id,
+                    "role": panel_role.name,
+                    "role_id": panel_role.id,
+                    "channel": channel.name,
+                }
+            )
+
+        except discord.Forbidden:
+            await self.logger.error(
+                "No permission to remove panel access role",
+                {
+                    "user": member.display_name,
+                    "role": panel_role.name,
+                    "role_id": panel_role.id,
+                }
+            )
+        except discord.HTTPException as e:
+            await self.logger.error(
+                "HTTP error while removing panel access role",
+                {
+                    "user": member.display_name,
+                    "error": str(e),
+                    "role_id": panel_role.id,
+                }
+            )
+        except Exception as e:
+            await self.logger.error(
+                "Unexpected error while removing panel access role",
+                {
+                    "user": member.display_name,
+                    "error": str(e),
+                    "role_id": panel_role.id,
+                }
+            )
 
     async def _start_automated_continuous_playback(self):
         """Start 100% automated continuous Quran playback (24/7)."""

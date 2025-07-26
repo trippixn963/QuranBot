@@ -256,13 +256,6 @@ class IntervalCog(commands.Cog):
         quiz_time="Quiz interval (e.g., '30m', '2h', '1h30m', '90m')",
         verse_time="Verse interval (e.g., '3h', '2h30m', '180m')",
     )
-    @require_admin
-    @rate_limit(
-        user_limit=5, user_window=300
-    )  # 5 requests per 5 minutes for interval changes
-    @validate_input(
-        quiz_time={"type": "time_interval"}, verse_time={"type": "time_interval"}
-    )
     async def interval(
         self,
         interaction: discord.Interaction,
@@ -316,45 +309,15 @@ class IntervalCog(commands.Cog):
         )
 
         try:
-            # Check if user is the developer/admin
+            # Simple admin check
             config = get_config_service().config
             if interaction.user.id != config.DEVELOPER_ID:
-                log_perfect_tree_section(
-                    "Interval Command - Permission Denied",
-                    [
-                        (
-                            "user",
-                            f"{interaction.user.display_name} ({interaction.user.id})",
-                        ),
-                        ("required_id", str(config.DEVELOPER_ID)),
-                        ("status", "❌ Unauthorized access attempt"),
-                        ("action", "🚫 Command execution denied"),
-                    ],
-                    "🔒",
-                )
-
                 embed = discord.Embed(
                     title="❌ Permission Denied",
                     description="This command is only available to the bot administrator.",
                     color=0xFF6B6B,
                 )
-
-                # Set footer with admin profile picture
-                try:
-                    admin_user = await interaction.client.fetch_user(
-                        config.DEVELOPER_ID
-                    )
-                    if admin_user and admin_user.avatar:
-                        embed.set_footer(
-                            text="Created by حَـــــنَـــــا",
-                            icon_url=admin_user.avatar.url,
-                        )
-                    else:
-                        embed.set_footer(text="Created by حَـــــنَـــــا")
-                except (discord.HTTPException, discord.NotFound, AttributeError):
-                    # Failed to fetch admin user or set footer
-                    embed.set_footer(text="Created by حَـــــنَـــــا")
-
+                embed.set_footer(text="Created by حَـــــنَّـــــا")
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
 

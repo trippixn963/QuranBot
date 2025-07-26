@@ -644,13 +644,9 @@ class QuizView(discord.ui.View):
             config = get_config_service().config
             developer_id = config.DEVELOPER_ID
 
-            # Try to get admin user from guild first
-            admin_user = self.message.guild.get_member(developer_id)
-            if not admin_user:
-                # If not in guild, fetch user directly
-                admin_user = await self.message.channel.guild.client.fetch_user(
-                    developer_id
-                )
+            # Get bot client from message (more reliable approach)
+            bot_client = self.message._state._get_client()
+            admin_user = await bot_client.fetch_user(developer_id)
 
             # Set footer with avatar if available
             if admin_user and admin_user.avatar:
@@ -2020,13 +2016,13 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                         admin_user = await bot.fetch_user(config.DEVELOPER_ID)
                         if admin_user and admin_user.avatar:
                             embed.set_footer(
-                                text="Created by حَـــــنَـــــا",
+                                text="Created by حَـــــنَّـــــا",
                                 icon_url=admin_user.avatar.url,
                             )
                         else:
-                            embed.set_footer(text="Created by حَـــــنَـــــا")
+                            embed.set_footer(text="Created by حَـــــنَّـــــا")
                     except Exception:
-                        embed.set_footer(text="Created by حَـــــنَـــــا")
+                        embed.set_footer(text="Created by حَـــــنَّـــــا")
 
                     # Create the interactive quiz view with buttons and timer
                     correct_answer = chr(

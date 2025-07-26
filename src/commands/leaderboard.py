@@ -112,9 +112,9 @@ class LeaderboardView(discord.ui.View):
                 if admin_user and admin_user.avatar:
                     # Include page indicator with admin footer
                     if self.max_pages > 1:
-                        footer_text = f"Page {self.current_page + 1} of {self.max_pages} • created by حَـــــنَـــــا"
+                        footer_text = f"Page {self.current_page + 1} of {self.max_pages} • created by حَـــــنَّـــــا"
                     else:
-                        footer_text = "created by حَـــــنَـــــا"
+                        footer_text = "created by حَـــــنَّـــــا"
 
                     embed.set_footer(
                         text=footer_text,
@@ -124,26 +124,26 @@ class LeaderboardView(discord.ui.View):
                     # No admin avatar, just text footer
                     if self.max_pages > 1:
                         embed.set_footer(
-                            text=f"Page {self.current_page + 1} of {self.max_pages} • created by حَـــــنَـــــا"
+                            text=f"Page {self.current_page + 1} of {self.max_pages} • created by حَـــــنَّـــــا"
                         )
                     else:
-                        embed.set_footer(text="created by حَـــــنَـــــا")
+                        embed.set_footer(text="created by حَـــــنَّـــــا")
             else:
                 # No developer ID, just text footer
                 if self.max_pages > 1:
                     embed.set_footer(
-                        text=f"Page {self.current_page + 1} of {self.max_pages} • created by حَـــــنَـــــا"
+                        text=f"Page {self.current_page + 1} of {self.max_pages} • created by حَـــــنَّـــــا"
                     )
                 else:
-                    embed.set_footer(text="created by حَـــــنَـــــا")
+                    embed.set_footer(text="created by حَـــــنَّـــــا")
         except Exception:
             # Fallback to text-only footer
             if self.max_pages > 1:
                 embed.set_footer(
-                    text=f"Page {self.current_page + 1} of {self.max_pages} • created by حَـــــنَـــــا"
+                    text=f"Page {self.current_page + 1} of {self.max_pages} • created by حَـــــنَّـــــا"
                 )
             else:
-                embed.set_footer(text="created by حَـــــنَـــــا")
+                embed.set_footer(text="created by حَـــــنَّـــــا")
 
         return embed
 
@@ -248,15 +248,15 @@ class LeaderboardCog(commands.Cog):
                         admin_user = await interaction.client.fetch_user(developer_id)
                         if admin_user and admin_user.avatar:
                             embed.set_footer(
-                                text="created by حَـــــنَـــــا",
+                                text="created by حَـــــنَّـــــا",
                                 icon_url=admin_user.avatar.url,
                             )
                         else:
-                            embed.set_footer(text="created by حَـــــنَـــــا")
+                            embed.set_footer(text="created by حَـــــنَّـــــا")
                     else:
-                        embed.set_footer(text="created by حَـــــنَـــــا")
+                        embed.set_footer(text="created by حَـــــنَّـــــا")
                 except Exception:
-                    embed.set_footer(text="created by حَـــــنَـــــا")
+                    embed.set_footer(text="created by حَـــــنَّـــــا")
 
                 await interaction.response.send_message(embed=embed)
                 return
