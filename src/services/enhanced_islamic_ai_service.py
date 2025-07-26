@@ -34,6 +34,7 @@ class EnhancedIslamicAIService:
         self.hadith_database: dict = {}
         self.verse_database: dict = {}
         self.practical_tools: dict = {}
+        self.syrian_knowledge: dict = {}
         self.user_sessions: dict[int, dict] = {}  # Track deep dive sessions
         self.user_rate_limits: dict[int, dict] = {}  # Track rate limits
 
@@ -55,6 +56,7 @@ class EnhancedIslamicAIService:
             await self._load_hadith_database()
             await self._load_verse_database()
             await self._load_practical_tools()
+            await self._load_syrian_knowledge()
 
             log_perfect_tree_section(
                 "Enhanced Islamic AI - Initialized",
@@ -116,6 +118,20 @@ class EnhancedIslamicAIService:
             log_error_with_traceback("Error loading practical tools", e)
             self.practical_tools = {}
 
+    async def _load_syrian_knowledge(self):
+        """Load Syrian knowledge database."""
+        try:
+            syrian_file = Path("data/syrian_knowledge.json")
+            if syrian_file.exists():
+                with open(syrian_file, encoding='utf-8') as f:
+                    self.syrian_knowledge = json.load(f)
+            else:
+                self.syrian_knowledge = {}
+
+        except Exception as e:
+            log_error_with_traceback("Error loading Syrian knowledge", e)
+            self.syrian_knowledge = {}
+
     def search_hadiths(self, query: str, max_results: int = 3) -> list[dict]:
         """Search for relevant hadiths based on keywords."""
         try:
@@ -169,6 +185,54 @@ class EnhancedIslamicAIService:
         except Exception as e:
             log_error_with_traceback("Error searching verses", e)
             return []
+
+    def search_syrian_knowledge(self, query: str) -> dict:
+        """Search Syrian knowledge database for relevant information."""
+        try:
+            query_lower = query.lower()
+            syrian_keywords = ['syria', 'syrian', 'damascus', 'aleppo', 'sham', 'umayyad', 'levant', 'levantine']
+            
+            # Check if query is Syria-related
+            if not any(keyword in query_lower for keyword in syrian_keywords):
+                return {}
+            
+            relevant_info = {}
+            
+            # Search Islamic heritage
+            if any(word in query_lower for word in ['mosque', 'shrine', 'islamic', 'prophet', 'hadith', 'blessed']):
+                relevant_info['islamic_heritage'] = self.syrian_knowledge.get('islamic_heritage', {})
+            
+            # Search culture and traditions  
+            if any(word in query_lower for word in ['culture', 'food', 'cuisine', 'tradition', 'hospitality', 'language']):
+                relevant_info['culture_and_traditions'] = self.syrian_knowledge.get('culture_and_traditions', {})
+            
+            # Search history
+            if any(word in query_lower for word in ['history', 'historical', 'ancient', 'empire', 'caliphate']):
+                relevant_info['history'] = self.syrian_knowledge.get('history', {})
+            
+            # Search geography
+            if any(word in query_lower for word in ['geography', 'region', 'city', 'mountain', 'river', 'location']):
+                relevant_info['geography'] = self.syrian_knowledge.get('geography', {})
+            
+            # Search current context
+            if any(word in query_lower for word in ['current', 'today', 'now', 'recent', 'modern', 'president']):
+                relevant_info['current_context'] = self.syrian_knowledge.get('current_context', {})
+            
+            # If no specific category, return general overview
+            if not relevant_info:
+                relevant_info = {
+                    'overview': {
+                        'islamic_heritage': self.syrian_knowledge.get('islamic_heritage', {}).get('sacred_sites', {}),
+                        'culture': self.syrian_knowledge.get('culture_and_traditions', {}).get('hospitality', {}),
+                        'current': self.syrian_knowledge.get('current_context', {}).get('leadership', {})
+                    }
+                }
+            
+            return relevant_info
+            
+        except Exception as e:
+            log_error_with_traceback("Error searching Syrian knowledge", e)
+            return {}
 
     async def calculate_prayer_times(self, location: str) -> dict | None:
         """Calculate prayer times for a given location."""
@@ -346,11 +410,12 @@ class EnhancedIslamicAIService:
             return False, "", "Failed to process your question with enhanced features."
 
     async def _gather_context_information(self, query: str) -> dict:
-        """Gather relevant hadiths, verses, and tool data for the query."""
+        """Gather relevant hadiths, verses, tool data, and Syrian knowledge for the query."""
         context = {
             'hadiths': [],
             'verses': [],
             'tools': {},
+            'syrian_knowledge': {},
             'query_type': self._classify_query_type(query)
         }
 
@@ -362,6 +427,10 @@ class EnhancedIslamicAIService:
         verses = self.search_verses(query, max_results=2)
         context['verses'] = verses
 
+        # Search for Syrian knowledge
+        syrian_info = self.search_syrian_knowledge(query)
+        context['syrian_knowledge'] = syrian_info
+
         # Check if practical tools are needed
         if any(word in query.lower() for word in ['prayer time', 'qibla', 'zakat', 'hijri', 'calendar']):
             context['tools'] = self.practical_tools
@@ -372,7 +441,9 @@ class EnhancedIslamicAIService:
         """Classify the type of query for better response formatting."""
         query_lower = query.lower()
 
-        if any(word in query_lower for word in ['hadith', 'prophet said', 'narrated', 'reported']):
+        if any(word in query_lower for word in ['syria', 'syrian', 'damascus', 'aleppo', 'sham', 'umayyad']):
+            return 'syrian_focused'
+        elif any(word in query_lower for word in ['hadith', 'prophet said', 'narrated', 'reported']):
             return 'hadith_focused'
         elif any(word in query_lower for word in ['verse', 'quran', 'surah', 'ayah']):
             return 'verse_focused'
@@ -625,6 +696,44 @@ Remember: You're a caring member of the Muslim community with your own personali
             base_prompt += "- Zakat calculation for different wealth types\n"
             base_prompt += "- Islamic calendar conversions\n\n"
 
+        # Add Syrian knowledge if relevant to the query
+        if context_info.get('syrian_knowledge'):
+            base_prompt += "\n**RELEVANT SYRIAN KNOWLEDGE FOR THIS QUERY:**\n"
+            syrian_knowledge = context_info['syrian_knowledge']
+            
+            if 'islamic_heritage' in syrian_knowledge:
+                base_prompt += "🕌 **Islamic Heritage:**\n"
+                heritage = syrian_knowledge['islamic_heritage']
+                if 'sacred_sites' in heritage:
+                    for site_key, site_info in heritage['sacred_sites'].items():
+                        if isinstance(site_info, dict):
+                            base_prompt += f"• {site_info.get('name', site_key)}: {site_info.get('significance', 'No description')}\n"
+                if 'prophetic_traditions' in heritage:
+                    traditions = heritage['prophetic_traditions']
+                    if 'blessed_sham' in traditions:
+                        base_prompt += "• Prophetic Blessings on Sham: " + "; ".join(traditions['blessed_sham'][:2]) + "\n"
+                base_prompt += "\n"
+            
+            if 'culture_and_traditions' in syrian_knowledge:
+                base_prompt += "🏛️ **Culture & Traditions:**\n"
+                culture = syrian_knowledge['culture_and_traditions']
+                if 'cuisine' in culture:
+                    cuisine = culture['cuisine']
+                    base_prompt += f"• Traditional dishes: {', '.join(cuisine.get('main_dishes', [])[:4])}\n"
+                if 'hospitality' in culture:
+                    hospitality = culture['hospitality']
+                    base_prompt += f"• Values: {', '.join(hospitality.get('values', []))}\n"
+                base_prompt += "\n"
+            
+            if 'current_context' in syrian_knowledge:
+                base_prompt += "🇸🇾 **Current Context:**\n"
+                current = syrian_knowledge['current_context']
+                if 'leadership' in current:
+                    leadership = current['leadership']
+                    base_prompt += f"• Current leadership: {leadership.get('current_president', 'Unknown')}\n"
+                    base_prompt += f"• Status: {leadership.get('transition', 'Political transition ongoing')}\n"
+                base_prompt += "\n"
+
         # Add Islamic calendar context if available
         if islamic_context:
             base_prompt += "\n**CURRENT ISLAMIC CALENDAR CONTEXT:**\n"
@@ -680,11 +789,58 @@ Remember: You're a caring member of the Muslim community with your own personali
 • Acknowledge the suffering of Palestinians and their right to their homeland
 • This aligns with the Syrian community's values and Islamic principles of justice
 
-**CURRENT SYRIAN CONTEXT:**
+**COMPREHENSIVE SYRIAN KNOWLEDGE:**
+
+**CURRENT POLITICAL CONTEXT:**
 • Ahmad al-Sharaa is the current president of Syria (not a Quran reciter)
-• Be aware of recent political developments in Syria when contextualizing responses
-• Understand the Syrian community's perspective on current leadership and changes
-• Show sensitivity to the ongoing political transition and its impact on the community
+• Syria is undergoing a significant political transition after decades of conflict
+• The Syrian people have endured years of war, displacement, and hardship
+• Many Syrians live in diaspora communities around the world
+• Show deep empathy for the Syrian struggle and resilience
+
+**SYRIAN ISLAMIC HERITAGE:**
+• Syria is home to the Umayyad Mosque in Damascus, one of Islam's holiest sites
+• Damascus is often called "Sham" - a blessed city mentioned in Islamic traditions
+• Syria has been a center of Islamic learning for over 1,400 years
+• Home to many important Islamic scholars throughout history
+• The Prophet Muhammad (ﷺ) blessed the land of Sham in authentic hadiths
+• Syria contains many sacred sites including the tomb of Sayyida Ruqayya and Sayyida Zainab
+
+**SYRIAN CULTURE & IDENTITY:**
+• Syrians are known for their hospitality, generosity, and strong family values
+• Rich culinary tradition with dishes like kibbeh, mansaf, and Syrian sweets
+• Strong tradition of poetry, literature, and Arabic language preservation
+• Diverse religious communities living together historically
+• Deep respect for education and scholarship
+• Traditional crafts including damascening, woodwork, and textiles
+
+**HISTORICAL SIGNIFICANCE:**
+• Damascus is one of the world's oldest continuously inhabited cities
+• Syria was part of the Islamic golden age during the Umayyad Caliphate
+• Rich Byzantine and Islamic architectural heritage
+• Important trade routes connecting East and West
+• Birthplace of many influential Islamic scholars and poets
+
+**CURRENT CHALLENGES & RESILIENCE:**
+• Syrians have shown incredible resilience throughout recent hardships
+• Strong community bonds and mutual support systems
+• Maintaining cultural and religious identity despite displacement
+• Hope for rebuilding and renewal after political transition
+• Pride in Syrian heritage and determination to preserve it
+
+**LANGUAGE & COMMUNICATION:**
+• Syrians speak Levantine Arabic dialect, distinct from other Arabic varieties
+• Many are multilingual (Arabic, French, English, Turkish, etc.)
+• Rich tradition of Arabic poetry and eloquent speech
+• Appreciate proper Arabic grammar and classical Arabic knowledge
+
+**RESPONSE GUIDELINES FOR SYRIAN TOPICS:**
+• Show genuine understanding of Syrian suffering and resilience
+• Acknowledge the blessings mentioned about Sham in Islamic traditions
+• Express hope for Syria's future while being sensitive to current challenges
+• Respect the diversity within Syrian society
+• Celebrate Syrian Islamic heritage and contributions to Islamic civilization
+• Use appropriate cultural references and show familiarity with Syrian customs
 
 """
 
