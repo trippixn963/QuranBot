@@ -88,8 +88,13 @@ class AudioPlaybackMonitor:
         # New: Connection health monitoring
         self.connection_health_checks = 0
         self.last_health_check = datetime.now(timezone.utc)
-        self.health_check_interval = 60  # Check every minute
-        self.connection_timeout_threshold = 120  # 2 minutes without response
+        
+        # Enhanced: Escalation thresholds for critical alerts
+        self.critical_failure_threshold = 10  # After 10 failures, escalate to critical
+        self.emergency_failure_threshold = 20  # After 20 failures, emergency ping
+        self.extended_silence_threshold = 900  # 15 minutes of silence = emergency
+        self.last_escalation_alert = None
+        self.escalation_cooldown = 1800  # 30 minutes between escalation alerts
         
         # New: Proactive reconnection settings
         self.proactive_reconnect_enabled = True
@@ -126,9 +131,10 @@ class AudioPlaybackMonitor:
             self.last_connection_validation = current_time
     
     def record_playback_failure(self, error_type: str, error_message: str):
-        """Record audio playback failure"""
+        """Record audio playback failure with escalation support"""
         self.consecutive_playback_failures += 1
         
+        # Standard failure alert
         if (self.consecutive_playback_failures >= self.playback_failure_threshold and 
             self.is_audio_healthy and
             self._should_send_playback_alert()):
@@ -138,6 +144,16 @@ class AudioPlaybackMonitor:
             # Trigger auto-recovery if enabled
             if self.auto_recovery_enabled and self._should_attempt_recovery():
                 asyncio.create_task(self._attempt_audio_recovery())
+        
+        # Critical failure escalation
+        elif (self.consecutive_playback_failures >= self.critical_failure_threshold and
+              self._should_send_escalation_alert()):
+            asyncio.create_task(self._send_critical_escalation_alert(error_type, error_message))
+        
+        # Emergency failure escalation  
+        elif (self.consecutive_playback_failures >= self.emergency_failure_threshold and
+              self._should_send_escalation_alert()):
+            asyncio.create_task(self._send_emergency_escalation_alert(error_type, error_message))
     
     def record_connection_failure(self, error_type: str, error_message: str):
         """Record voice connection failure"""
@@ -462,171 +478,331 @@ class AudioPlaybackMonitor:
     async def _send_playback_failure_alert(self, error_type: str, error_message: str):
         """Send Discord alert for audio playback failure"""
         try:
-            from src.utils.discord_logger import get_discord_logger
-            discord_logger = get_discord_logger()
-            if discord_logger:
-                self.last_playback_alert = datetime.now(timezone.utc)
-                
-                time_since_success = datetime.now(timezone.utc) - self.last_successful_playback
-                minutes_down = int(time_since_success.total_seconds() / 60)
-                
-                await discord_logger.log_critical_error(
-                    "Audio Playback Failure Detected",
-                    None,
-                    {
-                        "Component": "Audio Manager",
-                        "Error Type": error_type,
-                        "Error Message": error_message[:500],
-                        "Consecutive Failures": str(self.consecutive_playback_failures),
-                        "Time Since Success": f"{minutes_down} minutes ago",
-                        "Impact": "❌ Audio playback stopped - bot is silent",
-                        "Status": "🔇 Audio System Down",
-                        "Action Required": "Check voice connection and audio files"
-                    }
-                )
-                
-                log_perfect_tree_section(
-                    "Audio Monitor - Playback Alert Sent",
-                    [
-                        ("alert_type", "Audio Playback Failure"),
-                        ("consecutive_failures", str(self.consecutive_playback_failures)),
-                        ("time_since_success", f"{minutes_down}m ago"),
-                        ("discord_alert", "✅ Sent"),
-                    ],
-                    "🚨",
-                )
+            # Use modern webhook logger instead of discord_logger
+            from src.core.di_container import get_container
+            container = get_container()
+            if container:
+                from src.core.webhook_logger import ModernWebhookLogger
+                webhook_logger = container.get(ModernWebhookLogger)
+                if webhook_logger and webhook_logger.initialized:
+                    self.last_playback_alert = datetime.now(timezone.utc)
+                    
+                    time_since_success = datetime.now(timezone.utc) - self.last_successful_playback
+                    minutes_down = int(time_since_success.total_seconds() / 60)
+                    
+                    await webhook_logger.log_audio_event(
+                        event_type="playback_failure",
+                        error_message=f"Audio Playback Failure: {error_type}",
+                        audio_details={
+                            "error_type": error_type,
+                            "error_message": error_message[:500],
+                            "consecutive_failures": self.consecutive_playback_failures,
+                            "minutes_down": minutes_down,
+                            "impact": "❌ Audio playback stopped - bot is silent",
+                            "status": "🔇 Audio System Down",
+                            "action_required": "Check voice connection and audio files"
+                        },
+                        ping_owner=True  # Critical audio failure requires owner attention
+                    )
+                    
+                    log_perfect_tree_section(
+                        "Audio Monitor - Playback Alert Sent",
+                        [
+                            ("alert_type", "Audio Playback Failure"),
+                            ("consecutive_failures", str(self.consecutive_playback_failures)),
+                            ("time_since_success", f"{minutes_down}m ago"),
+                            ("webhook_alert", "✅ Sent"),
+                        ],
+                        "🚨",
+                    )
         except Exception as e:
             log_error_with_traceback("Failed to send audio playback failure alert", e)
     
     async def _send_connection_failure_alert(self, error_type: str, error_message: str):
         """Send Discord alert for voice connection failure"""
         try:
-            from src.utils.discord_logger import get_discord_logger
-            discord_logger = get_discord_logger()
-            if discord_logger:
-                self.last_connection_alert = datetime.now(timezone.utc)
-                
-                time_since_success = datetime.now(timezone.utc) - self.last_voice_connection
-                minutes_down = int(time_since_success.total_seconds() / 60)
-                
-                await discord_logger.log_critical_error(
-                    "Voice Connection Failure Detected",
-                    None,
-                    {
-                        "Component": "Voice Connection",
-                        "Error Type": error_type,
-                        "Error Message": error_message[:500],
-                        "Consecutive Failures": str(self.consecutive_connection_failures),
-                        "Time Since Success": f"{minutes_down} minutes ago",
-                        "Impact": "❌ Bot disconnected from voice channel",
-                        "Status": "🔌 Voice Connection Down",
-                        "Action Required": "Check voice channel permissions and reconnect"
-                    }
-                )
-                
-                log_perfect_tree_section(
-                    "Audio Monitor - Connection Alert Sent",
-                    [
-                        ("alert_type", "Voice Connection Failure"),
-                        ("consecutive_failures", str(self.consecutive_connection_failures)),
-                        ("time_since_success", f"{minutes_down}m ago"),
-                        ("discord_alert", "✅ Sent"),
-                    ],
-                    "🚨",
-                )
+            # Use modern webhook logger instead of discord_logger
+            from src.core.di_container import get_container
+            container = get_container()
+            if container:
+                from src.core.webhook_logger import ModernWebhookLogger
+                webhook_logger = container.get(ModernWebhookLogger)
+                if webhook_logger and webhook_logger.initialized:
+                    self.last_connection_alert = datetime.now(timezone.utc)
+                    
+                    time_since_success = datetime.now(timezone.utc) - self.last_voice_connection
+                    minutes_down = int(time_since_success.total_seconds() / 60)
+                    
+                    await webhook_logger.log_voice_connection_issue(
+                        issue_type=error_type,
+                        error_details=error_message[:500],
+                        channel_name="QuranBot Voice Channel",
+                        recovery_action="Attempting automatic reconnection",
+                        additional_info={
+                            "consecutive_failures": self.consecutive_connection_failures,
+                            "minutes_down": minutes_down,
+                            "impact": "❌ Bot disconnected from voice channel",
+                            "status": "🔌 Voice Connection Down"
+                        },
+                        ping_owner=True  # Critical connection failure requires owner attention
+                    )
+                    
+                    log_perfect_tree_section(
+                        "Audio Monitor - Connection Alert Sent",
+                        [
+                            ("alert_type", "Voice Connection Failure"),
+                            ("consecutive_failures", str(self.consecutive_connection_failures)),
+                            ("time_since_success", f"{minutes_down}m ago"),
+                            ("webhook_alert", "✅ Sent"),
+                        ],
+                        "🚨",
+                    )
         except Exception as e:
             log_error_with_traceback("Failed to send voice connection failure alert", e)
     
     async def _send_playback_timeout_alert(self, minutes_silent: int):
         """Send Discord alert for audio playback timeout"""
         try:
-            from src.utils.discord_logger import get_discord_logger
-            discord_logger = get_discord_logger()
-            if discord_logger:
-                self.last_playback_alert = datetime.now(timezone.utc)
-                
-                await discord_logger.log_critical_error(
-                    "Audio Playback Timeout Detected",
-                    None,
-                    {
-                        "Component": "Audio Manager",
-                        "Error Type": "playback_timeout",
-                        "Silent Duration": f"{minutes_silent} minutes",
-                        "Expected Interval": f"{self.expected_playback_interval//60} minutes max",
-                        "Impact": "❌ Bot has been silent too long",
-                        "Status": "🔇 Audio Timeout",
-                        "Action Required": "Check audio playback loop and restart if needed"
-                    }
-                )
-                
-                log_perfect_tree_section(
-                    "Audio Monitor - Timeout Alert Sent",
-                    [
-                        ("alert_type", "Audio Playback Timeout"),
-                        ("silent_duration", f"{minutes_silent}m"),
-                        ("expected_max", f"{self.expected_playback_interval//60}m"),
-                        ("discord_alert", "✅ Sent"),
-                    ],
-                    "🚨",
-                )
+            # Use modern webhook logger instead of discord_logger
+            from src.core.di_container import get_container
+            container = get_container()
+            if container:
+                from src.core.webhook_logger import ModernWebhookLogger
+                webhook_logger = container.get(ModernWebhookLogger)
+                if webhook_logger and webhook_logger.initialized:
+                    self.last_playback_alert = datetime.now(timezone.utc)
+                    
+                    await webhook_logger.log_audio_event(
+                        event_type="playback_timeout",
+                        error_message=f"Audio Silence Detected: {minutes_silent} minutes",
+                        audio_details={
+                            "error_type": "playback_timeout",
+                            "silent_duration": f"{minutes_silent} minutes",
+                            "expected_interval": f"{self.expected_playback_interval//60} minutes max",
+                            "impact": "❌ Bot has been silent too long",
+                            "status": "🔇 Audio Timeout",
+                            "action_required": "Check audio playback loop and restart if needed"
+                        },
+                        ping_owner=True  # Audio silence requires immediate owner attention
+                    )
+                    
+                    log_perfect_tree_section(
+                        "Audio Monitor - Timeout Alert Sent",
+                        [
+                            ("alert_type", "Audio Playback Timeout"),
+                            ("silent_duration", f"{minutes_silent}m"),
+                            ("expected_max", f"{self.expected_playback_interval//60}m"),
+                            ("webhook_alert", "✅ Sent"),
+                        ],
+                        "🚨",
+                    )
         except Exception as e:
             log_error_with_traceback("Failed to send audio timeout alert", e)
     
     async def _send_audio_recovery_alert(self):
         """Send Discord alert for audio recovery"""
         try:
-            from src.utils.discord_logger import get_discord_logger
-            discord_logger = get_discord_logger()
-            if discord_logger:
-                await discord_logger.log_success(
-                    "Audio Playback Recovered",
-                    {
-                        "Component": "Audio Manager",
-                        "Status": "✅ Audio Playback Restored",
-                        "Recovery Time": datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
-                        "Action": "Audio playback resumed successfully"
-                    }
-                )
-                
-                log_perfect_tree_section(
-                    "Audio Monitor - Playback Recovery",
-                    [
-                        ("status", "✅ Audio recovered"),
-                        ("recovery_time", datetime.now(timezone.utc).strftime("%H:%M:%S")),
-                        ("discord_alert", "✅ Sent"),
-                    ],
-                    "✅",
-                )
+            # Use modern webhook logger instead of discord_logger
+            from src.core.di_container import get_container
+            container = get_container()
+            if container:
+                from src.core.webhook_logger import ModernWebhookLogger
+                webhook_logger = container.get(ModernWebhookLogger)
+                if webhook_logger and webhook_logger.initialized:
+                    await webhook_logger.log_audio_event(
+                        event_type="playback_recovery",
+                        error_message="Audio Playback Successfully Recovered",
+                        audio_details={
+                            "status": "✅ Audio Playback Restored",
+                            "recovery_time": datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
+                            "action": "Audio playback resumed successfully",
+                            "auto_recovery": "✅ Automatic recovery successful"
+                        },
+                        ping_owner=False  # Recovery success doesn't need owner ping
+                    )
+                    
+                    log_perfect_tree_section(
+                        "Audio Monitor - Playback Recovery",
+                        [
+                            ("status", "✅ Audio recovered"),
+                            ("recovery_time", datetime.now(timezone.utc).strftime("%H:%M:%S")),
+                            ("webhook_alert", "✅ Sent"),
+                        ],
+                        "✅",
+                    )
         except Exception as e:
             log_error_with_traceback("Failed to send audio recovery alert", e)
     
     async def _send_connection_recovery_alert(self):
         """Send Discord alert for connection recovery"""
         try:
-            from src.utils.discord_logger import get_discord_logger
-            discord_logger = get_discord_logger()
-            if discord_logger:
-                await discord_logger.log_success(
-                    "Voice Connection Recovered",
-                    {
-                        "Component": "Voice Connection",
-                        "Status": "✅ Voice Connection Restored",
-                        "Recovery Time": datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
-                        "Action": "Voice connection resumed successfully"
-                    }
-                )
-                
-                log_perfect_tree_section(
-                    "Audio Monitor - Connection Recovery",
-                    [
-                        ("status", "✅ Connection recovered"),
-                        ("recovery_time", datetime.now(timezone.utc).strftime("%H:%M:%S")),
-                        ("discord_alert", "✅ Sent"),
-                    ],
-                    "✅",
-                )
+            # Use modern webhook logger instead of discord_logger
+            from src.core.di_container import get_container
+            container = get_container()
+            if container:
+                from src.core.webhook_logger import ModernWebhookLogger
+                webhook_logger = container.get(ModernWebhookLogger)
+                if webhook_logger and webhook_logger.initialized:
+                    await webhook_logger.log_voice_connection_issue(
+                        issue_type="connection_recovery",
+                        error_details="Voice connection successfully recovered",
+                        channel_name="QuranBot Voice Channel",
+                        recovery_action="✅ Automatic recovery successful",
+                        additional_info={
+                            "status": "✅ Voice Connection Restored",
+                            "recovery_time": datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
+                            "action": "Voice connection resumed successfully"
+                        },
+                        ping_owner=False  # Recovery success doesn't need owner ping
+                    )
+                    
+                    log_perfect_tree_section(
+                        "Audio Monitor - Connection Recovery",
+                        [
+                            ("status", "✅ Connection recovered"),
+                            ("recovery_time", datetime.now(timezone.utc).strftime("%H:%M:%S")),
+                            ("webhook_alert", "✅ Sent"),
+                        ],
+                        "✅",
+                    )
         except Exception as e:
             log_error_with_traceback("Failed to send connection recovery alert", e)
+
+    def _should_send_escalation_alert(self) -> bool:
+        """Check if enough time has passed to send escalation alert"""
+        if not self.last_escalation_alert:
+            return True
+        
+        time_since_last = datetime.now(timezone.utc) - self.last_escalation_alert
+        return time_since_last.total_seconds() >= self.escalation_cooldown
+    
+    async def _send_critical_escalation_alert(self, error_type: str, error_message: str):
+        """Send critical escalation alert for persistent failures"""
+        try:
+            from src.core.di_container import get_container
+            container = get_container()
+            if container:
+                from src.core.webhook_logger import ModernWebhookLogger
+                webhook_logger = container.get(ModernWebhookLogger)
+                if webhook_logger and webhook_logger.initialized:
+                    self.last_escalation_alert = datetime.now(timezone.utc)
+                    
+                    time_since_success = datetime.now(timezone.utc) - self.last_successful_playback
+                    hours_down = int(time_since_success.total_seconds() / 3600)
+                    
+                    await webhook_logger.log_audio_event(
+                        event_type="critical_failure_escalation",
+                        error_message=f"🚨 CRITICAL: {self.consecutive_playback_failures} Consecutive Audio Failures",
+                        audio_details={
+                            "escalation_level": "CRITICAL",
+                            "consecutive_failures": self.consecutive_playback_failures,
+                            "hours_down": hours_down,
+                            "error_type": error_type,
+                            "error_message": error_message[:300],
+                            "impact": "❌ Audio system has been down for extended period",
+                            "status": "🔴 CRITICAL FAILURE - MANUAL INTERVENTION REQUIRED",
+                            "action_required": "🆘 Immediate admin attention needed - audio system failing repeatedly"
+                        },
+                        ping_owner=True
+                    )
+                    
+                    log_perfect_tree_section(
+                        "Audio Monitor - CRITICAL ESCALATION",
+                        [
+                            ("escalation_level", "🚨 CRITICAL"),
+                            ("consecutive_failures", str(self.consecutive_playback_failures)),
+                            ("hours_down", f"{hours_down}h"),
+                            ("webhook_alert", "✅ SENT"),
+                        ],
+                        "🚨",
+                    )
+        except Exception as e:
+            log_error_with_traceback("Failed to send critical escalation alert", e)
+    
+    async def _send_emergency_escalation_alert(self, error_type: str, error_message: str):
+        """Send emergency escalation alert for severe persistent failures"""
+        try:
+            from src.core.di_container import get_container
+            container = get_container()
+            if container:
+                from src.core.webhook_logger import ModernWebhookLogger
+                webhook_logger = container.get(ModernWebhookLogger)
+                if webhook_logger and webhook_logger.initialized:
+                    self.last_escalation_alert = datetime.now(timezone.utc)
+                    
+                    time_since_success = datetime.now(timezone.utc) - self.last_successful_playback
+                    hours_down = int(time_since_success.total_seconds() / 3600)
+                    
+                    await webhook_logger.log_audio_event(
+                        event_type="emergency_failure_escalation",
+                        error_message=f"🆘 EMERGENCY: {self.consecutive_playback_failures} Consecutive Audio Failures - SYSTEM DOWN",
+                        audio_details={
+                            "escalation_level": "EMERGENCY",
+                            "consecutive_failures": self.consecutive_playback_failures,
+                            "hours_down": hours_down,
+                            "error_type": error_type,
+                            "error_message": error_message[:300],
+                            "impact": "🆘 COMPLETE AUDIO SYSTEM FAILURE - BOT NOT FUNCTIONING",
+                            "status": "🔴 EMERGENCY - SYSTEM COMPLETELY DOWN",
+                            "action_required": "🚨 URGENT: Bot requires immediate manual restart/repair"
+                        },
+                        ping_owner=True
+                    )
+                    
+                    log_perfect_tree_section(
+                        "Audio Monitor - EMERGENCY ESCALATION",
+                        [
+                            ("escalation_level", "🆘 EMERGENCY"),
+                            ("consecutive_failures", str(self.consecutive_playback_failures)),
+                            ("hours_down", f"{hours_down}h"),
+                            ("webhook_alert", "✅ EMERGENCY SENT"),
+                        ],
+                        "🆘",
+                    )
+        except Exception as e:
+            log_error_with_traceback("Failed to send emergency escalation alert", e)
+
+    async def _send_extended_silence_alert(self):
+        """Send emergency alert for extended silence"""
+        try:
+            from src.core.di_container import get_container
+            container = get_container()
+            if container:
+                from src.core.webhook_logger import ModernWebhookLogger
+                webhook_logger = container.get(ModernWebhookLogger)
+                if webhook_logger and webhook_logger.initialized:
+                    self.last_escalation_alert = datetime.now(timezone.utc)
+                    
+                    time_since_playback = datetime.now(timezone.utc) - self.last_successful_playback
+                    minutes_silent = int(time_since_playback.total_seconds() / 60)
+                    
+                    await webhook_logger.log_audio_event(
+                        event_type="extended_silence_emergency",
+                        error_message=f"🆘 EMERGENCY: Bot Silent for {minutes_silent} Minutes",
+                        audio_details={
+                            "escalation_level": "EXTENDED SILENCE EMERGENCY",
+                            "minutes_silent": minutes_silent,
+                            "threshold_minutes": int(self.extended_silence_threshold / 60),
+                            "last_playback": self.last_successful_playback.strftime("%H:%M:%S UTC"),
+                            "impact": "🆘 BOT COMPLETELY SILENT - NOT SERVING USERS",
+                            "status": "🔇 EMERGENCY SILENCE - IMMEDIATE ACTION REQUIRED",
+                            "action_required": "🚨 URGENT: Bot has been silent too long - manual intervention needed"
+                        },
+                        ping_owner=True
+                    )
+                    
+                    log_perfect_tree_section(
+                        "Audio Monitor - EXTENDED SILENCE EMERGENCY",
+                        [
+                            ("escalation_level", "🆘 SILENCE EMERGENCY"),
+                            ("minutes_silent", f"{minutes_silent}m"),
+                            ("threshold", f"{int(self.extended_silence_threshold / 60)}m"),
+                            ("webhook_alert", "✅ EMERGENCY SENT"),
+                        ],
+                        "🔇",
+                    )
+        except Exception as e:
+            log_error_with_traceback("Failed to send extended silence alert", e)
 
 # Global monitor instance
 _audio_monitor = AudioPlaybackMonitor()
@@ -680,6 +856,12 @@ async def start_audio_monitoring_task(audio_manager):
                         else:
                             # Audio is playing - record success
                             _audio_monitor.record_successful_playback()
+                    
+                    # Extended silence detection for emergency escalation
+                    time_since_playback = datetime.now(timezone.utc) - _audio_monitor.last_successful_playback
+                    if (time_since_playback.total_seconds() > _audio_monitor.extended_silence_threshold and
+                        _audio_monitor._should_send_escalation_alert()):
+                        asyncio.create_task(_audio_monitor._send_extended_silence_alert())
                     
                     # Periodic status logging with enhanced details
                     if hasattr(_audio_monitor, '_monitoring_cycles'):

@@ -872,17 +872,24 @@ class ModernWebhookLogger:
     async def log_audio_event(
         self,
         event_type: str,
-        event_description: str,
+        error_message: str | None = None,
+        event_description: str | None = None,
         audio_details: dict[str, Any] | None = None,
+        ping_owner: bool = False,
     ) -> bool:
         """
-        Log QuranBot audio events (surah changes, reciter changes, etc.).
+        Log QuranBot audio events (surah changes, reciter changes, failures, recoveries).
 
         Args:
             event_type: Type of audio event
-            event_description: Description of the event
+            error_message: Error message (for failures) or event description
+            event_description: Additional event description (deprecated, use error_message)
             audio_details: Audio-specific details
+            ping_owner: Whether to ping the owner for critical events
         """
+        # Use error_message if provided, otherwise fall back to event_description
+        description = error_message or event_description or f"Audio event: {event_type}"
+        
         # Audio event emojis
         audio_emojis = {
             "surah_start": "▶️",
@@ -898,10 +905,26 @@ class ModernWebhookLogger:
             "voice_reconnect": "🔄",
             "playlist_shuffle": "🔀",
             "playlist_loop": "🔁",
+            "playback_failure": "❌",
+            "playback_timeout": "🔇",
+            "playback_recovery": "✅",
+            "connection_failure": "🔌",
+            "connection_recovery": "✅",
+            "critical_failure_escalation": "🚨",
+            "emergency_failure_escalation": "🆘",
+            "extended_silence_emergency": "🔇",
             "default": "🎵",
         }
 
         emoji = audio_emojis.get(event_type, audio_emojis["default"])
+        
+        # Determine log level based on event type
+        if event_type in ["playback_failure", "playback_timeout", "connection_failure", "critical_failure_escalation", "emergency_failure_escalation", "extended_silence_emergency"]:
+            level = LogLevel.CRITICAL
+        elif event_type in ["playback_recovery", "connection_recovery"]:
+            level = LogLevel.SUCCESS
+        else:
+            level = LogLevel.SYSTEM
 
         fields = [
             EmbedField("Event Type", event_type.replace("_", " ").title(), True),
@@ -914,11 +937,22 @@ class ModernWebhookLogger:
                     EmbedField(key.replace("_", " ").title(), str(value)[:1024], True)
                 )
 
+        # Add owner ping for critical events
+        content = None
+        if ping_owner and self.config.enable_pings and self.config.owner_user_id:
+            if event_type in ["playback_failure", "playback_timeout", "connection_failure"]:
+                content = f"🚨 <@{self.config.owner_user_id}> **AUDIO SYSTEM ALERT** 🚨"
+            elif event_type in ["critical_failure_escalation", "emergency_failure_escalation"]:
+                content = f"🆘 <@{self.config.owner_user_id}> **CRITICAL SYSTEM FAILURE** 🆘"
+            elif event_type == "extended_silence_emergency":
+                content = f"🔇 <@{self.config.owner_user_id}> **EXTENDED SILENCE EMERGENCY** 🔇"
+
         message = WebhookMessage(
             title=f"{emoji} QuranBot Audio Event",
-            description=event_description,
-            level=LogLevel.SYSTEM,
+            description=description,
+            level=level,
             fields=fields,
+            content=content,
         )
 
         return await self._send_message(message)
@@ -1122,29 +1156,44 @@ class ModernWebhookLogger:
     async def log_voice_connection_issue(
         self,
         issue_type: str,
-        channel_name: str,
         error_details: str,
+        channel_name: str,
         recovery_action: str | None = None,
+        additional_info: dict[str, Any] | None = None,
+        ping_owner: bool = False,
     ) -> bool:
         """
         Log voice channel connection issues.
 
         Args:
-            issue_type: Type of voice issue (connection_failed, disconnected, timeout)
+            issue_type: Type of voice issue (connection_failed, disconnected, timeout, connection_recovery)
+            error_details: Details about the error or recovery
             channel_name: Name of the voice channel
-            error_details: Details about the error
             recovery_action: Action taken to recover
+            additional_info: Additional context information
+            ping_owner: Whether to ping the owner for critical issues
         """
         issue_emojis = {
             "connection_failed": "🔴",
             "disconnected": "🔌",
-            "timeout": "⏰",
-            "permission_denied": "🚫",
-            "channel_full": "👥",
-            "default": "🔊",
+            "timeout": "⏱️",
+            "connection_recovery": "✅",
+            "recovery_success": "✅",
+            "default": "⚠️",
         }
 
         emoji = issue_emojis.get(issue_type, issue_emojis["default"])
+        
+        # Determine log level and title based on issue type
+        if issue_type in ["connection_recovery", "recovery_success"]:
+            level = LogLevel.SUCCESS
+            title = "Voice Connection Recovered"
+        elif issue_type in ["connection_failed", "disconnected", "timeout"]:
+            level = LogLevel.ERROR
+            title = "Voice Connection Issue"
+        else:
+            level = LogLevel.WARNING
+            title = "Voice Channel Issue"
 
         fields = [
             EmbedField("Issue Type", issue_type.replace("_", " ").title(), True),
@@ -1155,12 +1204,25 @@ class ModernWebhookLogger:
 
         if recovery_action:
             fields.append(EmbedField("Recovery Action", recovery_action, False))
+            
+        if additional_info:
+            for key, value in additional_info.items():
+                fields.append(
+                    EmbedField(key.replace("_", " ").title(), str(value)[:1024], True)
+                )
+
+        # Add owner ping for critical connection issues
+        content = None
+        if ping_owner and self.config.enable_pings and self.config.owner_user_id:
+            if issue_type in ["connection_failed", "disconnected", "timeout"]:
+                content = f"🔌 <@{self.config.owner_user_id}> **VOICE CONNECTION ALERT** 🔌"
 
         message = WebhookMessage(
-            title=f"{emoji} Voice Channel Issue",
-            description="**QuranBot encountered a voice channel issue**\n\nRecitation service may be affected",
-            level=LogLevel.WARNING,
+            title=f"{emoji} {title}",
+            description=f"**Voice channel connection issue detected**\n\n{error_details}",
+            level=level,
             fields=fields,
+            content=content,
         )
 
         return await self._send_message(message)

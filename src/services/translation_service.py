@@ -115,6 +115,31 @@ Translate naturally while preserving the Islamic authenticity."""
 
         except Exception as e:
             log_error_with_traceback("ChatGPT translation error", e)
+            
+            # Log translation service failure to webhook
+            try:
+                from src.core.di_container import get_container
+                container = get_container()
+                if container:
+                    from src.core.webhook_logger import ModernWebhookLogger
+                    webhook_logger = container.get(ModernWebhookLogger)
+                    if webhook_logger and webhook_logger.initialized:
+                        await webhook_logger.log_error(
+                            title="Translation Service Failure",
+                            description="ChatGPT translation service failed to translate AI response",
+                            context={
+                                "target_language": target_language,
+                                "text_length": len(text),
+                                "error_type": type(e).__name__,
+                                "error_message": str(e)[:500],
+                                "component": "Translation Service",
+                                "impact": "User translation request failed"
+                            },
+                            ping_owner=isinstance(e, (openai.AuthenticationError, openai.RateLimitError))  # Ping for API errors
+                        )
+            except:
+                pass  # Don't let webhook logging prevent error response
+                
             return False, f"Translation failed: {str(e)}"
 
     async def translate_ai_response(self, ai_response: str, target_language: str) -> tuple[bool, str]:

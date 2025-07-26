@@ -974,6 +974,31 @@ Remember: You're a caring member of the Muslim community with your own personali
 
         except Exception as e:
             log_error_with_traceback("Error in enhanced ask_question", e)
+            
+            # Log AI service failure to webhook with owner ping for critical errors
+            try:
+                from src.core.di_container import get_container
+                container = get_container()
+                if container:
+                    from src.core.webhook_logger import ModernWebhookLogger
+                    webhook_logger = container.get(ModernWebhookLogger)
+                    if webhook_logger and webhook_logger.initialized:
+                        await webhook_logger.log_error(
+                            title="AI Service Failure",
+                            description=f"Enhanced Islamic AI service failed to process user question",
+                            context={
+                                "user_id": str(user_id),
+                                "question_length": len(question),
+                                "error_type": type(e).__name__,
+                                "error_message": str(e)[:500],
+                                "component": "Enhanced Islamic AI Service",
+                                "impact": "User received generic error message"
+                            },
+                            ping_owner=isinstance(e, (openai.AuthenticationError, openai.RateLimitError))  # Ping for critical API errors
+                        )
+            except:
+                pass  # Don't let webhook logging prevent error response
+                
             return False, "", "An error occurred while processing your question."
 
     def _detect_contradictions(self, user_id: int, current_query: str, user_context: dict) -> dict:

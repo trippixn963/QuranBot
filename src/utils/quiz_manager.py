@@ -663,6 +663,30 @@ class QuizView(discord.ui.View):
             self.results_message = await self.message.channel.send(embed=results_embed)
         except Exception as e:
             log_error_with_traceback("Failed to send quiz results", e)
+            
+            # Log quiz system failure to webhook
+            try:
+                from src.core.di_container import get_container
+                container = get_container()
+                if container:
+                    from src.core.webhook_logger import ModernWebhookLogger
+                    webhook_logger = container.get(ModernWebhookLogger)
+                    if webhook_logger and webhook_logger.initialized:
+                        await webhook_logger.log_error(
+                            title="Quiz System Failure",
+                            description="Failed to send quiz results to Discord channel",
+                            context={
+                                "channel_id": str(self.message.channel.id) if self.message and self.message.channel else "Unknown",
+                                "guild_id": str(self.message.guild.id) if self.message and self.message.guild else "Unknown",
+                                "error_type": type(e).__name__,
+                                "error_message": str(e)[:500],
+                                "component": "Quiz Manager",
+                                "impact": "Quiz results not displayed to users"
+                            },
+                            ping_owner=False  # Quiz failures are not critical enough for owner ping
+                        )
+            except:
+                pass  # Don't let webhook logging prevent quiz operation
 
 
 class QuizButton(discord.ui.Button):
