@@ -13,9 +13,7 @@ from discord.ext import commands
 
 # Import configuration service
 from src.config import get_config_service
-from src.core.exceptions import (
-    ValidationError,
-)
+from src.core.exceptions import ValidationError
 from src.core.security import rate_limit, require_admin, validate_input
 from src.utils import daily_verses
 from src.utils import quiz_manager as quiz_mgr

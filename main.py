@@ -683,7 +683,9 @@ class ModernizedQuranBot:
 
             # Initialize Mecca prayer notifications
             try:
-                from src.utils.mecca_prayer_times import setup_mecca_prayer_notifications
+                from src.utils.mecca_prayer_times import (
+                    setup_mecca_prayer_notifications,
+                )
                 await setup_mecca_prayer_notifications(self.bot)
                 await self.logger.info(
                     "Mecca prayer notification system initialized",
@@ -913,7 +915,7 @@ class ModernizedQuranBot:
 
             # Assign the role
             await member.add_roles(panel_role, reason="Joined Quran voice channel")
-            
+
             await self.logger.info(
                 "Panel access role assigned",
                 {
@@ -966,7 +968,7 @@ class ModernizedQuranBot:
 
             # Remove the role
             await member.remove_roles(panel_role, reason="Left Quran voice channel")
-            
+
             await self.logger.info(
                 "Panel access role removed",
                 {

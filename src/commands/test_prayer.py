@@ -31,7 +31,7 @@ class TestPrayerCog(commands.Cog):
         prayer: str = "maghrib"
     ):
         """Test prayer notification command"""
-        
+
         # Admin check
         config = get_config_service().config
         if interaction.user.id != config.DEVELOPER_ID:
@@ -71,7 +71,7 @@ class TestPrayerCog(commands.Cog):
         try:
             # Send test notification
             await notifier.send_prayer_notification(prayer.lower(), "18:15")  # Example time
-            
+
             embed = discord.Embed(
                 title="✅ Test Successful",
                 description=f"Test {prayer.capitalize()} prayer notification sent to daily verse channel!\n"
@@ -81,7 +81,7 @@ class TestPrayerCog(commands.Cog):
             )
             embed.set_footer(text="Created by حَـــــنَـــــا")
             await interaction.response.send_message(embed=embed, ephemeral=True)
-            
+
         except Exception as e:
             embed = discord.Embed(
                 title="❌ Test Failed",
@@ -94,4 +94,4 @@ class TestPrayerCog(commands.Cog):
 
 async def setup(bot):
     """Set up the test prayer cog"""
-    await bot.add_cog(TestPrayerCog(bot)) 
+    await bot.add_cog(TestPrayerCog(bot))

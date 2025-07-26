@@ -14,7 +14,7 @@ This project was created by an Orthodox Christian developer (ME) who grew up in 
 
 ## 🚀 Latest Updates (v4.1.0)
 
-### 🤖 **NEW: Advanced AI Assistant** 
+### 🤖 **NEW: Advanced AI Assistant**
 
 - **🧠 OpenAI GPT-3.5 Integration**: Natural conversation AI with Islamic knowledge
 - **💬 Mention-Based Interaction**: Simply mention @QuranBot for intelligent responses
@@ -86,7 +86,7 @@ This project was created by an Orthodox Christian developer (ME) who grew up in 
 - **Natural Conversation**: Mention the bot for natural Islamic Q&A discussions
 - **Bilingual Support**: Understands Arabic and English, responds in English
 - **Rate Limiting**: Smart 1-question-per-hour limit (admin exempt) to prevent token abuse
-- **Enhanced Knowledge Base**: 
+- **Enhanced Knowledge Base**:
   - 🔍 **Hadith Integration**: Access to 12+ authentic hadith sources
   - 📖 **Verse Lookup**: Contextual Quran verse search and explanations
   - 🎯 **Topic Deep Dives**: Comprehensive Islamic topic explanations

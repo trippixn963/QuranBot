@@ -5,32 +5,33 @@ Provides Islamic knowledge assistance with proper disclaimers and authentic guid
 """
 
 import asyncio
-import json
-import openai
 from datetime import datetime
+import json
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
+import openai
+
 from src.config import get_config_service
-from src.utils.tree_log import log_perfect_tree_section, log_error_with_traceback
+from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
 
 
 class IslamicAIService:
     """Service for handling Islamic Q&A using OpenAI GPT-3.5 Turbo
-    
+
     Features:
     - Conservative rate limiting: 1 question per hour per user (admin exempt)
     - Bilingual input support (English + Arabic)
     - English-only responses with Islamic etiquette
     - Comprehensive Islamic knowledge with proper disclaimers
     """
-    
+
     def __init__(self):
         self.config = get_config_service().config
         self.client = None
         self.system_prompt = self._create_islamic_system_prompt()
         self.rate_limits = {}  # Simple rate limiting per user
-        
+
     async def initialize(self):
         """Initialize the OpenAI client"""
         try:
@@ -45,11 +46,11 @@ class IslamicAIService:
                     "🤖"
                 )
                 return False
-                
+
             self.client = openai.AsyncOpenAI(
                 api_key=self.config.OPENAI_API_KEY
             )
-            
+
             log_perfect_tree_section(
                 "Islamic AI - Initialized",
                 [
@@ -63,11 +64,11 @@ class IslamicAIService:
                 "🤖"
             )
             return True
-            
+
         except Exception as e:
             log_error_with_traceback("Failed to initialize Islamic AI service", e)
             return False
-    
+
     def _create_islamic_system_prompt(self) -> str:
         """Create comprehensive Islamic knowledge system prompt with personality and bot awareness"""
         return """You are QuranBot, a warm and knowledgeable Islamic assistant for a Discord community. You have a friendly Islamic personality and serve a global Muslim community. Users will mention you with questions in either English or Arabic, and you must ALWAYS respond ONLY in English.
@@ -123,7 +124,7 @@ RESPONSE CATEGORIES:
 
 2. BOT FUNCTIONALITY QUESTIONS:
    Examples: "How do I check my points?", "What commands are available?", "How does the quiz work?"
-   
+
    Respond with helpful guidance:
    • **Points/Rankings**: "To check your points and see the leaderboard rankings, use the `/leaderboard` command! 📊"
    • **Quizzes**: "You can earn points by participating in our Islamic knowledge quizzes! Keep an eye out for quiz questions that appear regularly."
@@ -132,7 +133,7 @@ RESPONSE CATEGORIES:
 
 3. PERSONAL QUESTIONS ABOUT YOU:
    Examples: "Are you Muslim?", "Who created you?", "What do you believe?", "How are you?"
-   
+
    Respond with your Islamic personality:
    • "Yes, Alhamdulillah, I'm a Muslim bot! 🤖"
    • "I was created by حَــنَّــا (Hanna), a Christian developer who respects Islam and wanted to help Muslims learn about their faith"
@@ -185,10 +186,10 @@ You: "As-salamu alaykum wa rahmatullahi wa barakatuh! 🌙 Welcome! I'm QuranBot
 
 Remember: You're not just an information source - you're a caring member of the Muslim community with your own Islamic personality AND a helpful guide to this Discord server's features! Be warm, genuine, and helpful while maintaining your focus on Islamic knowledge and server functionality."""
 
-    async def ask_question(self, user_id: int, question: str) -> Tuple[bool, str, Optional[str]]:
+    async def ask_question(self, user_id: int, question: str) -> tuple[bool, str, str | None]:
         """
         Process Islamic question through AI
-        
+
         Returns:
             Tuple of (success, response_text, error_message)
         """
@@ -199,14 +200,14 @@ Remember: You're not just an information source - you're a caring member of the 
             # Rate limiting check for non-admin users
             elif not self._check_rate_limit(user_id):
                 return False, "", "Rate limit exceeded. You can ask 1 question per hour. Please wait before asking another question. (Admin users are exempt)"
-            
+
             # Validate question
             if not question or len(question.strip()) < 5:
                 return False, "", "Please provide a more detailed question about Islam."
-            
+
             if len(question) > 500:
                 return False, "", "Please keep your question under 500 characters for better responses."
-            
+
             # Log the request
             log_perfect_tree_section(
                 "Islamic AI - Question Received",
@@ -217,7 +218,7 @@ Remember: You're not just an information source - you're a caring member of the 
                 ],
                 "❓"
             )
-            
+
             # Call OpenAI API
             response = await self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
@@ -229,9 +230,9 @@ Remember: You're not just an information source - you're a caring member of the 
                 temperature=0.3,  # Lower temperature for more consistent religious guidance
                 top_p=0.9
             )
-            
+
             ai_response = response.choices[0].message.content.strip()
-            
+
             # Log successful response
             log_perfect_tree_section(
                 "Islamic AI - Response Generated",
@@ -243,9 +244,9 @@ Remember: You're not just an information source - you're a caring member of the 
                 ],
                 "🤖"
             )
-            
+
             return True, ai_response, None
-            
+
         except openai.RateLimitError:
             error_msg = "OpenAI rate limit reached. Please try again later."
             log_perfect_tree_section(
@@ -258,62 +259,62 @@ Remember: You're not just an information source - you're a caring member of the 
                 "⚠️"
             )
             return False, "", error_msg
-            
+
         except openai.APIError as e:
             error_msg = "AI service temporarily unavailable. Please try again later."
             log_error_with_traceback("OpenAI API error in Islamic AI service", e)
             return False, "", error_msg
-            
+
         except Exception as e:
             error_msg = "An error occurred while processing your question. Please try again."
             log_error_with_traceback("Unexpected error in Islamic AI service", e)
             return False, "", error_msg
-    
+
     def _check_rate_limit(self, user_id: int) -> bool:
         """Conservative rate limiting: 1 question per hour per user (admin exempt)"""
         # Admin users bypass rate limiting
         if user_id == self.config.DEVELOPER_ID:
             return True
-            
+
         now = datetime.now()
-        
+
         if user_id not in self.rate_limits:
             self.rate_limits[user_id] = []
-        
+
         # Clean old requests (older than 1 hour)
         self.rate_limits[user_id] = [
             timestamp for timestamp in self.rate_limits[user_id]
             if (now - timestamp).total_seconds() < 3600  # 1 hour
         ]
-        
+
         # Check if under limit (1 question per hour)
         if len(self.rate_limits[user_id]) >= 1:
             return False
-        
+
         # Add current request
         self.rate_limits[user_id].append(now)
         return True
-    
-    def get_rate_limit_status(self, user_id: int) -> Dict[str, any]:
+
+    def get_rate_limit_status(self, user_id: int) -> dict[str, any]:
         """Get current rate limit status for user"""
         # Admin users have unlimited access
         if user_id == self.config.DEVELOPER_ID:
             return {"requests_used": 0, "requests_remaining": "∞", "reset_time": None, "is_admin": True}
-            
+
         now = datetime.now()
-        
+
         if user_id not in self.rate_limits:
             return {"requests_used": 0, "requests_remaining": 1, "reset_time": None, "is_admin": False}
-        
+
         # Clean old requests (older than 1 hour)
         recent_requests = [
             timestamp for timestamp in self.rate_limits[user_id]
             if (now - timestamp).total_seconds() < 3600  # 1 hour
         ]
-        
+
         requests_used = len(recent_requests)
         requests_remaining = max(0, 1 - requests_used)
-        
+
         # Find oldest request for reset time
         reset_time = None
         if recent_requests:
@@ -321,7 +322,7 @@ Remember: You're not just an information source - you're a caring member of the 
             reset_seconds = 3600 - (now - oldest_request).total_seconds()  # 1 hour
             if reset_seconds > 0:
                 reset_time = int(reset_seconds)
-        
+
         return {
             "requests_used": requests_used,
             "requests_remaining": requests_remaining,
@@ -337,9 +338,9 @@ _islamic_ai_service = None
 async def get_islamic_ai_service() -> IslamicAIService:
     """Get the global Islamic AI service instance"""
     global _islamic_ai_service
-    
+
     if _islamic_ai_service is None:
         _islamic_ai_service = IslamicAIService()
         await _islamic_ai_service.initialize()
-    
-    return _islamic_ai_service 
+
+    return _islamic_ai_service

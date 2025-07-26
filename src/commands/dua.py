@@ -4,10 +4,10 @@
 # Comprehensive dua system with time-based and occasion-based duas
 # =============================================================================
 
-import json
-import random
 from datetime import datetime
+import json
 from pathlib import Path
+import random
 from typing import Dict, List, Optional
 
 import discord
@@ -15,24 +15,24 @@ from discord import app_commands
 from discord.ext import commands
 
 from src.config import get_config_service
-from src.utils.tree_log import log_perfect_tree_section, log_error_with_traceback
+from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
 
 
 class DuaManager:
     """Manages time-based and occasion-based duas"""
-    
+
     def __init__(self):
         self.duas_file = Path("data/time_based_duas.json")
-        self.duas_data: Dict = {}
+        self.duas_data: dict = {}
         self._load_duas()
-    
+
     def _load_duas(self):
         """Load duas from JSON file"""
         try:
             if self.duas_file.exists():
-                with open(self.duas_file, 'r', encoding='utf-8') as f:
+                with open(self.duas_file, encoding='utf-8') as f:
                     self.duas_data = json.load(f)
-                    
+
                 log_perfect_tree_section(
                     "Time-Based Duas - Loaded",
                     [
@@ -55,31 +55,31 @@ class DuaManager:
                 )
         except Exception as e:
             log_error_with_traceback("Error loading time-based duas", e)
-    
-    def get_random_dua(self, category: str) -> Optional[Dict]:
+
+    def get_random_dua(self, category: str) -> dict | None:
         """Get a random dua from specified category"""
         if category not in self.duas_data:
             return None
-        
+
         duas = self.duas_data[category]
         if not duas:
             return None
-            
+
         return random.choice(duas)
-    
-    def get_all_categories(self) -> List[str]:
+
+    def get_all_categories(self) -> list[str]:
         """Get all available dua categories"""
         return list(self.duas_data.keys())
-    
+
     def get_current_time_category(self) -> str:
         """Determine appropriate dua category based on current time"""
         now = datetime.now()
         hour = now.hour
-        
+
         # Morning duas (5 AM - 11 AM)
         if 5 <= hour < 11:
             return "morning_duas"
-        # Evening duas (5 PM - 9 PM) 
+        # Evening duas (5 PM - 9 PM)
         elif 17 <= hour < 21:
             return "evening_duas"
         # Friday duas (if it's Friday)
@@ -95,11 +95,11 @@ class DuaManager:
 
 class DuaCog(commands.Cog):
     """Dua commands for Islamic supplications"""
-    
+
     def __init__(self, bot):
         self.bot = bot
         self.dua_manager = DuaManager()
-    
+
     @app_commands.command(
         name="dua",
         description="Get a beautiful Islamic dua for different occasions"
@@ -124,7 +124,7 @@ class DuaCog(commands.Cog):
         category: str = "auto"
     ):
         """Display a beautiful Islamic dua"""
-        
+
         log_perfect_tree_section(
             "Dua Command - Initiated",
             [
@@ -135,7 +135,7 @@ class DuaCog(commands.Cog):
             ],
             "🤲"
         )
-        
+
         try:
             # Determine category
             if category == "auto":
@@ -146,10 +146,10 @@ class DuaCog(commands.Cog):
                     category = random.choice(categories)
                 else:
                     category = "morning_duas"
-            
+
             # Get dua
             dua = self.dua_manager.get_random_dua(category)
-            
+
             if not dua:
                 embed = discord.Embed(
                     title="❌ No Duas Available",
@@ -159,21 +159,21 @@ class DuaCog(commands.Cog):
                 embed.set_footer(text="Created by حَـــــنَـــــا")
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
-            
+
             # Create beautiful embed
             category_emojis = {
                 "morning_duas": "🌅",
-                "evening_duas": "🌆", 
+                "evening_duas": "🌆",
                 "meal_duas": "🍽️",
                 "travel_duas": "✈️",
                 "friday_duas": "🕌",
                 "ramadan_duas": "🌙",
                 "hajj_duas": "🕋"
             }
-            
+
             category_emoji = category_emojis.get(category, "🤲")
             category_name = category.replace("_", " ").title().replace("Duas", "Dua")
-            
+
             embed = discord.Embed(
                 title=f"{category_emoji} {dua.get('name', 'Islamic Dua')}",
                 description=f"**{category_name}**\n\n"
@@ -183,7 +183,7 @@ class DuaCog(commands.Cog):
                 color=0x1ABC9C,
                 timestamp=datetime.now()
             )
-            
+
             # Add timing information if available
             if dua.get('time'):
                 embed.add_field(
@@ -191,11 +191,11 @@ class DuaCog(commands.Cog):
                     value=f"```{dua['time']}```",
                     inline=False
                 )
-            
+
             # Set bot thumbnail
             if self.bot.user and self.bot.user.avatar:
                 embed.set_thumbnail(url=self.bot.user.avatar.url)
-            
+
             # Set footer with admin profile picture
             try:
                 config = get_config_service().config
@@ -209,17 +209,17 @@ class DuaCog(commands.Cog):
                     embed.set_footer(text="Created by حَـــــنَـــــا")
             except:
                 embed.set_footer(text="Created by حَـــــنَـــــا")
-            
+
             # Send the dua
             await interaction.response.send_message(embed=embed)
-            
+
             # Add dua emoji reaction
             try:
                 message = await interaction.original_response()
                 await message.add_reaction("🤲")
             except:
                 pass
-            
+
             log_perfect_tree_section(
                 "Dua Command - Success",
                 [
@@ -231,17 +231,17 @@ class DuaCog(commands.Cog):
                 ],
                 "🤲"
             )
-            
+
         except Exception as e:
             log_error_with_traceback("Error in dua command", e)
-            
+
             embed = discord.Embed(
                 title="❌ Error",
                 description="An error occurred while retrieving the dua. Please try again.",
                 color=0xFF6B6B
             )
             embed.set_footer(text="Created by حَـــــنَـــــا")
-            
+
             if interaction.response.is_done():
                 await interaction.followup.send(embed=embed, ephemeral=True)
             else:
@@ -250,4 +250,4 @@ class DuaCog(commands.Cog):
 
 async def setup(bot):
     """Set up the dua cog"""
-    await bot.add_cog(DuaCog(bot)) 
+    await bot.add_cog(DuaCog(bot))

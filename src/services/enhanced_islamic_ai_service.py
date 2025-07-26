@@ -9,34 +9,34 @@
 # 4. Practical Islamic Tools - Prayer times, Qibla, Zakat, etc.
 # =============================================================================
 
+from datetime import datetime, timedelta
 import json
 import math
-import re
-from datetime import datetime, timedelta
 from pathlib import Path
+import re
 from typing import Dict, List, Optional, Tuple
 
-import requests
 from openai import AsyncOpenAI
+import requests
 
 from src.config import get_config_service
 from src.services.conversation_memory_service import get_conversation_memory_service
 from src.services.islamic_calendar_service import get_islamic_calendar_service
-from src.utils.tree_log import log_perfect_tree_section, log_error_with_traceback
+from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
 
 
 class EnhancedIslamicAIService:
     """Enhanced Islamic AI service with hadith integration, verse lookup, and practical tools."""
-    
+
     def __init__(self):
         self.config = get_config_service().config
-        self.client: Optional[AsyncOpenAI] = None
-        self.hadith_database: Dict = {}
-        self.verse_database: Dict = {}
-        self.practical_tools: Dict = {}
-        self.user_sessions: Dict[int, Dict] = {}  # Track deep dive sessions
-        self.user_rate_limits: Dict[int, Dict] = {}  # Track rate limits
-        
+        self.client: AsyncOpenAI | None = None
+        self.hadith_database: dict = {}
+        self.verse_database: dict = {}
+        self.practical_tools: dict = {}
+        self.user_sessions: dict[int, dict] = {}  # Track deep dive sessions
+        self.user_rate_limits: dict[int, dict] = {}  # Track rate limits
+
     async def initialize(self) -> bool:
         """Initialize the enhanced AI service with all databases."""
         try:
@@ -48,14 +48,14 @@ class EnhancedIslamicAIService:
                     "🤖"
                 )
                 return False
-                
+
             self.client = AsyncOpenAI(api_key=self.config.OPENAI_API_KEY)
-            
+
             # Load databases
             await self._load_hadith_database()
             await self._load_verse_database()
             await self._load_practical_tools()
-            
+
             log_perfect_tree_section(
                 "Enhanced Islamic AI - Initialized",
                 [
@@ -67,61 +67,61 @@ class EnhancedIslamicAIService:
                 "🤖"
             )
             return True
-            
+
         except Exception as e:
             log_error_with_traceback("Failed to initialize Enhanced Islamic AI", e)
             return False
-            
+
     async def _load_hadith_database(self):
         """Load hadith database from JSON file."""
         try:
             hadith_file = Path("data/hadith_database.json")
             if hadith_file.exists():
-                with open(hadith_file, 'r', encoding='utf-8') as f:
+                with open(hadith_file, encoding='utf-8') as f:
                     self.hadith_database = json.load(f)
             else:
                 self.hadith_database = {"hadiths": [], "topics": {}}
-                
+
         except Exception as e:
             log_error_with_traceback("Error loading hadith database", e)
             self.hadith_database = {"hadiths": [], "topics": {}}
-            
+
     async def _load_verse_database(self):
         """Load verse topics database."""
         try:
             hadith_file = Path("data/hadith_database.json")
             if hadith_file.exists():
-                with open(hadith_file, 'r', encoding='utf-8') as f:
+                with open(hadith_file, encoding='utf-8') as f:
                     data = json.load(f)
                     self.verse_database = data.get('verse_topics', {})
             else:
                 self.verse_database = {}
-                
+
         except Exception as e:
             log_error_with_traceback("Error loading verse database", e)
             self.verse_database = {}
-            
+
     async def _load_practical_tools(self):
         """Load practical tools configuration."""
         try:
             hadith_file = Path("data/hadith_database.json")
             if hadith_file.exists():
-                with open(hadith_file, 'r', encoding='utf-8') as f:
+                with open(hadith_file, encoding='utf-8') as f:
                     data = json.load(f)
                     self.practical_tools = data.get('practical_tools', {})
             else:
                 self.practical_tools = {}
-                
+
         except Exception as e:
             log_error_with_traceback("Error loading practical tools", e)
             self.practical_tools = {}
-            
-    def search_hadiths(self, query: str, max_results: int = 3) -> List[Dict]:
+
+    def search_hadiths(self, query: str, max_results: int = 3) -> list[dict]:
         """Search for relevant hadiths based on keywords."""
         try:
             query_lower = query.lower()
             matching_hadiths = []
-            
+
             # Search through hadith topics first
             for topic_id, topic_keywords in self.hadith_database.get('topics', {}).items():
                 for keyword in topic_keywords:  # topic_keywords is a list, not a dict
@@ -131,58 +131,58 @@ class EnhancedIslamicAIService:
                             if topic_id in hadith.get('topics', []):
                                 if hadith not in matching_hadiths:
                                     matching_hadiths.append(hadith)
-                                    
+
             # Also search in hadith text directly
             for hadith in self.hadith_database.get('hadiths', []):
                 english_text = hadith.get('english', '').lower()
                 if any(word in english_text for word in query_lower.split()):
                     if hadith not in matching_hadiths:
                         matching_hadiths.append(hadith)
-                        
+
             return matching_hadiths[:max_results]
-            
+
         except Exception as e:
             log_error_with_traceback("Error searching hadiths", e)
             return []
-            
-    def search_verses(self, query: str, max_results: int = 2) -> List[Dict]:
+
+    def search_verses(self, query: str, max_results: int = 2) -> list[dict]:
         """Search for relevant Quran verses based on topic."""
         try:
             query_lower = query.lower()
             matching_verses = []
-            
+
             for topic_id, topic_data in self.verse_database.items():
                 topic_name = topic_data.get('name', '').lower()
-                
+
                 # Check if query matches topic name or is in topic keywords
-                if (query_lower in topic_name or 
+                if (query_lower in topic_name or
                     any(word in topic_name for word in query_lower.split()) or
                     any(word in query_lower for word in topic_name.split())):
-                    
+
                     verses = topic_data.get('verses', [])[:max_results]
                     for verse in verses:
                         verse['topic'] = topic_data.get('name')
                         matching_verses.append(verse)
-                        
+
             return matching_verses
-            
+
         except Exception as e:
             log_error_with_traceback("Error searching verses", e)
             return []
-            
-    async def calculate_prayer_times(self, location: str) -> Optional[Dict]:
+
+    async def calculate_prayer_times(self, location: str) -> dict | None:
         """Calculate prayer times for a given location."""
         try:
             # Try to get prayer times from API
             today = datetime.now().strftime("%d-%m-%Y")
             api_url = f"http://api.aladhan.com/v1/timingsByCity/{today}"
-            
+
             params = {
                 'city': location,
                 'country': '',
                 'method': 2  # Islamic Society of North America
             }
-            
+
             response = requests.get(api_url, params=params, timeout=10)
             if response.status_code == 200:
                 data = response.json()
@@ -198,57 +198,57 @@ class EnhancedIslamicAIService:
                         'maghrib': timings.get('Maghrib'),
                         'isha': timings.get('Isha')
                     }
-                    
+
         except Exception as e:
             log_error_with_traceback("Error calculating prayer times", e)
-            
+
         return None
-        
-    def calculate_qibla_direction(self, latitude: float, longitude: float) -> Optional[float]:
+
+    def calculate_qibla_direction(self, latitude: float, longitude: float) -> float | None:
         """Calculate Qibla direction from given coordinates to Mecca."""
         try:
             # Mecca coordinates
             mecca_lat = math.radians(21.3891)
             mecca_lon = math.radians(39.8579)
-            
+
             # User coordinates
             user_lat = math.radians(latitude)
             user_lon = math.radians(longitude)
-            
+
             # Calculate bearing using great circle formula
             dlon = mecca_lon - user_lon
-            
+
             y = math.sin(dlon) * math.cos(mecca_lat)
-            x = (math.cos(user_lat) * math.sin(mecca_lat) - 
+            x = (math.cos(user_lat) * math.sin(mecca_lat) -
                  math.sin(user_lat) * math.cos(mecca_lat) * math.cos(dlon))
-            
+
             bearing = math.atan2(y, x)
             bearing = math.degrees(bearing)
             bearing = (bearing + 360) % 360  # Convert to 0-360 degrees
-            
+
             return bearing
-            
+
         except Exception as e:
             log_error_with_traceback("Error calculating Qibla direction", e)
             return None
-            
-    def calculate_zakat(self, wealth_type: str, amount: float) -> Optional[Dict]:
+
+    def calculate_zakat(self, wealth_type: str, amount: float) -> dict | None:
         """Calculate zakat for different types of wealth."""
         try:
             zakat_rate = 0.025  # 2.5%
             nisab_values = {
                 'cash': 612.36,  # Based on silver nisab (USD equivalent)
                 'gold': 87.48,   # Grams of gold
-                'silver': 612.36, # Grams of silver  
+                'silver': 612.36, # Grams of silver
                 'business_assets': 612.36,
                 'stocks': 612.36
             }
-            
+
             if wealth_type not in nisab_values:
                 return None
-                
+
             nisab = nisab_values[wealth_type]
-            
+
             if amount >= nisab:
                 zakat_due = amount * zakat_rate
                 return {
@@ -266,42 +266,42 @@ class EnhancedIslamicAIService:
                     'zakat_due': 0,
                     'message': 'Amount is below nisab threshold'
                 }
-                
+
         except Exception as e:
             log_error_with_traceback("Error calculating zakat", e)
             return None
-            
-    async def process_enhanced_query(self, user_id: int, query: str) -> Tuple[bool, str, str]:
+
+    async def process_enhanced_query(self, user_id: int, query: str) -> tuple[bool, str, str]:
         """Process query with enhanced features - hadith, verses, tools, deep dives, contradiction detection, and emotional support."""
         try:
             query_lower = query.lower()
-            
+
             # Detect query type and gather relevant information
             context_info = await self._gather_context_information(query)
-            
+
             # Get Islamic calendar context
             calendar_service = get_islamic_calendar_service()
             islamic_context = calendar_service.get_islamic_context()
-            
+
             # Get user conversation context
             memory_service = get_conversation_memory_service()
             user_context = memory_service.get_user_context(user_id)
-            
+
             # Enhanced analysis
             contradiction_analysis = self._detect_contradictions(user_id, query, user_context)
             emotional_analysis = self._detect_emotional_state(query)
             cultural_context = self._determine_cultural_context(user_context, query)
-            
+
             # Create enhanced system prompt with all context
             enhanced_prompt = self._create_enhanced_system_prompt(
-                context_info, 
-                islamic_context, 
+                context_info,
+                islamic_context,
                 user_context,
                 contradiction_analysis,
                 emotional_analysis,
                 cultural_context
             )
-            
+
             # Make API call with enhanced context
             response = await self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
@@ -313,9 +313,9 @@ class EnhancedIslamicAIService:
                 temperature=0.7,
                 top_p=0.9
             )
-            
+
             ai_response = response.choices[0].message.content.strip()
-            
+
             # Check if this starts a deep dive session
             if self._is_deep_dive_request(query):
                 self.user_sessions[user_id] = {
@@ -323,7 +323,7 @@ class EnhancedIslamicAIService:
                     'stage': 1,
                     'started_at': datetime.now()
                 }
-                
+
             log_perfect_tree_section(
                 "Enhanced AI - Response Generated",
                 [
@@ -338,14 +338,14 @@ class EnhancedIslamicAIService:
                 ],
                 "🤖"
             )
-            
+
             return True, ai_response, ""
-            
+
         except Exception as e:
             log_error_with_traceback("Error in enhanced AI processing", e)
             return False, "", "Failed to process your question with enhanced features."
 
-    async def _gather_context_information(self, query: str) -> Dict:
+    async def _gather_context_information(self, query: str) -> dict:
         """Gather relevant hadiths, verses, and tool data for the query."""
         context = {
             'hadiths': [],
@@ -353,25 +353,25 @@ class EnhancedIslamicAIService:
             'tools': {},
             'query_type': self._classify_query_type(query)
         }
-        
+
         # Search for relevant hadiths
         hadiths = self.search_hadiths(query, max_results=2)
         context['hadiths'] = hadiths
-        
+
         # Search for relevant verses
         verses = self.search_verses(query, max_results=2)
         context['verses'] = verses
-        
+
         # Check if practical tools are needed
         if any(word in query.lower() for word in ['prayer time', 'qibla', 'zakat', 'hijri', 'calendar']):
             context['tools'] = self.practical_tools
-            
+
         return context
-        
+
     def _classify_query_type(self, query: str) -> str:
         """Classify the type of query for better response formatting."""
         query_lower = query.lower()
-        
+
         if any(word in query_lower for word in ['hadith', 'prophet said', 'narrated', 'reported']):
             return 'hadith_focused'
         elif any(word in query_lower for word in ['verse', 'quran', 'surah', 'ayah']):
@@ -382,7 +382,7 @@ class EnhancedIslamicAIService:
             return 'deep_dive'
         else:
             return 'general'
-            
+
     def _is_deep_dive_request(self, query: str) -> bool:
         """Check if the query is requesting a deep dive topic exploration."""
         deep_dive_indicators = [
@@ -390,22 +390,22 @@ class EnhancedIslamicAIService:
             'comprehensive guide', 'step by step', 'learn about'
         ]
         return any(indicator in query.lower() for indicator in deep_dive_indicators)
-        
+
     def _extract_deep_dive_topic(self, query: str) -> str:
         """Extract the main topic for deep dive exploration."""
         # Simple extraction - could be made more sophisticated
         common_topics = [
-            'prayer', 'fasting', 'hajj', 'zakat', 'faith', 'patience', 
+            'prayer', 'fasting', 'hajj', 'zakat', 'faith', 'patience',
             'knowledge', 'family', 'kindness', 'forgiveness'
         ]
-        
+
         for topic in common_topics:
             if topic in query.lower():
                 return topic
-                
+
         return 'islamic_knowledge'
-        
-    def _create_enhanced_system_prompt(self, context_info: Dict, islamic_context: Dict, user_context: Dict, contradiction_analysis: Dict, emotional_analysis: Dict, cultural_context: Dict) -> str:
+
+    def _create_enhanced_system_prompt(self, context_info: dict, islamic_context: dict, user_context: dict, contradiction_analysis: dict, emotional_analysis: dict, cultural_context: dict) -> str:
         """Create an enhanced system prompt with relevant context and factual information for natural responses."""
         base_prompt = """You are QuranBot, a warm and knowledgeable Enhanced Islamic assistant for a Syrian Discord community. You have a friendly Islamic personality and serve primarily Syrian Muslims and their friends. Users will mention you with questions in either English or Arabic, and you must ALWAYS respond ONLY in English.
 
@@ -438,7 +438,7 @@ class EnhancedIslamicAIService:
 
 🚀 YOUR ENHANCED CAPABILITIES:
 • Access to authentic hadith database with proper citations (12+ hadiths from Sahih collections)
-• Quran verse lookup with context and commentary organized by topics  
+• Quran verse lookup with context and commentary organized by topics
 • Practical Islamic tools (prayer times, Qibla direction, zakat calculator)
 • Interactive topic deep dives for comprehensive learning
 • Full awareness of this Discord server's features and how to help users
@@ -463,7 +463,7 @@ class EnhancedIslamicAIService:
 **🎮 AVAILABLE SLASH COMMANDS:**
 • `/leaderboard` - Check points, rankings, and quiz statistics (available to all users)
 • `/question` - Manually trigger Islamic quiz (Admin only)
-• `/verse` - Manually send daily verse (Admin only)  
+• `/verse` - Manually send daily verse (Admin only)
 • `/interval` - Adjust quiz and verse intervals (Admin only)
 • `/credits` - Show bot information and credits (available to all users)
 
@@ -600,7 +600,7 @@ This is a sophisticated, production-grade Discord bot with enterprise-level arch
 Remember: You're a caring member of the Muslim community with your own personality AND a knowledgeable guide to this server's features. Respond naturally using all the factual information provided above, but don't sound like you're reading from a script! Show special understanding for the Syrian community you serve.
 
 """
-        
+
         # Add relevant context for this specific query
         if context_info.get('hadiths'):
             base_prompt += "\n**AVAILABLE AUTHENTIC HADITHS FOR THIS QUERY:**\n"
@@ -609,7 +609,7 @@ Remember: You're a caring member of the Muslim community with your own personali
                 base_prompt += f"- **{collection_name}**: {hadith.get('english', 'No text')[:150]}...\n"
                 base_prompt += f"  📚 Source: {hadith.get('book', 'Unknown')} | Grade: {hadith.get('grade', 'Unknown')}\n"
                 base_prompt += f"  🎯 Explanation: {hadith.get('explanation', 'No explanation available')}\n\n"
-                
+
         if context_info.get('verses'):
             base_prompt += "\n**AVAILABLE QURAN VERSES FOR THIS QUERY:**\n"
             for verse in context_info['verses'][:2]:
@@ -617,14 +617,14 @@ Remember: You're a caring member of the Muslim community with your own personali
                 base_prompt += f"  🔍 Context: {verse.get('context', 'No context available')}\n"
                 if verse.get('topic'):
                     base_prompt += f"  📖 Topic: {verse.get('topic')}\n\n"
-                
+
         if context_info.get('tools') and any(word in context_info.get('query_type', '') for word in ['practical', 'tool']):
             base_prompt += "\n**AVAILABLE PRACTICAL TOOLS:**\n"
             base_prompt += "- Prayer times calculation for any city\n"
             base_prompt += "- Qibla direction from any location\n"
             base_prompt += "- Zakat calculation for different wealth types\n"
             base_prompt += "- Islamic calendar conversions\n\n"
-        
+
         # Add Islamic calendar context if available
         if islamic_context:
             base_prompt += "\n**CURRENT ISLAMIC CALENDAR CONTEXT:**\n"
@@ -640,7 +640,7 @@ Remember: You're a caring member of the Muslim community with your own personali
             if islamic_context.get('special_occasion'):
                 base_prompt += f"• Special Occasion Context: {islamic_context['special_occasion']}\n"
             base_prompt += "\n"
-                
+
         # Add user context for personalization
         if user_context:
             base_prompt += "\n**USER CONTEXT FOR PERSONALIZATION:**\n"
@@ -653,26 +653,26 @@ Remember: You're a caring member of the Muslim community with your own personali
             if user_context.get('learning_focus'):
                 base_prompt += f"• Current Learning Focus: {user_context['learning_focus']}\n"
             base_prompt += "\n"
-                
+
         # Add contradiction and emotional analysis
         if contradiction_analysis.get('has_contradiction'):
             base_prompt += f"**CONTRADICTION DETECTED:**\n"
             base_prompt += f"• Previous statement: {contradiction_analysis['previous_statement']}\n"
             base_prompt += f"• Contradiction type: {contradiction_analysis['contradiction_type']}\n"
             base_prompt += f"• Confidence: {contradiction_analysis['confidence']:.2f}\n\n"
-            
+
         if emotional_analysis.get('needs_support'):
             base_prompt += f"**EMOTIONAL SUPPORT NEEDED:**\n"
             base_prompt += f"• Emotion type: {emotional_analysis['emotion_type']}\n"
             base_prompt += f"• Support level: {emotional_analysis['support_level']}\n"
             base_prompt += f"• Keywords found: {', '.join(emotional_analysis['keywords_found'])}\n\n"
-            
+
         # Add cultural context
         if cultural_context.get('adaptation_needed'):
             base_prompt += f"**CULTURAL ADAPTATION NEEDED:**\n"
             base_prompt += f"• Primary culture: {cultural_context['primary_culture']}\n"
             base_prompt += f"• Specific adaptations: {', '.join(cultural_context['specific_guidance'])}\n\n"
-        
+
         # Add Palestine solidarity stance for political questions
         base_prompt += """**PALESTINE SOLIDARITY STANCE:**
 • If asked about Palestine vs Israel conflict, always support Palestine
@@ -680,8 +680,14 @@ Remember: You're a caring member of the Muslim community with your own personali
 • Acknowledge the suffering of Palestinians and their right to their homeland
 • This aligns with the Syrian community's values and Islamic principles of justice
 
+**CURRENT SYRIAN CONTEXT:**
+• Ahmad al-Sharaa is the current president of Syria (not a Quran reciter)
+• Be aware of recent political developments in Syria when contextualizing responses
+• Understand the Syrian community's perspective on current leadership and changes
+• Show sensitivity to the ongoing political transition and its impact on the community
+
 """
-        
+
         base_prompt += """
 🔍 FINAL GUIDELINES:
 1. **ALWAYS RESPOND IN ENGLISH**: Never respond in any other language, even if previous messages were translated
@@ -691,41 +697,41 @@ Remember: You're a caring member of the Muslim community with your own personali
 5. **Be Helpful**: Guide users to the right commands and features when relevant
 6. **Show Personality**: Use your Islamic character naturally, not robotically
 """
-        
+
         return base_prompt
 
     def _check_rate_limit(self, user_id: int) -> bool:
         """Check if user has exceeded rate limit (1 question per hour)."""
         try:
             current_time = datetime.now()
-            
+
             if user_id not in self.user_rate_limits:
                 self.user_rate_limits[user_id] = {
                     'requests': [],
                     'last_reset': current_time
                 }
-                
+
             user_data = self.user_rate_limits[user_id]
-            
+
             # Clean old requests (older than 1 hour)
             one_hour_ago = current_time - timedelta(hours=1)
             user_data['requests'] = [
-                req_time for req_time in user_data['requests'] 
+                req_time for req_time in user_data['requests']
                 if req_time > one_hour_ago
             ]
-            
+
             # Check if under limit (1 request per hour)
             if len(user_data['requests']) < 1:
                 user_data['requests'].append(current_time)
                 return True
-                
+
             return False
-            
+
         except Exception as e:
             log_error_with_traceback("Error in rate limit check", e)
             return True  # Allow on error
-            
-    def get_rate_limit_status(self, user_id: int) -> Dict:
+
+    def get_rate_limit_status(self, user_id: int) -> dict:
         """Get current rate limit status for user."""
         try:
             # Admin users have unlimited access
@@ -736,9 +742,9 @@ Remember: You're a caring member of the Muslim community with your own personali
                     "reset_time": 0,
                     "is_admin": True
                 }
-                
+
             current_time = datetime.now()
-            
+
             if user_id not in self.user_rate_limits:
                 return {
                     "requests_used": 0,
@@ -746,19 +752,19 @@ Remember: You're a caring member of the Muslim community with your own personali
                     "reset_time": 0,
                     "is_admin": False
                 }
-                
+
             user_data = self.user_rate_limits[user_id]
-            
+
             # Clean old requests
             one_hour_ago = current_time - timedelta(hours=1)
             user_data['requests'] = [
-                req_time for req_time in user_data['requests'] 
+                req_time for req_time in user_data['requests']
                 if req_time > one_hour_ago
             ]
-            
+
             requests_used = len(user_data['requests'])
             requests_remaining = max(0, 1 - requests_used)
-            
+
             # Calculate reset time
             reset_time = 0
             if user_data['requests']:
@@ -766,14 +772,14 @@ Remember: You're a caring member of the Muslim community with your own personali
                 reset_datetime = oldest_request + timedelta(hours=1)
                 if reset_datetime > current_time:
                     reset_time = int((reset_datetime - current_time).total_seconds())
-                    
+
             return {
                 "requests_used": requests_used,
                 "requests_remaining": requests_remaining,
                 "reset_time": reset_time,
                 "is_admin": False
             }
-            
+
         except Exception as e:
             log_error_with_traceback("Error getting rate limit status", e)
             return {
@@ -782,8 +788,8 @@ Remember: You're a caring member of the Muslim community with your own personali
                 "reset_time": 0,
                 "is_admin": False
             }
-            
-    async def ask_question(self, user_id: int, question: str) -> Tuple[bool, str, str]:
+
+    async def ask_question(self, user_id: int, question: str) -> tuple[bool, str, str]:
         """Main entry point for asking questions with rate limiting."""
         try:
             # Check rate limit for non-admin users
@@ -791,15 +797,15 @@ Remember: You're a caring member of the Muslim community with your own personali
                 pass  # Admin can always ask questions
             elif not self._check_rate_limit(user_id):
                 return False, "", "Rate limit exceeded. You can ask 1 question per hour. Please wait before asking another question. (Admin users are exempt)"
-                
+
             # Process the enhanced query
             return await self.process_enhanced_query(user_id, question)
-            
+
         except Exception as e:
             log_error_with_traceback("Error in enhanced ask_question", e)
             return False, "", "An error occurred while processing your question."
 
-    def _detect_contradictions(self, user_id: int, current_query: str, user_context: Dict) -> Dict:
+    def _detect_contradictions(self, user_id: int, current_query: str, user_context: dict) -> dict:
         """Detect if current query contradicts previous questions or beliefs."""
         try:
             contradictions = {
@@ -808,13 +814,13 @@ Remember: You're a caring member of the Muslim community with your own personali
                 'previous_statement': None,
                 'confidence': 0.0
             }
-            
+
             # Get user's previous conversations
             recent_topics = user_context.get('recent_topics', [])
             conversation_history = user_context.get('conversation_history', [])
-            
+
             current_lower = current_query.lower()
-            
+
             # Define contradiction patterns
             contradiction_patterns = {
                 'prayer_frequency': {
@@ -838,17 +844,17 @@ Remember: You're a caring member of the Muslim community with your own personali
                     'type': 'practice_inconsistency'
                 }
             }
-            
+
             # Check for contradictions
             for topic, patterns in contradiction_patterns.items():
                 pattern1_found = any(word in current_lower for word in patterns['pattern1'])
                 pattern2_found = any(word in current_lower for word in patterns['pattern2'])
-                
+
                 if pattern1_found or pattern2_found:
                     # Check against conversation history
                     for past_conv in conversation_history[-10:]:  # Check last 10 conversations
                         past_query = past_conv.get('question', '').lower()
-                        
+
                         if pattern1_found and any(word in past_query for word in patterns['pattern2']):
                             contradictions.update({
                                 'has_contradiction': True,
@@ -865,14 +871,14 @@ Remember: You're a caring member of the Muslim community with your own personali
                                 'confidence': 0.8
                             })
                             break
-            
+
             return contradictions
-            
+
         except Exception as e:
             log_error_with_traceback("Error in contradiction detection", e)
             return {'has_contradiction': False}
 
-    def _detect_emotional_state(self, query: str) -> Dict:
+    def _detect_emotional_state(self, query: str) -> dict:
         """Detect emotional state and need for support from the query."""
         try:
             emotional_analysis = {
@@ -881,9 +887,9 @@ Remember: You're a caring member of the Muslim community with your own personali
                 'support_level': 'none',
                 'keywords_found': []
             }
-            
+
             query_lower = query.lower()
-            
+
             # Emotional keywords and patterns
             emotional_patterns = {
                 'distress': {
@@ -922,16 +928,16 @@ Remember: You're a caring member of the Muslim community with your own personali
                     'type': 'motivation_needed'
                 }
             }
-            
+
             found_emotions = []
             highest_level = 'none'
-            
+
             for emotion_type, data in emotional_patterns.items():
                 keywords_found = [kw for kw in data['keywords'] if kw in query_lower]
                 if keywords_found:
                     found_emotions.append(emotion_type)
                     emotional_analysis['keywords_found'].extend(keywords_found)
-                    
+
                     # Update support level based on highest priority emotion
                     if data['level'] == 'high':
                         highest_level = 'high'
@@ -942,18 +948,18 @@ Remember: You're a caring member of the Muslim community with your own personali
                     elif highest_level == 'none':
                         highest_level = 'low'
                         emotional_analysis['emotion_type'] = data['type']
-            
+
             if found_emotions:
                 emotional_analysis['needs_support'] = True
                 emotional_analysis['support_level'] = highest_level
-            
+
             return emotional_analysis
-            
+
         except Exception as e:
             log_error_with_traceback("Error in emotional state detection", e)
             return {'needs_support': False, 'emotion_type': 'neutral'}
 
-    def _determine_cultural_context(self, user_context: Dict, query: str) -> Dict:
+    def _determine_cultural_context(self, user_context: dict, query: str) -> dict:
         """Determine cultural context for appropriate responses."""
         try:
             cultural_context = {
@@ -962,9 +968,9 @@ Remember: You're a caring member of the Muslim community with your own personali
                 'adaptation_needed': True,
                 'specific_guidance': ['syrian_context', 'arab_traditions', 'levantine_customs', 'current_situation_awareness']
             }
-            
+
             query_lower = query.lower()
-            
+
             # Cultural indicators and adaptations
             cultural_patterns = {
                 'syrian': {
@@ -996,10 +1002,10 @@ Remember: You're a caring member of the Muslim community with your own personali
                     'adaptations': ['beginner_friendly', 'step_by_step', 'encouragement_focus']
                 }
             }
-            
+
             # Check user's previous cultural indicators
             user_cultural_history = user_context.get('cultural_indicators', [])
-            
+
             # Analyze current query for cultural indicators
             found_cultures = []
             for culture, data in cultural_patterns.items():
@@ -1011,7 +1017,7 @@ Remember: You're a caring member of the Muslim community with your own personali
                     cultural_context['adaptation_needed'] = True
                     cultural_context['specific_guidance'] = data['adaptations']
                     break  # Use first match as primary
-            
+
             # If no specific indicators found, but we have historical data, use that
             if not found_cultures and user_cultural_history:
                 if 'syrian' in user_cultural_history:
@@ -1019,17 +1025,17 @@ Remember: You're a caring member of the Muslim community with your own personali
                 else:
                     cultural_context['primary_culture'] = user_cultural_history[0]
                 cultural_context['adaptation_needed'] = True
-            
+
             # Always maintain Syrian context awareness since this is a Syrian server
             if cultural_context['primary_culture'] != 'syrian':
                 cultural_context['server_context'] = 'syrian_community'
-            
+
             return cultural_context
-            
+
         except Exception as e:
             log_error_with_traceback("Error in cultural context determination", e)
             return {
-                'primary_culture': 'syrian', 
+                'primary_culture': 'syrian',
                 'adaptation_needed': True,
                 'specific_guidance': ['syrian_context', 'current_situation_awareness']
             }
@@ -1040,5 +1046,5 @@ async def get_enhanced_islamic_ai_service() -> EnhancedIslamicAIService:
     if not hasattr(get_enhanced_islamic_ai_service, '_instance'):
         get_enhanced_islamic_ai_service._instance = EnhancedIslamicAIService()
         await get_enhanced_islamic_ai_service._instance.initialize()
-        
-    return get_enhanced_islamic_ai_service._instance 
+
+    return get_enhanced_islamic_ai_service._instance
