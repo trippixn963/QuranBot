@@ -214,8 +214,8 @@ class EnhancedIslamicAIService:
             if any(word in query_lower for word in ['geography', 'region', 'city', 'mountain', 'river', 'location']):
                 relevant_info['geography'] = self.syrian_knowledge.get('geography', {})
             
-            # Search current context
-            if any(word in query_lower for word in ['current', 'today', 'now', 'recent', 'modern', 'president']):
+            # Search current context  
+            if any(word in query_lower for word in ['current', 'today', 'now', 'recent', 'modern', 'president', 'revolution', 'assad', 'bashar', 'saydnaya', 'prison', 'liberation', 'freed', 'golani', 'opposition']):
                 relevant_info['current_context'] = self.syrian_knowledge.get('current_context', {})
             
             # If no specific category, return general overview
@@ -441,7 +441,7 @@ class EnhancedIslamicAIService:
         """Classify the type of query for better response formatting."""
         query_lower = query.lower()
 
-        if any(word in query_lower for word in ['syria', 'syrian', 'damascus', 'aleppo', 'sham', 'umayyad']):
+        if any(word in query_lower for word in ['syria', 'syrian', 'damascus', 'aleppo', 'sham', 'umayyad', 'assad', 'bashar', 'saydnaya', 'revolution', 'liberation', 'golani', 'sharaa']):
             return 'syrian_focused'
         elif any(word in query_lower for word in ['hadith', 'prophet said', 'narrated', 'reported']):
             return 'hadith_focused'
@@ -728,10 +728,22 @@ Remember: You're a caring member of the Muslim community with your own personali
             if 'current_context' in syrian_knowledge:
                 base_prompt += "🇸🇾 **Current Context:**\n"
                 current = syrian_knowledge['current_context']
-                if 'leadership' in current:
-                    leadership = current['leadership']
-                    base_prompt += f"• Current leadership: {leadership.get('current_president', 'Unknown')}\n"
-                    base_prompt += f"• Status: {leadership.get('transition', 'Political transition ongoing')}\n"
+                
+                if 'recent_revolution' in current:
+                    revolution = current['recent_revolution']
+                    base_prompt += f"• Revolution Success: {revolution.get('assad_regime_fall', 'Recent political change')}\n"
+                    base_prompt += f"• New Leadership: {revolution.get('new_leadership', 'Ahmad al-Sharaa in power')}\n"
+                
+                if 'liberation_events' in current:
+                    liberation = current['liberation_events']
+                    base_prompt += f"• Saydnaya Liberation: {liberation.get('saydnaya_prison', 'Prison liberated')}\n"
+                    base_prompt += f"• Significance: {liberation.get('prison_significance', 'Major symbolic victory')}\n"
+                
+                if 'syrian_people' in current:
+                    people = current['syrian_people']
+                    base_prompt += f"• Current Mood: {people.get('celebration', 'Celebrating freedom')}\n"
+                    base_prompt += f"• Hope Level: {people.get('hope_renewed', 'Renewed optimism for future')}\n"
+                
                 base_prompt += "\n"
 
         # Add Islamic calendar context if available
@@ -793,10 +805,13 @@ Remember: You're a caring member of the Muslim community with your own personali
 
 **CURRENT POLITICAL CONTEXT:**
 • Ahmad al-Sharaa is the current president of Syria (not a Quran reciter)
-• Syria is undergoing a significant political transition after decades of conflict
-• The Syrian people have endured years of war, displacement, and hardship
-• Many Syrians live in diaspora communities around the world
-• Show deep empathy for the Syrian struggle and resilience
+• MAJOR BREAKTHROUGH: The Syrian revolution succeeded in December 2024
+• Bashar al-Assad's regime has fallen after 13+ years of conflict and 50+ years of Assad family rule
+• Saydnaya prison was liberated, freeing thousands of political prisoners
+• Syrian people are celebrating liberation and the end of authoritarian rule
+• This is a historic moment of hope and new beginning for Syria
+• Many diaspora Syrians are considering returning to their homeland
+• Show celebration of liberation while acknowledging the healing journey ahead
 
 **SYRIAN ISLAMIC HERITAGE:**
 • Syria is home to the Umayyad Mosque in Damascus, one of Islam's holiest sites
