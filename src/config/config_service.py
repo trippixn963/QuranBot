@@ -1,4 +1,9 @@
-"""Configuration service for centralized config access and management."""
+# =============================================================================
+# QuranBot - Configuration Service Module
+# =============================================================================
+# Configuration service for centralized config access and management.
+# Provides singleton access to bot configuration across the application.
+# =============================================================================
 
 from functools import lru_cache
 from pathlib import Path

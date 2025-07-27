@@ -1,5 +1,9 @@
 # =============================================================================
-# QuranBot .gitignore - Comprehensive exclusions for security and cleanliness
+# QuranBot .gitignore - Archived Project (No Further Development)
+# =============================================================================
+# Comprehensive exclusions for security and cleanliness
+# Project is now archived - these patterns preserve security and prevent
+# accidental commits of sensitive data or generated files.
 # =============================================================================
 
 # CRITICAL SECURITY: Environment and Configuration Files
@@ -93,8 +97,6 @@ env/
 *.swp
 *.swo
 *~
-.DS_Store
-Thumbs.db
 
 # Logs and Runtime
 logs/
@@ -126,6 +128,23 @@ internal_docs/
 .cache/
 .pytest_cache/
 
+# Performance and Testing Data
+performance_data/
+*.performance.json
+test_results/
+coverage_reports/
+
+# Generated Documentation
+docs/generated/
+*.html
+*.pdf
+
+# Auto-generated Files
+tools/log_sync_status.json
+*.pid
+*_sync.pid
+vps_logs_sync.pid
+
 # System Files
 .DS_Store
 .DS_Store?
@@ -134,6 +153,11 @@ internal_docs/
 .Trashes
 ehthumbs.db
 Desktop.ini
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
 
 # Additional Security Exclusions
 config.json
@@ -154,9 +178,6 @@ ssh_config
 *.ppk
 
 # Database Files
-*.db
-*.sqlite
-*.sqlite3
 database.json
 db_backup.*
 
@@ -166,36 +187,36 @@ production.env
 staging.env
 local.env
 
-# Cleanup: Additional exclusions for GitHub release
-*.pid
-*_sync.pid
-vps_logs_sync.pid
+# Code Quality and Development Tools
 .coverage
 htmlcov/
 .tox/
-.pytest_cache/
 .mypy_cache/
 .dmypy.json
 dmypy.json
 
 # macOS specific
-.DS_Store
 .AppleDouble
 .LSOverride
 Icon?
-._*
 .DocumentRevisions-V100
 .fseventsd
-.Spotlight-V100
 .TemporaryItems
-.Trashes
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
 
-# Windows specific
-Thumbs.db
-Thumbs.db:encryptable
-ehthumbs.db
-ehthumbs_vista.db
-*.stackdump
-[Dd]esktop.ini
+# Archived Project Specific
+# These patterns prevent accidentally committing files that shouldn't be tracked
+# in an archived project
+*.draft
+*.wip
+*.temp.*
+experimental/
+scratch/
+test_*_local.py
+local_*
+personal_*
+
+# =============================================================================
+# End of .gitignore for Archived QuranBot Project
+# =============================================================================

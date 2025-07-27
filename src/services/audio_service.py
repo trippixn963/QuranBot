@@ -32,9 +32,9 @@ from src.data.models import (
     PlaybackState,
     ReciterInfo,
 )
-from src.services.state_service import StateService
 
 from .metadata_cache import MetadataCache
+from src.services.state_service import StateService
 
 
 class AudioService:
@@ -694,10 +694,10 @@ class AudioService:
         try:
             state_service = self._container.get(StateService)
             saved_state = await state_service.load_playback_state()
-
+            
             # Update current state with saved data
             self._current_state = saved_state
-
+            
             await self._logger.info(
                 "Loaded saved playback state",
                 {

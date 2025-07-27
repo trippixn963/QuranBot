@@ -1,4 +1,8 @@
-"""Tests for configuration management system."""
+# =============================================================================
+# QuranBot - Configuration Tests
+# =============================================================================
+# Tests for configuration management system.
+# =============================================================================
 
 import os
 from unittest.mock import MagicMock, patch

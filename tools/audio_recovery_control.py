@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""
-Audio Recovery Control Tool
-Controls the auto-recovery system for QuranBot audio playback
-"""
+# =============================================================================
+# QuranBot - Audio Recovery Control Tool
+# =============================================================================
+# Controls the auto-recovery system for QuranBot audio playback
+# =============================================================================
 
 import asyncio
 import json

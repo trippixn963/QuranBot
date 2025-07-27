@@ -1,4 +1,9 @@
-"""Modern configuration management for QuranBot using Pydantic BaseSettings."""
+# =============================================================================
+# QuranBot - Bot Configuration Module
+# =============================================================================
+# Modern configuration management for QuranBot using Pydantic BaseSettings.
+# Handles environment variables, validation, and centralized bot settings.
+# =============================================================================
 
 from enum import Enum
 import os
@@ -183,7 +188,7 @@ class BotConfig(BaseSettings):
     # OpenAI Configuration (for Islamic AI Assistant)
     # =============================================================================
     OPENAI_API_KEY: str | None = Field(
-        None,
+        None, 
         description="OpenAI API key for Islamic AI Assistant (GPT-3.5 Turbo)",
         min_length=50  # OpenAI API keys are typically 51 characters
     )

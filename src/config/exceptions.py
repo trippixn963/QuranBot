@@ -1,8 +1,10 @@
-"""Configuration-related exceptions for QuranBot.
-
-This module provides configuration-specific exceptions that extend
-the core exception hierarchy for consistent error handling.
-"""
+# =============================================================================
+# QuranBot - Configuration Exceptions Module
+# =============================================================================
+# Configuration-related exceptions for QuranBot.
+# This module provides configuration-specific exceptions that extend
+# the core exception hierarchy for consistent error handling.
+# =============================================================================
 
 from typing import Any
 

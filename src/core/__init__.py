@@ -1,10 +1,11 @@
-"""
-Core module for QuranBot containing fundamental architectural components.
-
-This module provides the core infrastructure components that support
-the modernized QuranBot architecture, including dependency injection
-and service management.
-"""
+# =============================================================================
+# QuranBot - Core Module
+# =============================================================================
+# Core module for QuranBot containing fundamental architectural components.
+# This module provides the core infrastructure components that support
+# the modernized QuranBot architecture, including dependency injection
+# and service management.
+# =============================================================================
 
 from .di_container import DIContainer
 from .exceptions import *

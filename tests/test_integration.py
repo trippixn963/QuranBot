@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""
-Integration Tests for QuranBot Discord Interactions
-==================================================
-Tests for Discord slash commands, voice functionality, and bot behavior.
-"""
+# =============================================================================
+# QuranBot - Integration Tests
+# =============================================================================
+# Integration Tests for QuranBot Discord Interactions
+# Tests for Discord slash commands, voice functionality, and bot behavior.
+# =============================================================================
 
 import asyncio
 import json

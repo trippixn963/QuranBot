@@ -1,31 +1,30 @@
 #!/usr/bin/env python3
-"""
-QuranBot Webhook Alert Testing System
-=====================================
-
-This script tests all webhook alert functionality including:
-- Audio playback failures
-- Voice connection issues  
-- Escalation alerts (critical/emergency)
-- Extended silence detection
-- AI service failures
-- Translation failures
-- Quiz system failures
-- Owner ping functionality
-
-Usage:
-    python tools/test_webhook_alerts.py [test_type]
-    
-Test types:
-    audio_failure     - Test audio playback failure alerts
-    connection_issue  - Test voice connection failure alerts
-    escalation        - Test critical/emergency escalation alerts
-    silence           - Test extended silence detection
-    ai_failure        - Test AI service failure alerts
-    translation       - Test translation service failure alerts
-    quiz_failure      - Test quiz system failure alerts
-    all               - Run all tests
-"""
+# =============================================================================
+# QuranBot - Webhook Alert Testing System
+# =============================================================================
+# This script tests all webhook alert functionality including:
+# - Audio playback failures
+# - Voice connection issues  
+# - Escalation alerts (critical/emergency)
+# - Extended silence detection
+# - AI service failures
+# - Translation failures
+# - Quiz system failures
+# - Owner ping functionality
+#
+# Usage:
+#     python tools/test_webhook_alerts.py [test_type]
+#     
+# Test types:
+#     audio_failure     - Test audio playback failure alerts
+#     connection_issue  - Test voice connection failure alerts
+#     escalation        - Test critical/emergency escalation alerts
+#     silence           - Test extended silence detection
+#     ai_failure        - Test AI service failure alerts
+#     translation       - Test translation service failure alerts
+#     quiz_failure      - Test quiz system failure alerts
+#     all               - Run all tests
+# =============================================================================
 
 import asyncio
 import sys

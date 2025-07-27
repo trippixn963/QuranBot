@@ -1,10 +1,11 @@
-"""
-Dependency Injection Container for QuranBot.
-
-This module provides a lightweight dependency injection container that manages
-service registration and resolution throughout the application. It supports
-both singleton and transient service lifetimes with proper error handling.
-"""
+# =============================================================================
+# QuranBot - Dependency Injection Container
+# =============================================================================
+# Dependency Injection Container for QuranBot.
+# This module provides a lightweight dependency injection container that manages
+# service registration and resolution throughout the application. It supports
+# both singleton and transient service lifetimes with proper error handling.
+# =============================================================================
 
 from collections.abc import Callable
 from functools import wraps

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Test script to verify all modernized imports work correctly."""
+# =============================================================================
+# QuranBot - Import Tests
+# =============================================================================
+# Test script to verify all modernized imports work correctly.
+# =============================================================================
 
 from pathlib import Path
 import sys

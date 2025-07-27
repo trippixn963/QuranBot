@@ -10,7 +10,7 @@
 # =============================================================================
 
 # Main version number - update this single line for new releases
-__version__ = "4.1.0"
+__version__ = "4.0.1"
 
 # Bot name and branding
 BOT_NAME = "QuranBot"
@@ -21,8 +21,8 @@ BOT_AUTHOR = __author__  # For backward compatibility
 
 # Version components for programmatic access
 VERSION_MAJOR = 4
-VERSION_MINOR = 1
-VERSION_PATCH = 0
+VERSION_MINOR = 0
+VERSION_PATCH = 1
 
 # Pre-release identifiers (empty for stable releases)
 VERSION_PRERELEASE = ""  # e.g., "alpha", "beta", "rc1"
@@ -34,53 +34,46 @@ VERSION_BUILD = ""  # e.g., "20231201", "commit-abc123"
 # Release Information
 # =============================================================================
 
-RELEASE_NAME = "Advanced AI Integration"
+RELEASE_NAME = "Stability & Enhancement Update"
 RELEASE_DATE = "2025-01-27"
 
 RELEASE_NOTES = """
-QuranBot 4.1.0 - Advanced AI Integration
+QuranBot 4.0.1 - Stability & Enhancement Update
 
-🤖 NEW: ADVANCED AI ASSISTANT:
-• OpenAI GPT-3.5 Turbo integration for natural Islamic Q&A
-• Mention-based interaction - simply @QuranBot for intelligent responses
-• Bilingual support: understands Arabic/English, responds in English
-• Smart rate limiting: 1 question per hour (admin exempt) with exact reset times
-• Enhanced knowledge base: Hadith search, verse lookup, practical Islamic tools
-• Conversation memory: personalized responses based on user history
-• Cultural sensitivity: Syrian context awareness with current affairs
-• Palestinian solidarity: principled stance supporting Palestinian rights
+🔧 BUG FIXES & IMPROVEMENTS:
+• Fixed /question command functionality with complete restoration from stable version
+• Resolved QuizView constructor parameter naming issues
+• Fixed signal handling for proper Ctrl+C graceful shutdown
+• Corrected configuration service integration across all commands
+• Resolved dependency resolution conflicts
 
-🕌 PRAYER TIME INTEGRATION:
-• Real-time Mecca prayer notifications with beautiful embeds
-• Time-based duas: contextual selections for different prayer times
-• Interactive UI: dua emoji reactions with automatic moderation
-• Islamic calendar integration: full Hijri date awareness
+📩 NEW FEATURES:
+• Admin DM integration - automatic quiz answer delivery with rich embeds
+• Enhanced quiz results with admin profile picture in footers
+• Direct message links for easy navigation back to quiz messages
+• Improved error handling with comprehensive fallback behavior
 
-🌍 MULTILINGUAL FEATURES:
-• GPT-powered translation to Arabic, German, Spanish
-• Instant translation buttons with distinct colors
-• English "back to original" button for easy language switching
-• High-quality, context-aware Islamic term preservation
+⚡ SYSTEM STABILITY:
+• All legacy compatibility issues resolved
+• Command loading system fully stabilized
+• Audio system optimized for seamless operation
+• Configuration unified under single source of truth
+• Comprehensive testing completed across all components
 
-🎵 ENHANCED AUDIO SYSTEM:
-• State persistence: audio position survives bot restarts
-• Automatic role management for voice channel participants
-• Improved playback reliability and resume functionality
+🏗️ ARCHITECTURE ENHANCEMENTS:
+• Dependency injection container fully operational
+• Service lifecycle management improved
+• Resource management optimized
+• Error reporting enhanced with detailed logging
+• Performance monitoring refined
 
-🏗️ SYSTEM IMPROVEMENTS:
-• Enhanced conversation memory service with user profiling
-• Advanced cultural context detection and adaptation
-• Improved error handling and graceful fallbacks
-• Comprehensive logging for all AI interactions
+📚 DOCUMENTATION:
+• README updated with latest changes and improvements
+• Version management centralized and automated
+• Deployment guides verified and updated
 
-📚 KNOWLEDGE BASE EXPANSION:
-• 12+ authentic hadith sources with smart search
-• Contextual Quran verse lookup and explanations
-• Practical Islamic tools: prayer times, Qibla, Zakat calculations
-• Bot feature awareness for comprehensive help responses
-
-This major release transforms QuranBot into an intelligent Islamic assistant
-while maintaining all existing functionality and reliability.
+This release focuses on stability, bug fixes, and user experience improvements
+while maintaining the robust modernized architecture introduced in 4.0.0.
 """
 
 # =============================================================================

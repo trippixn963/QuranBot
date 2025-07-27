@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "quranbot"
-version = "2.1.0"
+version = "4.0.1"
 description = "A comprehensive Discord bot for Islamic content including Quran recitation, daily verses, and interactive quizzes"
 authors = ["QuranBot Team <contact@example.com>"]
 readme = "README.md"
@@ -39,18 +39,9 @@ python-dotenv = "^1.0.1"
 openai = "^1.0.0"
 # Backup and Compression
 py7zr = "^0.21.0"
+zipfile-deflate64 = "^0.2.0"
 # Audio Processing
 pynacl = "^1.5.0"
-# File System Operations
-aiofiles = "^24.1.0"
-# Time Zone Support
-pytz = "^2024.1"
-# HTTP Requests
-requests = "^2.31.0"
-# Environment Variables
-python-dotenv = "^1.0.1"
-# Backup and Compression
-zipfile-deflate64 = "^0.2.0"
 # Scheduling
 schedule = "^1.2.0"
 # Rich Text Processing

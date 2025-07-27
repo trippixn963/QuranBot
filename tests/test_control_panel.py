@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""
-Test script to manually create a control panel and test the AudioServiceAdapter
-"""
+# =============================================================================
+# QuranBot - Control Panel Tests
+# =============================================================================
+# Test script to manually create a control panel and test the AudioServiceAdapter
+# =============================================================================
 
 import asyncio
 from pathlib import Path

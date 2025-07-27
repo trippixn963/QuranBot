@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
-"""
-QuranBot - Automated Log Sync Daemon
-===================================
-Fully automated log syncing daemon that runs independently of the main bot.
-This ensures logs are always syncing without any manual intervention.
-
-Features:
-- Runs as a background daemon
-- Auto-restarts on failure
-- Configurable sync intervals
-- Health monitoring
-- Graceful shutdown
-- Process management
-- System service integration
-
-Usage:
-    python tools/log_sync_daemon.py start     # Start daemon
-    python tools/log_sync_daemon.py stop      # Stop daemon
-    python tools/log_sync_daemon.py restart   # Restart daemon
-    python tools/log_sync_daemon.py status    # Check status
-    python tools/log_sync_daemon.py install   # Install as system service
-"""
+# =============================================================================
+# QuranBot - Automated Log Sync Daemon
+# =============================================================================
+# Fully automated log syncing daemon that runs independently of the main bot.
+# This ensures logs are always syncing without any manual intervention.
+#
+# Features:
+# - Runs as a background daemon
+# - Auto-restarts on failure
+# - Configurable sync intervals
+# - Health monitoring
+# - Graceful shutdown
+# - Process management
+# - System service integration
+#
+# Usage:
+#     python tools/log_sync_daemon.py start     # Start daemon
+#     python tools/log_sync_daemon.py stop      # Stop daemon
+#     python tools/log_sync_daemon.py restart   # Restart daemon
+#     python tools/log_sync_daemon.py status    # Check status
+#     python tools/log_sync_daemon.py install   # Install as system service
+# =============================================================================
 
 import asyncio
 import json

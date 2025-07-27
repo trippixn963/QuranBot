@@ -26,17 +26,10 @@ Welcome to the QuranBot documentation! This directory contains comprehensive gui
 
 - **[Deployment Guide](DEPLOYMENT_GUIDE.md)**: Production deployment with systemd
 - **[VPS Management](VPS_MANAGEMENT.md)**: Server administration and maintenance
-- **[Discord API Monitoring](DISCORD_API_MONITORING.md)**: API health and rate limiting
-
-### **🔧 Specialized Features**
-
-- **[State Service](STATE_SERVICE_MODERNIZATION.md)**: State management architecture
-- **[Automated Log Sync](AUTOMATED_LOG_SYNC.md)**: Log synchronization system
 
 ### **📖 Project Information**
 
 - **[Changelog](CHANGELOG.md)**: Version history and release notes
-- **[Modernization Summary](MODERNIZATION_SUMMARY.md)**: Recent architecture improvements
 
 ## 🎯 Common Tasks
 
@@ -60,8 +53,7 @@ Welcome to the QuranBot documentation! This directory contains comprehensive gui
 ### **Troubleshooting Issues**
 
 1. Check [Troubleshooting Guide](TROUBLESHOOTING.md) first
-2. Review [Discord API Monitoring](DISCORD_API_MONITORING.md) for API issues
-3. Consult [VPS Management](VPS_MANAGEMENT.md) for server problems
+2. Consult [VPS Management](VPS_MANAGEMENT.md) for server problems
 
 ## 💡 Documentation Standards
 

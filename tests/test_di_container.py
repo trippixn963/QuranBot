@@ -1,10 +1,11 @@
-"""
-Unit tests for the Dependency Injection Container.
-
-This module contains comprehensive tests for the DIContainer class,
-covering all functionality including service registration, resolution,
-error handling, and edge cases.
-"""
+# =============================================================================
+# QuranBot - DI Container Tests
+# =============================================================================
+# Unit tests for the Dependency Injection Container.
+# This module contains comprehensive tests for the DIContainer class,
+# covering all functionality including service registration, resolution,
+# error handling, and edge cases.
+# =============================================================================
 
 import threading
 import time

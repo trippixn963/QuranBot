@@ -338,7 +338,7 @@ class QuizView(discord.ui.View):
         except Exception as e:
             log_error_with_traceback("Failed to update message on timeout", e)
 
-        # Schedule deletion of both messages after 1 minute
+        # Schedule deletion of both messages after 2 minutes
         self.deletion_task = asyncio.create_task(self._schedule_message_deletion())
 
         # Stop the view
@@ -356,10 +356,10 @@ class QuizView(discord.ui.View):
         super().stop()
 
     async def _schedule_message_deletion(self):
-        """Schedule deletion of quiz question and results messages after 1 minute"""
+        """Schedule deletion of quiz question and results messages after 2 minutes"""
         try:
-            # Wait 1 minute (60 seconds)
-            await asyncio.sleep(60)
+            # Wait 2 minutes (120 seconds)
+            await asyncio.sleep(120)
 
             messages_deleted = []
 
@@ -407,7 +407,7 @@ class QuizView(discord.ui.View):
                     "Quiz Cleanup - Complete",
                     [
                         ("messages_deleted", ", ".join(messages_deleted)),
-                        ("cleanup_delay", "60 seconds after timeout"),
+                        ("cleanup_delay", "2 minutes after timeout"),
                         ("status", "✅ Quiz cleanup completed"),
                     ],
                     "🧹",
