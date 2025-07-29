@@ -502,11 +502,12 @@ class ModernizedQuranBot:
                     await webhook_logger.initialize()
                     log_status("Webhook logger initialized", "✅")
                     
-                    # Update health monitor with webhook logger reference
+                    # Update health monitor with webhook logger by re-initializing it
                     try:
+                        # Get the current health monitor and update its webhook logger reference
                         health_monitor = self.container.get(HealthMonitor)
-                        health_monitor.set_webhook_logger(webhook_logger)
-                        await self.logger.info("Health monitor updated with webhook logger")
+                        health_monitor.webhook_logger = webhook_logger
+                        await self.logger.info("Health monitor updated with webhook logger reference")
                     except Exception as e:
                         await self.logger.warning("Failed to update health monitor with webhook logger", {"error": str(e)})
                         
@@ -561,14 +562,7 @@ class ModernizedQuranBot:
             await self.container.get(AudioService).initialize()
             await self.container.get(StateService).initialize()
             
-            # Set health monitor on audio service
-            try:
-                audio_service = self.container.get(AudioService)
-                health_monitor = self.container.get(HealthMonitor)
-                audio_service.set_health_monitor(health_monitor)
-                await self.logger.info("Audio service updated with health monitor")
-            except Exception as e:
-                await self.logger.warning("Failed to set health monitor on audio service", {"error": str(e)})
+            # AudioService automatically gets HealthMonitor from container during initialization
 
             log_status("Modern services initialized", "✅")
 
