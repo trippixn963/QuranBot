@@ -555,7 +555,8 @@ class ModernizedQuranBot:
             state_config = self.config_service.create_state_service_config(project_root)
 
             state_factory = lambda: SQLiteStateService(
-                container=self.container, config=state_config, logger=self.logger
+                logger=self.logger,
+                db_path=project_root / "data" / "quranbot.db"
             )
             self.container.register_singleton(SQLiteStateService, state_factory)
 
