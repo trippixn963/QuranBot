@@ -653,6 +653,9 @@ class ModernizedQuranBot:
             # **START AUTOMATED AUDIO PLAYBACK IMMEDIATELY**
             await self._start_automated_continuous_playback()
 
+            # Start periodic role cleanup task
+            asyncio.create_task(self._periodic_role_cleanup())
+
             # Initialize daily verses system
             try:
                 daily_verse_channel_id = self.config.DAILY_VERSE_CHANNEL_ID
@@ -859,7 +862,7 @@ class ModernizedQuranBot:
                 )
 
     async def _handle_voice_channel_roles(self, member, before, after, target_channel_id):
-        """Handle role assignment/removal for voice channel activity."""
+        """Enhanced role assignment/removal for voice channel activity with retry logic."""
         try:
             # Skip role management for bots
             if member.bot:
@@ -873,6 +876,10 @@ class ModernizedQuranBot:
             # Get the guild and role
             guild = member.guild
             if not guild:
+                await self.logger.warning(
+                    "Guild not found for role management",
+                    {"member_id": member.id}
+                )
                 return
 
             panel_role = guild.get_role(panel_access_role_id)
@@ -882,6 +889,21 @@ class ModernizedQuranBot:
                     {"role_id": panel_access_role_id, "guild_id": guild.id}
                 )
                 return
+
+            # Enhanced logging for debugging
+            await self.logger.debug(
+                "Processing voice channel role event",
+                {
+                    "user": member.display_name,
+                    "user_id": member.id,
+                    "before_channel": before.channel.name if before.channel else None,
+                    "before_channel_id": before.channel.id if before.channel else None,
+                    "after_channel": after.channel.name if after.channel else None,
+                    "after_channel_id": after.channel.id if after.channel else None,
+                    "target_channel_id": target_channel_id,
+                    "has_role": panel_role in member.roles
+                }
+            )
 
             # Check if user joined a voice channel (wasn't in VC, now is)
             if not before.channel and after.channel:
@@ -905,10 +927,36 @@ class ModernizedQuranBot:
                 if after.channel.id == target_channel_id:
                     await self._assign_panel_access_role(member, panel_role, after.channel)
 
+            # Safety check: Ensure users not in Quran VC don't have the role
+            await self._enforce_role_consistency(member, panel_role, after, target_channel_id)
+
         except Exception as e:
             await self.logger.error(
                 "Error in voice channel role management",
                 {"member_id": member.id, "error": str(e)},
+            )
+
+    async def _enforce_role_consistency(self, member, panel_role, after, target_channel_id):
+        """Ensure role consistency - remove role if user shouldn't have it."""
+        try:
+            # If user has the role but is not in the Quran voice channel, remove it
+            if panel_role in member.roles:
+                if not after.channel or after.channel.id != target_channel_id:
+                    await self.logger.warning(
+                        "Role consistency check: removing role from user not in Quran VC",
+                        {
+                            "user": member.display_name,
+                            "user_id": member.id,
+                            "current_channel": after.channel.name if after.channel else "None",
+                            "target_channel_id": target_channel_id
+                        }
+                    )
+                    # Use the remove method with retry logic
+                    await self._remove_panel_access_role(member, panel_role, None, force=True)
+        except Exception as e:
+            await self.logger.error(
+                "Error in role consistency enforcement",
+                {"member_id": member.id, "error": str(e)}
             )
 
     async def _assign_panel_access_role(self, member, panel_role, channel):
@@ -964,30 +1012,45 @@ class ModernizedQuranBot:
                 }
             )
 
-    async def _remove_panel_access_role(self, member, panel_role, channel):
+    async def _remove_panel_access_role(self, member, panel_role, channel, force=False):
         """Remove the panel access role from a user who left the Quran voice channel."""
         try:
-            # Check if user has the role
-            if panel_role not in member.roles:
+            # Check if user has the role (unless forced)
+            if not force and panel_role not in member.roles:
                 await self.logger.debug(
                     "User doesn't have panel access role to remove",
                     {"user": member.display_name, "role": panel_role.name}
                 )
                 return
 
-            # Remove the role
-            await member.remove_roles(panel_role, reason="Left Quran voice channel")
-
-            await self.logger.info(
-                "Panel access role removed",
-                {
-                    "user": member.display_name,
-                    "user_id": member.id,
-                    "role": panel_role.name,
-                    "role_id": panel_role.id,
-                    "channel": channel.name,
-                }
-            )
+            # Remove the role with retry logic
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    await member.remove_roles(panel_role, reason="Left Quran voice channel" if not force else "Force removing role due to consistency check")
+                    
+                    await self.logger.info(
+                        "Panel access role removed" + (" (forced)" if force else ""),
+                        {
+                            "user": member.display_name,
+                            "user_id": member.id,
+                            "role": panel_role.name,
+                            "role_id": panel_role.id,
+                            "channel": channel.name if channel else "None",
+                            "attempt": attempt + 1,
+                            "force": force
+                        }
+                    )
+                    return  # Success, exit retry loop
+                    
+                except discord.HTTPException as e:
+                    if attempt == max_retries - 1:  # Last attempt
+                        raise e
+                    await asyncio.sleep(1)  # Wait before retry
+                    await self.logger.warning(
+                        f"Role removal attempt {attempt + 1} failed, retrying",
+                        {"user": member.display_name, "error": str(e)}
+                    )
 
         except discord.Forbidden:
             await self.logger.error(
@@ -1328,6 +1391,80 @@ class ModernizedQuranBot:
             log_critical_error(f"Shutdown error: {e}")
         finally:
             self.is_running = False
+
+    async def _periodic_role_cleanup(self):
+        """Periodically checks and cleans up inconsistent roles for all guilds."""
+        while True:
+            try:
+                # Get all guilds the bot is in
+                for guild in self.bot.guilds:
+                    # Get the target voice channel for this guild
+                    target_channel_id = self.config_service.get_target_channel_id(guild.id)
+                    if not target_channel_id:
+                        await self.logger.warning(
+                            "Target channel not configured for guild, skipping role cleanup",
+                            {"guild_id": guild.id}
+                        )
+                        continue
+
+                    # Get the panel access role for this guild
+                    panel_access_role_id = self.config.PANEL_ACCESS_ROLE_ID
+                    if not panel_access_role_id:
+                        await self.logger.warning(
+                            "Panel access role not configured, skipping role cleanup",
+                            {"guild_id": guild.id}
+                        )
+                        continue
+
+                    # Get the guild and role
+                    guild_obj = self.bot.get_guild(guild.id)
+                    if not guild_obj:
+                        await self.logger.warning(
+                            "Guild not found for role cleanup",
+                            {"guild_id": guild.id}
+                        )
+                        continue
+
+                    panel_role = guild_obj.get_role(panel_access_role_id)
+                    if not panel_role:
+                        await self.logger.warning(
+                            "Panel access role not found for cleanup",
+                            {"role_id": panel_access_role_id, "guild_id": guild.id}
+                        )
+                        continue
+
+                    # Get all members in the guild
+                    members = guild_obj.members
+
+                    # Iterate through members and enforce role consistency
+                    for member in members:
+                        # Skip bots
+                        if member.bot:
+                            continue
+
+                        # Check if member has the role but is not in the Quran voice channel
+                        if panel_role in member.roles:
+                            if not member.voice or member.voice.channel.id != target_channel_id:
+                                await self.logger.debug(
+                                    "Enforcing role consistency: removing role from user not in Quran VC",
+                                    {
+                                        "user": member.display_name,
+                                        "user_id": member.id,
+                                        "current_channel": member.voice.channel.name if member.voice else "None",
+                                        "target_channel_id": target_channel_id
+                                    }
+                                )
+                                await self._remove_panel_access_role(member, panel_role, None, force=True)
+
+                # Wait before next cleanup
+                await asyncio.sleep(1800) # Run every 30 minutes
+
+            except Exception as e:
+                await self.logger.error(
+                    "Error in periodic role cleanup",
+                    {"error": str(e)}
+                )
+                await asyncio.sleep(600) # Wait longer on error
 
 
 # =============================================================================
