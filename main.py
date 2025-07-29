@@ -1393,78 +1393,209 @@ class ModernizedQuranBot:
             self.is_running = False
 
     async def _periodic_role_cleanup(self):
-        """Periodically checks and cleans up inconsistent roles for all guilds."""
+        """Hourly aggressive role audit - removes roles from ALL users not in Quran voice channel."""
+        cleanup_interval = 3600  # 1 hour = 3600 seconds
+        
         while True:
             try:
+                await self.logger.info("Starting hourly role audit - checking all guild members")
+                
+                total_checked = 0
+                total_roles_removed = 0
+                guilds_processed = 0
+                
                 # Get all guilds the bot is in
                 for guild in self.bot.guilds:
-                    # Get the target voice channel for this guild
-                    target_channel_id = self.config_service.get_target_channel_id(guild.id)
-                    if not target_channel_id:
-                        await self.logger.warning(
-                            "Target channel not configured for guild, skipping role cleanup",
-                            {"guild_id": guild.id}
-                        )
-                        continue
-
-                    # Get the panel access role for this guild
-                    panel_access_role_id = self.config.PANEL_ACCESS_ROLE_ID
-                    if not panel_access_role_id:
-                        await self.logger.warning(
-                            "Panel access role not configured, skipping role cleanup",
-                            {"guild_id": guild.id}
-                        )
-                        continue
-
-                    # Get the guild and role
-                    guild_obj = self.bot.get_guild(guild.id)
-                    if not guild_obj:
-                        await self.logger.warning(
-                            "Guild not found for role cleanup",
-                            {"guild_id": guild.id}
-                        )
-                        continue
-
-                    panel_role = guild_obj.get_role(panel_access_role_id)
-                    if not panel_role:
-                        await self.logger.warning(
-                            "Panel access role not found for cleanup",
-                            {"role_id": panel_access_role_id, "guild_id": guild.id}
-                        )
-                        continue
-
-                    # Get all members in the guild
-                    members = guild_obj.members
-
-                    # Iterate through members and enforce role consistency
-                    for member in members:
-                        # Skip bots
-                        if member.bot:
+                    try:
+                        # Get the target voice channel for this guild
+                        target_channel_id = self.config_service.get_target_channel_id(guild.id)
+                        if not target_channel_id:
+                            await self.logger.debug(
+                                "Target channel not configured for guild, skipping role audit",
+                                {"guild_id": guild.id, "guild_name": guild.name}
+                            )
                             continue
 
-                        # Check if member has the role but is not in the Quran voice channel
-                        if panel_role in member.roles:
-                            if not member.voice or member.voice.channel.id != target_channel_id:
-                                await self.logger.debug(
-                                    "Enforcing role consistency: removing role from user not in Quran VC",
-                                    {
-                                        "user": member.display_name,
-                                        "user_id": member.id,
-                                        "current_channel": member.voice.channel.name if member.voice else "None",
-                                        "target_channel_id": target_channel_id
-                                    }
-                                )
-                                await self._remove_panel_access_role(member, panel_role, None, force=True)
+                        # Get the panel access role for this guild
+                        panel_access_role_id = self.config.PANEL_ACCESS_ROLE_ID
+                        if not panel_access_role_id:
+                            await self.logger.debug(
+                                "Panel access role not configured, skipping role audit",
+                                {"guild_id": guild.id, "guild_name": guild.name}
+                            )
+                            continue
 
-                # Wait before next cleanup
-                await asyncio.sleep(1800) # Run every 30 minutes
+                        # Get the guild and role objects
+                        guild_obj = self.bot.get_guild(guild.id)
+                        if not guild_obj:
+                            await self.logger.warning(
+                                "Guild not found for role audit",
+                                {"guild_id": guild.id}
+                            )
+                            continue
+
+                        panel_role = guild_obj.get_role(panel_access_role_id)
+                        if not panel_role:
+                            await self.logger.warning(
+                                "Panel access role not found for audit",
+                                {"role_id": panel_access_role_id, "guild_id": guild.id}
+                            )
+                            continue
+
+                        # Get the target voice channel
+                        target_channel = guild_obj.get_channel(target_channel_id)
+                        if not target_channel:
+                            await self.logger.warning(
+                                "Target voice channel not found for audit",
+                                {"channel_id": target_channel_id, "guild_id": guild.id}
+                            )
+                            continue
+
+                        # Get list of users currently in the Quran voice channel
+                        users_in_quran_vc = set()
+                        if target_channel.members:
+                            users_in_quran_vc = {member.id for member in target_channel.members if not member.bot}
+
+                        await self.logger.info(
+                            "Processing guild for role audit",
+                            {
+                                "guild_name": guild_obj.name,
+                                "guild_id": guild_obj.id,
+                                "users_in_quran_vc": len(users_in_quran_vc),
+                                "target_channel": target_channel.name
+                            }
+                        )
+
+                        # Check ALL guild members
+                        guild_checked = 0
+                        guild_roles_removed = 0
+                        
+                        for member in guild_obj.members:
+                            # Skip bots
+                            if member.bot:
+                                continue
+
+                            guild_checked += 1
+                            total_checked += 1
+
+                            # Check if member has the panel access role
+                            if panel_role in member.roles:
+                                # If they're NOT in the Quran voice channel, remove the role
+                                if member.id not in users_in_quran_vc:
+                                    try:
+                                        await member.remove_roles(
+                                            panel_role, 
+                                            reason="Hourly audit: Not in Quran voice channel"
+                                        )
+                                        
+                                        guild_roles_removed += 1
+                                        total_roles_removed += 1
+                                        
+                                        await self.logger.info(
+                                            "Hourly audit: Role removed from user not in Quran VC",
+                                            {
+                                                "user": member.display_name,
+                                                "user_id": member.id,
+                                                "role": panel_role.name,
+                                                "current_voice_channel": (
+                                                    member.voice.channel.name if member.voice and member.voice.channel
+                                                    else "None"
+                                                ),
+                                                "guild": guild_obj.name
+                                            }
+                                        )
+                                        
+                                        # Small delay to avoid rate limits
+                                        await asyncio.sleep(0.5)
+                                        
+                                    except discord.Forbidden:
+                                        await self.logger.error(
+                                            "No permission to remove role during audit",
+                                            {
+                                                "user": member.display_name,
+                                                "role": panel_role.name,
+                                                "guild": guild_obj.name
+                                            }
+                                        )
+                                    except discord.HTTPException as e:
+                                        await self.logger.error(
+                                            "HTTP error removing role during audit",
+                                            {
+                                                "user": member.display_name,
+                                                "error": str(e),
+                                                "guild": guild_obj.name
+                                            }
+                                        )
+                                    except Exception as e:
+                                        await self.logger.error(
+                                            "Unexpected error removing role during audit",
+                                            {
+                                                "user": member.display_name,
+                                                "error": str(e),
+                                                "guild": guild_obj.name
+                                            }
+                                        )
+
+                        guilds_processed += 1
+                        
+                        await self.logger.info(
+                            "Guild role audit completed",
+                            {
+                                "guild_name": guild_obj.name,
+                                "members_checked": guild_checked,
+                                "roles_removed": guild_roles_removed
+                            }
+                        )
+
+                    except Exception as e:
+                        await self.logger.error(
+                            "Error processing guild during role audit",
+                            {"guild_id": guild.id, "error": str(e)}
+                        )
+                        continue
+
+                # Final audit summary
+                await self.logger.info(
+                    "Hourly role audit completed",
+                    {
+                        "guilds_processed": guilds_processed,
+                        "total_members_checked": total_checked,
+                        "total_roles_removed": total_roles_removed,
+                        "next_audit_in": f"{cleanup_interval // 60} minutes"
+                    }
+                )
+
+                # Send webhook notification if roles were removed
+                if total_roles_removed > 0:
+                    try:
+                        webhook_logger = self.container.get(ModernWebhookLogger)
+                        if webhook_logger and webhook_logger.initialized:
+                            await webhook_logger.log_admin_action(
+                                action="hourly_role_audit",
+                                details=f"Removed {total_roles_removed} inconsistent role(s) from {total_checked} members across {guilds_processed} guild(s)",
+                                admin_name="System",
+                                additional_info={
+                                    "roles_removed": total_roles_removed,
+                                    "members_checked": total_checked,
+                                    "guilds_processed": guilds_processed
+                                }
+                            )
+                    except Exception as e:
+                        await self.logger.error(
+                            "Failed to send role audit webhook",
+                            {"error": str(e)}
+                        )
+
+                # Wait for next audit cycle (1 hour)
+                await asyncio.sleep(cleanup_interval)
 
             except Exception as e:
                 await self.logger.error(
-                    "Error in periodic role cleanup",
+                    "Critical error in hourly role audit",
                     {"error": str(e)}
                 )
-                await asyncio.sleep(600) # Wait longer on error
+                # Wait 10 minutes before retrying on error
+                await asyncio.sleep(600)
 
 
 # =============================================================================
