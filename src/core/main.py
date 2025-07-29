@@ -453,26 +453,8 @@ class ModernizedQuranBot:
             await health_monitor.start_monitoring()
             self.container.register_singleton(HealthMonitor, health_monitor)
             
-            # Heartbeat Monitor - Regular Discord webhook heartbeats
-            log_status("Initializing heartbeat monitoring system", "💓")
-            from .heartbeat_monitor import HeartbeatMonitor
+            # Note: Heartbeat Monitor will be initialized after webhook logger is set up
             
-            heartbeat_monitor = HeartbeatMonitor(
-                logger=self.logger,
-                webhook_logger=webhook_logger,
-                heartbeat_interval_minutes=30,  # Heartbeat every 30 minutes
-                quick_check_interval_minutes=5  # Quick health checks every 5 minutes
-            )
-            
-            await heartbeat_monitor.start_monitoring()
-            self.container.register_singleton(HeartbeatMonitor, heartbeat_monitor)
-            
-            # Set bot references for heartbeat monitoring
-            heartbeat_monitor.set_bot_references(
-                bot=self,  # Pass bot instance for Discord status monitoring
-                audio_service=None  # Will be set later when audio service is initialized
-            )
-
             # Set health monitor on services that need it
             try:
                 metadata_cache = self.container.get(MetadataCache)
@@ -547,6 +529,34 @@ class ModernizedQuranBot:
                 await self.logger.warning(
                     "Webhook logger initialization failed", {"error": str(e)}
                 )
+
+            # Heartbeat Monitor - Regular Discord webhook heartbeats
+            # Must be initialized after webhook logger is available
+            log_status("Initializing heartbeat monitoring system", "💓")
+            from .heartbeat_monitor import HeartbeatMonitor
+            
+            # Get the initialized webhook logger
+            webhook_logger = None
+            try:
+                webhook_logger = self.container.get(ModernWebhookLogger)
+            except:
+                await self.logger.warning("Webhook logger not available for heartbeat monitor")
+            
+            heartbeat_monitor = HeartbeatMonitor(
+                logger=self.logger,
+                webhook_logger=webhook_logger,
+                heartbeat_interval_minutes=30,  # Heartbeat every 30 minutes
+                quick_check_interval_minutes=5  # Quick health checks every 5 minutes
+            )
+            
+            await heartbeat_monitor.start_monitoring()
+            self.container.register_singleton(HeartbeatMonitor, heartbeat_monitor)
+            
+            # Set bot references for heartbeat monitoring
+            heartbeat_monitor.set_bot_references(
+                bot=self,  # Pass bot instance for Discord status monitoring
+                audio_service=None  # Will be set later when audio service is initialized
+            )
 
             log_status("Core services initialized", "✅")
 
