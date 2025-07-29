@@ -49,6 +49,7 @@ from src.data.models import PlaybackMode
 from src.services.audio_service import AudioService
 from src.services.metadata_cache import MetadataCache
 from src.services.state_service import StateService
+from src.services.sqlite_state_service import SQLiteStateService
 from src.utils.control_panel import setup_control_panel
 from src.utils.daily_verses import setup_daily_verses
 from src.utils.rich_presence import RichPresenceManager
@@ -553,14 +554,14 @@ class ModernizedQuranBot:
             # State Service
             state_config = self.config_service.create_state_service_config(project_root)
 
-            state_factory = lambda: StateService(
+            state_factory = lambda: SQLiteStateService(
                 container=self.container, config=state_config, logger=self.logger
             )
-            self.container.register_singleton(StateService, state_factory)
+            self.container.register_singleton(SQLiteStateService, state_factory)
 
             # Initialize modern services
             await self.container.get(AudioService).initialize()
-            await self.container.get(StateService).initialize()
+            await self.container.get(SQLiteStateService).initialize()
             
             # AudioService automatically gets HealthMonitor from container during initialization
 
@@ -1382,7 +1383,7 @@ class ModernizedQuranBot:
                 log_status("Shutting down services", "🛠️")
 
                 try:
-                    state_service = self.container.get(StateService)
+                    state_service = self.container.get(SQLiteStateService)
                     await state_service.shutdown()
                 except:
                     pass

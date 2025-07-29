@@ -34,7 +34,7 @@ from src.data.models import (
 )
 
 from .metadata_cache import MetadataCache
-from src.services.state_service import StateService
+from .sqlite_state_service import SQLiteStateService
 
 
 class AudioService:
@@ -679,23 +679,48 @@ class AudioService:
             )
 
     async def _load_saved_state(self) -> None:
-        """Load saved playback state from StateService"""
+        """Load saved playback state from SQLiteStateService"""
         try:
-            state_service = self._container.get(StateService)
-            saved_state = await state_service.load_playback_state()
+            state_service = self._container.get(SQLiteStateService)
+            saved_data = await state_service.load_playback_state()
             
-            # Update current state with saved data
-            self._current_state = saved_state
-            
-            await self._logger.info(
-                "Loaded saved playback state",
-                {
-                    "surah": saved_state.current_position.surah_number,
-                    "position": f"{saved_state.current_position.position_seconds:.1f}s",
-                    "reciter": saved_state.current_reciter,
-                    "last_updated": saved_state.last_updated.isoformat() if saved_state.last_updated else "N/A",
-                },
-            )
+            if saved_data:
+                # Convert SQLite data to PlaybackState objects
+                position = PlaybackPosition(
+                    surah_number=saved_data.get("current_surah", 1),
+                    position_seconds=saved_data.get("current_position", 0.0),
+                    total_duration=saved_data.get("total_duration"),
+                    track_index=saved_data.get("track_index", 0),
+                    timestamp=datetime.now(UTC)
+                )
+                
+                saved_state = PlaybackState(
+                    is_playing=False,  # Always start stopped
+                    is_paused=False,
+                    current_reciter=saved_data.get("current_reciter", self._config.default_reciter),
+                    current_position=position,
+                    mode=PlaybackMode(saved_data.get("playback_mode", "normal")),
+                    volume=saved_data.get("volume", 1.0),
+                    voice_channel_id=saved_data.get("voice_channel_id"),
+                    guild_id=saved_data.get("guild_id"),
+                    last_updated=datetime.now(UTC)
+                )
+                
+                # Update current state with saved data
+                self._current_state = saved_state
+                
+                await self._logger.info(
+                    "Loaded saved playback state from SQLite",
+                    {
+                        "surah": position.surah_number,
+                        "position": f"{position.position_seconds:.1f}s",
+                        "reciter": saved_state.current_reciter,
+                        "mode": saved_state.mode.value,
+                    },
+                )
+            else:
+                await self._logger.info("No saved playback state found, using defaults")
+                
         except Exception as e:
             await self._logger.warning(
                 "Failed to load saved state, using defaults", {"error": str(e)}
@@ -1135,11 +1160,61 @@ class AudioService:
             try:
                 await asyncio.sleep(5)  # Save every 5 seconds
 
-                if self._current_state.is_playing:
-                    # Save current state (implementation would use state manager)
-                    pass
+                if self._current_state.is_playing and self._voice_client:
+                    try:
+                        # Get current state service
+                        state_service = self._container.get(SQLiteStateService)
+                        
+                        # Prepare state data for SQLite
+                        state_data = {
+                            "current_surah": self._current_state.current_position.surah_number,
+                            "current_position": self._current_state.current_position.position_seconds,
+                            "current_reciter": self._current_state.current_reciter,
+                            "volume": self._current_state.volume,
+                            "playback_mode": self._current_state.mode.value,
+                            "voice_channel_id": self._current_state.voice_channel_id,
+                            "guild_id": self._current_state.guild_id,
+                            "total_duration": self._current_state.current_position.total_duration,
+                            "track_index": self._current_state.current_position.track_index,
+                        }
+                        
+                        # Save to SQLite
+                        await state_service.save_playback_state(state_data)
+                        
+                        await self._logger.debug(
+                            "Saved playback position",
+                            {
+                                "surah": state_data["current_surah"],
+                                "position": f"{state_data['current_position']:.1f}s",
+                                "reciter": state_data["current_reciter"],
+                            }
+                        )
+                        
+                    except Exception as e:
+                        await self._logger.error(
+                            "Failed to save playback position", {"error": str(e)}
+                        )
 
             except asyncio.CancelledError:
+                # Save final position before exiting
+                try:
+                    if self._current_state.is_playing:
+                        state_service = self._container.get(SQLiteStateService)
+                        state_data = {
+                            "current_surah": self._current_state.current_position.surah_number,
+                            "current_position": self._current_state.current_position.position_seconds,
+                            "current_reciter": self._current_state.current_reciter,
+                            "volume": self._current_state.volume,
+                            "playback_mode": self._current_state.mode.value,
+                            "voice_channel_id": self._current_state.voice_channel_id,
+                            "guild_id": self._current_state.guild_id,
+                            "total_duration": self._current_state.current_position.total_duration,
+                            "track_index": self._current_state.current_position.track_index,
+                        }
+                        await state_service.save_playback_state(state_data)
+                        await self._logger.info("Saved final playback position before shutdown")
+                except Exception as e:
+                    await self._logger.error("Failed to save final position", {"error": str(e)})
                 break
             except Exception as e:
                 await self._logger.error(
