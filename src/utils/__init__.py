@@ -110,33 +110,7 @@ except ImportError:
 
     listening_stats_manager = None
 
-# Import backup manager utilities
-try:
-    from .backup_manager import (
-        backup_manager,
-        cleanup_old_backups,
-        get_backup_status,
-        start_backup_scheduler,
-        stop_backup_scheduler,
-    )
-except ImportError:
-    # Fallback functions if backup manager is not available
-    def cleanup_old_backups(keep_count=1):
-        return 0
-
-    def get_backup_status():
-        return {"error": "Backup manager not available"}
-
-    def start_backup_scheduler():
-        pass
-
-    def stop_backup_scheduler():
-        pass
-
-    class BackupManager:
-        pass
-
-    backup_manager = None
+# Backup manager removed - using SQLite database backups instead
 
 # Import version utilities with absolute import
 try:

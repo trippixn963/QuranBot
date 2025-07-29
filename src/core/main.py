@@ -426,39 +426,7 @@ class ModernizedQuranBot:
             self.logger = self.container.get(StructuredLogger)
             await self.logger.info("Structured logger initialized")
 
-            # File Integrity Monitor - Early validation
-            log_status("Validating data file integrity", "🛡️")
-            from .file_integrity_monitor import FileIntegrityMonitor
-            
-            file_monitor = FileIntegrityMonitor(
-                logger=self.logger,
-                data_dir=project_root / "data"
-            )
-            
-            # Perform startup validation
-            integrity_ok = await file_monitor.startup_validation()
-            if not integrity_ok:
-                log_critical_error("Critical data files are corrupted and could not be repaired")
-                return False
-                
-            # Start periodic monitoring
-            await file_monitor.start_periodic_monitoring(interval_seconds=300)  # 5 minutes
-            self.container.register_singleton(FileIntegrityMonitor, file_monitor)
-
-            # Data Backup Service - Lightweight data-only backups
-            log_status("Initializing data backup service", "💾")
-            from .data_backup_service import DataBackupService
-            
-            data_backup = DataBackupService(
-                logger=self.logger,
-                data_dir=project_root / "data",
-                backup_dir=project_root / "backup",
-                backup_interval_hours=6  # Every 6 hours
-            )
-            
-            # Start backup service
-            await data_backup.start_backup_service()
-            self.container.register_singleton(DataBackupService, data_backup)
+            # JSON services removed - now using SQLite for all data storage
 
             # Health Monitor - Comprehensive health monitoring with webhooks
             log_status("Initializing health monitoring system", "💚")
@@ -592,7 +560,27 @@ class ModernizedQuranBot:
             )
             self.container.register_singleton(AudioService, audio_factory)
 
-            # State Service
+            # SQLite State Service - Modern SQLite-based state management
+            from ..services.sqlite_state_service import SQLiteStateService
+            
+            # Get webhook logger if available
+            webhook_logger = None
+            try:
+                webhook_logger = self.container.get(ModernWebhookLogger)
+            except:
+                pass  # Webhook logger not available yet
+            
+            sqlite_state_service = SQLiteStateService(
+                logger=self.logger,
+                db_path=project_root / "data" / "quranbot.db"
+            )
+            
+            # Set webhook logger on the database service
+            if webhook_logger and hasattr(sqlite_state_service, 'db_service'):
+                sqlite_state_service.db_service.webhook_logger = webhook_logger
+            self.container.register_singleton(SQLiteStateService, sqlite_state_service)
+
+            # State Service (legacy JSON support, backups disabled)
             state_config = self.config_service.create_state_service_config(project_root)
 
             state_factory = lambda: StateService(
@@ -602,6 +590,7 @@ class ModernizedQuranBot:
 
             # Initialize modern services
             await self.container.get(AudioService).initialize()
+            await self.container.get(SQLiteStateService).initialize()
             await self.container.get(StateService).initialize()
 
             log_status("Modern services initialized", "✅")

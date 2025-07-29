@@ -654,5 +654,22 @@ class SecurityError(QuranBotError):
         self.reason = reason
 
 
+class DatabaseError(QuranBotError):
+    """Raised when database operations fail"""
+
+    def __init__(
+        self,
+        message: str,
+        operation: str | None = None,
+        table: str | None = None,
+        query: str | None = None,
+        **context,
+    ):
+        super().__init__(message, **context)
+        self.operation = operation
+        self.table = table
+        self.query = query
+
+
 # Import asyncio at the end to avoid circular imports
 import asyncio

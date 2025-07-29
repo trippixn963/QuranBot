@@ -14,7 +14,6 @@ from typing import Dict, Any, List, Optional
 
 from .structured_logger import StructuredLogger
 from .webhook_logger import ModernWebhookLogger
-from .json_validator import JSONValidator
 from ..utils.tree_log import log_perfect_tree_section, log_error_with_traceback
 
 
@@ -92,17 +91,7 @@ class HealthMonitor:
         self.alert_task = None
         self.is_monitoring = False
         
-        # JSON validator for file checks
-        self.json_validator = JSONValidator(logger)
-        
-        # Critical files to monitor
-        self.critical_files = [
-            "playback_state.json",
-            "bot_stats.json", 
-            "quiz_state.json",
-            "quiz_stats.json",
-            "metadata_cache.json"
-        ]
+        # JSON files removed - monitoring SQLite database health instead
         
     async def start_monitoring(self) -> None:
         """Start the health monitoring system"""

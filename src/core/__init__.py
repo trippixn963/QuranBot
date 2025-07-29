@@ -27,10 +27,8 @@ from .structured_logger import (
     log_with_correlation,
     set_logging_service,
 )
-from .json_validator import JSONValidator
-from .file_integrity_monitor import FileIntegrityMonitor
-from .data_backup_service import DataBackupService
 from .health_monitor import HealthMonitor
+from .database import DatabaseManager
 
 __all__ = [
     "DIContainer",
@@ -60,5 +58,8 @@ __all__ = [
     "QuizError",
     "ServiceError",
     "SecurityError",
+    "DatabaseError",
     "handle_errors",
+    "HealthMonitor",
+    "DatabaseManager",
 ]
