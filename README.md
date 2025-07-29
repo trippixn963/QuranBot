@@ -1,4 +1,4 @@
-# 🕌 QuranBot - Professional Discord Bot (Archived Project)
+# 🕌 QuranBot - Professional Discord Audio Bot
 
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
 [![Discord.py](https://img.shields.io/badge/Discord.py-2.0+-blue.svg)](https://discordpy.readthedocs.io/)
