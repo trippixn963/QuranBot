@@ -1982,7 +1982,7 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                         # Add English translation right after Arabic (if both exist)
                         if english_text:
                             embed.add_field(
-                                name="🇺🇸 **Translation**",
+                                name="📖 **Translation**",
                                 value=f"```\n{english_text}\n```",
                                 inline=False,
                             )
@@ -2039,7 +2039,7 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                         inline=False,
                     )
 
-                    # Add choices with English first, then Arabic in code blocks
+                    # Add choices with English first, then Arabic below
                     choices = question.get("choices", {})
                     choice_text = ""
                     for letter in ["A", "B", "C", "D", "E", "F"]:
@@ -2048,15 +2048,13 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                             if isinstance(choice_data, dict):
                                 english_choice = choice_data.get("english", "")
                                 arabic_choice = choice_data.get("arabic", "")
-
+                                
                                 if english_choice and arabic_choice:
                                     choice_text += f"**{letter}.** {english_choice}\n```\n{arabic_choice}\n```\n\n"
                                 elif english_choice:
                                     choice_text += f"**{letter}.** {english_choice}\n\n"
                                 elif arabic_choice:
-                                    choice_text += (
-                                        f"**{letter}.** ```\n{arabic_choice}\n```\n\n"
-                                    )
+                                    choice_text += f"**{letter}.** {arabic_choice}\n\n"
                             else:
                                 choice_text += f"**{letter}.** {choice_data}\n\n"
 

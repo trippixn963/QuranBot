@@ -220,6 +220,29 @@ class DuaCog(commands.Cog):
             except:
                 pass
             
+            # Send notification to enhanced webhook router
+            try:
+                from src.core.di_container import get_container
+                container = get_container()
+                if container:
+                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    if enhanced_webhook and hasattr(enhanced_webhook, "log_control_panel_activity"):
+                        await enhanced_webhook.log_control_panel_activity(
+                            admin_name=interaction.user.display_name,
+                            admin_id=interaction.user.id,
+                            action="/dua command used",
+                            action_details={
+                                "category": category,
+                                "dua_name": dua.get('name', 'Unknown'),
+                                "source": dua.get('source', 'Unknown'),
+                                "channel": f"#{interaction.channel.name}" if hasattr(interaction.channel, 'name') else "DM",
+                                "action_type": "Islamic dua requested"
+                            },
+                            admin_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None
+                        )
+            except Exception as e:
+                log_error_with_traceback("Failed to log dua command to enhanced webhook router", e)
+            
             log_perfect_tree_section(
                 "Dua Command - Success",
                 [

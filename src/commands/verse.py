@@ -543,29 +543,52 @@ class VerseCog(commands.Cog):
                     "🏆",
                 )
 
-                # Send success notification to Discord logger
-                discord_logger = get_discord_logger()
-                if discord_logger:
-                    try:
-                        await discord_logger.log_user_activity(
-                            f"Manual Verse Sent by {interaction.user.display_name}",
-                            f"📖 **Daily verse delivered manually**\n\n"
-                            f"**Verse Details:**\n"
-                            f"• Surah: {verse_data.get('surah', 'Unknown')}\n"
-                            f"• Verse: {verse_data.get('ayah', verse_data.get('verse', 'Unknown'))}\n"
-                            f"• Channel: {channel.mention}\n"
-                            f"• Reaction: 🤲 (dua emoji)\n\n"
-                            f"Daily verse timer has been reset to 3 hours.",
-                            {
-                                "Admin": interaction.user.display_name,
-                                "User ID": str(interaction.user.id),
-                                "Verse ID": str(verse_data.get("id", "Unknown")),
-                                "Message ID": str(message.id),
-                            },
-                        )
-                    except Exception as discord_log_error:
-                        # Silently ignore Discord logging failures
-                        pass
+                # Send success notification to enhanced webhook router first
+                try:
+                    from src.core.di_container import get_container
+                    container = get_container()
+                    if container:
+                        enhanced_webhook = container.get("enhanced_webhook_router")
+                        if enhanced_webhook and hasattr(enhanced_webhook, "log_control_panel_activity"):
+                            await enhanced_webhook.log_control_panel_activity(
+                                admin_name=interaction.user.display_name,
+                                admin_id=interaction.user.id,
+                                action="/verse command used",
+                                action_details={
+                                    "verse_details": f"Surah {verse_data.get('surah', 'Unknown')}, Verse {verse_data.get('ayah', verse_data.get('verse', 'Unknown'))}",
+                                    "channel": f"#{channel.name}",
+                                    "verse_id": str(verse_data.get("id", "Unknown")),
+                                    "message_id": str(message.id),
+                                    "reaction_added": "🤲 (dua emoji)",
+                                    "timer_reset": "Daily verse timer reset to 3 hours"
+                                },
+                                admin_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None
+                            )
+                except Exception as e:
+                    log_error_with_traceback("Failed to log to enhanced webhook router", e)
+                    # Fallback to old discord logger
+                    discord_logger = get_discord_logger()
+                    if discord_logger:
+                        try:
+                            await discord_logger.log_user_activity(
+                                f"Manual Verse Sent by {interaction.user.display_name}",
+                                f"📖 **Daily verse delivered manually**\n\n"
+                                f"**Verse Details:**\n"
+                                f"• Surah: {verse_data.get('surah', 'Unknown')}\n"
+                                f"• Verse: {verse_data.get('ayah', verse_data.get('verse', 'Unknown'))}\n"
+                                f"• Channel: {channel.mention}\n"
+                                f"• Reaction: 🤲 (dua emoji)\n\n"
+                                f"Daily verse timer has been reset to 3 hours.",
+                                {
+                                    "Admin": interaction.user.display_name,
+                                    "User ID": str(interaction.user.id),
+                                    "Verse ID": str(verse_data.get("id", "Unknown")),
+                                    "Message ID": str(message.id),
+                                },
+                            )
+                        except Exception as discord_log_error:
+                            # Silently ignore Discord logging failures
+                            pass
 
             except discord.Forbidden:
                 log_error_with_traceback(

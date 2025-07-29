@@ -606,37 +606,61 @@ class SurahSelect(Select):
                 },
             )
 
-            # Log to Discord with user profile picture
-
-            discord_logger = get_discord_logger()
-            if discord_logger:
-                try:
-                    user_avatar_url = (
-                        interaction.user.avatar.url
-                        if interaction.user.avatar
-                        else interaction.user.default_avatar.url
-                    )
-                    await discord_logger.log_user_interaction(
-                        "dropdown_surah",
-                        interaction.user.display_name,
-                        interaction.user.id,
-                        f"selected {surah_name} from the surah dropdown",
-                        {
-                            "Surah Number": str(selected_surah),
-                            "Surah Name": surah_name,
-                            "Page": str(self.page + 1),
-                            "Action": "Surah Selection",
-                        },
-                        user_avatar_url,
-                    )
-                except:
-                    pass
+            # Log to enhanced webhook router first, then fallback to discord logger
+            try:
+                from src.core.di_container import get_container
+                container = get_container()
+                if container:
+                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    if enhanced_webhook and hasattr(enhanced_webhook, "log_control_panel_activity"):
+                        await enhanced_webhook.log_control_panel_activity(
+                            admin_name=interaction.user.display_name,
+                            admin_id=interaction.user.id,
+                            action="Surah selection",
+                            action_details={
+                                "surah_number": str(selected_surah),
+                                "surah_name": surah_name,
+                                "page": str(self.page + 1),
+                                "selection_method": "dropdown",
+                                "total_pages": str((114 + 9) // 10)  # SURAHS_PER_PAGE = 10
+                            },
+                            admin_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None
+                        )
+            except Exception as e:
+                log_error_with_traceback("Failed to log to enhanced webhook router", e)
+                # Fallback to old discord logger
+                discord_logger = get_discord_logger()
+                if discord_logger:
+                    try:
+                        user_avatar_url = (
+                            interaction.user.avatar.url
+                            if interaction.user.avatar
+                            else interaction.user.default_avatar.url
+                        )
+                        await discord_logger.log_user_interaction(
+                            "dropdown_surah",
+                            interaction.user.display_name,
+                            interaction.user.id,
+                            f"selected {surah_name} from the surah dropdown",
+                            {
+                                "Surah Number": str(selected_surah),
+                                "Surah Name": surah_name,
+                                "Page": str(self.page + 1),
+                                "Action": "Surah Selection",
+                            },
+                            user_avatar_url,
+                        )
+                    except:
+                        pass
 
             # Update last activity in parent view
             if hasattr(self.view, "_update_last_activity"):
                 self.view._update_last_activity(
                     interaction.user, f"selected `{surah_name}`"
                 )
+
+            # Respond to interaction immediately to prevent timeout
+            await interaction.response.defer()
 
             # Get audio manager from parent view
             if hasattr(self.view, "audio_manager") and self.view.audio_manager:
@@ -651,11 +675,10 @@ class SurahSelect(Select):
                         "Error updating panel after surah selection", e
                     )
 
-            await interaction.response.defer()
-
         except Exception as e:
             log_error_with_traceback("Error in surah selection", e)
-            await interaction.response.defer()
+            if not interaction.response.is_done():
+                await interaction.response.defer()
 
 
 # =============================================================================
@@ -783,6 +806,9 @@ class ReciterSelect(Select):
                     interaction.user, f"switched to `{reciter_display}`"
                 )
 
+            # Respond to interaction immediately to prevent timeout
+            await interaction.response.defer()
+
             # Get audio manager from parent view
             if hasattr(self.view, "audio_manager") and self.view.audio_manager:
                 await self.view.audio_manager.switch_reciter(selected_reciter)
@@ -796,11 +822,10 @@ class ReciterSelect(Select):
                         "Error updating panel after reciter selection", e
                     )
 
-            await interaction.response.defer()
-
         except Exception as e:
             log_error_with_traceback("Error in reciter selection", e)
-            await interaction.response.defer()
+            if not interaction.response.is_done():
+                await interaction.response.defer()
 
 
 # =============================================================================
@@ -1361,17 +1386,19 @@ class SimpleControlPanelView(View):
 
             self._update_last_activity(interaction.user, "skipped to previous surah")
 
+            # Respond to interaction immediately to prevent timeout
+            await interaction.response.defer()
+
             if self.audio_manager:
                 await self.audio_manager.skip_to_previous()
 
             # The audio manager's skip method now handles panel updates
             # after confirming the audio has actually changed
             # No need for immediate panel update here
-
-            await interaction.response.defer()
         except Exception as e:
             log_error_with_traceback("Error skipping to previous", e)
-            await interaction.response.defer()
+            if not interaction.response.is_done():
+                await interaction.response.defer()
 
     @discord.ui.button(label="🔀 Shuffle", style=discord.ButtonStyle.secondary, row=3)
     async def toggle_shuffle(self, interaction: discord.Interaction, button: Button):
@@ -1508,17 +1535,19 @@ class SimpleControlPanelView(View):
 
             self._update_last_activity(interaction.user, "skipped to next surah")
 
+            # Respond to interaction immediately to prevent timeout
+            await interaction.response.defer()
+
             if self.audio_manager:
                 await self.audio_manager.skip_to_next()
 
             # The audio manager's skip method now handles panel updates
             # after confirming the audio has actually changed
             # No need for immediate panel update here
-
-            await interaction.response.defer()
         except Exception as e:
             log_error_with_traceback("Error skipping to next", e)
-            await interaction.response.defer()
+            if not interaction.response.is_done():
+                await interaction.response.defer()
 
     def set_panel_message(self, message: discord.Message):
         """Set the panel message for updates"""

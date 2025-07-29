@@ -292,7 +292,7 @@ class QuestionCog(commands.Cog):
                 # Add English translation right after Arabic (if both exist)
                 if english_text:
                     embed.add_field(
-                        name="🇺🇸 **Translation**",
+                        name="📖 **Translation**",
                         value=f"```\n{english_text}\n```",
                         inline=False,
                     )
