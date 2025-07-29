@@ -69,6 +69,9 @@ from src.utils.tree_log import (
 # Import version information
 from src.version import BOT_NAME, BOT_VERSION
 
+from .health_monitor import HealthMonitor
+from .heartbeat_monitor import HeartbeatMonitor
+
 
 class AudioServiceAdapter:
     """
@@ -443,14 +446,33 @@ class ModernizedQuranBot:
                 logger=self.logger,
                 webhook_logger=webhook_logger,
                 data_dir=project_root / "data",
-                check_interval_minutes=60,  # Health reports every hour
+                check_interval_minutes=60,  # Regular health reports every hour
                 alert_interval_minutes=5    # Critical alerts every 5 minutes
             )
             
-            # Start health monitoring
             await health_monitor.start_monitoring()
             self.container.register_singleton(HealthMonitor, health_monitor)
             
+            # Heartbeat Monitor - Regular Discord webhook heartbeats
+            log_status("Initializing heartbeat monitoring system", "💓")
+            from .heartbeat_monitor import HeartbeatMonitor
+            
+            heartbeat_monitor = HeartbeatMonitor(
+                logger=self.logger,
+                webhook_logger=webhook_logger,
+                heartbeat_interval_minutes=30,  # Heartbeat every 30 minutes
+                quick_check_interval_minutes=5  # Quick health checks every 5 minutes
+            )
+            
+            await heartbeat_monitor.start_monitoring()
+            self.container.register_singleton(HeartbeatMonitor, heartbeat_monitor)
+            
+            # Set bot references for heartbeat monitoring
+            heartbeat_monitor.set_bot_references(
+                bot=self,  # Pass bot instance for Discord status monitoring
+                audio_service=None  # Will be set later when audio service is initialized
+            )
+
             # Set health monitor on services that need it
             try:
                 metadata_cache = self.container.get(MetadataCache)
@@ -592,6 +614,18 @@ class ModernizedQuranBot:
             await self.container.get(AudioService).initialize()
             await self.container.get(SQLiteStateService).initialize()
             await self.container.get(StateService).initialize()
+
+            # Update heartbeat monitor with audio service reference
+            try:
+                heartbeat_monitor = self.container.get(HeartbeatMonitor)
+                audio_service = self.container.get(AudioService)
+                heartbeat_monitor.set_bot_references(
+                    bot=self,
+                    audio_service=audio_service
+                )
+                log_status("Heartbeat monitor configured with services", "💓")
+            except Exception as e:
+                await self.logger.warning("Failed to configure heartbeat monitor", {"error": str(e)})
 
             log_status("Modern services initialized", "✅")
 
