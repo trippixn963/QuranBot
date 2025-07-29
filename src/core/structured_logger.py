@@ -484,3 +484,22 @@ def set_logging_service(service: LoggingService) -> None:
     """
     global _logging_service
     _logging_service = service
+
+
+def get_logger(name: str = "quranbot", level: str = "INFO") -> StructuredLogger:
+    """
+    Create a StructuredLogger instance.
+    
+    Args:
+        name: Logger name (default: "quranbot")
+        level: Logging level (default: "INFO")
+        
+    Returns:
+        StructuredLogger instance
+    """
+    return StructuredLogger(
+        name=name,
+        level=level,
+        log_file=Path("logs") / "quranbot.log",
+        console_output=True
+    )
