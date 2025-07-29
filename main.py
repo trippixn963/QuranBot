@@ -414,6 +414,30 @@ class ModernizedQuranBot:
             self.logger = self.container.get(StructuredLogger)
             await self.logger.info("Structured logger initialized")
 
+            # Health Monitor - Comprehensive health monitoring with webhooks
+            log_status("Initializing health monitoring system", "💚")
+            from src.core.health_monitor import HealthMonitor
+            
+            # Get webhook logger if available (will be set up later)
+            webhook_logger = None
+            try:
+                if hasattr(self, 'container') and self.container:
+                    webhook_logger = self.container.get(ModernWebhookLogger)
+            except:
+                pass  # Webhook logger not available yet
+            
+            health_monitor = HealthMonitor(
+                logger=self.logger,
+                webhook_logger=webhook_logger,
+                data_dir=project_root / "data",
+                check_interval_minutes=60,  # Regular health reports every hour
+                alert_interval_minutes=5    # Critical alerts every 5 minutes
+            )
+            
+            await health_monitor.start_monitoring()
+            self.container.register_singleton(HealthMonitor, health_monitor)
+            await self.logger.info("Health monitor initialized and started")
+
             # Cache Service
             cache_config = self.config_service.create_cache_service_config()
             cache_factory = lambda: CacheService(
@@ -477,6 +501,15 @@ class ModernizedQuranBot:
                 if webhook_logger:
                     await webhook_logger.initialize()
                     log_status("Webhook logger initialized", "✅")
+                    
+                    # Update health monitor with webhook logger reference
+                    try:
+                        health_monitor = self.container.get(HealthMonitor)
+                        health_monitor.set_webhook_logger(webhook_logger)
+                        await self.logger.info("Health monitor updated with webhook logger")
+                    except Exception as e:
+                        await self.logger.warning("Failed to update health monitor with webhook logger", {"error": str(e)})
+                        
             except Exception as e:
                 await self.logger.warning(
                     "Webhook logger initialization failed", {"error": str(e)}
@@ -527,6 +560,15 @@ class ModernizedQuranBot:
             # Initialize modern services
             await self.container.get(AudioService).initialize()
             await self.container.get(StateService).initialize()
+            
+            # Set health monitor on audio service
+            try:
+                audio_service = self.container.get(AudioService)
+                health_monitor = self.container.get(HealthMonitor)
+                audio_service.set_health_monitor(health_monitor)
+                await self.logger.info("Audio service updated with health monitor")
+            except Exception as e:
+                await self.logger.warning("Failed to set health monitor on audio service", {"error": str(e)})
 
             log_status("Modern services initialized", "✅")
 
