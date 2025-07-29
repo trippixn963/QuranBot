@@ -530,33 +530,57 @@ class ModernizedQuranBot:
                     "Webhook logger initialization failed", {"error": str(e)}
                 )
 
-            # Heartbeat Monitor - Regular Discord webhook heartbeats
-            # Must be initialized after webhook logger is available
-            log_status("Initializing heartbeat monitoring system", "💓")
-            from .heartbeat_monitor import HeartbeatMonitor
-            
-            # Get the initialized webhook logger
-            webhook_logger = None
+            # DEBUG: Explicit heartbeat monitor initialization with error handling
             try:
-                webhook_logger = self.container.get(ModernWebhookLogger)
-            except:
-                await self.logger.warning("Webhook logger not available for heartbeat monitor")
-            
-            heartbeat_monitor = HeartbeatMonitor(
-                logger=self.logger,
-                webhook_logger=webhook_logger,
-                heartbeat_interval_minutes=30,  # Heartbeat every 30 minutes
-                quick_check_interval_minutes=5  # Quick health checks every 5 minutes
-            )
-            
-            await heartbeat_monitor.start_monitoring()
-            self.container.register_singleton(HeartbeatMonitor, heartbeat_monitor)
-            
-            # Set bot references for heartbeat monitoring
-            heartbeat_monitor.set_bot_references(
-                bot=self,  # Pass bot instance for Discord status monitoring
-                audio_service=None  # Will be set later when audio service is initialized
-            )
+                log_status("Starting heartbeat monitor initialization", "🔍")
+                await self.logger.info("DEBUG: About to initialize heartbeat monitor")
+                
+                # Heartbeat Monitor - Regular Discord webhook heartbeats
+                # Must be initialized after webhook logger is available
+                log_status("Initializing heartbeat monitoring system", "💓")
+                from .heartbeat_monitor import HeartbeatMonitor
+                
+                await self.logger.info("DEBUG: HeartbeatMonitor imported successfully")
+                
+                # Get the initialized webhook logger
+                webhook_logger = None
+                try:
+                    webhook_logger = self.container.get(ModernWebhookLogger)
+                    await self.logger.info("DEBUG: Got webhook logger from container", {"webhook_logger": webhook_logger is not None})
+                except Exception as e:
+                    await self.logger.warning("Webhook logger not available for heartbeat monitor", {"error": str(e)})
+                
+                await self.logger.info("DEBUG: Creating HeartbeatMonitor instance")
+                heartbeat_monitor = HeartbeatMonitor(
+                    logger=self.logger,
+                    webhook_logger=webhook_logger,
+                    heartbeat_interval_minutes=30,  # Heartbeat every 30 minutes
+                    quick_check_interval_minutes=5  # Quick health checks every 5 minutes
+                )
+                
+                await self.logger.info("DEBUG: Starting heartbeat monitor")
+                await heartbeat_monitor.start_monitoring()
+                
+                await self.logger.info("DEBUG: Registering heartbeat monitor in container")
+                self.container.register_singleton(HeartbeatMonitor, heartbeat_monitor)
+                
+                await self.logger.info("DEBUG: Setting bot references")
+                # Set bot references for heartbeat monitoring
+                heartbeat_monitor.set_bot_references(
+                    bot=self,  # Pass bot instance for Discord status monitoring
+                    audio_service=None  # Will be set later when audio service is initialized
+                )
+                
+                await self.logger.info("DEBUG: Heartbeat monitor initialization completed successfully")
+                log_status("Heartbeat monitor initialized", "💓")
+                
+            except Exception as e:
+                await self.logger.error("CRITICAL: Heartbeat monitor initialization failed", {
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "traceback": traceback.format_exc()
+                })
+                log_status("Heartbeat monitor failed to initialize", "❌")
 
             log_status("Core services initialized", "✅")
 
