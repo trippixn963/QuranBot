@@ -73,6 +73,9 @@ class AudioService:
         self._config = config
         self._logger = logger
         self._cache = metadata_cache
+        
+        # Health monitor (will be set during initialization)
+        self._health_monitor = None
 
         # Voice client management
         self._voice_client: discord.VoiceClient | None = None
@@ -122,6 +125,13 @@ class AudioService:
 
             # Start background tasks
             await self._start_background_tasks()
+            
+            # Get health monitor if available
+            try:
+                from ..core.health_monitor import HealthMonitor
+                self._health_monitor = self._container.get(HealthMonitor)
+            except:
+                pass  # Health monitor not available
 
             await self._logger.info(
                 "Audio service initialized successfully",
@@ -131,6 +141,7 @@ class AudioService:
                     "cache_enabled": self._config.cache_enabled,
                     "restored_surah": self._current_state.current_position.surah_number,
                     "restored_position": f"{self._current_state.current_position.position_seconds:.1f}s",
+                    "health_monitor": self._health_monitor is not None,
                 },
             )
 
@@ -800,6 +811,18 @@ class AudioService:
                             "duration": file_info.duration_seconds,
                         },
                     )
+                    
+                    # Report audio activity to health monitor
+                    if self._health_monitor:
+                        await self._health_monitor.report_audio_activity(
+                            "track_started",
+                            {
+                                "file": file_path.name,
+                                "reciter": self._current_state.current_reciter,
+                                "surah": self._current_state.current_position.surah_number,
+                                "duration": file_info.duration_seconds,
+                            }
+                        )
 
                     # Wait for playback to complete
                     await self._wait_for_playback_completion()
@@ -921,6 +944,17 @@ class AudioService:
                 "mode": self._current_state.mode.value,
             },
         )
+        
+        # Report progression to health monitor
+        if self._health_monitor:
+            await self._health_monitor.report_audio_activity(
+                "track_advanced",
+                {
+                    "from_surah": current_surah,
+                    "to_surah": self._current_state.current_position.surah_number,
+                    "mode": self._current_state.mode.value,
+                }
+            )
 
     async def _get_current_audio_file_path(self) -> Path | None:
         """Get the path to the current audio file"""
@@ -984,6 +1018,19 @@ class AudioService:
                         "No successful playback in 10 minutes",
                         {"last_playback": self._last_successful_playback.isoformat()},
                     )
+                    
+                    # Report audio stuck to health monitor for webhook alert
+                    if self._health_monitor:
+                        await self._health_monitor.report_audio_activity(
+                            "audio_stuck",
+                            {
+                                "last_playback": self._last_successful_playback.isoformat(),
+                                "minutes_since_playback": time_since_playback.total_seconds() / 60,
+                                "current_surah": self._current_state.current_position.surah_number,
+                                "is_connected": self._voice_client.is_connected() if self._voice_client else False,
+                                "is_playing": self._voice_client.is_playing() if self._voice_client else False,
+                            }
+                        )
 
             except asyncio.CancelledError:
                 break

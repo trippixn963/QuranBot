@@ -416,7 +416,7 @@ class ConfigService:
         return StateServiceConfig(
             data_directory=project_root / "data",
             backup_directory=project_root / "backup",
-            enable_backups=True,
+            enable_backups=False,  # Disabled - using lightweight DataBackupService instead
             backup_interval_hours=self.config.BACKUP_INTERVAL_HOURS,
             max_backups=7,
             enable_integrity_checks=True,

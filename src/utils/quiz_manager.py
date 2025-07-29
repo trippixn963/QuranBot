@@ -1626,13 +1626,22 @@ class QuizManager:
         try:
             # Use the same file path as the interval command
             quiz_config_file = Path("data/quiz_state.json")
-            if quiz_config_file.exists():
-                with open(quiz_config_file) as f:
-                    data = json.load(f)
-                    return data.get("schedule_config", {}).get(
-                        "send_interval_hours", 3.0
-                    )
-            return 3.0  # Default 3 hours
+            
+            # Use JSON validator for safe reading
+            from src.core.json_validator import JSONValidator, validate_quiz_state, create_default_schemas
+            from src.core.structured_logger import get_logger
+            
+            json_validator = JSONValidator(get_logger())
+            default_data = create_default_schemas()["quiz_state.json"]
+            
+            data = json_validator.safe_read_json(
+                quiz_config_file,
+                default_data=default_data,
+                validator=validate_quiz_state
+            )
+            
+            return data.get("schedule_config", {}).get("send_interval_hours", 3.0)
+            
         except Exception as e:
             log_error_with_traceback("Error loading question interval config", e)
             return 3.0
@@ -1642,11 +1651,19 @@ class QuizManager:
         try:
             quiz_config_file = Path("data/quiz_state.json")
 
-            # Load existing config or create new one
-            config_data = {}
-            if quiz_config_file.exists():
-                with open(quiz_config_file) as f:
-                    config_data = json.load(f)
+            # Use JSON validator for safe operations
+            from src.core.json_validator import JSONValidator, validate_quiz_state, create_default_schemas
+            from src.core.structured_logger import get_logger
+            
+            json_validator = JSONValidator(get_logger())
+            default_data = create_default_schemas()["quiz_state.json"]
+            
+            # Load existing config safely
+            config_data = json_validator.safe_read_json(
+                quiz_config_file,
+                default_data=default_data,
+                validator=validate_quiz_state
+            )
 
             # Update the schedule config
             if "schedule_config" not in config_data:
@@ -1657,11 +1674,13 @@ class QuizManager:
                 UTC
             ).isoformat()
 
-            # Save the updated config
-            with open(quiz_config_file, "w") as f:
-                json.dump(config_data, f, indent=2)
+            # Save the updated config safely with atomic writes
+            return json_validator.safe_write_json(
+                quiz_config_file,
+                config_data,
+                validator=validate_quiz_state
+            )
 
-            return True
         except Exception as e:
             log_error_with_traceback("Error saving question interval config", e)
             return False

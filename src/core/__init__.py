@@ -27,6 +27,10 @@ from .structured_logger import (
     log_with_correlation,
     set_logging_service,
 )
+from .json_validator import JSONValidator
+from .file_integrity_monitor import FileIntegrityMonitor
+from .data_backup_service import DataBackupService
+from .health_monitor import HealthMonitor
 
 __all__ = [
     "DIContainer",

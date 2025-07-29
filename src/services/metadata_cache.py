@@ -47,6 +47,9 @@ class MetadataCache:
         self._max_size = max_size
         self._enable_persistence = enable_persistence
         self._cache_file = cache_file or Path("data/metadata_cache.json")
+        
+        # Health monitor (will be set if available)
+        self._health_monitor = None
 
         # LRU cache implementation using OrderedDict
         self._cache: OrderedDict[str, AudioCache] = OrderedDict()
@@ -80,6 +83,10 @@ class MetadataCache:
                 "cached_items": len(self._cache),
             },
         )
+        
+    def set_health_monitor(self, health_monitor):
+        """Set health monitor for reporting JSON operations"""
+        self._health_monitor = health_monitor
 
     async def shutdown(self) -> None:
         """Shutdown the cache and save to disk"""
@@ -486,12 +493,27 @@ class MetadataCache:
                 "Cache saved to disk",
                 {"entries": len(cache_data["entries"]), "file": str(self._cache_file)},
             )
+            
+            # Report successful save to health monitor
+            if self._health_monitor:
+                await self._health_monitor.report_json_save(
+                    self._cache_file.name, 
+                    True
+                )
 
         except Exception as e:
             await self._logger.error(
                 "Failed to save cache to disk",
                 {"error": str(e), "file": str(self._cache_file)},
             )
+            
+            # Report failed save to health monitor
+            if self._health_monitor:
+                await self._health_monitor.report_json_save(
+                    self._cache_file.name, 
+                    False, 
+                    str(e)
+                )
 
     async def _load_from_disk(self) -> None:
         """Load cache from disk"""

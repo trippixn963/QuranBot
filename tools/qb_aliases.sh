@@ -44,6 +44,24 @@ alias qb-local-errors='tail -20 logs/$(date +%Y-%m-%d)/errors.log'
 alias qb-test='python tools/test_bot.py'
 alias qb-update='cd /Users/johnhamwi/Developer/QuranBot && git pull origin main'
 
+# JSON Health Check
+alias qb-health='python tools/json_health_check.py'
+alias qb-health-repair='python tools/json_health_check.py --repair'
+alias qb-health-quiz='python tools/json_health_check.py --quiz'
+alias qb-health-json='python tools/json_health_check.py --json'
+
+# Data Backup
+alias qb-backup-status='ls -la backup/data_backup.tar.gz 2>/dev/null && echo "✅ Data backup exists" || echo "❌ No data backup found"'
+alias qb-backup-check='ssh root@159.89.90.90 "ls -la /opt/DiscordBots/QuranBot/backup/data_backup.tar.gz 2>/dev/null && echo \"✅ VPS data backup exists\" || echo \"❌ No VPS data backup found\""'
+alias qb-backup-cleanup='python tools/cleanup_old_backups.py'
+alias qb-backup-cleanup-delete='python tools/cleanup_old_backups.py --delete'
+
+# Health Monitoring
+alias qb-health-check='ssh root@159.89.90.90 "ps aux | grep -E \"(ffmpeg|python.*main.py)\" | grep -v grep"'
+alias qb-webhooks='ssh root@159.89.90.90 "tail -20 /opt/DiscordBots/QuranBot/logs/quranbot.log | grep -i webhook"'
+alias qb-memory='ssh root@159.89.90.90 "ps aux | grep \"python.*main.py\" | grep -v grep | awk '\''{print \"Memory: \" \$6/1024 \"MB, CPU: \" \$3 \"%\"}\''"'
+alias qb-monitor='echo "🔍 Bot Health Check:" && qb-status && echo && echo "💾 Audio Status:" && qb-health-check && echo && echo "💿 Memory Usage:" && qb-memory'
+
 # VPS Deployment (use with caution)
 alias qb-deploy='ssh root@159.89.90.90 "cd /opt/DiscordBots/QuranBot && git pull origin main && systemctl restart quranbot.service"'
 
@@ -76,7 +94,25 @@ echo "   qb-recovery-disable - Disable auto-recovery"
 echo "   qb-recovery-config  - Interactive configuration"
 echo "   qb-recovery-reset   - Reset to default settings"
 echo ""
-echo "🎯 Quick check: qb-status && qb-audio && qb-daemon-status"
+echo "🩺 JSON Health Check:"
+echo "   qb-health           - Check all JSON files"
+echo "   qb-health-repair    - Check and repair corrupted files"
+echo "   qb-health-quiz      - Validate quiz files specifically"
+echo "   qb-health-json      - Output results in JSON format"
+echo ""
+echo "💾 Data Backup:"
+echo "   qb-backup-status    - Check local data backup"
+echo "   qb-backup-check     - Check VPS data backup"
+echo "   qb-backup-cleanup   - Preview old backup cleanup"
+echo "   qb-backup-cleanup-delete - Delete old backup files"
+echo ""
+echo "💚 Health Monitoring:"
+echo "   qb-health-check     - Check FFmpeg and bot processes"
+echo "   qb-webhooks         - Recent webhook activity"
+echo "   qb-memory           - Memory and CPU usage"
+echo "   qb-monitor          - Comprehensive health overview"
+echo ""
+echo "🎯 Quick check: qb-monitor && qb-health && qb-backup-check"
 
 # Audio Recovery Management
 alias qb-recovery-status='python3 tools/audio_recovery_control.py status'

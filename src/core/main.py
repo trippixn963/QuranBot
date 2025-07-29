@@ -426,6 +426,70 @@ class ModernizedQuranBot:
             self.logger = self.container.get(StructuredLogger)
             await self.logger.info("Structured logger initialized")
 
+            # File Integrity Monitor - Early validation
+            log_status("Validating data file integrity", "🛡️")
+            from .file_integrity_monitor import FileIntegrityMonitor
+            
+            file_monitor = FileIntegrityMonitor(
+                logger=self.logger,
+                data_dir=project_root / "data"
+            )
+            
+            # Perform startup validation
+            integrity_ok = await file_monitor.startup_validation()
+            if not integrity_ok:
+                log_critical_error("Critical data files are corrupted and could not be repaired")
+                return False
+                
+            # Start periodic monitoring
+            await file_monitor.start_periodic_monitoring(interval_seconds=300)  # 5 minutes
+            self.container.register_singleton(FileIntegrityMonitor, file_monitor)
+
+            # Data Backup Service - Lightweight data-only backups
+            log_status("Initializing data backup service", "💾")
+            from .data_backup_service import DataBackupService
+            
+            data_backup = DataBackupService(
+                logger=self.logger,
+                data_dir=project_root / "data",
+                backup_dir=project_root / "backup",
+                backup_interval_hours=6  # Every 6 hours
+            )
+            
+            # Start backup service
+            await data_backup.start_backup_service()
+            self.container.register_singleton(DataBackupService, data_backup)
+
+            # Health Monitor - Comprehensive health monitoring with webhooks
+            log_status("Initializing health monitoring system", "💚")
+            from .health_monitor import HealthMonitor
+            
+            # Get webhook logger if available
+            webhook_logger = None
+            try:
+                webhook_logger = self.container.get(ModernWebhookLogger)
+            except:
+                pass  # Webhook logger not available
+            
+            health_monitor = HealthMonitor(
+                logger=self.logger,
+                webhook_logger=webhook_logger,
+                data_dir=project_root / "data",
+                check_interval_minutes=60,  # Health reports every hour
+                alert_interval_minutes=5    # Critical alerts every 5 minutes
+            )
+            
+            # Start health monitoring
+            await health_monitor.start_monitoring()
+            self.container.register_singleton(HealthMonitor, health_monitor)
+            
+            # Set health monitor on services that need it
+            try:
+                metadata_cache = self.container.get(MetadataCache)
+                metadata_cache.set_health_monitor(health_monitor)
+            except:
+                pass  # MetadataCache not available yet
+
             # Cache Service
             cache_config = self.config_service.create_cache_service_config()
             cache_factory = lambda: CacheService(

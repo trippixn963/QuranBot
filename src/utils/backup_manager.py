@@ -650,26 +650,26 @@ class BackupManager:
 # Global Backup Manager Instance
 # =============================================================================
 
-# Create global instance
-backup_manager = BackupManager()
+# Global instance disabled - using lightweight DataBackupService instead
+backup_manager = None
 
 
 # Export functions for backward compatibility
 def start_backup_scheduler():
-    """Start the automated backup scheduler"""
-    backup_manager.start_backup_scheduler()
+    """Start the automated backup scheduler (DISABLED - using DataBackupService)"""
+    pass  # Disabled - using lightweight DataBackupService instead
 
 
 def stop_backup_scheduler():
-    """Stop the automated backup scheduler"""
-    backup_manager.stop_backup_scheduler()
+    """Stop the automated backup scheduler (DISABLED)"""
+    pass  # Disabled
 
 
 def get_backup_status() -> dict:
-    """Get current backup system status"""
-    return backup_manager.get_backup_status()
+    """Get current backup system status (DISABLED)"""
+    return {"status": "disabled", "reason": "Using DataBackupService instead"}
 
 
 def cleanup_old_backups(keep_count: int = 1) -> int:
-    """Clean up old backup files"""
-    return backup_manager.cleanup_old_backups(keep_count)
+    """Clean up old backup files (DISABLED)"""
+    return 0  # Disabled
