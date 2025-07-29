@@ -52,7 +52,7 @@ from .tree_log import (
     log_perfect_tree_section,
     log_user_interaction,
 )
-from .user_cache import cache_user_from_interaction
+# from .user_cache import cache_user_from_interaction  # Temporarily disabled
 
 # Global scheduler task reference
 _quiz_scheduler_task = None
@@ -740,7 +740,7 @@ class QuizButton(discord.ui.Button):
 
         # Cache user info for analytics and statistics
         try:
-            cache_user_from_interaction(interaction)
+            pass  # cache_user_from_interaction(interaction)  # Temporarily disabled
         except Exception:
             pass  # Fail silently to not interfere with quiz operations
 
