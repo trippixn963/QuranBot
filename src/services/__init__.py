@@ -10,6 +10,7 @@ from .metadata_cache import MetadataCache
 from .state_service import StateService
 from .database_service import QuranBotDatabaseService
 from .sqlite_state_service import SQLiteStateService
+from .quiz_service import ModernQuizService, QuizQuestion
 
 __all__ = [
     "AudioService",
@@ -17,4 +18,6 @@ __all__ = [
     "StateService",
     "QuranBotDatabaseService",
     "SQLiteStateService",
+    "ModernQuizService",
+    "QuizQuestion",
 ]

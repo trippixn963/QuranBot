@@ -91,7 +91,17 @@ class HealthMonitor:
         self.alert_task = None
         self.is_monitoring = False
         
-        # JSON files removed - monitoring SQLite database health instead
+        # SQLite database health monitoring
+        self.database_health_stats = {
+            "last_check": None,
+            "size_mb": 0.0,
+            "table_count": 0,
+            "record_count": 0,
+            "last_backup": None,
+            "integrity_status": "unknown",
+            "wal_status": "unknown",
+            "connection_test": False
+        }
         
     async def start_monitoring(self) -> None:
         """Start the health monitoring system"""
@@ -213,9 +223,9 @@ class HealthMonitor:
             audio_check = await self._check_audio_health()
             health_checks.append(audio_check)
             
-            # JSON file integrity check
-            json_check = await self._check_json_integrity()
-            health_checks.append(json_check)
+            # SQLite database health check
+            database_check = await self._check_database_health()
+            health_checks.append(database_check)
             
             # Memory and performance check
             performance_check = await self._check_performance()
@@ -326,50 +336,7 @@ class HealthMonitor:
                 details={"error": str(e)}
             )
             
-    async def _check_json_integrity(self) -> HealthCheck:
-        """Check JSON file integrity"""
-        try:
-            results = {}
-            corrupted_files = []
-            
-            for filename in self.critical_files:
-                file_path = self.data_dir / filename
-                validation_result = self.json_validator.validate_json_file(file_path)
-                results[filename] = validation_result
-                
-                if not validation_result["valid"]:
-                    corrupted_files.append(filename)
-                    
-            if not corrupted_files:
-                return HealthCheck(
-                    name="JSON Integrity",
-                    status=HealthStatus.HEALTHY,
-                    message=f"✅ All {len(self.critical_files)} JSON files valid",
-                    details={
-                        "files_checked": len(self.critical_files),
-                        "corrupted_files": 0,
-                        "details": results
-                    }
-                )
-            else:
-                return HealthCheck(
-                    name="JSON Integrity",
-                    status=HealthStatus.CRITICAL,
-                    message=f"❌ {len(corrupted_files)} corrupted JSON files detected",
-                    details={
-                        "files_checked": len(self.critical_files),
-                        "corrupted_files": corrupted_files,
-                        "details": results
-                    }
-                )
-                
-        except Exception as e:
-            return HealthCheck(
-                name="JSON Integrity",
-                status=HealthStatus.WARNING,
-                message=f"⚠️ Could not check JSON files: {e}",
-                details={"error": str(e)}
-            )
+    # JSON integrity check removed - replaced with SQLite database health monitoring
             
     async def _check_performance(self) -> HealthCheck:
         """Check system performance metrics"""
@@ -415,6 +382,130 @@ class HealthMonitor:
                 name="Performance",
                 status=HealthStatus.WARNING,
                 message=f"⚠️ Could not check performance: {e}",
+                details={"error": str(e)}
+            )
+    
+    async def _check_database_health(self) -> HealthCheck:
+        """Comprehensive SQLite database health check"""
+        try:
+            import sqlite3
+            import os
+            from pathlib import Path
+            from datetime import datetime, timezone
+            
+            db_path = Path("data/quranbot.db")
+            
+            if not db_path.exists():
+                return HealthCheck(
+                    name="Database",
+                    status=HealthStatus.CRITICAL,
+                    message="❌ SQLite database file not found!",
+                    details={"db_path": str(db_path), "exists": False}
+                )
+            
+            # Get database file size
+            file_size_bytes = os.path.getsize(db_path)
+            file_size_mb = file_size_bytes / 1024 / 1024
+            
+            # Test database connection and integrity
+            conn = sqlite3.connect(db_path)
+            try:
+                # Check database integrity
+                integrity_result = conn.execute("PRAGMA integrity_check").fetchone()
+                integrity_ok = integrity_result[0] == "ok"
+                
+                # Check WAL mode status
+                journal_mode = conn.execute("PRAGMA journal_mode").fetchone()[0]
+                wal_enabled = journal_mode.lower() == "wal"
+                
+                # Count tables
+                tables_result = conn.execute(
+                    "SELECT COUNT(*) FROM sqlite_master WHERE type='table'"
+                ).fetchone()
+                table_count = tables_result[0] if tables_result else 0
+                
+                # Count total records across main tables
+                record_counts = {}
+                main_tables = [
+                    "daily_verses", "hadith", "duas", "quiz_questions", 
+                    "conversations", "playback_state", "bot_statistics"
+                ]
+                
+                total_records = 0
+                for table in main_tables:
+                    try:
+                        count_result = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()
+                        count = count_result[0] if count_result else 0
+                        record_counts[table] = count
+                        total_records += count
+                    except sqlite3.OperationalError:
+                        # Table doesn't exist, skip
+                        pass
+                
+                # Check recent activity (last insert/update)
+                try:
+                    last_activity = conn.execute(
+                        "SELECT MAX(created_at) FROM ("
+                        "SELECT created_at FROM quiz_questions UNION ALL "
+                        "SELECT created_at FROM daily_verses UNION ALL "
+                        "SELECT created_at FROM conversations"
+                        ")"
+                    ).fetchone()
+                    last_activity_time = last_activity[0] if last_activity and last_activity[0] else "unknown"
+                except sqlite3.OperationalError:
+                    last_activity_time = "unknown"
+                
+                # Update health stats
+                self.database_health_stats.update({
+                    "last_check": datetime.now(timezone.utc).isoformat(),
+                    "size_mb": round(file_size_mb, 2),
+                    "table_count": table_count,
+                    "record_count": total_records,
+                    "integrity_status": "ok" if integrity_ok else "corrupt",
+                    "wal_status": "enabled" if wal_enabled else "disabled",
+                    "connection_test": True,
+                    "last_activity": last_activity_time
+                })
+                
+                # Determine health status
+                if not integrity_ok:
+                    status = HealthStatus.CRITICAL
+                    message = "❌ Database integrity check failed!"
+                elif file_size_mb > 100:  # Database larger than 100MB
+                    status = HealthStatus.WARNING
+                    message = f"⚠️ Large database size: {file_size_mb:.1f}MB"
+                elif total_records == 0:
+                    status = HealthStatus.WARNING
+                    message = "⚠️ No data in database tables"
+                else:
+                    status = HealthStatus.HEALTHY
+                    message = f"✅ Database healthy: {total_records} records, {file_size_mb:.1f}MB"
+                
+                return HealthCheck(
+                    name="Database",
+                    status=status,
+                    message=message,
+                    details={
+                        "file_size_mb": round(file_size_mb, 2),
+                        "table_count": table_count,
+                        "total_records": total_records,
+                        "integrity_ok": integrity_ok,
+                        "wal_enabled": wal_enabled,
+                        "record_counts": record_counts,
+                        "last_activity": last_activity_time,
+                        "db_path": str(db_path)
+                    }
+                )
+                
+            finally:
+                conn.close()
+                
+        except Exception as e:
+            self.database_health_stats["connection_test"] = False
+            return HealthCheck(
+                name="Database",
+                status=HealthStatus.CRITICAL,
+                message=f"❌ Database check failed: {e}",
                 details={"error": str(e)}
             )
             
@@ -463,40 +554,59 @@ class HealthMonitor:
             )
             
     async def _check_backup_status(self) -> HealthCheck:
-        """Check backup system status"""
+        """Check SQLite database backup status"""
         try:
-            backup_file = Path("backup/data_backup.tar.gz")
+            # Check for SQLite database backup
+            backup_dir = Path("backup")
+            db_backup_files = list(backup_dir.glob("quranbot_backup_*.db")) if backup_dir.exists() else []
             
-            if backup_file.exists():
-                stat = backup_file.stat()
+            if db_backup_files:
+                # Get the most recent backup
+                latest_backup = max(db_backup_files, key=lambda f: f.stat().st_mtime)
+                stat = latest_backup.stat()
                 backup_age = datetime.now(timezone.utc) - datetime.fromtimestamp(stat.st_mtime, timezone.utc)
                 backup_age_hours = backup_age.total_seconds() / 3600
                 size_mb = stat.st_size / 1024 / 1024
                 
-                if backup_age_hours > 24:  # More than 24 hours old
+                if backup_age_hours > 48:  # More than 48 hours old for SQLite
                     status = HealthStatus.WARNING
-                    message = f"⚠️ Backup is {backup_age_hours:.1f}h old"
+                    message = f"⚠️ Database backup is {backup_age_hours:.1f}h old"
+                elif size_mb < 0.1:  # Less than 100KB
+                    status = HealthStatus.WARNING
+                    message = f"⚠️ Database backup seems too small: {size_mb:.1f}MB"
                 else:
                     status = HealthStatus.HEALTHY
-                    message = f"✅ Recent backup: {backup_age_hours:.1f}h ago ({size_mb:.1f}MB)"
+                    message = f"✅ Recent DB backup: {backup_age_hours:.1f}h ago ({size_mb:.1f}MB)"
                     
                 return HealthCheck(
-                    name="Data Backup",
+                    name="Database Backup",
                     status=status,
                     message=message,
                     details={
                         "backup_age_hours": round(backup_age_hours, 1),
                         "backup_size_mb": round(size_mb, 1),
-                        "last_backup": datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat()
+                        "backup_file": latest_backup.name,
+                        "last_backup": datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat(),
+                        "total_backups": len(db_backup_files)
                     }
                 )
             else:
-                return HealthCheck(
-                    name="Data Backup",
-                    status=HealthStatus.WARNING,
-                    message="⚠️ No backup file found",
-                    details={"backup_exists": False}
-                )
+                # Check if the main database exists (backup might not be critical)
+                main_db = Path("data/quranbot.db")
+                if main_db.exists():
+                    return HealthCheck(
+                        name="Database Backup",
+                        status=HealthStatus.WARNING,
+                        message="⚠️ No database backup found (main DB exists)",
+                        details={"backup_exists": False, "main_db_exists": True}
+                    )
+                else:
+                    return HealthCheck(
+                        name="Database Backup", 
+                        status=HealthStatus.CRITICAL,
+                        message="❌ No database or backup found!",
+                        details={"backup_exists": False, "main_db_exists": False}
+                    )
                 
         except Exception as e:
             return HealthCheck(

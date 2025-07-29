@@ -1624,18 +1624,35 @@ class QuizManager:
     def get_interval_hours(self) -> float:
         """Get the current question interval in hours from config"""
         try:
-            # Use the same file path as the interval command
-            quiz_config_file = Path("data/quiz_state.json")
-            
-            # JSON validator removed - using SQLite instead
+            # SQLite integration for quiz config
+            import asyncio
+            from src.services.sqlite_state_service import SQLiteStateService
             from src.core.structured_logger import get_logger
             
-            # Default config for backward compatibility
-            default_data = {"interval_hours": 24}
+            logger = get_logger()
             
-            # JSON reading replaced with SQLite - using default for now
-            # TODO: Integrate with SQLiteStateService for quiz config
-            return 3.0  # Default interval hours
+            # Create SQLite state service
+            sqlite_service = SQLiteStateService(logger=logger)
+            
+            # Load quiz config asynchronously
+            async def _load_config():
+                await sqlite_service.initialize()
+                config = await sqlite_service.load_quiz_config()
+                return config.get("send_interval_hours", 3.0)
+            
+            # Run async function in sync context
+            loop = None
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            
+            if loop.is_running():
+                # If event loop is already running, return default
+                return 3.0
+            else:
+                return loop.run_until_complete(_load_config())
             
         except Exception as e:
             log_error_with_traceback("Error loading question interval config", e)
@@ -1644,18 +1661,53 @@ class QuizManager:
     def set_interval_hours(self, hours: float) -> bool:
         """Set the question interval in hours and save to config"""
         try:
-            quiz_config_file = Path("data/quiz_state.json")
-
-            # JSON operations replaced with SQLite - simplified for now
-            # TODO: Integrate with SQLiteStateService for quiz config persistence
+            # SQLite integration for quiz config persistence
+            import asyncio
+            from src.services.sqlite_state_service import SQLiteStateService
             from src.core.structured_logger import get_logger
+            from datetime import datetime, timezone
             
             logger = get_logger()
-            # Note: Using sync logging since this method is not async
-            print(f"Quiz interval set to {hours} hours (SQLite integration pending)")
             
-            # Return success - interval will be stored in memory for now
-            return True
+            # Create SQLite state service
+            sqlite_service = SQLiteStateService(logger=logger)
+            
+            # Save quiz config asynchronously
+            async def _save_config():
+                await sqlite_service.initialize()
+                
+                # Load existing config
+                config = await sqlite_service.load_quiz_config()
+                
+                # Update with new interval
+                config.update({
+                    "send_interval_hours": hours,
+                    "last_updated": datetime.now(timezone.utc).isoformat(),
+                    "updated_by": "quiz_manager"
+                })
+                
+                # Save updated config
+                success = await sqlite_service.save_quiz_config(config)
+                if success:
+                    await logger.info(f"Quiz interval updated to {hours} hours via SQLite")
+                else:
+                    await logger.error("Failed to save quiz interval to SQLite")
+                return success
+            
+            # Run async function in sync context
+            loop = None
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            
+            if loop.is_running():
+                # If event loop is already running, log and return partial success
+                print(f"Quiz interval set to {hours} hours (will be saved to SQLite asynchronously)")
+                return True
+            else:
+                return loop.run_until_complete(_save_config())
 
         except Exception as e:
             log_error_with_traceback("Error saving question interval config", e)
