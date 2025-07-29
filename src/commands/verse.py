@@ -324,6 +324,9 @@ class VerseCog(commands.Cog):
 
             # Set footer with admin profile picture
             try:
+                from src.config import get_config_service
+                config = get_config_service().config
+                DEVELOPER_ID = config.DEVELOPER_ID
                 admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
                 if admin_user and admin_user.avatar:
                     embed.set_footer(
@@ -484,7 +487,8 @@ class VerseCog(commands.Cog):
                                         },
                                         user_avatar_url,
                                     )
-                                except:
+                                except Exception as discord_log_error:
+                                    # Silently ignore Discord logging failures
                                     pass
 
                     except TimeoutError:
@@ -559,7 +563,8 @@ class VerseCog(commands.Cog):
                                 "Message ID": str(message.id),
                             },
                         )
-                    except:
+                    except Exception as discord_log_error:
+                        # Silently ignore Discord logging failures
                         pass
 
             except discord.Forbidden:

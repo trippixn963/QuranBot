@@ -1,18 +1,29 @@
-# =============================================================================
-# QuranBot - Structured Logging System
-# =============================================================================
-# This module provides a modern structured logging system with JSON formatting,
-# correlation ID context management, and async support for the QuranBot
-# modernization project.
-#
-# Key Features:
-# - JSON-formatted structured logging
-# - Correlation ID context management using contextvars
-# - Async logging support
-# - Configurable log levels and filtering
-# - Type-safe logging with context data
-# - Integration with existing Discord logging
-# =============================================================================
+"""QuranBot - Structured Logging System.
+
+Modern structured logging system with JSON formatting, correlation ID context
+management, and async support for the QuranBot modernization project.
+
+This module provides a comprehensive logging infrastructure designed for
+modern async applications with proper context tracking and structured output.
+
+Classes:
+    StructuredFormatter: JSON formatter for structured logging output
+    StructuredLogger: Main async logger with context management
+    
+Features:
+    - JSON-formatted structured logging with consistent fields
+    - Correlation ID context management using contextvars
+    - Async logging support for non-blocking operations
+    - Configurable log levels and filtering
+    - Type-safe logging with context data validation
+    - Integration with existing Discord logging systems
+    - Performance-optimized for high-throughput logging
+    
+Context Management:
+    - Automatic correlation ID tracking across async contexts
+    - Request/operation correlation for debugging
+    - Thread-safe context variable management
+"""
 
 import asyncio
 from contextvars import ContextVar
@@ -40,12 +51,16 @@ class StructuredFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         """
         Format a log record as structured JSON.
+        
+        Converts a Python logging record into a structured JSON format with
+        consistent fields including timestamp, level, message, correlation ID,
+        source location, and optional context data.
 
         Args:
-            record: The log record to format
+            record: The log record to format containing message and metadata
 
         Returns:
-            JSON-formatted log string
+            str: JSON-formatted log string ready for output
         """
         # Get correlation ID from context
         corr_id = correlation_id.get() or str(uuid.uuid4())[:8]
@@ -126,13 +141,17 @@ class StructuredLogger:
         console_output: bool = True,
     ):
         """
-        Initialize the structured logger.
+        Initialize the structured logger with handlers and formatting.
+        
+        Sets up a structured logger with JSON formatting, correlation ID support,
+        and configurable output destinations. Clears any existing handlers to
+        prevent duplicate logging.
 
         Args:
-            name: Logger name (typically module name)
-            level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-            log_file: Optional file path for log output
-            console_output: Whether to output to console
+            name: Logger name, typically the module name for identification
+            level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) or integer
+            log_file: Optional file path for persistent log output
+            console_output: Whether to enable console output to stdout
         """
         self._logger = logging.getLogger(name)
         self._logger.setLevel(level)
@@ -158,13 +177,17 @@ class StructuredLogger:
 
     def set_correlation_id(self, corr_id: str | None = None) -> str:
         """
-        Set correlation ID for request tracking.
+        Set correlation ID for request/operation tracking.
+        
+        Establishes a correlation ID in the context variable for tracking
+        related log entries across async operations. Automatically generates
+        a new UUID if no correlation ID is provided.
 
         Args:
-            corr_id: Optional correlation ID, generates new one if None
+            corr_id: Optional correlation ID string. If None, generates new UUID
 
         Returns:
-            The correlation ID that was set
+            str: The correlation ID that was set in the context
         """
         if corr_id is None:
             corr_id = str(uuid.uuid4())
@@ -174,30 +197,39 @@ class StructuredLogger:
 
     def get_correlation_id(self) -> str:
         """
-        Get current correlation ID.
+        Get current correlation ID from context.
+        
+        Retrieves the correlation ID from the current async context,
+        or returns empty string if no correlation ID is set.
 
         Returns:
-            Current correlation ID or empty string if not set
+            str: Current correlation ID or empty string if not set
         """
         return correlation_id.get()
 
     async def debug(self, message: str, context: dict[str, Any] | None = None) -> None:
         """
-        Log debug message with optional context.
+        Log debug message with optional context data.
+        
+        Logs detailed diagnostic information for debugging purposes.
+        Debug messages are typically filtered out in production environments.
 
         Args:
-            message: Log message
-            context: Optional context data dictionary
+            message: Debug message describing the event or state
+            context: Optional dictionary containing relevant debug context
         """
         await self._log(logging.DEBUG, message, context)
 
     async def info(self, message: str, context: dict[str, Any] | None = None) -> None:
         """
-        Log info message with optional context.
+        Log informational message with optional context data.
+        
+        Logs general informational messages about normal application
+        operation and significant events.
 
         Args:
-            message: Log message
-            context: Optional context data dictionary
+            message: Informational message describing the event
+            context: Optional dictionary containing relevant context data
         """
         await self._log(logging.INFO, message, context)
 
@@ -205,11 +237,14 @@ class StructuredLogger:
         self, message: str, context: dict[str, Any] | None = None
     ) -> None:
         """
-        Log warning message with optional context.
+        Log warning message with optional context data.
+        
+        Logs warning messages for potentially harmful but recoverable
+        situations that don't prevent normal operation.
 
         Args:
-            message: Log message
-            context: Optional context data dictionary
+            message: Warning message describing the potential issue
+            context: Optional dictionary containing relevant warning context
         """
         await self._log(logging.WARNING, message, context)
 
@@ -220,12 +255,15 @@ class StructuredLogger:
         exc_info: bool = False,
     ) -> None:
         """
-        Log error message with optional context and exception info.
+        Log error message with optional context and exception information.
+        
+        Logs error messages for significant problems that affect normal
+        operation but don't necessarily stop the application.
 
         Args:
-            message: Log message
-            context: Optional context data dictionary
-            exc_info: Whether to include exception information
+            message: Error message describing the problem
+            context: Optional dictionary containing relevant error context
+            exc_info: Whether to include current exception traceback information
         """
         await self._log(logging.ERROR, message, context, exc_info=exc_info)
 
@@ -236,12 +274,15 @@ class StructuredLogger:
         exc_info: bool = False,
     ) -> None:
         """
-        Log critical message with optional context and exception info.
+        Log critical message with optional context and exception information.
+        
+        Logs critical error messages for severe problems that may cause
+        the application to stop functioning or require immediate attention.
 
         Args:
-            message: Log message
-            context: Optional context data dictionary
-            exc_info: Whether to include exception information
+            message: Critical error message describing the severe problem
+            context: Optional dictionary containing relevant critical error context
+            exc_info: Whether to include current exception traceback information
         """
         await self._log(logging.CRITICAL, message, context, exc_info=exc_info)
 
@@ -253,13 +294,17 @@ class StructuredLogger:
         exc_info: bool = False,
     ) -> None:
         """
-        Internal async logging method.
+        Internal async logging method for thread-safe log processing.
+        
+        Handles the actual logging operation by capturing context, correlation
+        IDs, and exception information, then executing the logging in a thread
+        pool to avoid blocking the event loop.
 
         Args:
-            level: Logging level
-            message: Log message
-            context: Optional context data
-            exc_info: Whether to include exception information
+            level: Python logging level constant (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+            message: Log message string to be recorded
+            context: Optional dictionary containing additional context data
+            exc_info: Whether to capture and include current exception information
         """
         # Capture current context including correlation ID and exception info
         current_correlation_id = correlation_id.get()
@@ -292,14 +337,18 @@ class StructuredLogger:
         corr_id: str | None = None,
     ) -> None:
         """
-        Synchronous logging implementation.
+        Synchronous logging implementation executed in thread pool.
+        
+        Performs the actual logging operation in a thread-safe manner,
+        setting correlation context and handling exception information
+        before passing to the Python logging system.
 
         Args:
-            level: Logging level
-            message: Log message
-            context: Optional context data
-            exception_info: Pre-captured exception information tuple
-            corr_id: Correlation ID to set in context
+            level: Python logging level constant for the log entry
+            message: Log message string to be recorded
+            context: Optional dictionary containing additional context data
+            exception_info: Pre-captured exception information tuple (type, value, traceback)
+            corr_id: Correlation ID to set in the logging context
         """
         # Set correlation ID in context if provided
         if corr_id:

@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
-# =============================================================================
-# QuranBot - Modernized Main Entry Point
-# =============================================================================
-# This is the modernized main entry point that uses the modern architecture
-# with dependency injection, proper service management, and error handling.
-# The bot is 100% automated for continuous Quran recitation while also
-# providing optional commands for interaction.
-# =============================================================================
+"""QuranBot - Modernized Main Entry Point.
+
+This is the modernized main entry point that uses the modern architecture
+with dependency injection, proper service management, and error handling.
+The bot is 100% automated for continuous Quran recitation while also
+providing optional commands for interaction.
+
+Features:
+    - 100% automated continuous Quran recitation (24/7)
+    - Modern dependency injection architecture
+    - Comprehensive error handling and logging
+    - Rich presence integration
+    - Voice channel management
+    - Interactive control panel
+    - Webhook logging and monitoring
+"""
 
 import asyncio
 import os
@@ -41,6 +49,7 @@ from src.core.resource_manager import ResourceManager
 from src.core.security import RateLimiter, SecurityService
 from src.core.structured_logger import StructuredLogger
 from src.core.webhook_logger import ModernWebhookLogger
+from src.core.webhook_service_factory import create_webhook_service
 
 # Import data models
 from src.data.models import PlaybackMode
@@ -74,21 +83,53 @@ from .heartbeat_monitor import HeartbeatMonitor
 
 
 class AudioServiceAdapter:
-    """
-    Adapter to make AudioService compatible with the control panel's expectations.
-
+    """Adapter to make AudioService compatible with the control panel's expectations.
+    
     The control panel was designed for the old AudioManager, but we're using the new AudioService.
     This adapter bridges the gap by providing the expected interface.
+    
+    Attributes:
+        audio_service (AudioService): The modern audio service instance
+    
+    Methods:
+        get_playback_status: Get current playback status
+        jump_to_surah: Jump to a specific surah
+        switch_reciter: Switch to a different reciter
+        skip_to_next: Skip to the next surah
+        skip_to_previous: Skip to the previous surah
+        toggle_loop: Toggle loop mode
+        toggle_shuffle: Toggle shuffle mode
+        pause_playback: Disabled for 24/7 operation
+        resume_playback: Disabled for 24/7 operation
+        toggle_playback: Start playback if stopped
     """
 
-    def __init__(self, audio_service: AudioService):
+    def __init__(self, audio_service: AudioService) -> None:
+        """Initialize the adapter with an AudioService instance.
+        
+        Args:
+            audio_service: The AudioService instance to adapt
+        """
         self.audio_service = audio_service
 
     def get_playback_status(self) -> dict:
-        """Get playback status in the format expected by the control panel."""
+        """Get playback status in the format expected by the control panel.
+        
+        Returns:
+            dict: Playback status containing:
+                - is_playing: Whether audio is currently playing
+                - is_paused: Whether audio is paused (always False for 24/7 bot)
+                - current_surah: Current surah number (1-114)
+                - current_reciter: Name of current reciter
+                - is_loop_enabled: Whether loop mode is active
+                - is_shuffle_enabled: Whether shuffle mode is active
+                - current_track: Current track number (same as surah)
+                - total_tracks: Total number of tracks (114)
+                - available_reciters: List of available reciters
+                - current_time: Current position in seconds
+                - total_time: Total duration in seconds
+        """
         try:
-            print("[DEBUG] AudioServiceAdapter.get_playback_status called")
-
             # Can't use asyncio.run() within Discord's event loop, so access internal state directly
             # but make sure we get the most recent state
             state = self.audio_service._current_state
@@ -102,10 +143,7 @@ class AudioServiceAdapter:
             except:
                 pass  # Continue with existing state if update fails
 
-            print(f"[DEBUG] Got state: {state}")
-
             if not state:
-                print("[DEBUG] No state found, returning defaults")
                 return self._get_default_status()
 
             # Get available reciters from the audio service
@@ -117,7 +155,6 @@ class AudioServiceAdapter:
                     if reciters_info
                     else ["Saad Al Ghamdi"]
                 )
-                print(f"[DEBUG] Found reciters: {available_reciters}")
             except:
                 available_reciters = ["Saad Al Ghamdi"]
 
@@ -138,7 +175,7 @@ class AudioServiceAdapter:
 
             # If total_time is 0, try to get from cache
             if total_time == 0:
-                print("[DEBUG] Total time is 0, trying to get from cache...")
+                # Total time is 0, trying to get from cache
                 try:
                     current_surah = getattr(
                         getattr(state, "current_position", None), "surah_number", 1
@@ -149,7 +186,7 @@ class AudioServiceAdapter:
 
                     # Build file path
                     file_path = f"audio/{current_reciter}/{current_surah:03d}.mp3"
-                    print(f"[DEBUG] Looking for file: {file_path}")
+                    # Looking for audio file to get duration
 
                     # Try to access cache directly from the audio service
                     cache_service = getattr(self.audio_service, "_cache", None)
@@ -160,7 +197,7 @@ class AudioServiceAdapter:
                             cached_duration = cache_service.get(cache_key)
                             if cached_duration:
                                 total_time = cached_duration
-                                print(f"[DEBUG] Got duration from cache: {total_time}s")
+                                # Got duration from cache
                         except:
                             pass
 
@@ -175,9 +212,9 @@ class AudioServiceAdapter:
 
                                 audio_file = MP3(str(full_path))
                                 total_time = audio_file.info.length
-                                print(f"[DEBUG] Got duration from MP3: {total_time}s")
+                                # Got duration from MP3 file
                             except Exception as e:
-                                print(f"[DEBUG] Error reading MP3: {e}")
+                                # Error reading MP3 file
                                 # Fallback: use some known durations for testing
                                 if current_surah == 1:
                                     total_time = 47.0625  # Al-Fatiha
@@ -185,12 +222,12 @@ class AudioServiceAdapter:
                                     total_time = 7054.331125  # Al-Baqarah
                                 else:
                                     total_time = 300  # Default 5 minutes
-                                print(f"[DEBUG] Using fallback duration: {total_time}s")
+                                # Using fallback duration estimate
                         else:
-                            print(f"[DEBUG] File not found: {full_path}")
+                            # Audio file not found
 
                 except Exception as e:
-                    print(f"[DEBUG] Error getting duration: {e}")
+                    # Error getting duration
 
             # Convert AudioService state to control panel format
             result = {
@@ -211,16 +248,20 @@ class AudioServiceAdapter:
                 "total_time": total_time,
             }
 
-            print(f"[DEBUG] Returning result: {result}")
+            # Returning playback status result
             return result
 
         except Exception as e:
-            print(f"[DEBUG] Error in get_playback_status: {e}")
+            # Error in get_playback_status
             traceback.print_exc()
             return self._get_default_status()
 
     def _get_default_status(self) -> dict:
-        """Return safe default status when AudioService is unavailable."""
+        """Return safe default status when AudioService is unavailable.
+        
+        Returns:
+            dict: Default playback status with safe fallback values
+        """
         return {
             "is_playing": False,
             "is_paused": False,
@@ -235,61 +276,77 @@ class AudioServiceAdapter:
             "total_time": 0,
         }
 
-    # Control methods expected by the control panel
-    async def jump_to_surah(self, surah_number: int):
-        """Jump to a specific surah."""
+    async def jump_to_surah(self, surah_number: int) -> None:
+        """Jump to a specific surah.
+        
+        Args:
+            surah_number: The surah number to jump to (1-114)
+        """
         try:
-            print(f"[DEBUG] AudioServiceAdapter.jump_to_surah({surah_number}) called")
+            # Jump to surah functionality
             await self.audio_service.set_surah(surah_number)
-            print(f"[DEBUG] Successfully jumped to surah {surah_number}")
+            # Successfully jumped to surah
         except Exception as e:
-            print(f"[DEBUG] Error jumping to surah {surah_number}: {e}")
+            # Error jumping to surah
             traceback.print_exc()
 
-    async def switch_reciter(self, reciter_name: str):
-        """Switch to a different reciter."""
+    async def switch_reciter(self, reciter_name: str) -> None:
+        """Switch to a different reciter.
+        
+        Args:
+            reciter_name: Name of the reciter to switch to
+        """
         try:
-            print(f"[DEBUG] AudioServiceAdapter.switch_reciter({reciter_name}) called")
+            # Switch reciter functionality
             await self.audio_service.set_reciter(reciter_name)
-            print(f"[DEBUG] Successfully switched to reciter {reciter_name}")
+            # Successfully switched reciter
         except Exception as e:
-            print(f"[DEBUG] Error switching to reciter {reciter_name}: {e}")
+            # Error switching reciter
             traceback.print_exc()
 
-    async def skip_to_next(self):
-        """Skip to the next surah."""
+    async def skip_to_next(self) -> None:
+        """Skip to the next surah.
+        
+        Automatically handles wrapping from surah 114 back to surah 1.
+        """
         try:
-            print("[DEBUG] AudioServiceAdapter.skip_to_next() called")
+            # Skip to next surah functionality
             current_state = self.audio_service._current_state
             current_surah = getattr(
                 getattr(current_state, "current_position", None), "surah_number", 1
             )
             next_surah = current_surah + 1 if current_surah < 114 else 1
             await self.audio_service.set_surah(next_surah)
-            print(f"[DEBUG] Successfully skipped to next surah {next_surah}")
+            # Successfully skipped to next surah
         except Exception as e:
-            print(f"[DEBUG] Error skipping to next: {e}")
+            # Error skipping to next surah
             traceback.print_exc()
 
-    async def skip_to_previous(self):
-        """Skip to the previous surah."""
+    async def skip_to_previous(self) -> None:
+        """Skip to the previous surah.
+        
+        Automatically handles wrapping from surah 1 back to surah 114.
+        """
         try:
-            print("[DEBUG] AudioServiceAdapter.skip_to_previous() called")
+            # Skip to previous surah functionality
             current_state = self.audio_service._current_state
             current_surah = getattr(
                 getattr(current_state, "current_position", None), "surah_number", 1
             )
             previous_surah = current_surah - 1 if current_surah > 1 else 114
             await self.audio_service.set_surah(previous_surah)
-            print(f"[DEBUG] Successfully skipped to previous surah {previous_surah}")
+            # Successfully skipped to previous surah
         except Exception as e:
-            print(f"[DEBUG] Error skipping to previous: {e}")
+            # Error skipping to previous surah
             traceback.print_exc()
 
-    def toggle_loop(self):
-        """Toggle loop mode."""
+    def toggle_loop(self) -> None:
+        """Toggle loop mode between normal and loop track modes.
+        
+        Switches between PlaybackMode.NORMAL and PlaybackMode.LOOP_TRACK.
+        """
         try:
-            print("[DEBUG] AudioServiceAdapter.toggle_loop() called")
+            # Toggle loop mode functionality
             current_state = self.audio_service._current_state
             if current_state and hasattr(current_state, "mode"):
                 current_mode = getattr(current_state, "mode", "normal")
@@ -301,15 +358,18 @@ class AudioServiceAdapter:
                     asyncio.create_task(
                         self.audio_service.set_playback_mode(PlaybackMode.LOOP_TRACK)
                     )
-            print("[DEBUG] Successfully toggled loop mode")
+            # Successfully toggled loop mode
         except Exception as e:
-            print(f"[DEBUG] Error toggling loop: {e}")
+            # Error toggling loop mode
             traceback.print_exc()
 
-    def toggle_shuffle(self):
-        """Toggle shuffle mode."""
+    def toggle_shuffle(self) -> None:
+        """Toggle shuffle mode between normal and shuffle modes.
+        
+        Switches between PlaybackMode.NORMAL and PlaybackMode.SHUFFLE.
+        """
         try:
-            print("[DEBUG] AudioServiceAdapter.toggle_shuffle() called")
+            # Toggle shuffle mode functionality
             current_state = self.audio_service._current_state
             if current_state and hasattr(current_state, "mode"):
                 current_mode = getattr(current_state, "mode", "normal")
@@ -321,47 +381,81 @@ class AudioServiceAdapter:
                     asyncio.create_task(
                         self.audio_service.set_playback_mode(PlaybackMode.SHUFFLE)
                     )
-            print("[DEBUG] Successfully toggled shuffle mode")
+            # Successfully toggled shuffle mode
         except Exception as e:
-            print(f"[DEBUG] Error toggling shuffle: {e}")
+            # Error toggling shuffle mode
             traceback.print_exc()
 
-    async def pause_playback(self):
-        """Disabled - 24/7 Quran bot should never be paused."""
+    async def pause_playback(self) -> None:
+        """Disabled - 24/7 Quran bot should never be paused.
+        
+        This method is intentionally disabled to maintain continuous 24/7 operation.
+        The bot is designed for uninterrupted Quran recitation.
+        """
         try:
-            print("[DEBUG] Pause attempt blocked - 24/7 continuous playback only")
+            # Pause attempt blocked - 24/7 continuous playback only
         except Exception as e:
-            print(f"[DEBUG] Error logging pause attempt: {e}")
+            # Error logging pause attempt
             traceback.print_exc()
 
-    async def resume_playback(self):
-        """Disabled - 24/7 Quran bot should never need resuming as it never pauses."""
+    async def resume_playback(self) -> None:
+        """Disabled - 24/7 Quran bot should never need resuming as it never pauses.
+        
+        This method is intentionally disabled since the bot never pauses.
+        For starting stopped playback, use toggle_playback() instead.
+        """
         try:
-            print("[DEBUG] Resume attempt ignored - bot should never be paused")
+            # Resume attempt ignored - bot should never be paused
         except Exception as e:
-            print(f"[DEBUG] Error logging resume attempt: {e}")
+            # Error logging resume attempt
             traceback.print_exc()
 
-    async def toggle_playback(self):
-        """Start playback if stopped - pause/resume disabled for 24/7 operation."""
+    async def toggle_playback(self) -> None:
+        """Start playback if stopped - pause/resume disabled for 24/7 operation.
+        
+        This method will start playback if the bot is stopped, but will not
+        pause active playback to maintain 24/7 continuous operation.
+        """
         try:
-            print("[DEBUG] AudioServiceAdapter.toggle_playback() called")
+            # Toggle playback functionality
             state = self.audio_service._current_state
             if not state.is_playing:
-                print("[DEBUG] Starting playback from stopped state")
+                # Starting playback from stopped state
                 await self.audio_service.start_playback(resume_position=True)
-                print("[DEBUG] Successfully started playback")
+                # Successfully started playback
             else:
-                print("[DEBUG] Toggle ignored - 24/7 continuous playback only")
+                # Toggle ignored - 24/7 continuous playback only
         except Exception as e:
-            print(f"[DEBUG] Error in toggle playback: {e}")
+            # Error in toggle playback
             traceback.print_exc()
 
 
 class ModernizedQuranBot:
-    """Modernized QuranBot with dependency injection and 100% automated audio playback."""
+    """Modernized QuranBot with dependency injection and 100% automated audio playback.
+    
+    This class represents the main bot instance with modern architecture featuring:
+    - Dependency injection container for service management
+    - 100% automated continuous Quran recitation
+    - Comprehensive health and performance monitoring
+    - Modern webhook logging and notifications
+    - Rich presence integration
+    - Voice channel management with role assignment
+    
+    Attributes:
+        container: Dependency injection container for service management
+        bot: Discord bot instance
+        logger: Structured logger for comprehensive logging
+        config: Bot configuration instance
+        config_service: Configuration service for settings management
+        is_running: Flag indicating if the bot is currently running
+        _startup_start_time: Timestamp of when startup began
+    """
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize the ModernizedQuranBot instance.
+        
+        Sets up all instance variables and records startup time for metrics.
+        """
         self.container: DIContainer | None = None
         self.bot: commands.Bot | None = None
         self.logger: StructuredLogger | None = None
@@ -371,7 +465,23 @@ class ModernizedQuranBot:
         self._startup_start_time = time.time()
 
     async def initialize(self) -> bool:
-        """Initialize the modernized bot with all services."""
+        """Initialize the modernized bot with all services.
+        
+        Performs complete bot initialization including:
+        - Configuration loading and validation
+        - Dependency injection container setup
+        - Core services initialization (cache, performance monitoring, security)
+        - Modern services setup (audio, state, database)
+        - Discord bot configuration
+        - Health and heartbeat monitoring
+        - Webhook logging setup
+        
+        Returns:
+            bool: True if initialization successful, False otherwise
+            
+        Raises:
+            Exception: If critical initialization steps fail
+        """
         try:
             log_run_header(BOT_NAME, BOT_VERSION)
             log_perfect_tree_section(
@@ -479,25 +589,36 @@ class ModernizedQuranBot:
             )
             self.container.register_singleton(SecurityService, security_factory)
 
-            # Webhook Logger (if enabled)
+            # Enhanced Webhook Service (if enabled)
             try:
                 if self.config_service.config.USE_WEBHOOK_LOGGING:
-                    webhook_config = self.config_service.create_webhook_config()
-                    webhook_factory = lambda: ModernWebhookLogger(
-                        config=webhook_config,
+                    webhook_service = await create_webhook_service(
+                        config=self.config_service.config,
                         logger=self.logger,
                         container=self.container,
                         bot=self,
                     )
-                    self.container.register_singleton(
-                        ModernWebhookLogger, webhook_factory
-                    )
-                    log_status("Webhook logger configured", "🔗")
+                    
+                    if webhook_service:
+                        # Register the webhook service in the container
+                        self.container.register_singleton("webhook_service", lambda: webhook_service)
+                        
+                        # Also register as ModernWebhookLogger for backward compatibility
+                        if isinstance(webhook_service, ModernWebhookLogger):
+                            self.container.register_singleton(ModernWebhookLogger, lambda: webhook_service)
+                            log_status("Legacy webhook logger configured", "🔗")
+                        else:
+                            # Enhanced router - register as both types for compatibility
+                            self.container.register_singleton(ModernWebhookLogger, lambda: webhook_service)
+                            self.container.register_singleton("enhanced_webhook_router", lambda: webhook_service)
+                            log_status("Enhanced multi-channel webhook router configured", "🌐")
+                    else:
+                        log_status("Failed to initialize webhook service", "⚠️")
                 else:
                     log_status("Webhook logging disabled", "ℹ️")
             except Exception as e:
                 await self.logger.warning(
-                    "Failed to setup webhook logger",
+                    "Failed to setup webhook service",
                     {"error": str(e), "fallback": "Continuing without webhook logging"},
                 )
 
@@ -1694,12 +1815,18 @@ async def main():
     # Set up signal handlers for graceful shutdown
     bot_instance = None
 
-    def signal_handler(signum, frame):
-        """Handle shutdown signals."""
-        print(f"\nReceived signal {signum}, initiating graceful shutdown...")
+    def signal_handler(signum, frame) -> None:
+        """Handle shutdown signals.
+        
+        Args:
+            signum: Signal number received
+            frame: Current stack frame
+        """
+        logger.info(f"Received signal {signum}, initiating graceful shutdown...")
         if bot_instance:
             # Create a task to shutdown the bot and then stop the event loop
-            async def shutdown_and_exit():
+            async def shutdown_and_exit() -> None:
+                """Shutdown the bot and stop the event loop."""
                 await bot_instance.shutdown()
                 # Get the current event loop and stop it
                 loop = asyncio.get_running_loop()
@@ -1762,7 +1889,7 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\n🛑 Bot shutdown requested by user")
+        logger.info("Bot shutdown requested by user")
     except Exception as e:
-        print(f"\n💥 Fatal error: {e}")
+        logger.error(f"Fatal error: {e}")
         sys.exit(1)

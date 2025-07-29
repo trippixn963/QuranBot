@@ -225,15 +225,19 @@ class WebhookFormatter:
                 )
 
         # Prepare payload
-        bot_avatar_url = "https://cdn.discordapp.com/attachments/1044035927281262673/1044036084692160512/PFP_Cropped_-_Animated.gif"
-        if self.bot and hasattr(self.bot, 'user') and self.bot.user and self.bot.user.avatar:
-            bot_avatar_url = self.bot.user.avatar.url
-            
+        # Don't override username/avatar - let Discord use the webhook's configured settings
         payload = {
             "embeds": [embed],
-            "username": "QuranBot",
-            "avatar_url": bot_avatar_url,
         }
+        
+        # Only add username/avatar if explicitly requested (for backward compatibility)
+        # This allows each webhook to use its own configured name and avatar
+        if hasattr(self, '_override_webhook_identity') and self._override_webhook_identity:
+            bot_avatar_url = "https://cdn.discordapp.com/attachments/1044035927281262673/1044036084692160512/PFP_Cropped_-_Animated.gif"
+            if self.bot and hasattr(self.bot, 'user') and self.bot.user and self.bot.user.avatar:
+                bot_avatar_url = self.bot.user.avatar.url
+            payload["username"] = "QuranBot"
+            payload["avatar_url"] = bot_avatar_url
 
         # Add content for pings if specified
         if message.content:

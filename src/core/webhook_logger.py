@@ -1,27 +1,47 @@
-# =============================================================================
-# QuranBot - Modern Webhook Logger
-# =============================================================================
-# A modern, async-first webhook logger that integrates with the DI container
-# and provides reliable Discord notifications for monitoring and debugging.
-#
-# Key Features:
-# - Modern async/await patterns
-# - Dependency injection integration
-# - Proper error handling and fallbacks
-# - Memory-efficient rate limiting
-# - Type safety with comprehensive validation
-# - Structured logging integration
-# - Configuration-driven setup
-# - Comprehensive testing support
-# =============================================================================
+"""QuranBot - Modern Webhook Logger.
+
+A modern, async-first webhook logger that integrates with the DI container
+and provides reliable Discord notifications for monitoring and debugging.
+
+This module provides comprehensive webhook logging capabilities for QuranBot:
+- Real-time Discord notifications for bot events
+- User activity tracking and monitoring
+- Audio system status and error reporting
+- Quiz system activity logging
+- Control panel interaction tracking
+- Bot lifecycle event monitoring
+
+Key Features:
+    - Modern async/await patterns with proper error handling
+    - Dependency injection integration for modular architecture
+    - Memory-efficient rate limiting with sliding window
+    - Type safety with comprehensive data validation
+    - Structured logging integration for debugging
+    - Configuration-driven setup for flexibility
+    - Rich Discord embed formatting with emojis and colors
+    - Automatic retry logic with exponential backoff
+    - Graceful degradation on webhook failures
+
+Classes:
+    LogLevel: Enumeration of log levels for webhook messages
+    WebhookLoggerError: Custom exception for webhook logger errors
+    WebhookConfig: Configuration dataclass for webhook settings
+    EmbedField: Represents a Discord embed field with validation
+    WebhookMessage: Complete webhook message structure
+    RateLimitTracker: Memory-efficient rate limiting implementation
+    WebhookFormatter: Formats messages for Discord API
+    WebhookSender: Handles HTTP requests with retry logic
+    ModernWebhookLogger: Main webhook logger class
+"""
 
 import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 import time
-from typing import Any
+from typing import Any, Optional
 import weakref
+from typing import Optional
 
 import aiohttp
 import pytz
@@ -31,7 +51,21 @@ from .structured_logger import StructuredLogger
 
 
 class LogLevel(Enum):
-    """Log levels for webhook messages."""
+    """Log levels for webhook messages.
+    
+    Defines severity levels for webhook notifications with corresponding
+    colors and emojis for visual distinction in Discord.
+    
+    Attributes:
+        DEBUG: Debug information (gray)
+        INFO: General information (blue)
+        WARNING: Warning messages (orange)
+        ERROR: Error messages (red)
+        CRITICAL: Critical errors requiring immediate attention (dark red)
+        SUCCESS: Success messages (green)
+        SYSTEM: System events (purple)
+        USER: User activity (teal)
+    """
 
     DEBUG = "DEBUG"
     INFO = "INFO"
@@ -44,14 +78,36 @@ class LogLevel(Enum):
 
 
 class WebhookLoggerError(QuranBotError):
-    """Raised when webhook logger encounters an error."""
+    """Raised when webhook logger encounters an error.
+    
+    Custom exception for webhook logger-specific errors including
+    configuration validation, HTTP request failures, and formatting errors.
+    """
 
     pass
 
 
 @dataclass
 class WebhookConfig:
-    """Configuration for webhook logger."""
+    """Configuration for webhook logger.
+    
+    Comprehensive configuration for webhook logger behavior including
+    rate limiting, formatting options, retry logic, and owner notifications.
+    
+    Attributes:
+        webhook_url: Discord webhook URL for sending messages
+        owner_user_id: Discord user ID for owner pings (optional)
+        max_logs_per_minute: Rate limit for webhook messages
+        max_embed_fields: Maximum fields per embed (Discord limit: 25)
+        max_field_length: Maximum characters per field (Discord limit: 1024)
+        max_description_length: Maximum description length (Discord limit: 4096)
+        request_timeout: HTTP request timeout in seconds
+        retry_attempts: Number of retry attempts for failed requests
+        retry_delay: Base delay between retries in seconds
+        rate_limit_window: Rate limiting window in seconds
+        enable_pings: Whether owner pings are enabled
+        timezone: Timezone for timestamp formatting
+    """
 
     webhook_url: str
     owner_user_id: int | None = None
@@ -66,8 +122,15 @@ class WebhookConfig:
     enable_pings: bool = True
     timezone: str = "US/Eastern"
 
-    def __post_init__(self):
-        """Validate configuration after initialization."""
+    def __post_init__(self) -> None:
+        """Validate configuration after initialization.
+        
+        Performs validation on configuration values to ensure they meet
+        Discord API requirements and are within reasonable limits.
+        
+        Raises:
+            ValueError: If configuration values are invalid
+        """
         if not self.webhook_url:
             raise ValueError("webhook_url is required")
         if self.max_logs_per_minute <= 0:
@@ -78,14 +141,27 @@ class WebhookConfig:
 
 @dataclass
 class EmbedField:
-    """Represents a Discord embed field."""
+    """Represents a Discord embed field.
+    
+    A single field in a Discord embed with automatic length validation
+    to ensure compliance with Discord API limits.
+    
+    Attributes:
+        name: Field name (max 256 characters)
+        value: Field value (max 1024 characters)
+        inline: Whether field should be displayed inline
+    """
 
     name: str
     value: str
     inline: bool = False
 
-    def __post_init__(self):
-        """Validate field data."""
+    def __post_init__(self) -> None:
+        """Validate and truncate field data.
+        
+        Automatically truncates field name and value to fit Discord limits,
+        adding ellipsis to indicate truncation.
+        """
         if len(self.name) > 256:
             self.name = self.name[:253] + "..."
         if len(self.value) > 1024:
@@ -94,7 +170,25 @@ class EmbedField:
 
 @dataclass
 class WebhookMessage:
-    """Represents a complete webhook message."""
+    """Represents a complete webhook message.
+    
+    Complete structure for a Discord webhook message including embed
+    data, metadata, and display options.
+    
+    Attributes:
+        title: Embed title
+        description: Embed description
+        level: Log level for color and emoji selection
+        fields: List of embed fields
+        footer: Custom footer text (optional)
+        content: Message content outside embed (for pings)
+        timestamp: Message timestamp (auto-generated if None)
+        author_name: Author name display (optional)
+        author_icon_url: Author icon URL (optional)
+        author_url: Author URL (optional)
+        thumbnail_url: Small image in top-right (optional)
+        image_url: Large image at bottom (optional)
+    """
 
     title: str
     description: str
@@ -109,23 +203,49 @@ class WebhookMessage:
     thumbnail_url: str | None = None
     image_url: str | None = None
 
-    def __post_init__(self):
-        """Set default timestamp if not provided."""
+    def __post_init__(self) -> None:
+        """Set default timestamp if not provided.
+        
+        Automatically sets timestamp to current UTC time if not specified.
+        """
         if self.timestamp is None:
             self.timestamp = datetime.utcnow()
 
 
 class RateLimitTracker:
-    """Memory-efficient rate limit tracker using sliding window."""
+    """Memory-efficient rate limit tracker using sliding window.
+    
+    Implements a sliding window rate limiter that tracks request timestamps
+    and automatically removes expired entries to maintain memory efficiency.
+    
+    Attributes:
+        max_requests: Maximum requests allowed in the window
+        window_seconds: Time window in seconds
+        _requests: List of request timestamps
+        _lock: Async lock for thread safety
+    """
 
-    def __init__(self, max_requests: int, window_seconds: int = 60):
+    def __init__(self, max_requests: int, window_seconds: int = 60) -> None:
+        """Initialize rate limit tracker.
+        
+        Args:
+            max_requests: Maximum requests allowed in the window
+            window_seconds: Time window in seconds (default: 60)
+        """
         self.max_requests = max_requests
         self.window_seconds = window_seconds
         self._requests: list[float] = []
         self._lock = asyncio.Lock()
 
     async def can_proceed(self) -> bool:
-        """Check if request can proceed without hitting rate limit."""
+        """Check if request can proceed without hitting rate limit.
+        
+        Thread-safe method that checks current request count against limits
+        and cleans up expired entries.
+        
+        Returns:
+            bool: True if request can proceed, False if rate limited
+        """
         async with self._lock:
             now = time.time()
             # Remove old requests outside the window
@@ -140,7 +260,14 @@ class RateLimitTracker:
             return False
 
     async def get_retry_after(self) -> float:
-        """Get seconds to wait before next request."""
+        """Get seconds to wait before next request.
+        
+        Calculates how long to wait before the rate limit window allows
+        another request.
+        
+        Returns:
+            float: Seconds to wait (0.0 if no wait needed)
+        """
         if not self._requests:
             return 0.0
 
@@ -150,7 +277,18 @@ class RateLimitTracker:
 
 
 class WebhookFormatter:
-    """Formats webhook messages for Discord."""
+    """Formats webhook messages for Discord.
+    
+    Handles conversion of WebhookMessage objects into Discord-compatible
+    JSON payloads with proper formatting, colors, and emoji integration.
+    
+    Features:
+        - Log level to color/emoji mapping
+        - Automatic text truncation for Discord limits
+        - Timezone-aware timestamp formatting
+        - Rich embed field handling
+        - Bot identity integration
+    """
 
     # Color mapping for log levels
     LEVEL_COLORS = {
@@ -176,13 +314,29 @@ class WebhookFormatter:
         LogLevel.USER: "👤",
     }
 
-    def __init__(self, config: WebhookConfig, bot: Any | None = None):
+    def __init__(self, config: WebhookConfig, bot: Any | None = None) -> None:
+        """Initialize webhook formatter.
+        
+        Args:
+            config: Webhook configuration
+            bot: Optional bot instance for avatar/name information
+        """
         self.config = config
         self.bot = bot
         self.timezone = pytz.timezone(config.timezone)
 
     def format_message(self, message: WebhookMessage) -> dict[str, Any]:
-        """Format webhook message for Discord API."""
+        """Format webhook message for Discord API.
+        
+        Converts WebhookMessage into Discord-compatible JSON payload with
+        proper embed structure, field handling, and metadata.
+        
+        Args:
+            message: WebhookMessage to format
+            
+        Returns:
+            dict[str, Any]: Discord webhook payload
+        """
         # Create embed
         embed = {
             "title": f"{self.LEVEL_EMOJIS.get(message.level, '📝')} {message.title}",
@@ -225,15 +379,19 @@ class WebhookFormatter:
                 )
 
         # Prepare payload
-        bot_avatar_url = "https://cdn.discordapp.com/attachments/1044035927281262673/1044036084692160512/PFP_Cropped_-_Animated.gif"
-        if self.bot and hasattr(self.bot, 'user') and self.bot.user and self.bot.user.avatar:
-            bot_avatar_url = self.bot.user.avatar.url
-            
+        # Don't override username/avatar - let Discord use the webhook's configured settings
         payload = {
             "embeds": [embed],
-            "username": "QuranBot",
-            "avatar_url": bot_avatar_url,
         }
+        
+        # Only add username/avatar if explicitly requested (for backward compatibility)
+        # This allows each webhook to use its own configured name and avatar
+        if hasattr(self, '_override_webhook_identity') and self._override_webhook_identity:
+            bot_avatar_url = "https://cdn.discordapp.com/attachments/1044035927281262673/1044036084692160512/PFP_Cropped_-_Animated.gif"
+            if self.bot and hasattr(self.bot, 'user') and self.bot.user and self.bot.user.avatar:
+                bot_avatar_url = self.bot.user.avatar.url
+            payload["username"] = "QuranBot"
+            payload["avatar_url"] = bot_avatar_url
 
         # Add content for pings if specified
         if message.content:
@@ -242,7 +400,11 @@ class WebhookFormatter:
         return payload
 
     def _get_formatted_time(self) -> str:
-        """Get formatted timestamp in configured timezone."""
+        """Get formatted timestamp in configured timezone.
+        
+        Returns:
+            str: Formatted timestamp string with timezone
+        """
         try:
             now_tz = datetime.now(self.timezone)
             return now_tz.strftime("%m/%d %I:%M %p %Z")
@@ -250,23 +412,51 @@ class WebhookFormatter:
             return datetime.now().strftime("%m/%d %I:%M %p UTC")
 
     def _truncate_text(self, text: str, max_length: int) -> str:
-        """Safely truncate text to fit Discord limits."""
+        """Safely truncate text to fit Discord limits.
+        
+        Args:
+            text: Text to truncate
+            max_length: Maximum allowed length
+            
+        Returns:
+            str: Truncated text with ellipsis if needed
+        """
         if len(text) <= max_length:
             return text
         return text[: max_length - 3] + "..."
 
 
 class WebhookSender:
-    """Handles sending webhook requests with retries and error handling."""
+    """Handles sending webhook requests with retries and error handling.
+    
+    Manages HTTP client session and implements robust retry logic with
+    exponential backoff for webhook delivery.
+    
+    Features:
+        - Persistent HTTP session with proper timeouts
+        - Automatic retry with exponential backoff
+        - Discord rate limit handling
+        - Comprehensive error logging
+        - Graceful resource cleanup
+    """
 
-    def __init__(self, config: WebhookConfig, logger: StructuredLogger):
+    def __init__(self, config: WebhookConfig, logger: StructuredLogger) -> None:
+        """Initialize webhook sender.
+        
+        Args:
+            config: Webhook configuration
+            logger: Structured logger for error reporting
+        """
         self.config = config
         self.logger = logger
         self.session: aiohttp.ClientSession | None = None
         self._closed = False
 
     async def initialize(self) -> None:
-        """Initialize the webhook sender."""
+        """Initialize the webhook sender.
+        
+        Creates HTTP session with proper timeout and user agent configuration.
+        """
         if self.session is None:
             timeout = aiohttp.ClientTimeout(total=self.config.request_timeout)
             self.session = aiohttp.ClientSession(
@@ -274,14 +464,27 @@ class WebhookSender:
             )
 
     async def close(self) -> None:
-        """Close the webhook sender and cleanup resources."""
+        """Close the webhook sender and cleanup resources.
+        
+        Properly closes HTTP session and marks sender as closed.
+        """
         self._closed = True
         if self.session:
             await self.session.close()
             self.session = None
 
     async def send_webhook(self, payload: dict[str, Any]) -> bool:
-        """Send webhook with retries and proper error handling."""
+        """Send webhook with retries and proper error handling.
+        
+        Implements robust webhook delivery with retry logic, rate limit
+        handling, and comprehensive error reporting.
+        
+        Args:
+            payload: Discord webhook payload
+            
+        Returns:
+            bool: True if webhook sent successfully, False otherwise
+        """
         if self._closed or not self.session:
             await self.logger.warning("Webhook sender not initialized or closed")
             return False
@@ -337,21 +540,40 @@ class WebhookSender:
 
 
 class ModernWebhookLogger:
-    """
-    Modern, async-first webhook logger for Discord notifications.
+    """Modern, async-first webhook logger for Discord notifications.
 
     This class provides a clean, reliable interface for sending structured
     log messages to Discord via webhooks. It's designed to integrate seamlessly
     with the QuranBot's modernized architecture.
 
+    The webhook logger provides comprehensive monitoring capabilities including:
+    - Real-time bot status and lifecycle events
+    - User activity tracking (commands, voice channel activity)
+    - Audio system monitoring and error reporting
+    - Quiz system activity and statistics
+    - Control panel interaction logging
+    - Critical error notifications with owner pings
+
     Features:
-    - Async/await support with proper error handling
-    - Memory-efficient rate limiting
-    - Automatic retries with exponential backoff
-    - Type-safe configuration and validation
-    - Integration with structured logging
-    - Graceful degradation on errors
-    - Resource cleanup and lifecycle management
+        - Async/await support with proper error handling
+        - Memory-efficient rate limiting with sliding window
+        - Automatic retries with exponential backoff
+        - Type-safe configuration and comprehensive validation
+        - Integration with structured logging for debugging
+        - Graceful degradation on webhook failures
+        - Resource cleanup and lifecycle management
+        - Rich Discord embed formatting with colors and emojis
+        
+    Attributes:
+        config: Webhook configuration settings
+        logger: Structured logger for internal logging
+        container: Optional dependency injection container
+        bot: Optional Discord bot instance for metadata
+        rate_limiter: Rate limiting implementation
+        formatter: Message formatting handler
+        sender: HTTP request handler
+        initialized: Initialization status flag
+        _closed: Shutdown status flag
     """
 
     def __init__(
@@ -360,7 +582,18 @@ class ModernWebhookLogger:
         logger: StructuredLogger,
         container: Any | None = None,
         bot: Any | None = None,
-    ):
+    ) -> None:
+        """Initialize the modern webhook logger.
+        
+        Sets up all components including rate limiting, message formatting,
+        and HTTP sending with proper dependency management.
+        
+        Args:
+            config: Webhook configuration settings
+            logger: Structured logger for internal logging
+            container: Optional dependency injection container
+            bot: Optional Discord bot instance for metadata
+        """
         self.config = config
         self.logger = logger
         self.container = container
@@ -384,7 +617,14 @@ class ModernWebhookLogger:
             self._container_ref = None
 
     async def initialize(self) -> bool:
-        """Initialize the webhook logger."""
+        """Initialize the webhook logger.
+        
+        Performs complete initialization of all webhook components
+        including HTTP client setup and configuration validation.
+        
+        Returns:
+            bool: True if initialization successful, False otherwise
+        """
         try:
             await self.sender.initialize()
 
@@ -406,7 +646,11 @@ class ModernWebhookLogger:
             return False
 
     async def shutdown(self) -> None:
-        """Shutdown the webhook logger gracefully."""
+        """Shutdown the webhook logger gracefully.
+        
+        Performs orderly shutdown including final notification send,
+        resource cleanup, and HTTP session closure.
+        """
         if self._closed:
             return
 
@@ -430,7 +674,18 @@ class ModernWebhookLogger:
             )
 
     async def _send_message(self, message: WebhookMessage, force: bool = False) -> bool:
-        """Send a webhook message with rate limiting."""
+        """Send a webhook message with rate limiting.
+        
+        Internal method that handles rate limiting, message formatting,
+        and HTTP delivery with comprehensive error handling.
+        
+        Args:
+            message: WebhookMessage to send
+            force: Whether to bypass rate limiting
+            
+        Returns:
+            bool: True if message sent successfully, False otherwise
+        """
         if self._closed or not self.initialized:
             return False
 
@@ -478,7 +733,20 @@ class ModernWebhookLogger:
         context: dict[str, Any] | None = None,
         ping_owner: bool = True,
     ) -> bool:
-        """Log an error with optional owner ping."""
+        """Log an error with optional owner ping.
+        
+        Logs error events with exception details and optional owner notification.
+        
+        Args:
+            title: Error title
+            description: Error description
+            exception: Optional exception object for details
+            context: Optional context dictionary
+            ping_owner: Whether to ping the bot owner
+            
+        Returns:
+            bool: True if webhook sent successfully
+        """
         fields = []
         content = None
 
@@ -517,7 +785,21 @@ class ModernWebhookLogger:
         context: dict[str, Any] | None = None,
         ping_owner: bool = True,
     ) -> bool:
-        """Log a critical error with owner ping."""
+        """Log a critical error with owner ping.
+        
+        Logs critical errors that require immediate attention with enhanced
+        formatting and automatic owner notification.
+        
+        Args:
+            title: Critical error title
+            description: Critical error description
+            exception: Optional exception object for details
+            context: Optional context dictionary
+            ping_owner: Whether to ping the bot owner (default: True)
+            
+        Returns:
+            bool: True if webhook sent successfully
+        """
         fields = []
         content = None
 
@@ -551,7 +833,18 @@ class ModernWebhookLogger:
     async def log_warning(
         self, title: str, description: str, context: dict[str, Any] | None = None
     ) -> bool:
-        """Log a warning message."""
+        """Log a warning message.
+        
+        Logs warning events that may require attention but are not critical.
+        
+        Args:
+            title: Warning title
+            description: Warning description
+            context: Optional context dictionary
+            
+        Returns:
+            bool: True if webhook sent successfully
+        """
         fields = []
 
         if context:
@@ -569,7 +862,18 @@ class ModernWebhookLogger:
     async def log_info(
         self, title: str, description: str, context: dict[str, Any] | None = None
     ) -> bool:
-        """Log an info message."""
+        """Log an informational message.
+        
+        Logs general information events for monitoring purposes.
+        
+        Args:
+            title: Information title
+            description: Information description
+            context: Optional context dictionary
+            
+        Returns:
+            bool: True if webhook sent successfully
+        """
         fields = []
 
         if context:
@@ -587,7 +891,18 @@ class ModernWebhookLogger:
     async def log_success(
         self, title: str, description: str, context: dict[str, Any] | None = None
     ) -> bool:
-        """Log a success message."""
+        """Log a success message.
+        
+        Logs successful operations and positive outcomes.
+        
+        Args:
+            title: Success title
+            description: Success description
+            context: Optional context dictionary
+            
+        Returns:
+            bool: True if webhook sent successfully
+        """
         fields = []
 
         if context:
@@ -605,7 +920,18 @@ class ModernWebhookLogger:
     async def log_system(
         self, title: str, description: str, context: dict[str, Any] | None = None
     ) -> bool:
-        """Log a system event."""
+        """Log a system event.
+        
+        Logs system-level events such as startup, shutdown, and configuration changes.
+        
+        Args:
+            title: System event title
+            description: System event description
+            context: Optional context dictionary
+            
+        Returns:
+            bool: True if webhook sent successfully
+        """
         fields = []
 
         if context:
@@ -629,7 +955,22 @@ class ModernWebhookLogger:
         user_avatar_url: str | None = None,
         user_profile_url: str | None = None,
     ) -> bool:
-        """Log user activity with optional user avatar and info."""
+        """Log user activity with optional user avatar and info.
+        
+        Logs user interactions and activities with optional user metadata
+        for enhanced monitoring.
+        
+        Args:
+            title: Activity title
+            description: Activity description
+            context: Optional context dictionary
+            user_name: Optional user name
+            user_avatar_url: Optional user avatar URL
+            user_profile_url: Optional user profile URL (unused)
+            
+        Returns:
+            bool: True if webhook sent successfully
+        """
         fields = []
 
         if context:
@@ -656,15 +997,20 @@ class ModernWebhookLogger:
         user_avatar_url: str | None = None,
         command_details: dict[str, Any] | None = None,
     ) -> bool:
-        """
-        Log QuranBot command usage (verse, quiz, credits, etc.).
+        """Log QuranBot command usage (verse, quiz, credits, etc.).
+
+        Tracks usage of QuranBot commands with user information and command details.
+        Provides insights into bot usage patterns and popular features.
 
         Args:
             command_name: Name of the QuranBot command used
             user_name: User's display name
             user_id: User's Discord ID
-            user_avatar_url: User's avatar URL
-            command_details: Command-specific details
+            user_avatar_url: User's avatar URL for thumbnail
+            command_details: Command-specific details and parameters
+            
+        Returns:
+            bool: True if webhook sent successfully
         """
         # QuranBot command emojis
         command_emojis = {
@@ -709,16 +1055,21 @@ class ModernWebhookLogger:
         user_avatar_url: str | None = None,
         additional_info: dict[str, Any] | None = None,
     ) -> bool:
-        """
-        Log QuranBot voice channel activity (join/leave during audio playback).
+        """Log QuranBot voice channel activity (join/leave during audio playback).
+
+        Monitors voice channel activity to track listening sessions and user engagement
+        with the Quran recitation service.
 
         Args:
-            activity_type: Type of voice activity (join, leave)
+            activity_type: Type of voice activity ('join', 'leave')
             user_name: User's display name
             user_id: User's Discord ID
             channel_name: Name of the voice channel
-            user_avatar_url: User's avatar URL
-            additional_info: Additional context
+            user_avatar_url: User's avatar URL for thumbnail
+            additional_info: Additional context (listeners count, current surah, etc.)
+            
+        Returns:
+            bool: True if webhook sent successfully
         """
         activity_emojis = {"join": "🎤", "leave": "🔇", "default": "🔊"}
 

@@ -1,10 +1,26 @@
-# =============================================================================
-# QuranBot - Modern Audio Service
-# =============================================================================
-# This module provides a modern, type-safe audio service with dependency
-# injection, comprehensive error handling, and advanced features like caching,
-# monitoring, and automatic recovery.
-# =============================================================================
+"""QuranBot - Modern Audio Service.
+
+This module provides a modern, type-safe audio service with dependency
+injection, comprehensive error handling, and advanced features like caching,
+monitoring, and automatic recovery.
+
+The AudioService is the core component responsible for:
+- Voice channel connection management with automatic reconnection
+- Audio file playback using FFmpeg with stability optimizations
+- Metadata caching for improved performance
+- Automatic error recovery and health monitoring
+- State persistence for seamless resume functionality
+- 24/7 continuous operation with aggressive reconnection strategies
+
+Classes:
+    AudioService: Main audio service with comprehensive playback management
+    
+Exceptions:
+    AudioError: Generic audio-related error
+    FFmpegError: FFmpeg-specific error
+    ValidationError: Input validation error
+    VoiceConnectionError: Voice connection-related error
+"""
 
 import asyncio
 from datetime import UTC, datetime
@@ -38,16 +54,30 @@ from .sqlite_state_service import SQLiteStateService
 
 
 class AudioService:
-    """
-    Modern audio service with dependency injection and type safety.
+    """Modern audio service with dependency injection and type safety.
 
     This service provides comprehensive audio playback functionality including:
-    - Voice channel connection management
-    - Audio file playback with FFmpeg
-    - Metadata caching for performance
-    - Automatic error recovery
-    - State persistence
-    - Monitoring and health checks
+    - Voice channel connection management with automatic reconnection
+    - Audio file playback with FFmpeg and stability optimizations
+    - Metadata caching for improved performance
+    - Automatic error recovery and health monitoring
+    - State persistence using SQLite database
+    - 24/7 monitoring and health checks with aggressive reconnection
+    - Support for multiple playback modes (normal, loop, shuffle)
+    
+    Attributes:
+        _container: Dependency injection container
+        _bot: Discord bot instance
+        _config: Audio service configuration
+        _logger: Structured logger instance
+        _cache: Metadata cache service
+        _health_monitor: Health monitoring service
+        _voice_client: Discord voice client for audio playback
+        _current_state: Current playback state
+        _available_reciters: List of discovered reciters
+        _playback_task: Background playback task
+        _monitoring_task: Background monitoring task
+        _position_save_task: Background position saving task
     """
 
     def __init__(
@@ -57,16 +87,18 @@ class AudioService:
         config: AudioServiceConfig,
         logger: StructuredLogger,
         metadata_cache: MetadataCache,
-    ):
-        """
-        Initialize the audio service.
+    ) -> None:
+        """Initialize the audio service.
+
+        Sets up all necessary components for audio playback including voice client
+        management, state tracking, and background task initialization.
 
         Args:
-            container: Dependency injection container
-            bot: Discord bot instance
-            config: Audio service configuration
-            logger: Structured logger
-            metadata_cache: Metadata cache service
+            container: Dependency injection container for service access
+            bot: Discord bot instance for voice connections
+            config: Audio service configuration with playback settings
+            logger: Structured logger for comprehensive logging
+            metadata_cache: Metadata cache service for performance optimization
         """
         self._container = container
         self._bot = bot
@@ -107,7 +139,19 @@ class AudioService:
         self._pause_timestamp: float | None = None
 
     async def initialize(self) -> None:
-        """Initialize the audio service"""
+        """Initialize the audio service.
+        
+        Performs complete initialization including:
+        - Metadata cache initialization
+        - Saved state loading from SQLite database
+        - Reciter discovery from audio folder structure
+        - Bot configuration loading
+        - Background task startup
+        - Health monitor integration
+        
+        Raises:
+            AudioError: If initialization fails at any critical step
+        """
         await self._logger.info("Initializing audio service")
 
         try:
@@ -130,8 +174,9 @@ class AudioService:
             try:
                 from ..core.health_monitor import HealthMonitor
                 self._health_monitor = self._container.get(HealthMonitor)
-            except:
-                pass  # Health monitor not available
+            except (ImportError, AttributeError, Exception) as e:
+                await self._logger.debug("Health monitor not available", {"error": str(e)})
+                self._health_monitor = None
 
             await self._logger.info(
                 "Audio service initialized successfully",
@@ -156,7 +201,15 @@ class AudioService:
             )
 
     async def shutdown(self) -> None:
-        """Shutdown the audio service"""
+        """Shutdown the audio service gracefully.
+        
+        Performs orderly shutdown including:
+        - Stopping active playback
+        - Disconnecting from voice channels
+        - Canceling all background tasks
+        - Final state persistence
+        - Resource cleanup
+        """
         await self._logger.info("Shutting down audio service")
 
         try:
@@ -192,15 +245,25 @@ class AudioService:
             )
 
     async def connect_to_voice_channel(self, channel_id: int, guild_id: int) -> bool:
-        """
-        Connect to a voice channel with automatic retry and monitoring.
+        """Connect to a voice channel with automatic retry and monitoring.
+
+        Establishes voice connection with comprehensive error handling and validation.
+        Includes automatic disconnection of existing connections and permission checks.
 
         Args:
             channel_id: Voice channel ID to connect to
             guild_id: Guild ID containing the channel
 
         Returns:
-            True if connection successful, False otherwise
+            bool: True if connection successful, False otherwise
+            
+        Raises:
+            VoiceConnectionError: If connection fails due to various reasons:
+                - Guild not found
+                - Channel not found or invalid type
+                - Missing permissions
+                - Connection timeout
+                - Connection validation failure
         """
         self._target_channel_id = channel_id
         self._guild_id = guild_id
@@ -308,7 +371,11 @@ class AudioService:
             )
 
     async def disconnect(self) -> None:
-        """Disconnect from voice channel"""
+        """Disconnect from voice channel gracefully.
+        
+        Safely disconnects from the current voice channel, handles errors,
+        and updates internal state to reflect the disconnection.
+        """
         if self._voice_client:
             try:
                 await self._voice_client.disconnect(force=True)
@@ -328,16 +395,21 @@ class AudioService:
         surah_number: int | None = None,
         resume_position: bool = True,
     ) -> bool:
-        """
-        Start audio playback with specified parameters.
+        """Start audio playback with specified parameters.
+
+        Initiates audio playback with optional parameter overrides. Validates
+        voice connection, updates playback state, and starts background playback loop.
 
         Args:
-            reciter: Reciter name (uses current if None)
-            surah_number: Surah to play (uses current if None)
+            reciter: Reciter name to use (uses current if None)
+            surah_number: Surah number to play (uses current if None)
             resume_position: Whether to resume from saved position
 
         Returns:
-            True if playback started successfully
+            bool: True if playback started successfully
+            
+        Raises:
+            AudioError: If not connected to voice channel or other playback issues
         """
         if not self._voice_client or not self._voice_client.is_connected():
             raise AudioError(
@@ -372,7 +444,11 @@ class AudioService:
         return True
 
     async def stop_playback(self) -> None:
-        """Stop audio playback"""
+        """Stop audio playback immediately.
+        
+        Cancels the playback task, stops the voice client, and updates
+        playback state to reflect the stopped status.
+        """
         if self._playback_task and not self._playback_task.done():
             self._playback_task.cancel()
             try:
@@ -389,34 +465,43 @@ class AudioService:
         await self._logger.info("Stopped audio playback")
 
     async def pause_playback(self) -> bool:
-        """
-        Disabled - 24/7 Quran bot should never be paused.
+        """Disabled - 24/7 Quran bot should never be paused.
+        
+        This method is intentionally disabled to maintain continuous 24/7 operation.
+        The bot is designed for uninterrupted Quran recitation.
         
         Returns:
-            False - pause is not allowed
+            bool: False - pause is not allowed for 24/7 operation
         """
         await self._logger.warning("Pause attempt blocked - 24/7 continuous playback only")
         return False
 
     async def resume_playback(self) -> bool:
-        """
-        Disabled - 24/7 Quran bot should never need resuming as it never pauses.
+        """Disabled - 24/7 Quran bot should never need resuming as it never pauses.
+        
+        This method is intentionally disabled since the bot never pauses.
+        For starting stopped playback, use start_playback() instead.
         
         Returns:
-            False - resume is not needed
+            bool: False - resume is not needed for 24/7 operation
         """
         await self._logger.warning("Resume attempt ignored - bot should never be paused")
         return False
 
     async def set_reciter(self, reciter: str) -> bool:
-        """
-        Change the current reciter and restart playback.
+        """Change the current reciter and restart playback.
+
+        Validates the reciter exists, updates internal state, and restarts
+        playback if currently active. Only restarts if reciter actually changes.
 
         Args:
-            reciter: Name of the reciter
+            reciter: Name of the reciter to switch to
 
         Returns:
-            True if reciter changed successfully
+            bool: True if reciter changed successfully
+            
+        Raises:
+            ValidationError: If reciter not found in available reciters
         """
         # Validate reciter exists
         reciter_info = await self._get_reciter_info(reciter)
@@ -470,14 +555,19 @@ class AudioService:
         return True
 
     async def set_surah(self, surah_number: int) -> bool:
-        """
-        Change the current surah and restart playback.
+        """Change the current surah and restart playback.
+
+        Validates the surah number, updates internal state, and restarts
+        playback if currently active. Resets position to beginning of new surah.
 
         Args:
-            surah_number: Surah number (1-114)
+            surah_number: Surah number to jump to (1-114)
 
         Returns:
-            True if surah changed successfully
+            bool: True if surah changed successfully
+            
+        Raises:
+            ValidationError: If surah number is not between 1 and 114
         """
         if not (1 <= surah_number <= 114):
             raise ValidationError(
@@ -525,14 +615,19 @@ class AudioService:
         return True
 
     async def set_volume(self, volume: float) -> bool:
-        """
-        Set playback volume.
+        """Set playback volume.
+
+        Updates volume level for current and future playback. Applies immediately
+        to active audio source if currently playing.
 
         Args:
-            volume: Volume level (0.0-1.0)
+            volume: Volume level between 0.0 (silent) and 1.0 (maximum)
 
         Returns:
-            True if volume set successfully
+            bool: True if volume set successfully
+            
+        Raises:
+            ValidationError: If volume is not between 0.0 and 1.0
         """
         if not (0.0 <= volume <= 1.0):
             raise ValidationError(
@@ -556,14 +651,19 @@ class AudioService:
         return True
 
     async def set_playback_mode(self, mode: PlaybackMode) -> bool:
-        """
-        Set playback mode.
+        """Set playback mode.
+
+        Changes how tracks advance after completion:
+        - NORMAL: Sequential progression through surahs
+        - LOOP_TRACK: Repeat current surah indefinitely
+        - LOOP_PLAYLIST: Loop back to surah 1 after reaching the end
+        - SHUFFLE: Random surah selection
 
         Args:
-            mode: Playback mode
+            mode: Playback mode from PlaybackMode enum
 
         Returns:
-            True if mode set successfully
+            bool: True if mode set successfully
         """
         old_mode = self._current_state.mode
         self._current_state.mode = mode
@@ -575,7 +675,14 @@ class AudioService:
         return True
 
     async def get_playback_state(self) -> PlaybackState:
-        """Get current playback state"""
+        """Get current playback state.
+        
+        Returns a deep copy of the current playback state including position,
+        reciter, volume, mode, and connection status. Updates position if playing.
+        
+        Returns:
+            PlaybackState: Deep copy of current playback state
+        """
         # Update current position if playing
         if self._current_state.is_playing and self._track_start_time:
             current_time = asyncio.get_event_loop().time()
@@ -586,11 +693,25 @@ class AudioService:
         return self._current_state.copy(deep=True)
 
     async def get_available_reciters(self) -> list[ReciterInfo]:
-        """Get list of available reciters"""
+        """Get list of available reciters.
+        
+        Returns a copy of the discovered reciters list with information about
+        each reciter including name, total surahs, and file count.
+        
+        Returns:
+            list[ReciterInfo]: List of available reciter information
+        """
         return self._available_reciters.copy()
 
     async def get_current_file_info(self) -> AudioFileInfo | None:
-        """Get information about the currently playing file"""
+        """Get information about the currently playing file.
+        
+        Retrieves cached metadata for the currently playing audio file including
+        duration, bitrate, and other technical information.
+        
+        Returns:
+            AudioFileInfo | None: File information if available, None if not found
+        """
         try:
             file_path = await self._get_current_audio_file_path()
             if not file_path:
@@ -608,7 +729,12 @@ class AudioService:
             return None
 
     async def _discover_reciters(self) -> None:
-        """Discover available reciters from audio folder structure"""
+        """Discover available reciters from audio folder structure.
+        
+        Scans the audio base folder for subdirectories containing MP3 files,
+        analyzes file naming patterns to determine surah counts, and builds
+        the available reciters list. Optionally warms cache for default reciter.
+        """
         await self._logger.info(
             "Discovering available reciters",
             {"audio_folder": str(self._config.audio_base_folder)},
@@ -660,7 +786,11 @@ class AudioService:
         )
 
     async def _load_bot_configuration(self) -> None:
-        """Load configuration from config service"""
+        """Load configuration from config service.
+        
+        Retrieves voice channel ID and guild ID from the bot configuration
+        service for automatic connection management.
+        """
         try:
             config_service = self._container.get(ConfigService)
             self._target_channel_id = config_service.get_voice_channel_id()
@@ -679,7 +809,12 @@ class AudioService:
             )
 
     async def _load_saved_state(self) -> None:
-        """Load saved playback state from SQLiteStateService"""
+        """Load saved playback state from SQLiteStateService.
+        
+        Attempts to restore previous playback state from SQLite database
+        including current surah, position, reciter, and playback mode.
+        Falls back to defaults if loading fails.
+        """
         try:
             state_service = self._container.get(SQLiteStateService)
             saved_data = await state_service.load_playback_state()
@@ -728,7 +863,12 @@ class AudioService:
             # Keep the default state if loading fails
 
     async def _start_background_tasks(self) -> None:
-        """Start background monitoring and maintenance tasks"""
+        """Start background monitoring and maintenance tasks.
+        
+        Initiates background tasks for:
+        - Connection monitoring and automatic reconnection
+        - Periodic position saving for resume functionality
+        """
         # Start monitoring task
         self._monitoring_task = asyncio.create_task(self._monitoring_loop())
 
@@ -738,7 +878,23 @@ class AudioService:
         await self._logger.info("Started background tasks")
 
     async def _playback_loop(self, resume_position: bool = True) -> None:
-        """Main playback loop"""
+        """Main playback loop for continuous audio playback.
+        
+        Manages the core playback cycle:
+        1. Validates voice connection
+        2. Gets current audio file and metadata
+        3. Creates optimized audio source with FFmpeg
+        4. Starts playback and monitors completion
+        5. Advances to next track based on playback mode
+        6. Repeats until cancelled
+        
+        Args:
+            resume_position: Whether to resume from saved position on first track
+            
+        Raises:
+            FFmpegError: If audio source creation fails
+            AudioError: If playback fails
+        """
         try:
             await self._logger.info("Starting playback loop")
 
@@ -858,7 +1014,21 @@ class AudioService:
     async def _create_audio_source(
         self, file_path: Path, resume: bool = False
     ) -> discord.AudioSource:
-        """Create FFmpeg audio source with robust options for 24/7 stability"""
+        """Create FFmpeg audio source with robust options for 24/7 stability.
+        
+        Configures FFmpeg with stability-focused options including:
+        - Large buffer sizes for smooth playback
+        - Reconnection options for network resilience
+        - Timestamp handling for seamless audio
+        - Resume capability from specific positions
+        
+        Args:
+            file_path: Path to the audio file
+            resume: Whether to resume from saved position
+            
+        Returns:
+            discord.AudioSource: Configured FFmpeg audio source
+        """
         ffmpeg_options = [
             "-vn",  # No video
             "-loglevel warning",
@@ -896,7 +1066,11 @@ class AudioService:
         )
 
     async def _wait_for_playback_completion(self) -> None:
-        """Wait for current track to complete playback"""
+        """Wait for current track to complete playback.
+        
+        Monitors playback status and updates position tracking while waiting
+        for the current track to finish. Updates position every second.
+        """
         while self._voice_client and self._voice_client.is_playing():
             await asyncio.sleep(1)
 
@@ -906,7 +1080,15 @@ class AudioService:
                 self._current_state.current_position.position_seconds = elapsed
 
     async def _advance_to_next_track(self) -> None:
-        """Advance to the next track based on playback mode"""
+        """Advance to the next track based on playback mode.
+        
+        Determines next track based on current playback mode:
+        - LOOP_TRACK: Restarts current surah
+        - SHUFFLE: Selects random different surah
+        - NORMAL/LOOP_PLAYLIST: Sequential progression
+        
+        Updates position tracking and reports progression to health monitor.
+        """
         current_surah = self._current_state.current_position.surah_number
 
         if self._current_state.mode == PlaybackMode.LOOP_TRACK:
@@ -966,7 +1148,14 @@ class AudioService:
             )
 
     async def _get_current_audio_file_path(self) -> Path | None:
-        """Get the path to the current audio file"""
+        """Get the path to the current audio file.
+        
+        Constructs the file path based on current reciter and surah number,
+        searching for MP3 files that match the expected naming pattern.
+        
+        Returns:
+            Path | None: Path to audio file if found, None otherwise
+        """
         reciter_folder = (
             self._config.audio_base_folder / self._current_state.current_reciter
         )
@@ -983,14 +1172,31 @@ class AudioService:
         return None
 
     async def _get_reciter_info(self, reciter: str) -> ReciterInfo | None:
-        """Get reciter information by name"""
+        """Get reciter information by name.
+        
+        Args:
+            reciter: Name of the reciter to find
+            
+        Returns:
+            ReciterInfo | None: Reciter information if found, None otherwise
+        """
         for reciter_info in self._available_reciters:
             if reciter_info.name == reciter:
                 return reciter_info
         return None
 
     def _extract_surah_number(self, filename: str) -> int | None:
-        """Extract surah number from filename"""
+        """Extract surah number from filename.
+        
+        Uses regex to find numeric patterns in filenames and validates
+        they represent valid surah numbers (1-114).
+        
+        Args:
+            filename: Audio filename to analyze
+            
+        Returns:
+            int | None: Surah number if valid, None otherwise
+        """
         match = re.search(r"(\d+)", filename)
         if match:
             surah_num = int(match.group(1))
@@ -998,7 +1204,18 @@ class AudioService:
         return None
 
     async def _monitoring_loop(self) -> None:
-        """Enhanced background monitoring loop with aggressive reconnection for 24/7 stability"""
+        """Enhanced background monitoring loop with aggressive reconnection for 24/7 stability.
+        
+        Provides comprehensive health monitoring including:
+        - Voice connection health checks with WebSocket monitoring
+        - Automatic reconnection with exponential backoff
+        - Playback health monitoring and recovery
+        - Audio stuck detection and recovery
+        - Emergency webhook notifications for critical failures
+        
+        Uses aggressive reconnection strategies optimized for 24/7 operation
+        with multiple retry attempts and escalating intervention levels.
+        """
         consecutive_failures = 0
         max_consecutive_failures = 5
         base_retry_delay = 2  # Start with 2 seconds
@@ -1013,8 +1230,20 @@ class AudioService:
                 connection_lost = False
                 if not self._voice_client or not self._voice_client.is_connected():
                     connection_lost = True
-                elif self._voice_client and hasattr(self._voice_client, 'ws') and self._voice_client.ws and self._voice_client.ws.closed:
-                    connection_lost = True
+                elif self._voice_client and hasattr(self._voice_client, 'ws') and self._voice_client.ws:
+                    # Check if WebSocket connection is closed using the proper method
+                    try:
+                        # For Discord.py 2.x, check if WebSocket is open
+                        if hasattr(self._voice_client.ws, 'closed') and self._voice_client.ws.closed:
+                            connection_lost = True
+                        elif hasattr(self._voice_client.ws, 'open') and not self._voice_client.ws.open:
+                            connection_lost = True
+                        elif not hasattr(self._voice_client.ws, 'closed') and not hasattr(self._voice_client.ws, 'open'):
+                            # If neither attribute exists, assume connection is fine (fallback)
+                            pass
+                    except AttributeError:
+                        # If we can't check WebSocket state, skip this check
+                        pass
                     
                 if connection_lost:
                     consecutive_failures += 1
@@ -1035,8 +1264,8 @@ class AudioService:
                             if self._voice_client:
                                 try:
                                     await self._voice_client.disconnect(force=True)
-                                except:
-                                    pass  # Ignore errors on forced disconnect
+                                except (discord.ConnectionClosed, discord.HTTPException, Exception) as e:
+                                    await self._logger.debug("Error on forced disconnect (expected)", {"error": str(e)})
                                 await asyncio.sleep(1)  # Brief pause
                             
                             # Attempt reconnection with retries
@@ -1083,8 +1312,8 @@ class AudioService:
                                                 f"Bot needs restart after {consecutive_failures} consecutive connection failures",
                                                 ping_owner=True
                                             )
-                                    except:
-                                        pass
+                                    except Exception as webhook_error:
+                                        await self._logger.debug("Failed to send critical reconnection webhook", {"error": str(webhook_error)})
                                 
                         except Exception as e:
                             await self._logger.error(
@@ -1155,7 +1384,12 @@ class AudioService:
                 await asyncio.sleep(5)
 
     async def _position_save_loop(self) -> None:
-        """Background loop to save playback position"""
+        """Background loop to save playback position periodically.
+        
+        Saves current playback state to SQLite database every 5 seconds while
+        playing, enabling seamless resume functionality across bot restarts.
+        Also ensures final position is saved during shutdown.
+        """
         while True:
             try:
                 await asyncio.sleep(5)  # Save every 5 seconds

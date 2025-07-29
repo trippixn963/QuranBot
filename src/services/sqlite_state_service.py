@@ -1,9 +1,30 @@
-# =============================================================================
-# QuranBot - SQLite State Service
-# =============================================================================
-# Modern state management using SQLite database instead of JSON files
-# Provides robust, ACID-compliant state persistence with better performance
-# =============================================================================
+"""QuranBot - SQLite State Service.
+
+Modern state management using SQLite database instead of JSON files.
+Provides robust, ACID-compliant state persistence with better performance.
+
+This module provides a high-level SQLite-based state management service for QuranBot,
+replacing the legacy JSON-based state management system with a robust database solution
+that provides ACID transactions, better performance, and automatic recovery capabilities.
+
+Classes:
+    SQLiteStateService: High-level state management service using SQLite
+    
+Features:
+    - Atomic state updates with ACID compliance
+    - Automatic schema validation and data integrity
+    - Built-in backup and recovery capabilities
+    - No JSON corruption issues
+    - Better concurrent access handling
+    - Comprehensive error handling and logging
+    
+State Management:
+    - Playback state persistence (surah, position, reciter, volume)
+    - Bot statistics tracking (runtime, sessions, completions)
+    - Quiz configuration and user statistics
+    - Metadata caching for improved performance
+    - System event logging and audit trails
+"""
 
 import asyncio
 from datetime import datetime, timezone
@@ -34,16 +55,29 @@ class SQLiteStateService:
         """
         Initialize the SQLite state service.
         
+        Sets up the state service with database connection and logging.
+        The service provides a high-level interface for managing all
+        persistent state data using SQLite as the backend storage.
+        
         Args:
-            logger: Structured logger instance
-            db_path: Path to SQLite database file
+            logger: Structured logger instance for service logging
+            db_path: Optional path to SQLite database file. If None, uses default location
         """
         self.logger = logger
         self.db_service = QuranBotDatabaseService(logger=logger, db_path=db_path)
         self._is_initialized = False
         
     async def initialize(self) -> None:
-        """Initialize the database service"""
+        """
+        Initialize the database service and establish connection.
+        
+        Sets up the SQLite database connection, initializes tables if needed,
+        and prepares the service for state management operations. This method
+        must be called before using any other service methods.
+        
+        Raises:
+            DatabaseError: If database initialization fails
+        """
         if not self._is_initialized:
             await self.db_service.initialize()
             self._is_initialized = True
@@ -59,10 +93,24 @@ class SQLiteStateService:
     
     async def load_playback_state(self) -> Dict[str, Any]:
         """
-        Load playback state from SQLite database.
+        Load current playback state from SQLite database.
+        
+        Retrieves the persistent playback state including current surah position,
+        reciter selection, playback mode, and audio settings. Returns default
+        values if no state exists in the database.
         
         Returns:
-            Dict containing playback state data
+            Dict[str, Any]: Complete playback state containing:
+                - is_playing: Current playback status
+                - is_paused: Pause state
+                - current_reciter: Selected reciter name
+                - current_position: Surah number, position, and timing info
+                - mode: Playback mode (normal, loop, shuffle)
+                - volume: Audio volume level (0.0-1.0)
+                - Runtime state fields (voice_channel_id, queue, etc.)
+                
+        Raises:
+            DatabaseError: If database query fails
         """
         try:
             state = await self.db_service.get_playback_state()
@@ -113,13 +161,21 @@ class SQLiteStateService:
             
     async def save_playback_state(self, state: Dict[str, Any]) -> bool:
         """
-        Save playback state to SQLite database.
+        Save current playback state to SQLite database.
+        
+        Persists the complete playback state to the database, extracting relevant
+        fields and converting them to the appropriate SQLite format. Only persistent
+        state is saved; runtime state (connections, queues) is excluded.
         
         Args:
-            state: Playback state dictionary
+            state: Complete playback state dictionary containing current surah,
+                  position, reciter, volume, and playback mode settings
             
         Returns:
-            True if save successful
+            bool: True if save operation completed successfully, False on error
+            
+        Raises:
+            DatabaseError: If database update operation fails
         """
         try:
             # Extract data for SQLite format
@@ -156,10 +212,24 @@ class SQLiteStateService:
     
     async def load_bot_stats(self) -> Dict[str, Any]:
         """
-        Load bot statistics from SQLite database.
+        Load comprehensive bot statistics from SQLite database.
+        
+        Retrieves all bot usage statistics including runtime hours, session counts,
+        completion statistics, and operational metadata. Converts database format
+        to the expected application format for compatibility.
         
         Returns:
-            Dict containing bot statistics
+            Dict[str, Any]: Bot statistics containing:
+                - total_runtime: Total runtime in seconds
+                - total_sessions: Number of bot sessions
+                - surahs_completed: Number of completed Quran sessions
+                - last_startup: Last bot startup timestamp
+                - last_shutdown: Last bot shutdown timestamp
+                - favorite_reciter: Most used reciter
+                - metadata: Version and update information
+                
+        Raises:
+            DatabaseError: If database query fails
         """
         try:
             stats = await self.db_service.get_bot_statistics()
@@ -199,11 +269,19 @@ class SQLiteStateService:
         """
         Save bot statistics to SQLite database.
         
+        Persists comprehensive bot usage statistics to the database, converting
+        from application format to database format. Runtime is converted from
+        seconds to hours for efficient storage.
+        
         Args:
-            stats: Bot statistics dictionary
+            stats: Bot statistics dictionary containing runtime, session counts,
+                  completion data, and operational timestamps
             
         Returns:
-            True if save successful
+            bool: True if save operation completed successfully, False on error
+            
+        Raises:
+            DatabaseError: If database update operation fails
         """
         try:
             # Convert seconds to hours for storage
@@ -237,7 +315,20 @@ class SQLiteStateService:
     # ==========================================================================
     
     async def load_quiz_config(self) -> Dict[str, Any]:
-        """Load quiz configuration from SQLite"""
+        """
+        Load quiz system configuration from SQLite database.
+        
+        Retrieves quiz scheduling configuration, enabled status, and timing
+        settings. Returns default configuration if none exists in database.
+        
+        Returns:
+            Dict[str, Any]: Quiz configuration containing:
+                - schedule_config: Scheduling settings with interval and timing
+                - metadata: Version and update information
+                
+        Raises:
+            DatabaseError: If database query fails
+        """
         try:
             config = await self.db_service.get_quiz_config()
             
@@ -270,7 +361,22 @@ class SQLiteStateService:
             }
             
     async def save_quiz_config(self, config: Dict[str, Any]) -> bool:
-        """Save quiz configuration to SQLite"""
+        """
+        Save quiz system configuration to SQLite database.
+        
+        Persists quiz scheduling settings including send intervals, enabled status,
+        and last question timing to maintain quiz system state across restarts.
+        
+        Args:
+            config: Quiz configuration dictionary with schedule_config section
+                   containing interval, enabled status, and timing data
+            
+        Returns:
+            bool: True if save operation completed successfully, False on error
+            
+        Raises:
+            DatabaseError: If database update operation fails
+        """
         try:
             schedule_config = config.get("schedule_config", {})
             
@@ -287,7 +393,24 @@ class SQLiteStateService:
             return False
             
     async def load_quiz_stats(self) -> Dict[str, Any]:
-        """Load quiz statistics from SQLite"""
+        """
+        Load comprehensive quiz statistics from SQLite database.
+        
+        Retrieves global quiz statistics and top user statistics, combining
+        them into a single comprehensive statistics object. Limits user stats
+        to top 100 users for performance optimization.
+        
+        Returns:
+            Dict[str, Any]: Complete quiz statistics containing:
+                - questions_sent: Total questions sent by bot
+                - total_attempts: Total answer attempts across all users
+                - correct_answers: Total correct answers across all users
+                - user_stats: Dictionary of individual user statistics
+                - metadata: Version and update information
+                
+        Raises:
+            DatabaseError: If database query fails
+        """
         try:
             # Get global stats
             global_stats = await self.db_service.get_quiz_statistics()
@@ -337,7 +460,23 @@ class SQLiteStateService:
             }
             
     async def save_quiz_stats(self, stats: Dict[str, Any]) -> bool:
-        """Save quiz statistics to SQLite"""
+        """
+        Save comprehensive quiz statistics to SQLite database.
+        
+        Persists both global quiz statistics and individual user statistics
+        to the database. Updates global counters and individual user records
+        in separate operations for data consistency.
+        
+        Args:
+            stats: Complete quiz statistics dictionary containing global stats
+                  and user_stats dictionary with individual user data
+            
+        Returns:
+            bool: True if all save operations completed successfully, False on error
+            
+        Raises:
+            DatabaseError: If database update operations fail
+        """
         try:
             # Update global stats
             global_updates = {
@@ -365,15 +504,59 @@ class SQLiteStateService:
     # ==========================================================================
     
     async def get_metadata_cache(self, cache_key: str) -> Optional[Dict[str, Any]]:
-        """Get metadata from cache"""
+        """
+        Retrieve metadata from SQLite cache by key.
+        
+        Looks up cached metadata using the provided cache key and updates
+        access statistics for cache management. Used for caching audio file
+        metadata and other frequently accessed data.
+        
+        Args:
+            cache_key: Unique identifier for the cached data
+            
+        Returns:
+            Optional[Dict[str, Any]]: Cached metadata dictionary if found, None otherwise
+            
+        Raises:
+            DatabaseError: If database query fails
+        """
         return await self.db_service.get_metadata_cache(cache_key)
         
     async def set_metadata_cache(self, cache_key: str, **metadata) -> bool:
-        """Set metadata in cache"""
+        """
+        Store metadata in SQLite cache with specified key.
+        
+        Caches metadata for improved performance, typically used for audio file
+        metadata, reciter information, and other frequently accessed data.
+        
+        Args:
+            cache_key: Unique identifier for the cached data
+            **metadata: Metadata fields to cache (file_path, reciter, duration, etc.)
+            
+        Returns:
+            bool: True if cache operation completed successfully, False on error
+            
+        Raises:
+            DatabaseError: If database insert operation fails
+        """
         return await self.db_service.set_metadata_cache(cache_key, **metadata)
         
     async def clear_old_cache(self, days_old: int = 30) -> int:
-        """Clear old cache entries"""
+        """
+        Remove old metadata cache entries from SQLite database.
+        
+        Cleans up cache entries that haven't been accessed recently to maintain
+        optimal database performance and storage efficiency.
+        
+        Args:
+            days_old: Number of days after which unused cache entries are removed
+            
+        Returns:
+            int: Number of cache entries removed (currently returns 0)
+            
+        Raises:
+            DatabaseError: If database cleanup operation fails
+        """
         return await self.db_service.clear_old_cache(days_old)
         
     # ==========================================================================
@@ -386,7 +569,23 @@ class SQLiteStateService:
         event_data: Dict[str, Any] = None,
         severity: str = 'info'
     ) -> bool:
-        """Log a system event"""
+        """
+        Log a system event to the SQLite database.
+        
+        Records system events for audit trails, debugging, and analytics.
+        Events are stored with timestamps, severity levels, and optional data.
+        
+        Args:
+            event_type: Type/category of the system event
+            event_data: Optional dictionary containing event-specific data
+            severity: Event severity level ('info', 'warning', 'error', etc.)
+            
+        Returns:
+            bool: True if event logging completed successfully, False on error
+            
+        Raises:
+            DatabaseError: If database insert operation fails
+        """
         return await self.db_service.log_system_event(event_type, event_data, severity)
         
     # ==========================================================================
@@ -394,11 +593,38 @@ class SQLiteStateService:
     # ==========================================================================
     
     async def get_database_stats(self) -> Dict[str, Any]:
-        """Get database statistics"""
+        """
+        Retrieve comprehensive SQLite database statistics.
+        
+        Gathers database performance metrics, storage usage, and table statistics
+        for monitoring and optimization purposes.
+        
+        Returns:
+            Dict[str, Any]: Database statistics including size, record counts,
+                           table information, and performance metrics
+                           
+        Raises:
+            DatabaseError: If database statistics query fails
+        """
         return await self.db_service.get_database_stats()
         
     async def backup_database(self, backup_path: Path) -> bool:
-        """Create database backup"""
+        """
+        Create a backup of the SQLite database.
+        
+        Performs a complete database backup to the specified path for data
+        recovery and archival purposes. Uses SQLite's built-in backup API
+        for consistency and reliability.
+        
+        Args:
+            backup_path: Path where the database backup should be created
+            
+        Returns:
+            bool: True if backup completed successfully, False on error
+            
+        Raises:
+            DatabaseError: If backup operation fails
+        """
         return await self.db_service.backup_database(backup_path)
         
     async def verify_data_integrity(self) -> Dict[str, Any]:

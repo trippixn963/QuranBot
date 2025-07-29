@@ -106,7 +106,9 @@ class LeaderboardView(discord.ui.View):
 
         # Set footer with admin profile picture and page info (preserve across all pages)
         try:
-            developer_id = int(os.getenv("DEVELOPER_ID", 0))
+            from src.config import get_config_service
+            config = get_config_service().config
+            developer_id = config.DEVELOPER_ID or 0
             if developer_id:
                 admin_user = await self.bot_client.fetch_user(developer_id)
                 if admin_user and admin_user.avatar:
@@ -243,7 +245,9 @@ class LeaderboardCog(commands.Cog):
 
                 # Set footer with admin profile picture
                 try:
-                    developer_id = int(os.getenv("DEVELOPER_ID", 0))
+                    from src.config import get_config_service
+                    config = get_config_service().config
+                    developer_id = config.DEVELOPER_ID or 0
                     if developer_id:
                         admin_user = await interaction.client.fetch_user(developer_id)
                         if admin_user and admin_user.avatar:

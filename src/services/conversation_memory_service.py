@@ -11,6 +11,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 
+import aiofiles
+
 from src.utils.tree_log import log_perfect_tree_section, log_error_with_traceback
 
 
@@ -26,14 +28,15 @@ class ConversationMemoryService:
         }
         
         # Load existing memory
-        self._load_memory()
+        # Note: _load_memory is now async, should be called with await during initialization
         
-    def _load_memory(self):
+    async def _load_memory(self):
         """Load conversation memory from file."""
         try:
             if self.memory_file.exists():
-                with open(self.memory_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
+                async with aiofiles.open(self.memory_file, 'r', encoding='utf-8') as f:
+                    content = await f.read()
+                    data = json.loads(content)
                     
                 # Load data with proper structure
                 self.memory['users'] = data.get('users', {})
@@ -63,19 +66,19 @@ class ConversationMemoryService:
         except Exception as e:
             log_error_with_traceback("Error loading conversation memory", e)
             
-    def _save_memory(self):
+    async def _save_memory(self):
         """Save conversation memory to file."""
         try:
             # Ensure directory exists
             self.memory_file.parent.mkdir(parents=True, exist_ok=True)
             
-            with open(self.memory_file, 'w', encoding='utf-8') as f:
-                json.dump(self.memory, f, indent=2, ensure_ascii=False)
+            async with aiofiles.open(self.memory_file, 'w', encoding='utf-8') as f:
+                await f.write(json.dumps(self.memory, indent=2, ensure_ascii=False))
                 
         except Exception as e:
             log_error_with_traceback("Error saving conversation memory", e)
             
-    def add_conversation(self, user_id: int, question: str, response: str, topics: List[str]) -> None:
+    async def add_conversation(self, user_id: int, question: str, response: str, topics: List[str]) -> None:
         """Add a new conversation to memory with enhanced analysis."""
         try:
             user_str = str(user_id)
@@ -169,7 +172,7 @@ class ConversationMemoryService:
             if len(user_data['conversation_history']) > 50:
                 user_data['conversation_history'] = user_data['conversation_history'][-50:]
             
-            self._save_memory()
+            await self._save_memory()
             
         except Exception as e:
             print(f"Error adding conversation to memory: {e}")
@@ -341,7 +344,7 @@ class ConversationMemoryService:
             'conversation_history': user_data.get('conversation_history', [])[-10:]  # Last 10 conversations for contradiction detection
         }
             
-    def update_user_preference(self, user_id: int, preference_key: str, preference_value: Any):
+    async def update_user_preference(self, user_id: int, preference_key: str, preference_value: Any):
         """Update user preference."""
         try:
             if user_id not in self.memory['preferences']:
@@ -350,7 +353,7 @@ class ConversationMemoryService:
             self.memory['preferences'][user_id][preference_key] = preference_value
             self.memory['preferences'][user_id]['last_updated'] = datetime.now().isoformat()
             
-            self._save_memory()
+            await self._save_memory()
             
         except Exception as e:
             log_error_with_traceback("Error updating user preference", e)

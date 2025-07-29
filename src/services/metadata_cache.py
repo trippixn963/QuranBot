@@ -479,7 +479,20 @@ class MetadataCache:
 
             async with self._access_lock:
                 for key, entry in self._cache.items():
-                    cache_data["entries"][key] = entry.dict()
+                    # Convert to dict and handle datetime serialization
+                    entry_dict = entry.dict()
+                    
+                    # Convert datetime objects to ISO format strings
+                    datetime_fields = ['created_at', 'last_modified', 'last_accessed']
+                    for field in datetime_fields:
+                        if field in entry_dict and entry_dict[field]:
+                            entry_dict[field] = entry_dict[field].isoformat()
+                    
+                    # Convert Path objects to strings
+                    if 'file_path' in entry_dict:
+                        entry_dict['file_path'] = str(entry_dict['file_path'])
+                    
+                    cache_data["entries"][key] = entry_dict
 
             # Write to disk
             import json
@@ -532,6 +545,23 @@ class MetadataCache:
             loaded_count = 0
             for key, entry_data in cache_data.get("entries", {}).items():
                 try:
+                    # Handle datetime deserialization
+                    if 'last_accessed' in entry_data and entry_data['last_accessed']:
+                        try:
+                            from datetime import datetime
+                            entry_data['last_accessed'] = datetime.fromisoformat(entry_data['last_accessed'])
+                        except (ValueError, TypeError):
+                            # If datetime parsing fails, use current time
+                            entry_data['last_accessed'] = datetime.now(UTC)
+                    
+                    # Handle other datetime fields if they exist
+                    for datetime_field in ['created_at', 'last_modified']:
+                        if datetime_field in entry_data and entry_data[datetime_field]:
+                            try:
+                                entry_data[datetime_field] = datetime.fromisoformat(entry_data[datetime_field])
+                            except (ValueError, TypeError):
+                                entry_data[datetime_field] = None
+                    
                     cache_entry = AudioCache(**entry_data)
                     self._cache[key] = cache_entry
                     loaded_count += 1

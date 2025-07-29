@@ -1,14 +1,31 @@
-# =============================================================================
-# QuranBot - Database Service
-# =============================================================================
-# High-level database service providing QuranBot-specific data operations
-# Built on top of the core DatabaseManager for safe, robust data access
-# =============================================================================
+"""QuranBot - Database Service.
+
+High-level database service providing QuranBot-specific data operations
+built on top of the core DatabaseManager for safe, robust data access.
+
+This service provides comprehensive database operations for:
+- Playback state management with SQLite persistence
+- Quiz configuration and user statistics tracking
+- Bot analytics and performance metrics
+- Metadata caching for improved performance
+- System event logging and audit trails
+- Database maintenance and optimization
+
+Classes:
+    QuranBotDatabaseService: High-level database service with QuranBot-specific operations
+    
+Features:
+    - Async/await support for all database operations
+    - Comprehensive error handling with logging
+    - Webhook integration for critical database events
+    - Automatic data validation and sanitization
+    - Built-in backup and maintenance capabilities
+"""
 
 import asyncio
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from ..core.database import DatabaseManager
 from ..core.structured_logger import StructuredLogger
@@ -80,7 +97,17 @@ class QuranBotDatabaseService:
     # ==========================================================================
     
     async def get_playback_state(self) -> Dict[str, Any]:
-        """Get current playback state"""
+        """Get current playback state from database.
+        
+        Retrieves the persistent playback state including current surah,
+        position, reciter, volume, and playback mode settings.
+        
+        Returns:
+            Dict[str, Any]: Playback state data or default values if none exists
+            
+        Raises:
+            DatabaseError: If database query fails
+        """
         try:
             result = await self.db_manager.execute_query(
                 "SELECT * FROM playback_state WHERE id = 1",

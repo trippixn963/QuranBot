@@ -1,15 +1,37 @@
-# =============================================================================
-# QuranBot - Bot Configuration Module
-# =============================================================================
-# Modern configuration management for QuranBot using Pydantic BaseSettings.
-# Handles environment variables, validation, and centralized bot settings.
-# =============================================================================
+"""QuranBot - Bot Configuration Module.
+
+Modern configuration management for QuranBot using Pydantic BaseSettings.
+Handles environment variables, validation, and centralized bot settings.
+
+This module provides comprehensive configuration management for QuranBot with:
+- Type-safe configuration using Pydantic BaseSettings
+- Automatic environment variable loading and validation
+- Comprehensive field validation with custom validators
+- Support for multiple webhook channels for enhanced logging
+- Audio and performance configuration management
+- Security and rate limiting settings
+- OpenAI integration for Islamic AI Assistant
+
+Classes:
+    ReciterName: Enumeration of available Quran reciters
+    LogLevel: Enumeration of logging levels
+    BotConfig: Main configuration class with comprehensive settings
+    
+Features:
+    - Environment file support (.env)
+    - Discord API integration settings
+    - Multi-channel webhook configuration
+    - Audio system configuration with FFmpeg validation
+    - Performance and caching settings
+    - Security configuration with rate limiting
+    - Comprehensive validation with detailed error messages
+"""
 
 from enum import Enum
 import os
 from pathlib import Path
 import subprocess
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -18,7 +40,19 @@ from src.core.exceptions import ValidationError
 
 
 class ReciterName(str, Enum):
-    """Enumeration of available reciters."""
+    """Enumeration of available Quran reciters.
+    
+    Defines the available reciters for Quran audio playback with their
+    exact folder names as used in the audio directory structure.
+    
+    Attributes:
+        SAAD_AL_GHAMDI: Default reciter with clear pronunciation
+        ABDUL_BASIT: Classical reciter with traditional style
+        MAHER_AL_MUAIQLY: Popular contemporary reciter
+        MUHAMMAD_AL_LUHAIDAN: Imam of Masjid an-Nabawi
+        RASHID_AL_AFASY: Well-known Kuwaiti reciter
+        YASSER_AL_DOSARI: Saudi reciter with melodious voice
+    """
 
     SAAD_AL_GHAMDI = "Saad Al Ghamdi"
     ABDUL_BASIT = "Abdul Basit Abdul Samad"
@@ -29,7 +63,17 @@ class ReciterName(str, Enum):
 
 
 class LogLevel(str, Enum):
-    """Enumeration of logging levels."""
+    """Enumeration of logging levels.
+    
+    Standard logging levels for controlling log output verbosity.
+    
+    Attributes:
+        DEBUG: Detailed diagnostic information
+        INFO: General informational messages
+        WARNING: Warning messages for potentially harmful situations
+        ERROR: Error messages for problems that don't stop execution
+        CRITICAL: Critical errors that may cause the application to stop
+    """
 
     DEBUG = "DEBUG"
     INFO = "INFO"
@@ -41,11 +85,29 @@ class LogLevel(str, Enum):
 class BotConfig(BaseSettings):
     """Type-safe configuration with validation using Pydantic BaseSettings.
 
-    This class provides centralized configuration management with:
-    - Type safety and validation
-    - Environment variable loading
-    - Default values and constraints
-    - Comprehensive error messages
+    This class provides centralized configuration management for QuranBot with
+    comprehensive settings for all bot systems and features.
+
+    The configuration system supports:
+    - Automatic environment variable loading from .env files
+    - Type safety with Pydantic validation
+    - Custom validators for complex validation logic
+    - Multi-channel webhook configuration for enhanced logging
+    - Audio system configuration with path validation
+    - Performance tuning and caching settings
+    - Security configuration with rate limiting
+    - OpenAI integration for Islamic AI features
+    
+    Configuration Sections:
+        Discord: Bot token, guild/channel IDs, and Discord integration
+        Environment: Application environment and deployment settings
+        User: Admin user configuration and permissions
+        Audio: Audio playback configuration and reciter settings
+        Performance: Caching, concurrency, and optimization settings
+        Security: Rate limiting and access control
+        Logging: Multi-channel webhook configuration and log levels
+        VPS: Deployment and hosting configuration
+        OpenAI: Islamic AI Assistant integration
     """
 
     # =============================================================================
@@ -175,8 +237,38 @@ class BotConfig(BaseSettings):
         default=True, description="Whether to use webhook-based Discord logging"
     )
 
+    # Multi-channel webhook URLs for enhanced logging
+    WEBHOOK_BOT_STATUS: str | None = Field(
+        None, description="Webhook URL for bot status and health alerts"
+    )
+    
+    WEBHOOK_QURAN_AUDIO: str | None = Field(
+        None, description="Webhook URL for Quran audio and playback events"
+    )
+    
+    WEBHOOK_COMMANDS_PANEL: str | None = Field(
+        None, description="Webhook URL for command usage and control panel interactions"
+    )
+    
+    WEBHOOK_USER_ACTIVITY: str | None = Field(
+        None, description="Webhook URL for user engagement and Islamic activities"
+    )
+    
+    WEBHOOK_DATA_ANALYTICS: str | None = Field(
+        None, description="Webhook URL for database operations and analytics"
+    )
+    
+    WEBHOOK_ERRORS_ALERTS: str | None = Field(
+        None, description="Webhook URL for errors, warnings, and recovery events"
+    )
+    
+    WEBHOOK_DAILY_REPORTS: str | None = Field(
+        None, description="Webhook URL for daily reports and analytics summaries"
+    )
+    
+    # Legacy single webhook support (for backward compatibility)
     DISCORD_WEBHOOK_URL: str | None = Field(
-        None, description="Discord webhook URL for logging"
+        None, description="Legacy single Discord webhook URL (use specific channel webhooks instead)"
     )
 
     # =============================================================================
@@ -200,7 +292,20 @@ class BotConfig(BaseSettings):
     @field_validator("DISCORD_TOKEN")
     @classmethod
     def validate_discord_token(cls, v: str) -> str:
-        """Validate Discord token format and length."""
+        """Validate Discord token format and length.
+        
+        Ensures the Discord token is properly formatted and meets minimum
+        length requirements for valid bot tokens.
+        
+        Args:
+            v: Discord token string
+            
+        Returns:
+            str: Validated Discord token
+            
+        Raises:
+            ValidationError: If token is empty or too short
+        """
         if not v:
             raise ValidationError("DISCORD_TOKEN", v, "Discord token cannot be empty")
 
@@ -223,7 +328,20 @@ class BotConfig(BaseSettings):
     @field_validator("ADMIN_USER_ID", mode="before")
     @classmethod
     def parse_admin_user_ids(cls, v) -> str:
-        """Parse and validate admin user IDs from comma-separated string."""
+        """Parse and validate admin user IDs from comma-separated string.
+        
+        Handles various input formats including comma-separated strings,
+        lists, and individual values, ensuring all user IDs are valid integers.
+        
+        Args:
+            v: Admin user IDs in various formats
+            
+        Returns:
+            str: Comma-separated string of validated user IDs
+            
+        Raises:
+            ValidationError: If any user ID is not a valid integer
+        """
         if isinstance(v, str):
             if not v.strip():
                 return ""
@@ -249,7 +367,20 @@ class BotConfig(BaseSettings):
     @field_validator("AUDIO_FOLDER")
     @classmethod
     def validate_audio_folder(cls, v: Path) -> Path:
-        """Validate audio folder exists and is accessible."""
+        """Validate audio folder exists and contains audio files.
+        
+        Ensures the audio folder exists, is a directory, and contains at least
+        one audio file in supported formats (mp3, wav, ogg, m4a).
+        
+        Args:
+            v: Path to audio folder
+            
+        Returns:
+            Path: Validated audio folder path
+            
+        Raises:
+            ValidationError: If folder doesn't exist, isn't a directory, or contains no audio files
+        """
         if not v.exists():
             raise ValidationError(
                 "AUDIO_FOLDER", str(v), f"Audio folder does not exist: {v}"
@@ -274,7 +405,22 @@ class BotConfig(BaseSettings):
     @field_validator("FFMPEG_PATH")
     @classmethod
     def validate_ffmpeg_path(cls, v: Path) -> Path:
-        """Validate FFmpeg executable exists and is functional."""
+        """Validate FFmpeg executable exists and is functional.
+        
+        Performs comprehensive validation of the FFmpeg executable including:
+        - File existence and execute permissions
+        - Functional test by running 'ffmpeg -version'
+        - Response validation to ensure it's actually FFmpeg
+        
+        Args:
+            v: Path to FFmpeg executable
+            
+        Returns:
+            Path: Validated FFmpeg executable path
+            
+        Raises:
+            ValidationError: If FFmpeg is not found, not executable, or not functional
+        """
         if not v.exists():
             raise ValidationError(
                 "FFMPEG_PATH", str(v), f"FFmpeg executable not found: {v}"
@@ -313,35 +459,90 @@ class BotConfig(BaseSettings):
 
         return v
 
-    @field_validator("DISCORD_WEBHOOK_URL")
+    @field_validator(
+        "WEBHOOK_BOT_STATUS",
+        "WEBHOOK_QURAN_AUDIO", 
+        "WEBHOOK_COMMANDS_PANEL",
+        "WEBHOOK_USER_ACTIVITY",
+        "WEBHOOK_DATA_ANALYTICS",
+        "WEBHOOK_ERRORS_ALERTS",
+        "WEBHOOK_DAILY_REPORTS",
+        "DISCORD_WEBHOOK_URL"
+    )
     @classmethod
     def validate_webhook_url(cls, v: str | None) -> str | None:
-        """Validate Discord webhook URL format."""
+        """Validate Discord webhook URL format for all webhook fields.
+        
+        Ensures webhook URLs follow the correct Discord webhook format.
+        Applies to all webhook configuration fields.
+        
+        Args:
+            v: Webhook URL string or None
+            
+        Returns:
+            str | None: Validated webhook URL or None if not provided
+            
+        Raises:
+            ValidationError: If URL format is invalid
+        """
         if v is None:
             return v
 
         if not v.startswith("https://discord.com/api/webhooks/"):
             raise ValidationError(
-                "DISCORD_WEBHOOK_URL", v, "Invalid Discord webhook URL format"
+                "webhook_url", v, "Invalid Discord webhook URL format"
             )
 
         return v
 
     @model_validator(mode="after")
     def validate_logging_configuration(self) -> "BotConfig":
-        """Validate logging configuration consistency."""
-        if self.USE_WEBHOOK_LOGGING and not self.DISCORD_WEBHOOK_URL:
-            raise ValidationError(
-                "DISCORD_WEBHOOK_URL",
-                self.DISCORD_WEBHOOK_URL,
-                "Discord webhook URL is required when webhook logging is enabled",
-            )
+        """Validate logging configuration consistency.
+        
+        Ensures that if webhook logging is enabled, at least one webhook URL
+        is configured (either specific channel webhook or legacy single webhook).
+        
+        Returns:
+            BotConfig: Validated configuration instance
+            
+        Raises:
+            ValidationError: If webhook logging is enabled but no webhook URLs are configured
+        """
+        if self.USE_WEBHOOK_LOGGING:
+            # Check if we have at least one webhook URL (new multi-channel or legacy single)
+            webhook_urls = [
+                self.WEBHOOK_BOT_STATUS,
+                self.WEBHOOK_QURAN_AUDIO,
+                self.WEBHOOK_COMMANDS_PANEL,
+                self.WEBHOOK_USER_ACTIVITY,
+                self.WEBHOOK_DATA_ANALYTICS,
+                self.WEBHOOK_ERRORS_ALERTS,
+                self.WEBHOOK_DAILY_REPORTS,
+                self.DISCORD_WEBHOOK_URL  # Legacy fallback
+            ]
+            
+            if not any(url for url in webhook_urls):
+                raise ValidationError(
+                    "webhook_configuration",
+                    None,
+                    "At least one webhook URL is required when webhook logging is enabled",
+                )
 
         return self
 
     @model_validator(mode="after")
     def validate_channel_ids_unique(self) -> "BotConfig":
-        """Validate that channel IDs are unique where required."""
+        """Validate that channel IDs are unique where required.
+        
+        Ensures that different bot functions don't use the same Discord channel,
+        which could cause conflicts or confusion.
+        
+        Returns:
+            BotConfig: Validated configuration instance
+            
+        Raises:
+            ValidationError: If any channel ID is used multiple times
+        """
         channel_ids = []
         channel_values = [
             ("TARGET_CHANNEL_ID", self.TARGET_CHANNEL_ID),
@@ -370,8 +571,11 @@ class BotConfig(BaseSettings):
     def admin_user_ids(self) -> list[int]:
         """Parse admin user IDs from comma-separated string.
 
+        Converts the comma-separated admin user ID string into a list of integers.
+        Returns empty list if no admin users are configured or parsing fails.
+
         Returns:
-            List of admin user IDs
+            list[int]: List of admin user IDs
         """
         if not self.ADMIN_USER_ID.strip():
             return []
@@ -385,11 +589,14 @@ class BotConfig(BaseSettings):
     def get_reciter_audio_folder(self, reciter: ReciterName | None = None) -> Path:
         """Get the audio folder path for a specific reciter.
 
+        Constructs the full path to a reciter's audio folder based on the
+        base audio folder and reciter name.
+
         Args:
-            reciter: Reciter name, defaults to default_reciter
+            reciter: Reciter name, defaults to DEFAULT_RECITER if None
 
         Returns:
-            Path to the reciter's audio folder
+            Path: Full path to the reciter's audio folder
         """
         reciter = reciter or self.DEFAULT_RECITER
         return self.AUDIO_FOLDER / reciter.value
@@ -397,29 +604,94 @@ class BotConfig(BaseSettings):
     def is_admin_user(self, user_id: int) -> bool:
         """Check if a user ID is in the admin list.
 
+        Checks both the admin user list and the developer ID for admin privileges.
+
         Args:
             user_id: Discord user ID to check
 
         Returns:
-            True if user is an admin, False otherwise
+            bool: True if user has admin privileges, False otherwise
         """
         return user_id in self.admin_user_ids or user_id == self.DEVELOPER_ID
+
+    def get_webhook_url(self, event_type: str) -> str | None:
+        """Get the appropriate webhook URL for a specific event type.
+        
+        Maps event types to their corresponding webhook URLs with fallback
+        to the legacy single webhook URL for backward compatibility.
+        
+        Args:
+            event_type: Type of event. Valid types:
+                - 'bot_status': Bot lifecycle and health events
+                - 'quran_audio': Audio playback and recitation events  
+                - 'commands_panel': Command usage and control panel interactions
+                - 'user_activity': User engagement and Islamic activities
+                - 'data_analytics': Database operations and analytics
+                - 'errors_alerts': Errors, warnings, and recovery events
+                - 'daily_reports': Daily analytics and summary reports
+                       
+        Returns:
+            str | None: Webhook URL for the event type, or fallback to legacy URL, or None
+        """
+        webhook_mapping = {
+            "bot_status": self.WEBHOOK_BOT_STATUS,
+            "quran_audio": self.WEBHOOK_QURAN_AUDIO,
+            "commands_panel": self.WEBHOOK_COMMANDS_PANEL,
+            "user_activity": self.WEBHOOK_USER_ACTIVITY,
+            "data_analytics": self.WEBHOOK_DATA_ANALYTICS,
+            "errors_alerts": self.WEBHOOK_ERRORS_ALERTS,
+            "daily_reports": self.WEBHOOK_DAILY_REPORTS,
+        }
+        
+        # Return specific webhook URL or fallback to legacy
+        return webhook_mapping.get(event_type) or self.DISCORD_WEBHOOK_URL
 
     def get_validation_summary(self) -> dict[str, Any]:
         """Get a summary of configuration validation status.
 
+        Provides a comprehensive overview of the configuration status including
+        which components are properly configured and ready for use.
+
         Returns:
-            Dictionary containing validation summary information
+            dict[str, Any]: Dictionary containing validation summary with keys:
+                - discord_configured: Whether Discord token is set
+                - audio_configured: Whether audio folder exists
+                - ffmpeg_available: Whether FFmpeg executable exists
+                - logging_configured: Whether logging is properly configured
+                - admin_users_count: Number of configured admin users
+                - reciter_folder_exists: Whether default reciter folder exists
+                - multi_channel_webhooks: Whether multi-channel webhooks are configured
         """
+        # Check if we have any webhook URLs configured
+        has_webhook_urls = any([
+            self.WEBHOOK_BOT_STATUS,
+            self.WEBHOOK_QURAN_AUDIO,
+            self.WEBHOOK_COMMANDS_PANEL,
+            self.WEBHOOK_USER_ACTIVITY,
+            self.WEBHOOK_DATA_ANALYTICS,
+            self.WEBHOOK_ERRORS_ALERTS,
+            self.WEBHOOK_DAILY_REPORTS,
+            self.DISCORD_WEBHOOK_URL
+        ])
+        
         return {
             "discord_configured": bool(self.DISCORD_TOKEN),
             "audio_configured": self.AUDIO_FOLDER.exists(),
             "ffmpeg_available": self.FFMPEG_PATH.exists(),
             "logging_configured": bool(
-                not self.USE_WEBHOOK_LOGGING or self.DISCORD_WEBHOOK_URL
+                not self.USE_WEBHOOK_LOGGING or has_webhook_urls
             ),
             "admin_users_count": len(self.admin_user_ids),
             "reciter_folder_exists": self.get_reciter_audio_folder().exists(),
+            "multi_channel_webhooks": bool(any([
+                self.WEBHOOK_BOT_STATUS,
+                self.WEBHOOK_QURAN_AUDIO,
+                self.WEBHOOK_COMMANDS_PANEL,
+                self.WEBHOOK_USER_ACTIVITY,
+                self.WEBHOOK_DATA_ANALYTICS,
+                self.WEBHOOK_ERRORS_ALERTS,
+                self.WEBHOOK_DAILY_REPORTS
+            ])),
         }
 
     # =============================================================================

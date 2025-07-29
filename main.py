@@ -41,6 +41,7 @@ from src.core.resource_manager import ResourceManager
 from src.core.security import RateLimiter, SecurityService
 from src.core.structured_logger import StructuredLogger
 from src.core.webhook_logger import ModernWebhookLogger
+from src.core.webhook_service_factory import create_webhook_service
 
 # Import data models
 from src.data.models import PlaybackMode
@@ -50,6 +51,10 @@ from src.services.audio_service import AudioService
 from src.services.metadata_cache import MetadataCache
 from src.services.state_service import StateService
 from src.services.sqlite_state_service import SQLiteStateService
+
+# Import monitoring services
+from src.core.health_monitor import HealthMonitor
+from src.core.heartbeat_monitor import HeartbeatMonitor
 from src.utils.control_panel import setup_control_panel
 from src.utils.daily_verses import setup_daily_verses
 from src.utils.rich_presence import RichPresenceManager
@@ -85,7 +90,7 @@ class AudioServiceAdapter:
     def get_playback_status(self) -> dict:
         """Get playback status in the format expected by the control panel."""
         try:
-            print("[DEBUG] AudioServiceAdapter.get_playback_status called")
+            # Debug logging handled in audio service
 
             # Can't use asyncio.run() within Discord's event loop, so access internal state directly
             # but make sure we get the most recent state
@@ -100,10 +105,9 @@ class AudioServiceAdapter:
             except:
                 pass  # Continue with existing state if update fails
 
-            print(f"[DEBUG] Got state: {state}")
+            # Debug logging handled in audio service
 
             if not state:
-                print("[DEBUG] No state found, returning defaults")
                 return self._get_default_status()
 
             # Get available reciters from the audio service
@@ -115,7 +119,6 @@ class AudioServiceAdapter:
                     if reciters_info
                     else ["Saad Al Ghamdi"]
                 )
-                print(f"[DEBUG] Found reciters: {available_reciters}")
             except:
                 available_reciters = ["Saad Al Ghamdi"]
 
@@ -136,7 +139,6 @@ class AudioServiceAdapter:
 
             # If total_time is 0, try to get from cache
             if total_time == 0:
-                print("[DEBUG] Total time is 0, trying to get from cache...")
                 try:
                     current_surah = getattr(
                         getattr(state, "current_position", None), "surah_number", 1
@@ -147,7 +149,6 @@ class AudioServiceAdapter:
 
                     # Build file path
                     file_path = f"audio/{current_reciter}/{current_surah:03d}.mp3"
-                    print(f"[DEBUG] Looking for file: {file_path}")
 
                     # Try to access cache directly from the audio service
                     cache_service = getattr(self.audio_service, "_cache", None)
@@ -158,7 +159,6 @@ class AudioServiceAdapter:
                             cached_duration = cache_service.get(cache_key)
                             if cached_duration:
                                 total_time = cached_duration
-                                print(f"[DEBUG] Got duration from cache: {total_time}s")
                         except:
                             pass
 
@@ -173,9 +173,7 @@ class AudioServiceAdapter:
 
                                 audio_file = MP3(str(full_path))
                                 total_time = audio_file.info.length
-                                print(f"[DEBUG] Got duration from MP3: {total_time}s")
                             except Exception as e:
-                                print(f"[DEBUG] Error reading MP3: {e}")
                                 # Fallback: use some known durations for testing
                                 if current_surah == 1:
                                     total_time = 47.0625  # Al-Fatiha
@@ -183,12 +181,13 @@ class AudioServiceAdapter:
                                     total_time = 7054.331125  # Al-Baqarah
                                 else:
                                     total_time = 300  # Default 5 minutes
-                                print(f"[DEBUG] Using fallback duration: {total_time}s")
                         else:
-                            print(f"[DEBUG] File not found: {full_path}")
+                            # File doesn't exist - use fallback
+                            pass
 
                 except Exception as e:
-                    print(f"[DEBUG] Error getting duration: {e}")
+                    # Error accessing metadata - use fallback
+                    pass
 
             # Convert AudioService state to control panel format
             result = {
@@ -209,11 +208,9 @@ class AudioServiceAdapter:
                 "total_time": total_time,
             }
 
-            print(f"[DEBUG] Returning result: {result}")
             return result
 
         except Exception as e:
-            print(f"[DEBUG] Error in get_playback_status: {e}")
             traceback.print_exc()
             return self._get_default_status()
 
@@ -237,57 +234,44 @@ class AudioServiceAdapter:
     async def jump_to_surah(self, surah_number: int):
         """Jump to a specific surah."""
         try:
-            print(f"[DEBUG] AudioServiceAdapter.jump_to_surah({surah_number}) called")
             await self.audio_service.set_surah(surah_number)
-            print(f"[DEBUG] Successfully jumped to surah {surah_number}")
         except Exception as e:
-            print(f"[DEBUG] Error jumping to surah {surah_number}: {e}")
             traceback.print_exc()
 
     async def switch_reciter(self, reciter_name: str):
         """Switch to a different reciter."""
         try:
-            print(f"[DEBUG] AudioServiceAdapter.switch_reciter({reciter_name}) called")
             await self.audio_service.set_reciter(reciter_name)
-            print(f"[DEBUG] Successfully switched to reciter {reciter_name}")
         except Exception as e:
-            print(f"[DEBUG] Error switching to reciter {reciter_name}: {e}")
             traceback.print_exc()
 
     async def skip_to_next(self):
         """Skip to the next surah."""
         try:
-            print("[DEBUG] AudioServiceAdapter.skip_to_next() called")
             current_state = self.audio_service._current_state
             current_surah = getattr(
                 getattr(current_state, "current_position", None), "surah_number", 1
             )
             next_surah = current_surah + 1 if current_surah < 114 else 1
             await self.audio_service.set_surah(next_surah)
-            print(f"[DEBUG] Successfully skipped to next surah {next_surah}")
         except Exception as e:
-            print(f"[DEBUG] Error skipping to next: {e}")
             traceback.print_exc()
 
     async def skip_to_previous(self):
         """Skip to the previous surah."""
         try:
-            print("[DEBUG] AudioServiceAdapter.skip_to_previous() called")
             current_state = self.audio_service._current_state
             current_surah = getattr(
                 getattr(current_state, "current_position", None), "surah_number", 1
             )
             previous_surah = current_surah - 1 if current_surah > 1 else 114
             await self.audio_service.set_surah(previous_surah)
-            print(f"[DEBUG] Successfully skipped to previous surah {previous_surah}")
         except Exception as e:
-            print(f"[DEBUG] Error skipping to previous: {e}")
             traceback.print_exc()
 
     def toggle_loop(self):
         """Toggle loop mode."""
         try:
-            print("[DEBUG] AudioServiceAdapter.toggle_loop() called")
             current_state = self.audio_service._current_state
             if current_state and hasattr(current_state, "mode"):
                 current_mode = getattr(current_state, "mode", "normal")
@@ -299,15 +283,12 @@ class AudioServiceAdapter:
                     asyncio.create_task(
                         self.audio_service.set_playback_mode(PlaybackMode.LOOP_TRACK)
                     )
-            print("[DEBUG] Successfully toggled loop mode")
         except Exception as e:
-            print(f"[DEBUG] Error toggling loop: {e}")
             traceback.print_exc()
 
     def toggle_shuffle(self):
         """Toggle shuffle mode."""
         try:
-            print("[DEBUG] AudioServiceAdapter.toggle_shuffle() called")
             current_state = self.audio_service._current_state
             if current_state and hasattr(current_state, "mode"):
                 current_mode = getattr(current_state, "mode", "normal")
@@ -319,40 +300,35 @@ class AudioServiceAdapter:
                     asyncio.create_task(
                         self.audio_service.set_playback_mode(PlaybackMode.SHUFFLE)
                     )
-            print("[DEBUG] Successfully toggled shuffle mode")
         except Exception as e:
-            print(f"[DEBUG] Error toggling shuffle: {e}")
             traceback.print_exc()
 
     async def pause_playback(self):
         """Disabled - 24/7 Quran bot should never be paused."""
         try:
-            print("[DEBUG] Pause attempt blocked - 24/7 continuous playback only")
+            # 24/7 bot never pauses - this is a no-op for control panel compatibility
+            pass
         except Exception as e:
-            print(f"[DEBUG] Error logging pause attempt: {e}")
             traceback.print_exc()
 
     async def resume_playback(self):
         """Disabled - 24/7 Quran bot should never need resuming as it never pauses."""
         try:
-            print("[DEBUG] Resume attempt ignored - bot should never be paused")
+            # 24/7 bot never needs resuming - this is a no-op for control panel compatibility
+            pass
         except Exception as e:
-            print(f"[DEBUG] Error logging resume attempt: {e}")
             traceback.print_exc()
 
     async def toggle_playback(self):
         """Start playback if stopped - pause/resume disabled for 24/7 operation."""
         try:
-            print("[DEBUG] AudioServiceAdapter.toggle_playback() called")
             state = self.audio_service._current_state
             if not state.is_playing:
-                print("[DEBUG] Starting playback from stopped state")
                 await self.audio_service.start_playback(resume_position=True)
-                print("[DEBUG] Successfully started playback")
             else:
-                print("[DEBUG] Toggle ignored - 24/7 continuous playback only")
+                # Already playing - no action needed
+                pass
         except Exception as e:
-            print(f"[DEBUG] Error in toggle playback: {e}")
             traceback.print_exc()
 
 
@@ -468,25 +444,37 @@ class ModernizedQuranBot:
             )
             self.container.register_singleton(SecurityService, security_factory)
 
-            # Webhook Logger (if enabled)
+            # Enhanced Webhook Service (if enabled)
             try:
                 if self.config_service.config.USE_WEBHOOK_LOGGING:
-                    webhook_config = self.config_service.create_webhook_config()
-                    webhook_factory = lambda: ModernWebhookLogger(
-                        config=webhook_config,
+                    webhook_service = await create_webhook_service(
+                        config=self.config_service.config,
                         logger=self.logger,
                         container=self.container,
                         bot=self,
                     )
-                    self.container.register_singleton(
-                        ModernWebhookLogger, webhook_factory
-                    )
-                    log_status("Webhook logger configured", "🔗")
+                    
+                    if webhook_service:
+                        # Register the webhook service in the container
+                        # Use a generic key that both routers and loggers implement
+                        self.container.register_singleton("webhook_service", lambda: webhook_service)
+                        
+                        # Also register as ModernWebhookLogger for backward compatibility
+                        if isinstance(webhook_service, ModernWebhookLogger):
+                            self.container.register_singleton(ModernWebhookLogger, lambda: webhook_service)
+                            log_status("Legacy webhook logger configured", "🔗")
+                        else:
+                            # Enhanced router - register as both types for compatibility
+                            self.container.register_singleton(ModernWebhookLogger, lambda: webhook_service)
+                            self.container.register_singleton("enhanced_webhook_router", lambda: webhook_service)
+                            log_status("Enhanced multi-channel webhook router configured", "🌐")
+                    else:
+                        log_status("Failed to initialize webhook service", "⚠️")
                 else:
                     log_status("Webhook logging disabled", "ℹ️")
             except Exception as e:
                 await self.logger.warning(
-                    "Failed to setup webhook logger",
+                    "Failed to setup webhook service",
                     {"error": str(e), "fallback": "Continuing without webhook logging"},
                 )
 
@@ -496,19 +484,18 @@ class ModernizedQuranBot:
             await self.container.get(ResourceManager).initialize()
             # SecurityService initializes in constructor, no separate initialize() method
 
-            # Initialize webhook logger if available
+            # Initialize webhook service if available (already initialized in factory)
             try:
-                webhook_logger = self.container.get(ModernWebhookLogger)
-                if webhook_logger:
-                    await webhook_logger.initialize()
-                    log_status("Webhook logger initialized", "✅")
+                webhook_service = self.container.get("webhook_service")
+                if webhook_service:
+                    log_status("Webhook service ready", "✅")
                     
-                    # Update health monitor with webhook logger by re-initializing it
+                    # Update health monitor with webhook service by re-initializing it
                     try:
                         # Get the current health monitor and update its webhook logger reference
                         health_monitor = self.container.get(HealthMonitor)
-                        health_monitor.webhook_logger = webhook_logger
-                        await self.logger.info("Health monitor updated with webhook logger reference")
+                        health_monitor.webhook_logger = webhook_service  # Works with both types
+                        await self.logger.info("Health monitor updated with webhook service reference")
                     except Exception as e:
                         await self.logger.warning("Failed to update health monitor with webhook logger", {"error": str(e)})
                         
@@ -651,11 +638,12 @@ class ModernizedQuranBot:
 
             # Send startup webhook notification
             try:
-                webhook_logger = self.container.get(ModernWebhookLogger)
-                if webhook_logger and webhook_logger.initialized:
-                    # Update webhook logger's bot reference now that bot is ready and has user info
-                    webhook_logger.bot = self.bot
-                    webhook_logger.formatter.bot = self.bot
+                webhook_service = self.container.get("webhook_service")
+                if webhook_service:
+                    # Update webhook service's bot reference now that bot is ready and has user info
+                    webhook_service.bot = self.bot
+                    if hasattr(webhook_service, 'formatter'):
+                        webhook_service.formatter.bot = self.bot
                     
                     # Debug: Log bot avatar info
                     if self.bot.user and self.bot.user.avatar:
@@ -673,7 +661,7 @@ class ModernizedQuranBot:
                             {"bot_user": str(self.bot.user) if self.bot.user else "None"}
                         )
 
-                    await webhook_logger.log_bot_startup(
+                    await webhook_service.log_bot_startup(
                         version=BOT_VERSION,
                         startup_duration=startup_duration,
                         services_loaded=(
@@ -769,9 +757,10 @@ class ModernizedQuranBot:
 
             # Send error webhook for critical Discord events
             try:
-                webhook_logger = self.container.get(ModernWebhookLogger)
-                if webhook_logger and webhook_logger.initialized:
-                    await webhook_logger.log_error(
+                webhook_service = self.container.get("webhook_service")
+                if webhook_service:
+                    await webhook_service.log_error_event(
+                        event_type="discord_event_error",
                         title="Discord Event Error",
                         description=f"Error in Discord event: {event}",
                         context={
@@ -1351,8 +1340,8 @@ class ModernizedQuranBot:
 
             # Send shutdown webhook notification
             try:
-                webhook_logger = self.container.get(ModernWebhookLogger)
-                if webhook_logger and webhook_logger.initialized:
+                webhook_service = self.container.get("webhook_service")
+                if webhook_service:
                     uptime_seconds = time.time() - self._startup_start_time
                     uptime_str = (
                         f"{uptime_seconds/3600:.1f} hours"
@@ -1360,7 +1349,7 @@ class ModernizedQuranBot:
                         else f"{uptime_seconds/60:.1f} minutes"
                     )
 
-                    await webhook_logger.log_bot_shutdown(
+                    await webhook_service.log_bot_shutdown(
                         reason="Graceful shutdown requested",
                         uptime=uptime_str,
                         final_stats={
@@ -1414,9 +1403,9 @@ class ModernizedQuranBot:
                     pass
 
                 try:
-                    webhook_logger = self.container.get(ModernWebhookLogger)
-                    if webhook_logger:
-                        await webhook_logger.shutdown()
+                    webhook_service = self.container.get("webhook_service")
+                    if webhook_service:
+                        await webhook_service.shutdown()
                 except:
                     pass
 

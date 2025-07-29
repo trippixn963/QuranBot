@@ -1,0 +1,966 @@
+{
+    "metadata": {
+        "version": "4.0.1",
+        "description": "Expanded Islamic Knowledge Quiz Questions for QuranBot",
+        "categories": [
+            "Quran",
+            "Hadith",
+            "Pillars of Islam",
+            "Pillars of Iman",
+            "Seerah",
+            "Islamic History",
+            "Fiqh",
+            "Aqidah",
+            "Islamic Ethics",
+            "Prophets",
+            "Companions",
+            "Islamic Culture",
+            "Arabic Language",
+            "Islamic Architecture",
+            "Islamic Sciences"
+        ],
+        "difficulty_levels": {
+            "1": "Very Easy",
+            "2": "Easy", 
+            "3": "Medium",
+            "4": "Hard",
+            "5": "Very Hard"
+        },
+        "total_questions": 200,
+        "created_date": "2024-07-29",
+        "author": "QuranBot Development Team"
+    },
+    "questions": [
+        {
+            "id": "q101",
+            "category": "Quran",
+            "difficulty": 1,
+            "themes": ["Quran Basics", "Revelation"],
+            "context": {
+                "arabic": "القرآن الكريم",
+                "english": "The Noble Quran"
+            },
+            "question": {
+                "arabic": "في أي شهر نزل القرآن الكريم؟",
+                "english": "In which month was the Quran revealed?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "شهر رجب",
+                    "english": "Rajab"
+                },
+                "B": {
+                    "arabic": "شهر رمضان",
+                    "english": "Ramadan"
+                },
+                "C": {
+                    "arabic": "شهر شعبان",
+                    "english": "Sha'ban"
+                },
+                "D": {
+                    "arabic": "شهر ذي الحجة",
+                    "english": "Dhul Hijjah"
+                }
+            },
+            "correct_answer": "B",
+            "explanation": {
+                "arabic": "نزل القرآن في شهر رمضان كما قال الله تعالى: 'شهر رمضان الذي أنزل فيه القرآن'",
+                "english": "The Quran was revealed in Ramadan as Allah says: 'Ramadan is the month in which the Quran was revealed'"
+            },
+            "reference": "Quran 2:185"
+        },
+        {
+            "id": "q102",
+            "category": "Quran",
+            "difficulty": 2,
+            "themes": ["Quran Structure", "Surahs"],
+            "context": {
+                "arabic": "سور القرآن",
+                "english": "Chapters of the Quran"
+            },
+            "question": {
+                "arabic": "ما هي أطول سورة في القرآن الكريم؟",
+                "english": "What is the longest surah in the Quran?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "سورة البقرة",
+                    "english": "Surah Al-Baqarah"
+                },
+                "B": {
+                    "arabic": "سورة آل عمران",
+                    "english": "Surah Aal-Imran"
+                },
+                "C": {
+                    "arabic": "سورة النساء",
+                    "english": "Surah An-Nisa"
+                },
+                "D": {
+                    "arabic": "سورة المائدة",
+                    "english": "Surah Al-Ma'idah"
+                }
+            },
+            "correct_answer": "A",
+            "explanation": {
+                "arabic": "سورة البقرة هي أطول سورة في القرآن وتحتوي على 286 آية",
+                "english": "Surah Al-Baqarah is the longest surah in the Quran with 286 verses"
+            }
+        },
+        {
+            "id": "q103",
+            "category": "Quran",
+            "difficulty": 3,
+            "themes": ["Quran Names", "Characteristics"],
+            "context": {
+                "arabic": "أسماء القرآن",
+                "english": "Names of the Quran"
+            },
+            "question": {
+                "arabic": "أي من هذه أسماء القرآن الكريم المذكورة في القرآن نفسه؟",
+                "english": "Which of these is a name of the Quran mentioned in the Quran itself?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "الفرقان",
+                    "english": "Al-Furqan"
+                },
+                "B": {
+                    "arabic": "الذكر",
+                    "english": "Adh-Dhikr"
+                },
+                "C": {
+                    "arabic": "الكتاب",
+                    "english": "Al-Kitab"
+                },
+                "D": {
+                    "arabic": "جميع ما ذكر",
+                    "english": "All of the above"
+                }
+            },
+            "correct_answer": "D",
+            "explanation": {
+                "arabic": "الفرقان والذكر والكتاب كلها أسماء للقرآن ذكرت في القرآن نفسه",
+                "english": "Al-Furqan, Adh-Dhikr, and Al-Kitab are all names of the Quran mentioned in the Quran itself"
+            }
+        },
+        {
+            "id": "q104",
+            "category": "Hadith",
+            "difficulty": 2,
+            "themes": ["Prophet's Sayings", "Islamic Guidance"],
+            "context": {
+                "arabic": "الحديث الشريف",
+                "english": "Noble Hadith"
+            },
+            "question": {
+                "arabic": "من قال: 'إنما الأعمال بالنيات'؟",
+                "english": "Who said: 'Actions are but by intention'?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "الرسول محمد ﷺ",
+                    "english": "Prophet Muhammad ﷺ"
+                },
+                "B": {
+                    "arabic": "عمر بن الخطاب رضي الله عنه",
+                    "english": "Umar ibn Al-Khattab (RA)"
+                },
+                "C": {
+                    "arabic": "أبو بكر الصديق رضي الله عنه",
+                    "english": "Abu Bakr As-Siddiq (RA)"
+                },
+                "D": {
+                    "arabic": "علي بن أبي طالب رضي الله عنه",
+                    "english": "Ali ibn Abi Talib (RA)"
+                }
+            },
+            "correct_answer": "A",
+            "explanation": {
+                "arabic": "هذا حديث شريف قاله النبي محمد صلى الله عليه وسلم ورواه البخاري ومسلم",
+                "english": "This is a noble hadith said by Prophet Muhammad ﷺ and narrated by Bukhari and Muslim"
+            },
+            "reference": "Sahih Al-Bukhari 1, Sahih Muslim 1907"
+        },
+        {
+            "id": "q105",
+            "category": "Pillars of Islam",
+            "difficulty": 1,
+            "themes": ["Five Pillars", "Islamic Fundamentals"],
+            "context": {
+                "arabic": "أركان الإسلام",
+                "english": "Pillars of Islam"
+            },
+            "question": {
+                "arabic": "كم عدد أركان الإسلام؟",
+                "english": "How many pillars of Islam are there?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "أربعة",
+                    "english": "Four"
+                },
+                "B": {
+                    "arabic": "خمسة",
+                    "english": "Five"
+                },
+                "C": {
+                    "arabic": "ستة",
+                    "english": "Six"
+                },
+                "D": {
+                    "arabic": "سبعة",
+                    "english": "Seven"
+                }
+            },
+            "correct_answer": "B",
+            "explanation": {
+                "arabic": "أركان الإسلام خمسة: الشهادتان، الصلاة، الزكاة، الصوم، الحج",
+                "english": "The pillars of Islam are five: Testimony of faith, Prayer, Zakat, Fasting, Hajj"
+            }
+        },
+        {
+            "id": "q106",
+            "category": "Pillars of Iman",
+            "difficulty": 2,
+            "themes": ["Six Pillars", "Islamic Belief"],
+            "context": {
+                "arabic": "أركان الإيمان",
+                "english": "Pillars of Faith"
+            },
+            "question": {
+                "arabic": "ما هو آخر ركن من أركان الإيمان؟",
+                "english": "What is the last pillar of faith (Iman)?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "الإيمان بالله",
+                    "english": "Belief in Allah"
+                },
+                "B": {
+                    "arabic": "الإيمان بالملائكة",
+                    "english": "Belief in Angels"
+                },
+                "C": {
+                    "arabic": "الإيمان باليوم الآخر",
+                    "english": "Belief in the Last Day"
+                },
+                "D": {
+                    "arabic": "الإيمان بالقدر خيره وشره",
+                    "english": "Belief in Divine Decree, good and bad"
+                }
+            },
+            "correct_answer": "D",
+            "explanation": {
+                "arabic": "أركان الإيمان ستة وآخرها الإيمان بالقدر خيره وشره من الله تعالى",
+                "english": "The pillars of faith are six, and the last is belief in Divine Decree, both good and bad from Allah"
+            }
+        },
+        {
+            "id": "q107",
+            "category": "Seerah",
+            "difficulty": 2,
+            "themes": ["Prophet's Life", "Mecca"],
+            "context": {
+                "arabic": "السيرة النبوية",
+                "english": "Prophetic Biography"
+            },
+            "question": {
+                "arabic": "في أي عام ولد النبي محمد صلى الله عليه وسلم؟",
+                "english": "In which year was Prophet Muhammad ﷺ born?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "عام الفيل",
+                    "english": "Year of the Elephant"
+                },
+                "B": {
+                    "arabic": "عام الحزن",
+                    "english": "Year of Sorrow"
+                },
+                "C": {
+                    "arabic": "عام الوفود",
+                    "english": "Year of Delegations"
+                },
+                "D": {
+                    "arabic": "عام الفتح",
+                    "english": "Year of Conquest"
+                }
+            },
+            "correct_answer": "A",
+            "explanation": {
+                "arabic": "ولد النبي محمد صلى الله عليه وسلم في عام الفيل، العام الذي حاول فيه أبرهة هدم الكعبة",
+                "english": "Prophet Muhammad ﷺ was born in the Year of the Elephant, when Abrahah attempted to destroy the Kaaba"
+            }
+        },
+        {
+            "id": "q108",
+            "category": "Islamic History",
+            "difficulty": 3,
+            "themes": ["Caliphate", "Companions"],
+            "context": {
+                "arabic": "التاريخ الإسلامي",
+                "english": "Islamic History"
+            },
+            "question": {
+                "arabic": "من هو أول الخلفاء الراشدين؟",
+                "english": "Who was the first of the Rightly-Guided Caliphs?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "عمر بن الخطاب",
+                    "english": "Umar ibn Al-Khattab"
+                },
+                "B": {
+                    "arabic": "أبو بكر الصديق",
+                    "english": "Abu Bakr As-Siddiq"
+                },
+                "C": {
+                    "arabic": "عثمان بن عفان",
+                    "english": "Uthman ibn Affan"
+                },
+                "D": {
+                    "arabic": "علي بن أبي طالب",
+                    "english": "Ali ibn Abi Talib"
+                }
+            },
+            "correct_answer": "B",
+            "explanation": {
+                "arabic": "أبو بكر الصديق رضي الله عنه هو أول الخلفاء الراشدين وصاحب النبي وصديقه",
+                "english": "Abu Bakr As-Siddiq (RA) was the first Rightly-Guided Caliph and the Prophet's companion and close friend"
+            }
+        },
+        {
+            "id": "q109",
+            "category": "Fiqh",
+            "difficulty": 3,
+            "themes": ["Islamic Jurisprudence", "Worship"],
+            "context": {
+                "arabic": "الفقه الإسلامي",
+                "english": "Islamic Jurisprudence"
+            },
+            "question": {
+                "arabic": "متى يبدأ وقت صلاة المغرب؟",
+                "english": "When does the time for Maghrib prayer begin?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "عند غروب الشمس",
+                    "english": "At sunset"
+                },
+                "B": {
+                    "arabic": "بعد غروب الشمس بربع ساعة",
+                    "english": "15 minutes after sunset"
+                },
+                "C": {
+                    "arabic": "عند اصفرار الشمس",
+                    "english": "When the sun turns yellow"
+                },
+                "D": {
+                    "arabic": "عند ظهور النجوم",
+                    "english": "When stars appear"
+                }
+            },
+            "correct_answer": "A",
+            "explanation": {
+                "arabic": "يبدأ وقت صلاة المغرب عند غروب الشمس مباشرة",
+                "english": "The time for Maghrib prayer begins immediately at sunset"
+            }
+        },
+        {
+            "id": "q110",
+            "category": "Aqidah",
+            "difficulty": 4,
+            "themes": ["Islamic Creed", "Theology"],
+            "context": {
+                "arabic": "العقيدة الإسلامية",
+                "english": "Islamic Creed"
+            },
+            "question": {
+                "arabic": "ما معنى 'التوحيد' في الإسلام؟",
+                "english": "What does 'Tawhid' mean in Islam?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "الإيمان بالملائكة",
+                    "english": "Belief in angels"
+                },
+                "B": {
+                    "arabic": "توحيد الله في عبادته",
+                    "english": "Monotheism - Oneness of Allah"
+                },
+                "C": {
+                    "arabic": "الإيمان بالكتب",
+                    "english": "Belief in scriptures"
+                },
+                "D": {
+                    "arabic": "الإيمان بالرسل",
+                    "english": "Belief in messengers"
+                }
+            },
+            "correct_answer": "B",
+            "explanation": {
+                "arabic": "التوحيد هو الإيمان بوحدانية الله وإفراده بالعبادة وهو جوهر الإسلام",
+                "english": "Tawhid is the belief in the Oneness of Allah and worshipping Him alone, which is the essence of Islam"
+            }
+        },
+        {
+            "id": "q111",
+            "category": "Islamic Ethics",
+            "difficulty": 2,
+            "themes": ["Morality", "Character"],
+            "context": {
+                "arabic": "الأخلاق الإسلامية",
+                "english": "Islamic Ethics"
+            },
+            "question": {
+                "arabic": "ما هي أعظم صفة في الأخلاق الإسلامية؟",
+                "english": "What is the greatest virtue in Islamic ethics?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "الصدق",
+                    "english": "Truthfulness"
+                },
+                "B": {
+                    "arabic": "العدل",
+                    "english": "Justice"
+                },
+                "C": {
+                    "arabic": "الرحمة",
+                    "english": "Mercy"
+                },
+                "D": {
+                    "arabic": "التقوى",
+                    "english": "Taqwa (God-consciousness)"
+                }
+            },
+            "correct_answer": "D",
+            "explanation": {
+                "arabic": "التقوى هي أعظم الصفات لأنها تجمع كل الأخلاق الحسنة وهي ميزان التفاضل عند الله",
+                "english": "Taqwa is the greatest virtue as it encompasses all good morals and is the measure of excellence with Allah"
+            },
+            "reference": "Quran 49:13"
+        },
+        {
+            "id": "q112",
+            "category": "Prophets",
+            "difficulty": 3,
+            "themes": ["Messengers", "Prophethood"],
+            "context": {
+                "arabic": "الأنبياء والرسل",
+                "english": "Prophets and Messengers"
+            },
+            "question": {
+                "arabic": "من هو النبي الذي لقب بـ 'أبو الأنبياء'؟",
+                "english": "Which prophet is called 'Father of the Prophets'?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "نوح عليه السلام",
+                    "english": "Noah (AS)"
+                },
+                "B": {
+                    "arabic": "إبراهيم عليه السلام",
+                    "english": "Abraham (AS)"
+                },
+                "C": {
+                    "arabic": "آدم عليه السلام",
+                    "english": "Adam (AS)"
+                },
+                "D": {
+                    "arabic": "موسى عليه السلام",
+                    "english": "Moses (AS)"
+                }
+            },
+            "correct_answer": "B",
+            "explanation": {
+                "arabic": "إبراهيم عليه السلام يلقب بأبي الأنبياء لأن كثيراً من الأنبياء من نسله",
+                "english": "Abraham (AS) is called Father of the Prophets because many prophets came from his lineage"
+            }
+        },
+        {
+            "id": "q113",
+            "category": "Companions",
+            "difficulty": 4,
+            "themes": ["Sahaba", "Islamic History"],
+            "context": {
+                "arabic": "الصحابة الكرام",
+                "english": "Noble Companions"
+            },
+            "question": {
+                "arabic": "من هو الصحابي الذي لقب بـ 'أسد الله الغالب'؟",
+                "english": "Which companion was called 'The Conquering Lion of Allah'?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "علي بن أبي طالب",
+                    "english": "Ali ibn Abi Talib"
+                },
+                "B": {
+                    "arabic": "حمزة بن عبد المطلب",
+                    "english": "Hamza ibn Abdul-Muttalib"
+                },
+                "C": {
+                    "arabic": "خالد بن الوليد",
+                    "english": "Khalid ibn Al-Walid"
+                },
+                "D": {
+                    "arabic": "سعد بن أبي وقاص",
+                    "english": "Sa'd ibn Abi Waqqas"
+                }
+            },
+            "correct_answer": "B",
+            "explanation": {
+                "arabic": "حمزة بن عبد المطلب رضي الله عنه لقب بأسد الله الغالب وهو عم النبي وشهيد أحد",
+                "english": "Hamza ibn Abdul-Muttalib (RA) was called 'The Conquering Lion of Allah', the Prophet's uncle and martyr of Uhud"
+            }
+        },
+        {
+            "id": "q114",
+            "category": "Islamic Culture",
+            "difficulty": 2,
+            "themes": ["Islamic Civilization", "Arts"],
+            "context": {
+                "arabic": "الثقافة الإسلامية",
+                "english": "Islamic Culture"
+            },
+            "question": {
+                "arabic": "ما هو الخط العربي الأكثر استخداماً في كتابة المصاحف؟",
+                "english": "What is the most commonly used Arabic calligraphy for writing the Quran?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "الخط الكوفي",
+                    "english": "Kufic Script"
+                },
+                "B": {
+                    "arabic": "خط النسخ",
+                    "english": "Naskh Script"
+                },
+                "C": {
+                    "arabic": "خط الثلث",
+                    "english": "Thuluth Script"
+                },
+                "D": {
+                    "arabic": "الخط الديواني",
+                    "english": "Diwani Script"
+                }
+            },
+            "correct_answer": "B",
+            "explanation": {
+                "arabic": "خط النسخ هو الأكثر استخداماً في كتابة المصاحف لوضوحه وسهولة قراءته",
+                "english": "Naskh script is most commonly used for writing the Quran due to its clarity and readability"
+            }
+        },
+        {
+            "id": "q115",
+            "category": "Arabic Language",
+            "difficulty": 3,
+            "themes": ["Language", "Linguistics"],
+            "context": {
+                "arabic": "اللغة العربية",
+                "english": "Arabic Language"
+            },
+            "question": {
+                "arabic": "كم عدد حروف الهجاء في اللغة العربية؟",
+                "english": "How many letters are there in the Arabic alphabet?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "26 حرفاً",
+                    "english": "26 letters"
+                },
+                "B": {
+                    "arabic": "28 حرفاً",
+                    "english": "28 letters"
+                },
+                "C": {
+                    "arabic": "29 حرفاً",
+                    "english": "29 letters"
+                },
+                "D": {
+                    "arabic": "30 حرفاً",
+                    "english": "30 letters"
+                }
+            },
+            "correct_answer": "B",
+            "explanation": {
+                "arabic": "عدد حروف الهجاء في اللغة العربية 28 حرفاً من الألف إلى الياء",
+                "english": "The Arabic alphabet consists of 28 letters from Alif to Ya"
+            }
+        },
+        {
+            "id": "q116",
+            "category": "Islamic Architecture",
+            "difficulty": 4,
+            "themes": ["Architecture", "Islamic Arts"],
+            "context": {
+                "arabic": "العمارة الإسلامية",
+                "english": "Islamic Architecture"
+            },
+            "question": {
+                "arabic": "ما اسم البناء المستدير الذي يعلو المسجد؟",
+                "english": "What is the name of the rounded structure that tops a mosque?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "المئذنة",
+                    "english": "Minaret"
+                },
+                "B": {
+                    "arabic": "القبة",
+                    "english": "Dome"
+                },
+                "C": {
+                    "arabic": "المحراب",
+                    "english": "Mihrab"
+                },
+                "D": {
+                    "arabic": "المنبر",
+                    "english": "Minbar"
+                }
+            },
+            "correct_answer": "B",
+            "explanation": {
+                "arabic": "القبة هي البناء المستدير الذي يعلو المسجد وترمز إلى قبة السماء",
+                "english": "The dome is the rounded structure that tops a mosque and symbolizes the vault of heaven"
+            }
+        },
+        {
+            "id": "q117",
+            "category": "Islamic Sciences",
+            "difficulty": 5,
+            "themes": ["Islamic Knowledge", "Sciences"],
+            "context": {
+                "arabic": "العلوم الإسلامية",
+                "english": "Islamic Sciences"
+            },
+            "question": {
+                "arabic": "من هو إمام علم التفسير المشهور بـ 'تفسير الطبري'؟",
+                "english": "Who is the imam of Quranic interpretation famous for 'Tafsir Al-Tabari'?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "ابن كثير",
+                    "english": "Ibn Kathir"
+                },
+                "B": {
+                    "arabic": "محمد بن جرير الطبري",
+                    "english": "Muhammad ibn Jarir Al-Tabari"
+                },
+                "C": {
+                    "arabic": "القرطبي",
+                    "english": "Al-Qurtubi"
+                },
+                "D": {
+                    "arabic": "الرازي",
+                    "english": "Ar-Razi"
+                }
+            },
+            "correct_answer": "B",
+            "explanation": {
+                "arabic": "محمد بن جرير الطبري هو صاحب أشهر كتب التفسير 'جامع البيان في تأويل القرآن'",
+                "english": "Muhammad ibn Jarir Al-Tabari is the author of the famous Quranic commentary 'Jami' al-Bayan fi Ta'wil al-Quran'"
+            }
+        },
+        {
+            "id": "q118",
+            "category": "Hadith",
+            "difficulty": 3,
+            "themes": ["Hadith Collections", "Islamic Literature"],
+            "context": {
+                "arabic": "كتب الحديث",
+                "english": "Hadith Collections"
+            },
+            "question": {
+                "arabic": "ما هما الكتابان اللذان يسميان بـ 'الصحيحين'؟",
+                "english": "What are the two books called 'As-Sahihain' (The Two Authentic Collections)?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "صحيح البخاري وصحيح مسلم",
+                    "english": "Sahih Al-Bukhari and Sahih Muslim"
+                },
+                "B": {
+                    "arabic": "سنن أبي داود وسنن الترمذي",
+                    "english": "Sunan Abu Dawood and Sunan At-Tirmidhi"
+                },
+                "C": {
+                    "arabic": "موطأ مالك ومسند أحمد",
+                    "english": "Muwatta Malik and Musnad Ahmad"
+                },
+                "D": {
+                    "arabic": "سنن النسائي وسنن ابن ماجه",
+                    "english": "Sunan An-Nasa'i and Sunan Ibn Majah"
+                }
+            },
+            "correct_answer": "A",
+            "explanation": {
+                "arabic": "الصحيحان هما صحيح البخاري وصحيح مسلم وهما أصح كتب الحديث بعد القرآن",
+                "english": "As-Sahihain are Sahih Al-Bukhari and Sahih Muslim, the most authentic hadith collections after the Quran"
+            }
+        },
+        {
+            "id": "q119",
+            "category": "Pillars of Islam",
+            "difficulty": 3,
+            "themes": ["Zakat", "Islamic Finance"],
+            "context": {
+                "arabic": "الزكاة",
+                "english": "Zakat"
+            },
+            "question": {
+                "arabic": "ما هو النصاب في زكاة الذهب؟",
+                "english": "What is the nisab (minimum amount) for gold zakat?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "20 مثقالاً",
+                    "english": "20 mithqals"
+                },
+                "B": {
+                    "arabic": "85 جراماً",
+                    "english": "85 grams"
+                },
+                "C": {
+                    "arabic": "200 درهم",
+                    "english": "200 dirhams"
+                },
+                "D": {
+                    "arabic": "5 أوقية",
+                    "english": "5 ounces"
+                }
+            },
+            "correct_answer": "A",
+            "explanation": {
+                "arabic": "نصاب الذهب 20 مثقالاً وهو ما يعادل حوالي 85 جراماً من الذهب الخالص",
+                "english": "The nisab for gold is 20 mithqals, which equals approximately 85 grams of pure gold"
+            }
+        },
+        {
+            "id": "q120",
+            "category": "Seerah",
+            "difficulty": 4,
+            "themes": ["Migration", "Islamic History"],
+            "context": {
+                "arabic": "الهجرة النبوية",
+                "english": "Prophetic Migration"
+            },
+            "question": {
+                "arabic": "من كان صاحب النبي في الهجرة إلى المدينة؟",
+                "english": "Who was the Prophet's companion during the migration to Medina?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "عمر بن الخطاب",
+                    "english": "Umar ibn Al-Khattab"
+                },
+                "B": {
+                    "arabic": "أبو بكر الصديق",
+                    "english": "Abu Bakr As-Siddiq"
+                },
+                "C": {
+                    "arabic": "علي بن أبي طالب",
+                    "english": "Ali ibn Abi Talib"
+                },
+                "D": {
+                    "arabic": "عثمان بن عفان",
+                    "english": "Uthman ibn Affan"
+                }
+            },
+            "correct_answer": "B",
+            "explanation": {
+                "arabic": "أبو بكر الصديق رضي الله عنه كان صاحب النبي في الهجرة وهو المذكور في القرآن بـ 'صاحبه'",
+                "english": "Abu Bakr As-Siddiq (RA) was the Prophet's companion during migration, mentioned in the Quran as 'his companion'"
+            },
+            "reference": "Quran 9:40"
+        },
+        {
+            "id": "q121",
+            "category": "Fiqh",
+            "difficulty": 4,
+            "themes": ["Prayer", "Islamic Law"],
+            "context": {
+                "arabic": "أحكام الصلاة",
+                "english": "Prayer Rulings"
+            },
+            "question": {
+                "arabic": "كم عدد السجدات في الصلاة الواحدة؟",
+                "english": "How many prostrations (sujud) are there in one prayer?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "عدد الركعات",
+                    "english": "Equal to number of rakaahs"
+                },
+                "B": {
+                    "arabic": "ضعف عدد الركعات",
+                    "english": "Double the number of rakaahs"
+                },
+                "C": {
+                    "arabic": "ثلاثة أضعاف عدد الركعات",
+                    "english": "Triple the number of rakaahs"
+                },
+                "D": {
+                    "arabic": "أربعة أضعاف عدد الركعات",
+                    "english": "Four times the number of rakaahs"
+                }
+            },
+            "correct_answer": "B",
+            "explanation": {
+                "arabic": "في كل ركعة سجدتان، فيكون مجموع السجدات ضعف عدد الركعات",
+                "english": "Each rakaah contains two prostrations, so total prostrations equal double the number of rakaahs"
+            }
+        },
+        {
+            "id": "q122",
+            "category": "Islamic History",
+            "difficulty": 5,
+            "themes": ["Conquests", "Expansion"],
+            "context": {
+                "arabic": "الفتوحات الإسلامية",
+                "english": "Islamic Conquests"
+            },
+            "question": {
+                "arabic": "في عهد أي خليفة فتحت القسطنطينية؟",
+                "english": "During which caliph's reign was Constantinople conquered?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "عمر بن الخطاب",
+                    "english": "Umar ibn Al-Khattab"
+                },
+                "B": {
+                    "arabic": "معاوية بن أبي سفيان",
+                    "english": "Muawiya ibn Abi Sufyan"
+                },
+                "C": {
+                    "arabic": "لم تفتح في عهد الخلفاء الراشدين",
+                    "english": "Not conquered during Rightly-Guided Caliphs"
+                },
+                "D": {
+                    "arabic": "علي بن أبي طالب",
+                    "english": "Ali ibn Abi Talib"
+                }
+            },
+            "correct_answer": "C",
+            "explanation": {
+                "arabic": "القسطنطينية فتحت على يد محمد الفاتح العثماني سنة 1453م، وليس في عهد الخلفاء الراشدين",
+                "english": "Constantinople was conquered by Ottoman Sultan Mehmed the Conqueror in 1453 CE, not during the Rightly-Guided Caliphs"
+            }
+        },
+        {
+            "id": "q123",
+            "category": "Aqidah",
+            "difficulty": 3,
+            "themes": ["Angels", "Unseen"],
+            "context": {
+                "arabic": "الملائكة",
+                "english": "Angels"
+            },
+            "question": {
+                "arabic": "من هو الملك الموكل بالوحي؟",
+                "english": "Which angel is responsible for revelation?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "ميكائيل عليه السلام",
+                    "english": "Mikail (Michael) AS"
+                },
+                "B": {
+                    "arabic": "جبريل عليه السلام",
+                    "english": "Jibril (Gabriel) AS"
+                },
+                "C": {
+                    "arabic": "إسرافيل عليه السلام",
+                    "english": "Israfil AS"
+                },
+                "D": {
+                    "arabic": "عزرائيل عليه السلام",
+                    "english": "Azrail AS"
+                }
+            },
+            "correct_answer": "B",
+            "explanation": {
+                "arabic": "جبريل عليه السلام هو الملك الموكل بالوحي وهو الذي نزل بالقرآن على النبي محمد ﷺ",
+                "english": "Jibril (Gabriel) AS is the angel responsible for revelation who brought down the Quran to Prophet Muhammad ﷺ"
+            }
+        },
+        {
+            "id": "q124",
+            "category": "Islamic Ethics",
+            "difficulty": 2,
+            "themes": ["Parents", "Family"],
+            "context": {
+                "arabic": "بر الوالدين",
+                "english": "Kindness to Parents"
+            },
+            "question": {
+                "arabic": "ما حكم بر الوالدين في الإسلام؟",
+                "english": "What is the ruling on being kind to parents in Islam?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "مستحب",
+                    "english": "Recommended"
+                },
+                "B": {
+                    "arabic": "واجب",
+                    "english": "Obligatory"
+                },
+                "C": {
+                    "arabic": "مباح",
+                    "english": "Permissible"
+                },
+                "D": {
+                    "arabic": "سنة",
+                    "english": "Sunnah"
+                }
+            },
+            "correct_answer": "B",
+            "explanation": {
+                "arabic": "بر الوالدين واجب في الإسلام وقد قرنه الله بعبادته في القرآن الكريم",
+                "english": "Being kind to parents is obligatory in Islam, and Allah paired it with worshipping Him in the Quran"
+            },
+            "reference": "Quran 17:23"
+        },
+        {
+            "id": "q125",
+            "category": "Prophets",
+            "difficulty": 2,
+            "themes": ["Stories", "Lessons"],
+            "context": {
+                "arabic": "قصص الأنبياء",
+                "english": "Stories of Prophets"
+            },
+            "question": {
+                "arabic": "أي نبي ابتلعه الحوت؟",
+                "english": "Which prophet was swallowed by the whale?"
+            },
+            "choices": {
+                "A": {
+                    "arabic": "يونس عليه السلام",
+                    "english": "Yunus (Jonah) AS"
+                },
+                "B": {
+                    "arabic": "موسى عليه السلام",
+                    "english": "Musa (Moses) AS"
+                },
+                "C": {
+                    "arabic": "عيسى عليه السلام",
+                    "english": "Isa (Jesus) AS"
+                },
+                "D": {
+                    "arabic": "داود عليه السلام",
+                    "english": "Dawud (David) AS"
+                }
+            },
+            "correct_answer": "A",
+            "explanation": {
+                "arabic": "يونس عليه السلام هو النبي الذي ابتلعه الحوت وذكرت قصته في القرآن الكريم",
+                "english": "Yunus (Jonah) AS is the prophet who was swallowed by the whale, and his story is mentioned in the Quran"
+            },
+            "reference": "Quran 37:139-148"
+        }
+    ]
+}

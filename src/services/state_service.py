@@ -14,6 +14,8 @@ import json
 from pathlib import Path
 import uuid
 
+import aiofiles
+
 from src.core.di_container import DIContainer
 from src.core.exceptions import StateError, ValidationError
 from src.core.structured_logger import StructuredLogger
@@ -855,15 +857,15 @@ class StateService:
             if self._config.atomic_writes:
                 # Write to temporary file first
                 temp_file = file_path.with_suffix(".tmp")
-                with open(temp_file, "w", encoding="utf-8") as f:
-                    json.dump(data, f, indent=2, default=str)
+                async with aiofiles.open(temp_file, "w", encoding="utf-8") as f:
+                    await f.write(json.dumps(data, indent=2, default=str))
 
                 # Atomic move
                 temp_file.replace(file_path)
             else:
                 # Direct write
-                with open(file_path, "w", encoding="utf-8") as f:
-                    json.dump(data, f, indent=2, default=str)
+                async with aiofiles.open(file_path, "w", encoding="utf-8") as f:
+                    await f.write(json.dumps(data, indent=2, default=str))
 
             return True
 
@@ -876,8 +878,9 @@ class StateService:
     async def _atomic_load_json(self, file_path: Path) -> dict | None:
         """Atomically load JSON data from file"""
         try:
-            with open(file_path, encoding="utf-8") as f:
-                data = json.load(f)
+            async with aiofiles.open(file_path, encoding="utf-8") as f:
+                content = await f.read()
+                data = json.loads(content)
                 if not isinstance(data, dict):
                     await self._logger.error(
                         "JSON file contains invalid data type",

@@ -1,9 +1,32 @@
-# =============================================================================
-# QuranBot - SQLite Database Service
-# =============================================================================
-# Robust SQLite database implementation replacing JSON storage
-# Features: ACID transactions, connection pooling, schema validation, migrations
-# =============================================================================
+"""QuranBot - SQLite Database Manager.
+
+Robust SQLite database implementation replacing JSON storage with enterprise-grade
+features including ACID transactions, connection pooling, and automatic migrations.
+
+This module provides the core database infrastructure for QuranBot, offering
+reliable data persistence with performance optimization and data integrity guarantees.
+
+Classes:
+    DatabaseManager: Core SQLite database manager with connection pooling
+    
+Features:
+    - ACID transactions with Write-Ahead Logging (WAL) mode
+    - Thread-safe connection pooling with configurable limits
+    - Automatic schema migrations and version management
+    - Data integrity validation and consistency checks
+    - Backup and recovery support with atomic operations
+    - Performance optimization with query caching and indexing
+    - Comprehensive error handling with detailed logging
+    
+Database Schema:
+    - playback_state: Current audio playback state and position
+    - bot_statistics: Runtime statistics and usage metrics
+    - quiz_config: Quiz system configuration and scheduling
+    - quiz_statistics: Global quiz performance metrics
+    - user_quiz_stats: Individual user quiz performance
+    - metadata_cache: Audio file metadata caching
+    - system_events: System event logging and audit trail
+"""
 
 import asyncio
 import sqlite3
@@ -40,13 +63,16 @@ class DatabaseManager:
         enable_wal: bool = True
     ):
         """
-        Initialize the database manager.
+        Initialize the database manager with connection pooling and configuration.
+        
+        Sets up the SQLite database manager with thread-safe connection pooling,
+        WAL mode for better concurrency, and automatic schema initialization.
         
         Args:
-            logger: Structured logger instance
+            logger: Structured logger instance for database operation logging
             db_path: Path to SQLite database file (defaults to data/quranbot.db)
-            max_connections: Maximum connection pool size
-            enable_wal: Enable Write-Ahead Logging for better concurrency
+            max_connections: Maximum connection pool size for concurrent operations
+            enable_wal: Enable Write-Ahead Logging mode for improved concurrency
         """
         self.logger = logger
         self.db_path = db_path or Path("data/quranbot.db")
@@ -520,7 +546,8 @@ class DatabaseManager:
                 try:
                     result = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()
                     tables[table] = result[0] if result else 0
-                except:
+                except sqlite3.Error as e:
+                    # Handle SQLite-specific errors
                     tables[table] = 0
                     
             # Get WAL info
@@ -532,8 +559,9 @@ class DatabaseManager:
                 if wal_info['journal_mode'] == 'wal':
                     wal_size_result = conn.execute("PRAGMA wal_checkpoint").fetchone()
                     wal_info['checkpoint_result'] = wal_size_result
-            except:
+            except sqlite3.Error as e:
                 wal_info['journal_mode'] = 'unknown'
+                wal_info['error'] = str(e)
                 
             return {
                 "database_size_bytes": db_size,
