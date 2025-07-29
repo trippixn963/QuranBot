@@ -327,46 +327,34 @@ class AudioServiceAdapter:
             traceback.print_exc()
 
     async def pause_playback(self):
-        """Pause audio playback."""
+        """Disabled - 24/7 Quran bot should never be paused."""
         try:
-            print("[DEBUG] AudioServiceAdapter.pause_playback() called")
-            success = await self.audio_service.pause_playback()
-            if success:
-                print("[DEBUG] Successfully paused playback")
-            else:
-                print("[DEBUG] Nothing to pause")
+            print("[DEBUG] Pause attempt blocked - 24/7 continuous playback only")
         except Exception as e:
-            print(f"[DEBUG] Error pausing playback: {e}")
+            print(f"[DEBUG] Error logging pause attempt: {e}")
             traceback.print_exc()
 
     async def resume_playback(self):
-        """Resume audio playback."""
+        """Disabled - 24/7 Quran bot should never need resuming as it never pauses."""
         try:
-            print("[DEBUG] AudioServiceAdapter.resume_playback() called")
-            success = await self.audio_service.resume_playback()
-            if success:
-                print("[DEBUG] Successfully resumed playback")
-            else:
-                print("[DEBUG] Nothing to resume")
+            print("[DEBUG] Resume attempt ignored - bot should never be paused")
         except Exception as e:
-            print(f"[DEBUG] Error resuming playback: {e}")
+            print(f"[DEBUG] Error logging resume attempt: {e}")
             traceback.print_exc()
 
     async def toggle_playback(self):
-        """Toggle play/pause state."""
+        """Start playback if stopped - pause/resume disabled for 24/7 operation."""
         try:
             print("[DEBUG] AudioServiceAdapter.toggle_playback() called")
             state = self.audio_service._current_state
-            if state.is_playing:
-                await self.pause_playback()
-            elif state.is_paused:
-                await self.resume_playback()
-            else:
+            if not state.is_playing:
                 print("[DEBUG] Starting playback from stopped state")
                 await self.audio_service.start_playback(resume_position=True)
                 print("[DEBUG] Successfully started playback")
+            else:
+                print("[DEBUG] Toggle ignored - 24/7 continuous playback only")
         except Exception as e:
-            print(f"[DEBUG] Error toggling playback: {e}")
+            print(f"[DEBUG] Error in toggle playback: {e}")
             traceback.print_exc()
 
 
@@ -1240,11 +1228,11 @@ class ModernizedQuranBot:
                             silent=False,
                         )
                 else:
-                    # Update rich presence to show paused/stopped state
+                    # Update rich presence to show idle/connecting state - never paused
                     rich_presence.update_presence(
                         status="QuranBot",
-                        details="Paused",
-                        state="Ready to resume",
+                        details="Connecting",
+                        state="Continuous Quran Recitation",
                         activity_type="playing",
                         silent=False,  # Enable logging
                     )

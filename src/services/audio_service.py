@@ -390,45 +390,23 @@ class AudioService:
 
     async def pause_playback(self) -> bool:
         """
-        Pause audio playback.
-
+        Disabled - 24/7 Quran bot should never be paused.
+        
         Returns:
-            True if successfully paused
+            False - pause is not allowed
         """
-        if not self._voice_client or not self._voice_client.is_playing():
-            return False
-
-        self._voice_client.pause()
-        self._current_state.is_playing = False
-        self._current_state.is_paused = True
-        self._pause_timestamp = asyncio.get_event_loop().time()
-
-        await self._logger.info("Paused audio playback")
-        return True
+        await self._logger.warning("Pause attempt blocked - 24/7 continuous playback only")
+        return False
 
     async def resume_playback(self) -> bool:
         """
-        Resume audio playback.
-
+        Disabled - 24/7 Quran bot should never need resuming as it never pauses.
+        
         Returns:
-            True if successfully resumed
+            False - resume is not needed
         """
-        if not self._voice_client or not self._voice_client.is_paused():
-            return False
-
-        self._voice_client.resume()
-        self._current_state.is_playing = True
-        self._current_state.is_paused = False
-
-        # Adjust track start time for accurate position tracking
-        if self._pause_timestamp and self._track_start_time:
-            pause_duration = asyncio.get_event_loop().time() - self._pause_timestamp
-            self._track_start_time += pause_duration
-
-        self._pause_timestamp = None
-
-        await self._logger.info("Resumed audio playback")
-        return True
+        await self._logger.warning("Resume attempt ignored - bot should never be paused")
+        return False
 
     async def set_reciter(self, reciter: str) -> bool:
         """

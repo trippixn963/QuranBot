@@ -1759,77 +1759,34 @@ class AudioManager:
             log_async_error("stop_playback", e, "Failed to stop playback cleanly")
 
     async def pause_playback(self):
-        """Pause the audio playback"""
+        """Disabled - 24/7 Quran bot should never be paused"""
         try:
-            if self.voice_client and self.voice_client.is_playing():
-                self.voice_client.pause()
-                self.is_paused = True
-
-                # Store pause time to maintain accurate position tracking
-                import time
-
-                self.track_pause_time = time.time()
-
-                # Update current position based on elapsed time before pause
-                if self.track_start_time:
-                    self.current_position = (
-                        self.track_pause_time - self.track_start_time
-                    )
-
-                # Update control panel
-                if self.control_panel_view:
-                    try:
-                        await self.control_panel_view.update_panel()
-                    except Exception as e:
-                        log_error_with_traceback(
-                            "Error updating control panel after pause", e
-                        )
-
-                log_perfect_tree_section(
-                    "Audio Playback - Paused",
-                    [
-                        ("playback_paused", "⏸️ Audio paused"),
-                    ],
-                    "⏸️",
-                )
-
+            log_perfect_tree_section(
+                "Pause Attempt - Blocked",
+                [
+                    ("pause_blocked", "⚠️ 24/7 continuous playback only"),
+                    ("reason", "Pause functionality disabled for continuous Quran recitation"),
+                ],
+                "🚫",
+            )
+            
         except Exception as e:
-            log_async_error("pause_playback", e, "Failed to pause playback")
+            log_async_error("pause_playback", e, "Error logging pause attempt")
 
     async def resume_playback(self):
-        """Resume the audio playback"""
+        """Disabled - 24/7 Quran bot should never need resuming as it never pauses"""
         try:
-            if self.voice_client and self.voice_client.is_paused():
-                self.voice_client.resume()
-                self.is_paused = False
-
-                # Adjust track start time to account for pause duration
-                if self.track_pause_time and self.track_start_time:
-                    import time
-
-                    pause_duration = time.time() - self.track_pause_time
-                    self.track_start_time += pause_duration  # Shift start time forward
-                    self.track_pause_time = None  # Clear pause time
-
-                # Update control panel
-                if self.control_panel_view:
-                    try:
-                        await self.control_panel_view.update_panel()
-                    except Exception as e:
-                        log_error_with_traceback(
-                            "Error updating control panel after resume", e
-                        )
-
-                log_perfect_tree_section(
-                    "Audio Playback - Resumed",
-                    [
-                        ("playback_resumed", "▶️ Audio resumed"),
-                    ],
-                    "▶️",
-                )
-
+            log_perfect_tree_section(
+                "Resume Attempt - Ignored",
+                [
+                    ("resume_ignored", "ℹ️ Bot should never be paused"),
+                    ("reason", "Continuous 24/7 Quran recitation mode"),
+                ],
+                "ℹ️",
+            )
+            
         except Exception as e:
-            log_async_error("resume_playback", e, "Failed to resume playback")
+            log_async_error("resume_playback", e, "Error logging resume attempt")
 
     async def skip_to_next(self):
         """Skip to the next track"""
