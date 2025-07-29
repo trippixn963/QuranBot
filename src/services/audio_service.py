@@ -250,11 +250,11 @@ class AudioService:
                     },
                 )
 
-            # Attempt connection with timeout
+            # Attempt connection with longer timeout for stability
             try:
                 self._voice_client = await asyncio.wait_for(
                     channel.connect(reconnect=True),
-                    timeout=self._config.connection_timeout,
+                    timeout=max(self._config.connection_timeout, 45),  # At least 45 seconds
                 )
             except TimeoutError:
                 raise VoiceConnectionError(
@@ -833,21 +833,27 @@ class AudioService:
     async def _create_audio_source(
         self, file_path: Path, resume: bool = False
     ) -> discord.AudioSource:
-        """Create FFmpeg audio source with proper options"""
+        """Create FFmpeg audio source with robust options for 24/7 stability"""
         ffmpeg_options = [
             "-vn",  # No video
             "-loglevel warning",
             f"-bufsize {self._config.playback_buffer_size}",
+            "-avoid_negative_ts make_zero",  # Handle timestamp issues
+            "-fflags +genpts",  # Generate timestamps
+            "-thread_queue_size 512",  # Larger thread queue
         ]
 
         if self._config.enable_reconnection:
             ffmpeg_options.extend(
                 [
                     "-reconnect 1",
-                    "-reconnect_streamed 1",
-                    "-reconnect_delay_max 5",
+                    "-reconnect_streamed 1", 
+                    "-reconnect_delay_max 10",  # Increased delay
+                    "-reconnect_at_eof 1",  # Reconnect at end of file
                     "-multiple_requests 1",
-                    "-rw_timeout 30000000",
+                    "-rw_timeout 60000000",  # 60 second timeout (increased)
+                    "-timeout 60000000",     # Connection timeout
+                    "-user_agent 'QuranBot/4.0'",  # Custom user agent
                 ]
             )
 
@@ -967,33 +973,126 @@ class AudioService:
         return None
 
     async def _monitoring_loop(self) -> None:
-        """Background monitoring loop for health checks"""
+        """Enhanced background monitoring loop with aggressive reconnection for 24/7 stability"""
+        consecutive_failures = 0
+        max_consecutive_failures = 5
+        base_retry_delay = 2  # Start with 2 seconds
+        max_retry_delay = 30  # Cap at 30 seconds
+        
         while True:
             try:
-                await asyncio.sleep(self._health_check_interval)
+                # More frequent health checks for 24/7 stability
+                await asyncio.sleep(min(self._health_check_interval, 10))
 
                 # Check voice connection health
-                if self._voice_client and not self._voice_client.is_connected():
+                connection_lost = False
+                if not self._voice_client or not self._voice_client.is_connected():
+                    connection_lost = True
+                elif self._voice_client and hasattr(self._voice_client, 'ws') and self._voice_client.ws and self._voice_client.ws.closed:
+                    connection_lost = True
+                    
+                if connection_lost:
+                    consecutive_failures += 1
+                    retry_delay = min(base_retry_delay * (2 ** min(consecutive_failures - 1, 4)), max_retry_delay)
+                    
                     await self._logger.warning(
-                        "Voice connection lost, attempting reconnection"
+                        "Voice connection lost, attempting aggressive reconnection",
+                        {
+                            "consecutive_failures": consecutive_failures,
+                            "retry_delay": retry_delay,
+                            "max_failures": max_consecutive_failures
+                        }
                     )
 
                     if self._target_channel_id and self._guild_id:
                         try:
-                            await self.connect_to_voice_channel(
-                                self._target_channel_id, self._guild_id
-                            )
+                            # Force disconnect any existing connection
+                            if self._voice_client:
+                                try:
+                                    await self._voice_client.disconnect(force=True)
+                                except:
+                                    pass  # Ignore errors on forced disconnect
+                                await asyncio.sleep(1)  # Brief pause
+                            
+                            # Attempt reconnection with retries
+                            success = False
+                            for attempt in range(3):  # 3 attempts per health check
+                                try:
+                                    await self.connect_to_voice_channel(
+                                        self._target_channel_id, self._guild_id
+                                    )
+                                    success = True
+                                    consecutive_failures = 0  # Reset on success
+                                    
+                                    # Resume playback if we were playing
+                                    if self._current_state.is_playing and not self._playback_task:
+                                        await self._logger.info("Resuming playback after reconnection")
+                                        await self.start_playback(resume_position=True)
+                                    break
+                                    
+                                except Exception as e:
+                                    await self._logger.warning(
+                                        f"Reconnection attempt {attempt + 1}/3 failed",
+                                        {"error": str(e)}
+                                    )
+                                    if attempt < 2:  # Don't sleep after last attempt
+                                        await asyncio.sleep(2)
+                            
+                            if not success:
+                                await self._logger.error(
+                                    "All reconnection attempts failed",
+                                    {"consecutive_failures": consecutive_failures}
+                                )
+                                
+                                # If we've failed too many times consecutively, take drastic action
+                                if consecutive_failures >= max_consecutive_failures:
+                                    await self._logger.critical(
+                                        "Too many consecutive connection failures - requesting bot restart",
+                                        {"consecutive_failures": consecutive_failures}
+                                    )
+                                    # Emergency webhook notification if available
+                                    try:
+                                        if hasattr(self, '_webhook_logger') and self._webhook_logger:
+                                            await self._webhook_logger.log_audio_event(
+                                                "critical_connection_failure",
+                                                f"Bot needs restart after {consecutive_failures} consecutive connection failures",
+                                                ping_owner=True
+                                            )
+                                    except:
+                                        pass
+                                
                         except Exception as e:
                             await self._logger.error(
-                                "Failed to reconnect to voice channel",
-                                {"error": str(e)},
+                                "Critical error in reconnection logic",
+                                {"error": str(e), "consecutive_failures": consecutive_failures}
                             )
-
-                # Check playback health
+                    
+                    # Apply exponential backoff delay
+                    await asyncio.sleep(retry_delay)
+                else:
+                    # Connection is healthy, reset failure counter
+                    if consecutive_failures > 0:
+                        await self._logger.info(
+                            "Voice connection restored and stable",
+                            {"was_failing_for": consecutive_failures}
+                        )
+                        consecutive_failures = 0
+                
+                # Additional health checks for 24/7 stability
+                if self._voice_client and self._voice_client.is_connected():
+                    # Check if we should be playing but aren't
+                    if self._current_state.is_playing and not self._voice_client.is_playing():
+                        await self._logger.warning("Audio should be playing but isn't - attempting restart")
+                        try:
+                            await self.start_playback(resume_position=True)
+                        except Exception as e:
+                            await self._logger.error("Failed to restart playback", {"error": str(e)})
+                
+                # Enhanced playback health monitoring
                 time_since_playback = datetime.now(UTC) - self._last_successful_playback
                 if time_since_playback.total_seconds() > 600:  # 10 minutes
                     await self._logger.warning(
-                        "No successful playback in 10 minutes",
+                        "No successful playback in 10 minutes - attempting recovery",
                         {"last_playback": self._last_successful_playback.isoformat()},
                     )
                     
@@ -1007,13 +1106,28 @@ class AudioService:
                                 "current_surah": self._current_state.current_position.surah_number,
                                 "is_connected": self._voice_client.is_connected() if self._voice_client else False,
                                 "is_playing": self._voice_client.is_playing() if self._voice_client else False,
+                                "consecutive_failures": consecutive_failures,
                             }
                         )
+                    
+                    # Attempt recovery for stuck audio
+                    if self._voice_client and self._voice_client.is_connected():
+                        try:
+                            await self._logger.info("Attempting audio recovery - restarting playback")
+                            await self.start_playback(resume_position=True)
+                        except Exception as e:
+                            await self._logger.error("Audio recovery failed", {"error": str(e)})
 
             except asyncio.CancelledError:
+                await self._logger.info("Audio monitoring cancelled")
                 break
             except Exception as e:
-                await self._logger.error("Error in monitoring loop", {"error": str(e)})
+                await self._logger.error(
+                    "Error in audio monitoring loop", 
+                    {"error": str(e)}
+                )
+                # Don't let monitoring loop die
+                await asyncio.sleep(5)
 
     async def _position_save_loop(self) -> None:
         """Background loop to save playback position"""
