@@ -244,7 +244,7 @@ class EnhancedWebhookRouter:
                 if webhook_url:
                     webhook_config = WebhookConfig(
                         webhook_url=webhook_url,
-                        owner_user_id=self.config.DEVELOPER_ID,
+                        owner_user_id=self.config.developer_id,
                         max_logs_per_minute=15,  # Higher limit for specialized channels
                         timezone="US/Eastern",
                         enable_pings=True,
@@ -276,7 +276,7 @@ class EnhancedWebhookRouter:
             if self.config.DISCORD_WEBHOOK_URL:
                 fallback_config = WebhookConfig(
                     webhook_url=self.config.DISCORD_WEBHOOK_URL,
-                    owner_user_id=self.config.DEVELOPER_ID,
+                    owner_user_id=self.config.developer_id,
                     timezone="US/Eastern",
                 )
 
