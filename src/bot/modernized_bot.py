@@ -15,7 +15,13 @@ from discord.ext import commands
 
 from src.adapters.audio_service_adapter import AudioServiceAdapter
 from src.commands import load_commands
-from src.config import QuranBotConfig, get_config, get_discord_token, get_guild_id, get_target_channel_id
+from src.config import (
+    QuranBotConfig,
+    get_config,
+    get_discord_token,
+    get_guild_id,
+    get_target_channel_id,
+)
 from src.core.cache_service import CacheService
 from src.core.di_container import DIContainer, set_global_container
 from src.core.health_monitor import HealthMonitor
@@ -163,6 +169,7 @@ class ModernizedQuranBot:
 
         # Cache Service
         from src.core.cache_service import CacheConfig
+
         cache_config = CacheConfig(
             max_memory_mb=self.config.cache_max_memory_mb,
             max_entries=self.config.cache_max_entries,
