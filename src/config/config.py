@@ -234,6 +234,12 @@ class QuranBotConfig(BaseSettings):
         alias="DEFAULT_VOLUME",
     )
 
+    preload_metadata: bool = Field(
+        default=True,
+        description="Preload audio metadata on startup",
+        alias="PRELOAD_METADATA",
+    )
+
     # =============================================================================
     # CACHE SETTINGS
     # =============================================================================
