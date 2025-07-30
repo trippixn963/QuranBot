@@ -248,6 +248,14 @@ class QuranBotConfig(BaseSettings):
         alias="PRELOAD_METADATA",
     )
 
+    playback_buffer_size: int = Field(
+        default=1024,
+        description="Audio playback buffer size in bytes",
+        ge=512,
+        le=8192,
+        alias="PLAYBACK_BUFFER_SIZE",
+    )
+
     # =============================================================================
     # CACHE SETTINGS
     # =============================================================================

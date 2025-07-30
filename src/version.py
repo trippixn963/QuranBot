@@ -10,7 +10,7 @@
 # =============================================================================
 
 # Main version number - update this single line for new releases
-__version__ = "4.0.1"
+__version__ = "4.1.0"
 
 # Bot name and branding
 BOT_NAME = "QuranBot"
@@ -21,8 +21,8 @@ BOT_AUTHOR = __author__  # For backward compatibility
 
 # Version components for programmatic access
 VERSION_MAJOR = 4
-VERSION_MINOR = 0
-VERSION_PATCH = 1
+VERSION_MINOR = 1
+VERSION_PATCH = 0
 
 # Pre-release identifiers (empty for stable releases)
 VERSION_PRERELEASE = ""  # e.g., "alpha", "beta", "rc1"
@@ -34,46 +34,56 @@ VERSION_BUILD = ""  # e.g., "20231201", "commit-abc123"
 # Release Information
 # =============================================================================
 
-RELEASE_NAME = "Stability & Enhancement Update"
-RELEASE_DATE = "2025-01-27"
+RELEASE_NAME = "Open Source Release"
+RELEASE_DATE = "2025-07-30"
 
 RELEASE_NOTES = """
-QuranBot 4.0.1 - Stability & Enhancement Update
+QuranBot 4.1.0 - Open Source Release
 
-🔧 BUG FIXES & IMPROVEMENTS:
-• Fixed /question command functionality with complete restoration from stable version
-• Resolved QuizView constructor parameter naming issues
-• Fixed signal handling for proper Ctrl+C graceful shutdown
-• Corrected configuration service integration across all commands
-• Resolved dependency resolution conflicts
+🌟 MAJOR MILESTONE - OPEN SOURCE TRANSFORMATION:
+• Full open source release with comprehensive documentation
+• Complete codebase cleanup and professional polish
+• MIT License with inclusive interfaith collaboration message
+• Community-ready with contribution guidelines and issue templates
 
-📩 NEW FEATURES:
-• Admin DM integration - automatic quiz answer delivery with rich embeds
-• Enhanced quiz results with admin profile picture in footers
-• Direct message links for easy navigation back to quiz messages
-• Improved error handling with comprehensive fallback behavior
+📱 ENHANCED DOCUMENTATION & USER EXPERIENCE:
+• Professional README with working badges and clear setup instructions
+• Fixed screenshot display issues with proper filename encoding
+• Added comprehensive troubleshooting section and system requirements
+• Enhanced Quick Start guide with Docker and Python setup options
+• Complete API documentation and development guides
 
-⚡ SYSTEM STABILITY:
-• All legacy compatibility issues resolved
-• Command loading system fully stabilized
-• Audio system optimized for seamless operation
-• Configuration unified under single source of truth
-• Comprehensive testing completed across all components
+🛡️ SECURITY & QUALITY IMPROVEMENTS:
+• Pre-commit hooks with comprehensive code quality checks
+• Security auditing with Bandit and vulnerability scanning
+• Enhanced error handling and logging throughout the application
+• Configuration validation scripts for deployment safety
+• Comprehensive testing infrastructure
 
-🏗️ ARCHITECTURE ENHANCEMENTS:
-• Dependency injection container fully operational
-• Service lifecycle management improved
-• Resource management optimized
-• Error reporting enhanced with detailed logging
-• Performance monitoring refined
+🏗️ INFRASTRUCTURE & DEPLOYMENT:
+• GitHub Actions CI/CD pipeline with automated testing
+• Docker containerization with multi-environment support
+• Professional project structure with examples and templates
+• Enhanced webhook logging and monitoring capabilities
+• Performance profiling and bottleneck analysis tools
 
-📚 DOCUMENTATION:
-• README updated with latest changes and improvements
-• Version management centralized and automated
-• Deployment guides verified and updated
+🤝 COMMUNITY & COLLABORATION FEATURES:
+• GitHub Discussions, Issues, and PR templates
+• Code of Conduct and Security Policy
+• Comprehensive contributing guidelines
+• Community Discord integration
+• Interfaith collaboration showcase
 
-This release focuses on stability, bug fixes, and user experience improvements
-while maintaining the robust modernized architecture introduced in 4.0.0.
+📋 CONFIGURATION & SETUP IMPROVEMENTS:
+• Unified configuration system with environment variable support
+• Migration scripts for existing deployments  
+• Example configurations for different deployment scenarios
+• Validation tools for configuration correctness
+• Hot-reload configuration updates without restart
+
+This release transforms QuranBot from a private project into a full-featured,
+community-ready open source Islamic Discord bot with enterprise-grade quality
+and comprehensive documentation for users and contributors.
 """
 
 # =============================================================================
