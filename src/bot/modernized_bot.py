@@ -222,7 +222,7 @@ class ModernizedQuranBot:
         db_manager = DatabaseManager(
             db_path=data_dir / "quranbot.db",
             logger=self.logger,
-            max_pool_size=10
+            max_connections=10
         )
         await db_manager.initialize()
         self.container.register_singleton(DatabaseManager, db_manager)

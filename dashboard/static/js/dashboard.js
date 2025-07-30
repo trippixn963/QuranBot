@@ -27,6 +27,7 @@ class QuranBotDashboard {
         
         // Setup event listeners
         this.setupEventListeners();
+        this.setupEnhancedEventListeners();
         
         // Initialize charts
         this.initializeCharts();
@@ -125,6 +126,9 @@ class QuranBotDashboard {
             this.updateDashboard(overviewData);
             this.updateLeaderboard(leaderboardData);
             this.updateContentCharts(contentData);
+            
+            // Load enhanced features
+            await this.loadEnhancedData();
             
             console.log('✅ Initial data loaded successfully');
             
@@ -576,6 +580,431 @@ class QuranBotDashboard {
         this.loadInitialData();
     }
 
+    // =============================================================================
+    // Historical Charts
+    // =============================================================================
+    
+    async loadHistoricalCharts() {
+        const days = document.getElementById('chart-period')?.value || 7;
+        
+        try {
+            // Load bot performance history
+            const botStatsResponse = await fetch(`/api/historical/bot-stats?days=${days}`);
+            const botStatsData = await botStatsResponse.json();
+            this.updateBotPerformanceChart(botStatsData.chart_data);
+            
+            // Load quiz activity history
+            const quizStatsResponse = await fetch(`/api/historical/quiz-stats?days=${days}`);
+            const quizStatsData = await quizStatsResponse.json();
+            this.updateQuizActivityChart(quizStatsData.chart_data);
+            
+        } catch (error) {
+            console.error('Error loading historical charts:', error);
+        }
+    }
+    
+    updateBotPerformanceChart(data) {
+        const ctx = document.getElementById('bot-performance-chart');
+        if (!ctx || !data) return;
+        
+        if (this.charts.botPerformance) {
+            this.charts.botPerformance.destroy();
+        }
+        
+        this.charts.botPerformance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Runtime Hours',
+                    data: data.datasets.runtime_hours,
+                    borderColor: '#2ecc71',
+                    backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                    yAxisID: 'y'
+                }, {
+                    label: 'Memory Usage (MB)',
+                    data: data.datasets.memory_usage,
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Bot Performance Over Time'
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: { display: true, text: 'Runtime Hours' }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: { display: true, text: 'Memory (MB)' },
+                        grid: { drawOnChartArea: false }
+                    }
+                }
+            }
+        });
+    }
+    
+    updateQuizActivityChart(data) {
+        const ctx = document.getElementById('quiz-activity-chart');
+        if (!ctx || !data) return;
+        
+        if (this.charts.quizActivity) {
+            this.charts.quizActivity.destroy();
+        }
+        
+        this.charts.quizActivity = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Questions Sent',
+                    data: data.datasets.questions_sent,
+                    backgroundColor: '#3498db'
+                }, {
+                    label: 'Correct Answers',
+                    data: data.datasets.correct_answers,
+                    backgroundColor: '#2ecc71'
+                }, {
+                    label: 'Total Attempts',
+                    data: data.datasets.attempts,
+                    backgroundColor: '#f39c12'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Quiz Activity Trends'
+                    }
+                }
+            }
+        });
+    }
+    
+    // =============================================================================
+    // Live Audio Status
+    // =============================================================================
+    
+    async loadAudioStatus() {
+        try {
+            const response = await fetch('/api/audio/status');
+            const data = await response.json();
+            this.updateAudioStatus(data.audio_status);
+        } catch (error) {
+            console.error('Error loading audio status:', error);
+        }
+    }
+    
+    updateAudioStatus(audioData) {
+        if (!audioData) return;
+        
+        // Update Surah information
+        const surahInfo = audioData.surah_info || {};
+        this.updateElement('surah-arabic', surahInfo.name_arabic || 'الفاتحة');
+        this.updateElement('surah-english', `${surahInfo.name_transliteration || 'Al-Fatihah'} - ${surahInfo.name_english || 'The Opening'}`);
+        this.updateElement('current-verse', `Verse ${audioData.current_verse || 1}`);
+        this.updateElement('total-verses', surahInfo.total_verses || 7);
+        this.updateElement('reciter-name', audioData.reciter || 'Saad Al Ghamdi');
+        
+        // Update playback status
+        const playIndicator = document.getElementById('play-indicator');
+        const playIcon = document.getElementById('play-icon');
+        const playStatus = document.getElementById('play-status');
+        
+        if (audioData.is_playing) {
+            playIndicator.className = 'play-indicator playing';
+            playIcon.className = 'fas fa-play';
+            playStatus.textContent = 'Playing';
+        } else {
+            playIndicator.className = 'play-indicator paused';
+            playIcon.className = 'fas fa-pause';
+            playStatus.textContent = 'Paused';
+        }
+        
+        // Update listeners count
+        this.updateElement('listeners-count', audioData.listeners_count || 0);
+        
+        // Update progress bar
+        const progress = audioData.total_duration_seconds > 0 
+            ? (audioData.current_position_seconds / audioData.total_duration_seconds) * 100 
+            : 0;
+        
+        const progressFill = document.getElementById('audio-progress');
+        if (progressFill) {
+            progressFill.style.width = `${progress}%`;
+        }
+        
+        // Update time display
+        this.updateElement('current-time', this.formatTime(audioData.current_position_seconds || 0));
+        this.updateElement('total-time', this.formatTime(audioData.total_duration_seconds || 0));
+    }
+    
+    // =============================================================================
+    // User Profiles
+    // =============================================================================
+    
+    async loadUserProfiles() {
+        try {
+            const response = await fetch('/api/users/activity?limit=10');
+            const data = await response.json();
+            this.displayUserProfiles(data.activities);
+        } catch (error) {
+            console.error('Error loading user profiles:', error);
+        }
+    }
+    
+    displayUserProfiles(activities) {
+        const profilesGrid = document.getElementById('profiles-grid');
+        if (!profilesGrid || !activities) return;
+        
+        // Get unique users from recent activities
+        const uniqueUsers = {};
+        activities.forEach(activity => {
+            if (!uniqueUsers[activity.user_id]) {
+                uniqueUsers[activity.user_id] = {
+                    user_id: activity.user_id,
+                    display_name: activity.display_name,
+                    last_activity: activity.timestamp,
+                    activity_count: 1
+                };
+            } else {
+                uniqueUsers[activity.user_id].activity_count++;
+            }
+        });
+        
+        const users = Object.values(uniqueUsers).slice(0, 6);
+        
+        profilesGrid.innerHTML = users.map(user => `
+            <div class="profile-card" onclick="dashboard.showUserProfile('${user.user_id}')">
+                <div class="profile-header">
+                    <div class="profile-avatar">
+                        ${user.display_name ? user.display_name[0].toUpperCase() : 'U'}
+                    </div>
+                    <div class="profile-info">
+                        <h4>${user.display_name || 'Unknown User'}</h4>
+                        <div class="user-id">${user.user_id.substring(0, 8)}...</div>
+                    </div>
+                </div>
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">${user.activity_count}</div>
+                        <div class="stat-label">Activities</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${this.timeAgo(user.last_activity)}</div>
+                        <div class="stat-label">Last Seen</div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    async showUserProfile(userId) {
+        try {
+            const response = await fetch(`/api/user/${userId}/profile`);
+            const profileData = await response.json();
+            this.displayUserProfileModal(profileData);
+        } catch (error) {
+            console.error('Error loading user profile:', error);
+        }
+    }
+    
+    displayUserProfileModal(profileData) {
+        const modal = document.getElementById('user-profile-modal');
+        const modalTitle = document.getElementById('profile-modal-title');
+        const modalBody = document.getElementById('profile-modal-body');
+        
+        if (!modal || !modalTitle || !modalBody) return;
+        
+        const basicStats = profileData.basic_stats || {};
+        const summary = profileData.summary || {};
+        
+        modalTitle.textContent = `${basicStats.display_name || basicStats.username || 'User Profile'}`;
+        
+        modalBody.innerHTML = `
+            <div class="profile-details">
+                <div class="profile-summary">
+                    <h4>📊 Statistics</h4>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number">${basicStats.correct_answers || 0}</div>
+                            <div class="stat-label">Correct Answers</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${basicStats.total_attempts || 0}</div>
+                            <div class="stat-label">Total Attempts</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${basicStats.best_streak || 0}</div>
+                            <div class="stat-label">Best Streak</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${summary.total_points || 0}</div>
+                            <div class="stat-label">Total Points</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="achievements-section">
+                    <h4>🏆 Achievements</h4>
+                    <div class="achievements-list">
+                        ${profileData.achievements && profileData.achievements.length > 0 
+                            ? profileData.achievements.map(achievement => `
+                                <div class="achievement-item">
+                                    <strong>${achievement.achievement_name}</strong>
+                                    <p>${achievement.description || ''}</p>
+                                    <small>Earned: ${new Date(achievement.earned_at).toLocaleDateString()}</small>
+                                </div>
+                            `).join('')
+                            : '<p class="no-data">No achievements yet</p>'
+                        }
+                    </div>
+                </div>
+                
+                <div class="activity-section">
+                    <h4>📋 Recent Activity</h4>
+                    <div class="activity-timeline">
+                        ${profileData.recent_activity && profileData.recent_activity.length > 0
+                            ? profileData.recent_activity.slice(0, 5).map(activity => `
+                                <div class="activity-item">
+                                    <div class="activity-type">${this.formatActivityType(activity.activity_type)}</div>
+                                    <div class="activity-time">${this.timeAgo(activity.timestamp)}</div>
+                                </div>
+                            `).join('')
+                            : '<p class="no-data">No recent activity</p>'
+                        }
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        modal.style.display = 'block';
+    }
+    
+    // =============================================================================
+    // Enhanced Event Listeners
+    // =============================================================================
+    
+    setupEnhancedEventListeners() {
+        // Chart period selector
+        const chartPeriod = document.getElementById('chart-period');
+        if (chartPeriod) {
+            chartPeriod.addEventListener('change', () => {
+                this.loadHistoricalCharts();
+            });
+        }
+        
+        // User search
+        const searchBtn = document.getElementById('search-user-btn');
+        const searchInput = document.getElementById('user-search');
+        
+        if (searchBtn && searchInput) {
+            searchBtn.addEventListener('click', () => {
+                const userId = searchInput.value.trim();
+                if (userId) {
+                    this.showUserProfile(userId);
+                }
+            });
+            
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const userId = searchInput.value.trim();
+                    if (userId) {
+                        this.showUserProfile(userId);
+                    }
+                }
+            });
+        }
+        
+        // Profile modal close
+        const closeBtn = document.getElementById('close-profile-modal');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                document.getElementById('user-profile-modal').style.display = 'none';
+            });
+        }
+        
+        // Activity refresh button
+        const refreshBtn = document.getElementById('refresh-activity');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                refreshBtn.classList.add('loading');
+                this.loadData().finally(() => {
+                    refreshBtn.classList.remove('loading');
+                });
+            });
+        }
+        
+        // Modal click outside to close
+        window.addEventListener('click', (e) => {
+            const modal = document.getElementById('user-profile-modal');
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    }
+    
+    // =============================================================================
+    // Utility Functions
+    // =============================================================================
+    
+    formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+    
+    timeAgo(timestamp) {
+        if (!timestamp) return 'Never';
+        
+        const now = new Date();
+        const time = new Date(timestamp);
+        const diffMs = now - time;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+        
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        return `${diffDays}d ago`;
+    }
+    
+    formatActivityType(type) {
+        const types = {
+            'quiz_answered': '🧠 Quiz Answered',
+            'achievement_earned': '🏆 Achievement',
+            'voice_joined': '🎵 Joined Voice',
+            'voice_left': '👋 Left Voice',
+            'command_used': '⚡ Command Used'
+        };
+        return types[type] || '📋 Activity';
+    }
+    
+    // Enhanced load data method
+    async loadEnhancedData() {
+        await Promise.all([
+            this.loadAudioStatus(),
+            this.loadHistoricalCharts(),
+            this.loadUserProfiles()
+        ]);
+    }
+    
     // =============================================================================
     // Cleanup
     // =============================================================================
