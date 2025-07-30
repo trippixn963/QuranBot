@@ -460,7 +460,8 @@ class WebhookFormatter:
         ):
             return self.bot.user.avatar.url
             
-        # Priority 4: Fallback to default bot avatar
+        # Priority 4: Always use default bot avatar for system events
+        # This ensures the bot's profile picture is always shown
         return "https://cdn.discordapp.com/attachments/1044035927281262673/1044036084692160512/PFP_Cropped_-_Animated.gif"
     
     def _create_progress_bar(self, percentage: float, length: int = 10) -> str:
