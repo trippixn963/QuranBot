@@ -352,8 +352,8 @@ class VerseCog(commands.Cog):
                 message = await channel.send(embed=embed)
 
                 # Record verse sent in statistics
-                if daily_verses.daily_verse_manager:
-                    daily_verses.daily_verse_manager.record_verse_sent(
+                if daily_verses_manager:
+                    daily_verses_manager.record_verse_sent(
                         verse_data.get("surah", 1)
                     )
 
@@ -452,8 +452,8 @@ class VerseCog(commands.Cog):
                             )
 
                             # Record dua reaction in statistics
-                            if daily_verses.daily_verse_manager:
-                                daily_verses.daily_verse_manager.record_dua_reaction(
+                            if daily_verses_manager:
+                                daily_verses_manager.record_dua_reaction(
                                     user.id,
                                     verse_data.get("surah", 1),
                                     verse_data.get("ayah", verse_data.get("verse", 1)),

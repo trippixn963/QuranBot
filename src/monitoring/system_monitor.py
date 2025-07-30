@@ -142,16 +142,18 @@ class SystemResourceMonitor:
             disk = psutil.disk_usage('/')
             cpu_count = psutil.cpu_count()
 
+            # Create enhanced context with better formatting
             context = {
-                "resource_type": resource_type,
-                "current_value": f"{value:.1f}%",
-                "severity": severity,
-                "cpu_usage": f"{psutil.cpu_percent():.1f}%",
-                "cpu_cores": cpu_count,
-                "memory_usage": f"{memory.percent:.1f}%",
-                "memory_available": f"{memory.available / (1024**3):.1f}GB",
-                "disk_usage": f"{disk.percent:.1f}%",
-                "disk_free": f"{disk.free / (1024**3):.1f}GB",
+                "Resource Type": resource_type.upper(),
+                "Current Usage": f"{value:.1f}%",
+                "Severity Level": severity.upper(),
+                "CPU Usage": f"{psutil.cpu_percent():.1f}%",
+                "CPU Cores": f"{cpu_count} cores",
+                "Memory Usage": f"{memory.percent:.1f}%",
+                "Memory Available": f"{memory.available / (1024**3):.1f} GB",
+                "Disk Usage": f"{disk.percent:.1f}%",
+                "Disk Free Space": f"{disk.free / (1024**3):.1f} GB",
+                "System Status": severity.upper(),
             }
 
             await self.webhook_router.route_event(

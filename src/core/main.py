@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-"""QuranBot - Modernized Main Entry Point.
+# =============================================================================
+# QuranBot - Modernized Main Entry Point
+# =============================================================================
+# This is the modernized main entry point that uses the modern architecture
+# with dependency injection, proper service management, and error handling.
+# =============================================================================
 
-This is the modernized main entry point that uses the modern architecture
-with dependency injection, proper service management, and error handling.
+"""
 The bot is 100% automated for continuous Quran recitation while also
 providing optional commands for interaction.
 

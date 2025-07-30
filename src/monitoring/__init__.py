@@ -1,7 +1,10 @@
-"""
-QuranBot Monitoring Module.
+# =============================================================================
+# QuranBot - Monitoring Module
+# =============================================================================
+# This module provides comprehensive monitoring capabilities including:
+# =============================================================================
 
-This module provides comprehensive monitoring capabilities including:
+"""
 - Prometheus metrics collection and exposition
 - Performance monitoring and alerting
 - System health checks and diagnostics

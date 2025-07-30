@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # =============================================================================
-# Conversation Memory Service - Smart Context & User Preferences
+# QuranBot - Conversation Memory Service - Smart Context & User Preferences
 # =============================================================================
 # This service tracks user conversations, preferences, and learning patterns
 # to provide more personalized and contextually aware AI responses.

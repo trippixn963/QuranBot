@@ -1,8 +1,11 @@
-"""
-QuranBot Caching Module.
+# =============================================================================
+# QuranBot - Caching Module
+# =============================================================================
+# This module provides both in-memory and distributed Redis caching capabilities
+# with seamless fallback and unified interface.
+# =============================================================================
 
-This module provides both in-memory and distributed Redis caching capabilities
-with seamless fallback and unified interface.
+"""
 """
 
 from .redis_cache import (

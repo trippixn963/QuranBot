@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
+# =============================================================================
+# QuranBot - Configuration Validation Script
+# =============================================================================
+# Validates configuration files for completeness, security, and correctness.
+# Ensures all required settings are present and properly formatted.
+# =============================================================================
+
 """
-Configuration Validation Script for QuranBot
-
-Validates configuration files for completeness, security, and correctness.
-Ensures all required settings are present and properly formatted.
-
 "And it is He who created all things in due proportion." - Quran 25:2
 """
 

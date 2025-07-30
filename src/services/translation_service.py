@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # =============================================================================
-# Translation Service - Multilingual AI Response Translation with ChatGPT
+# QuranBot - Translation Service - Multilingual AI Response Translation with ChatGPT
 # =============================================================================
 # This service handles translation of AI responses into multiple languages
 # using OpenAI ChatGPT for high-quality, context-aware translations while

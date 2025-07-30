@@ -1,10 +1,11 @@
-"""QuranBot - Enhanced Multi-Channel Webhook Router.
+# =============================================================================
+# QuranBot - Enhanced Multi-Channel Webhook Router
+# =============================================================================
+# This router intelligently categorizes and routes webhook events to different
+# Discord channels based on event type and content with specialized formatting.
+# =============================================================================
 
-This router intelligently categorizes and routes webhook events to different
-Discord channels based on event type and content. It provides specialized
-formatting and routing for bot-focused events while maintaining backward
-compatibility with the existing webhook system.
-
+"""
 The Enhanced Webhook Router provides:
 - Intelligent event categorization and channel routing
 - Multi-channel Discord webhook support for organized logging

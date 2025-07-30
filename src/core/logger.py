@@ -1,8 +1,11 @@
-"""QuranBot - Structured Logging System.
+# =============================================================================
+# QuranBot - Structured Logging System
+# =============================================================================
+# Modern structured logging system with JSON formatting, correlation ID context
+# management, and async support for the QuranBot modernization project.
+# =============================================================================
 
-Modern structured logging system with JSON formatting, correlation ID context
-management, and async support for the QuranBot modernization project.
-
+"""
 This module provides a comprehensive logging infrastructure designed for
 modern async applications with proper context tracking and structured output.
 

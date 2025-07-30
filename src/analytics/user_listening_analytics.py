@@ -1,8 +1,11 @@
-"""
-QuranBot User Listening History and Analytics System.
+# =============================================================================
+# QuranBot - User Listening History and Analytics System
+# =============================================================================
+# This module provides comprehensive user listening analytics, tracking detailed
+# listening patterns, preferences, and behavioral insights for enhanced user
+# =============================================================================
 
-This module provides comprehensive user listening analytics, tracking detailed
-listening patterns, preferences, and behavioral insights for enhanced user
+"""
 experience and administrative oversight.
 """
 

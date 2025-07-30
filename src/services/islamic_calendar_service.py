@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # =============================================================================
-# Islamic Calendar Service - Hijri Dates & Islamic Events
+# QuranBot - Islamic Calendar Service - Hijri Dates & Islamic Events
 # =============================================================================
 # This service provides Islamic calendar functionality including Hijri date
 # conversion, Islamic month information, and awareness of special Islamic

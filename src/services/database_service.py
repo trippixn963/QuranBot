@@ -1,8 +1,11 @@
-"""QuranBot - Database Service.
+# =============================================================================
+# QuranBot - Database Service
+# =============================================================================
+# High-level database service providing QuranBot-specific data operations
+# built on top of the core DatabaseManager for safe, robust data access.
+# =============================================================================
 
-High-level database service providing QuranBot-specific data operations
-built on top of the core DatabaseManager for safe, robust data access.
-
+"""
 This service provides comprehensive database operations for:
 - Playback state management with SQLite persistence
 - Quiz configuration and user statistics tracking

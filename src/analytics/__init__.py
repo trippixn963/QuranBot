@@ -1,8 +1,11 @@
-"""
-QuranBot Analytics Module.
+# =============================================================================
+# QuranBot - Analytics Module
+# =============================================================================
+# This module provides comprehensive analytics and data insights for QuranBot,
+# including user listening patterns, behavioral analysis, and recommendation systems.
+# =============================================================================
 
-This module provides comprehensive analytics and data insights for QuranBot,
-including user listening patterns, behavioral analysis, and recommendation systems.
+"""
 """
 
 from .user_listening_analytics import (

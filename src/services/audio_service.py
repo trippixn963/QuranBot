@@ -1,9 +1,11 @@
-"""QuranBot - Modern Audio Service.
+# =============================================================================
+# QuranBot - Modern Audio Service
+# =============================================================================
+# This module provides a modern, type-safe audio service with dependency
+# injection, comprehensive error handling, and advanced features.
+# =============================================================================
 
-This module provides a modern, type-safe audio service with dependency
-injection, comprehensive error handling, and advanced features like caching,
-monitoring, and automatic recovery.
-
+"""
 The AudioService is the core component responsible for:
 - Voice channel connection management with automatic reconnection
 - Audio file playback using FFmpeg with stability optimizations

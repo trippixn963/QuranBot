@@ -26,7 +26,7 @@
       "4": "Hard",
       "5": "Very Hard"
     },
-    "total_questions": 150,
+    "total_questions": 200,
     "created_date": "2024-07-30",
     "author": "QuranBot Development Team",
     "language": "Bilingual (Arabic-English)"
@@ -5031,6 +5031,2306 @@
         "arabic": "عندما سُئلت عائشة عن خُلق النبي، قالت: 'كان خُلقه القرآن' - أي أنه جسد تعاليم القرآن."
       },
       "reference": "Hadith - Sahih Muslim"
+    },
+    {
+      "id": "q126",
+      "category": "Quran",
+      "difficulty": 2,
+      "themes": [
+        "Last Revelation"
+      ],
+      "context": {
+        "english": "Final Message",
+        "arabic": "الرسالة الأخيرة"
+      },
+      "question": {
+        "english": "Which was the last complete surah revealed?",
+        "arabic": "ما هي آخر سورة كاملة نزلت؟"
+      },
+      "choices": {
+        "A": {
+          "english": "An-Nasr",
+          "arabic": "النصر"
+        },
+        "B": {
+          "english": "Al-Ma'idah",
+          "arabic": "المائدة"
+        },
+        "C": {
+          "english": "At-Tawbah",
+          "arabic": "التوبة"
+        },
+        "D": {
+          "english": "Al-Ikhlas",
+          "arabic": "الإخلاص"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Surah An-Nasr (The Victory) was the last complete surah revealed, signaling the completion of the Prophet's mission.",
+        "arabic": "سورة النصر كانت آخر سورة كاملة نزلت، مما يشير إلى اكتمال مهمة النبي."
+      },
+      "reference": "Quranic Sciences"
+    },
+    {
+      "id": "q127",
+      "category": "Pillars of Islam",
+      "difficulty": 1,
+      "themes": [
+        "Shahada"
+      ],
+      "context": {
+        "english": "Declaration of Faith",
+        "arabic": "إعلان الإيمان"
+      },
+      "question": {
+        "english": "What are the two parts of the Shahada?",
+        "arabic": "ما هما جزءا الشهادة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "There is no god but Allah, Muhammad is His messenger",
+          "arabic": "لا إله إلا الله، محمد رسول الله"
+        },
+        "B": {
+          "english": "Allah is great, Muhammad is His prophet",
+          "arabic": "الله أكبر، محمد نبيه"
+        },
+        "C": {
+          "english": "Praise Allah, obey Muhammad",
+          "arabic": "احمد الله، أطع محمداً"
+        },
+        "D": {
+          "english": "Love Allah, follow Muhammad",
+          "arabic": "أحب الله، اتبع محمداً"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The Shahada consists of two declarations: 'There is no god but Allah' and 'Muhammad is the messenger of Allah'.",
+        "arabic": "الشهادة تتكون من إعلانين: 'لا إله إلا الله' و'محمد رسول الله'."
+      },
+      "reference": "Islamic Fundamentals"
+    },
+    {
+      "id": "q128",
+      "category": "Islamic History",
+      "difficulty": 4,
+      "themes": [
+        "Scholarly Contributions"
+      ],
+      "context": {
+        "english": "Islamic Scholarship",
+        "arabic": "العلوم الإسلامية"
+      },
+      "question": {
+        "english": "Who is known as the 'Father of Algebra' in Islamic history?",
+        "arabic": "من يُعرف بـ 'أبو الجبر' في التاريخ الإسلامي؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Al-Kindi",
+          "arabic": "الكندي"
+        },
+        "B": {
+          "english": "Al-Khwarizmi",
+          "arabic": "الخوارزمي"
+        },
+        "C": {
+          "english": "Ibn Sina",
+          "arabic": "ابن سينا"
+        },
+        "D": {
+          "english": "Al-Biruni",
+          "arabic": "البيروني"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Muhammad ibn Musa al-Khwarizmi is known as the 'Father of Algebra' for his pioneering work in mathematics.",
+        "arabic": "محمد بن موسى الخوارزمي يُعرف بـ 'أبو الجبر' لأعماله الرائدة في الرياضيات."
+      },
+      "reference": "Islamic Golden Age"
+    },
+    {
+      "id": "q129",
+      "category": "Prophets",
+      "difficulty": 3,
+      "themes": [
+        "Prophet Stories"
+      ],
+      "context": {
+        "english": "Biblical Prophets in Islam",
+        "arabic": "الأنبياء التوراتيون في الإسلام"
+      },
+      "question": {
+        "english": "Which prophet is known for his patience during severe trials?",
+        "arabic": "أي نبي معروف بصبره خلال الابتلاءات الشديدة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Prophet Yusuf",
+          "arabic": "النبي يوسف"
+        },
+        "B": {
+          "english": "Prophet Ayyub",
+          "arabic": "النبي أيوب"
+        },
+        "C": {
+          "english": "Prophet Yunus",
+          "arabic": "النبي يونس"
+        },
+        "D": {
+          "english": "Prophet Zakariya",
+          "arabic": "النبي زكريا"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Prophet Ayyub (Job) is famous for his extraordinary patience during severe illness and loss of wealth.",
+        "arabic": "النبي أيوب مشهور بصبره الاستثنائي أثناء المرض الشديد وفقدان الثروة."
+      },
+      "reference": "Quran 21:83-84"
+    },
+    {
+      "id": "q130",
+      "category": "Fiqh",
+      "difficulty": 2,
+      "themes": [
+        "Prayer Invalidation"
+      ],
+      "context": {
+        "english": "Prayer Rules",
+        "arabic": "أحكام الصلاة"
+      },
+      "question": {
+        "english": "Which of the following breaks wudu (ablution)?",
+        "arabic": "أي من التالي ينقض الوضوء؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Eating food",
+          "arabic": "أكل الطعام"
+        },
+        "B": {
+          "english": "Using the bathroom",
+          "arabic": "استخدام الحمام"
+        },
+        "C": {
+          "english": "Drinking water",
+          "arabic": "شرب الماء"
+        },
+        "D": {
+          "english": "Speaking",
+          "arabic": "التحدث"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Using the bathroom (relieving oneself) is one of the things that breaks wudu and requires renewal before prayer.",
+        "arabic": "استخدام الحمام (قضاء الحاجة) من الأشياء التي تنقض الوضوء وتتطلب التجديد قبل الصلاة."
+      },
+      "reference": "Islamic Jurisprudence"
+    },
+    {
+      "id": "q131",
+      "category": "Arabic Language",
+      "difficulty": 4,
+      "themes": [
+        "Quranic Linguistics"
+      ],
+      "context": {
+        "english": "Language Analysis",
+        "arabic": "التحليل اللغوي"
+      },
+      "question": {
+        "english": "In which dialect of Arabic was the Quran revealed?",
+        "arabic": "بأي لهجة عربية نزل القرآن؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Quraysh dialect",
+          "arabic": "لهجة قريش"
+        },
+        "B": {
+          "english": "Yemeni dialect",
+          "arabic": "اللهجة اليمنية"
+        },
+        "C": {
+          "english": "Najdi dialect",
+          "arabic": "اللهجة النجدية"
+        },
+        "D": {
+          "english": "Iraqi dialect",
+          "arabic": "اللهجة العراقية"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The Quran was revealed in the Quraysh dialect, which was the most prestigious and widely understood Arabic dialect.",
+        "arabic": "نزل القرآن بلهجة قريش، التي كانت أكثر اللهجات العربية مكانة وفهماً."
+      },
+      "reference": "Quranic Sciences"
+    },
+    {
+      "id": "q132",
+      "category": "Companions",
+      "difficulty": 5,
+      "themes": [
+        "Scholarly Companions"
+      ],
+      "context": {
+        "english": "Learned Companions",
+        "arabic": "الصحابة العلماء"
+      },
+      "question": {
+        "english": "Who was known as the 'Translator of the Quran' among the companions?",
+        "arabic": "من كان يُعرف بـ 'ترجمان القرآن' بين الصحابة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Ibn Abbas",
+          "arabic": "ابن عباس"
+        },
+        "B": {
+          "english": "Ibn Umar",
+          "arabic": "ابن عمر"
+        },
+        "C": {
+          "english": "Abu Hurairah",
+          "arabic": "أبو هريرة"
+        },
+        "D": {
+          "english": "Anas ibn Malik",
+          "arabic": "أنس بن مالك"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Abdullah ibn Abbas was called 'Turjuman al-Quran' (Translator of the Quran) due to his deep knowledge of Quranic interpretation.",
+        "arabic": "عبد الله بن عباس لُقب بـ 'ترجمان القرآن' لعلمه العميق في تفسير القرآن."
+      },
+      "reference": "Islamic History"
+    },
+    {
+      "id": "q133",
+      "category": "Islamic Ethics",
+      "difficulty": 3,
+      "themes": [
+        "Social Justice"
+      ],
+      "context": {
+        "english": "Community Welfare",
+        "arabic": "الرفاه المجتمعي"
+      },
+      "question": {
+        "english": "What does Islam say about helping the poor and needy?",
+        "arabic": "ماذا يقول الإسلام عن مساعدة الفقراء والمحتاجين؟"
+      },
+      "choices": {
+        "A": {
+          "english": "It is recommended",
+          "arabic": "مستحب"
+        },
+        "B": {
+          "english": "It is obligatory",
+          "arabic": "واجب"
+        },
+        "C": {
+          "english": "It is optional",
+          "arabic": "اختياري"
+        },
+        "D": {
+          "english": "It is discouraged",
+          "arabic": "مكروه"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Helping the poor and needy is obligatory in Islam, primarily through Zakat and encouraged through Sadaqah.",
+        "arabic": "مساعدة الفقراء والمحتاجين واجبة في الإسلام، أساساً من خلال الزكاة ومستحبة من خلال الصدقة."
+      },
+      "reference": "Quran 2:177"
+    },
+    {
+      "id": "q134",
+      "category": "Islamic Culture",
+      "difficulty": 2,
+      "themes": [
+        "Death Rites"
+      ],
+      "context": {
+        "english": "Funeral Practices",
+        "arabic": "ممارسات الجنازة"
+      },
+      "question": {
+        "english": "What do Muslims say when they hear news of someone's death?",
+        "arabic": "ماذا يقول المسلمون عندما يسمعون خبر وفاة شخص؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Inna lillahi wa inna ilayhi raji'un",
+          "arabic": "إنا لله وإنا إليه راجعون"
+        },
+        "B": {
+          "english": "Allahu a'lam",
+          "arabic": "الله أعلم"
+        },
+        "C": {
+          "english": "Astaghfirullah",
+          "arabic": "أستغفر الله"
+        },
+        "D": {
+          "english": "Ma sha Allah",
+          "arabic": "ما شاء الله"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Muslims say 'Inna lillahi wa inna ilayhi raji'un' (Indeed we belong to Allah, and indeed to Him we will return) upon hearing of someone's death.",
+        "arabic": "يقول المسلمون 'إنا لله وإنا إليه راجعون' عند سماع خبر وفاة شخص."
+      },
+      "reference": "Quran 2:156"
+    },
+    {
+      "id": "q135",
+      "category": "Seerah",
+      "difficulty": 4,
+      "themes": [
+        "Migration Details"
+      ],
+      "context": {
+        "english": "Hijra Journey",
+        "arabic": "رحلة الهجرة"
+      },
+      "question": {
+        "english": "Who accompanied Prophet Muhammad during the Hijra to Medina?",
+        "arabic": "من رافق النبي محمد خلال الهجرة إلى المدينة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Ali ibn Abi Talib",
+          "arabic": "علي بن أبي طالب"
+        },
+        "B": {
+          "english": "Abu Bakr as-Siddiq",
+          "arabic": "أبو بكر الصديق"
+        },
+        "C": {
+          "english": "Umar ibn al-Khattab",
+          "arabic": "عمر بن الخطاب"
+        },
+        "D": {
+          "english": "Zaid ibn Harithah",
+          "arabic": "زيد بن حارثة"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Abu Bakr as-Siddiq was the companion who accompanied Prophet Muhammad during the historic Hijra journey.",
+        "arabic": "أبو بكر الصديق كان الصاحب الذي رافق النبي محمد خلال رحلة الهجرة التاريخية."
+      },
+      "reference": "Quran 9:40"
+    },
+    {
+      "id": "q136",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Seeking Knowledge"
+      ],
+      "context": {
+        "english": "Islamic Education",
+        "arabic": "التعليم الإسلامي"
+      },
+      "question": {
+        "english": "Complete the hadith: 'Seek knowledge from the cradle to...'",
+        "arabic": "أكمل الحديث: 'اطلبوا العلم من المهد إلى...'؟"
+      },
+      "choices": {
+        "A": {
+          "english": "the grave",
+          "arabic": "اللحد"
+        },
+        "B": {
+          "english": "old age",
+          "arabic": "الشيخوخة"
+        },
+        "C": {
+          "english": "marriage",
+          "arabic": "الزواج"
+        },
+        "D": {
+          "english": "maturity",
+          "arabic": "النضج"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The hadith states: 'Seek knowledge from the cradle to the grave', emphasizing lifelong learning.",
+        "arabic": "الحديث يقول: 'اطلبوا العلم من المهد إلى اللحد'، مؤكداً على التعلم مدى الحياة."
+      },
+      "reference": "Hadith Tradition"
+    },
+    {
+      "id": "q137",
+      "category": "Pillars of Iman",
+      "difficulty": 4,
+      "themes": [
+        "Divine Books"
+      ],
+      "context": {
+        "english": "Revealed Scriptures",
+        "arabic": "الكتب المنزلة"
+      },
+      "question": {
+        "english": "Which book was revealed to Prophet Isa (Jesus)?",
+        "arabic": "أي كتاب أُنزل على النبي عيسى؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Torah",
+          "arabic": "التوراة"
+        },
+        "B": {
+          "english": "Zabur",
+          "arabic": "الزبور"
+        },
+        "C": {
+          "english": "Injil",
+          "arabic": "الإنجيل"
+        },
+        "D": {
+          "english": "Quran",
+          "arabic": "القرآن"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "The Injil (Gospel) was revealed to Prophet Isa (Jesus) for the guidance of his people.",
+        "arabic": "الإنجيل أُنزل على النبي عيسى لهداية قومه."
+      },
+      "reference": "Quran 5:46"
+    },
+    {
+      "id": "q138",
+      "category": "Islamic Architecture",
+      "difficulty": 5,
+      "themes": [
+        "Historic Mosques"
+      ],
+      "context": {
+        "english": "Famous Islamic Buildings",
+        "arabic": "المباني الإسلامية الشهيرة"
+      },
+      "question": {
+        "english": "Which mosque was the first built with a minaret?",
+        "arabic": "أي مسجد كان أول من بُني بمئذنة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Masjid an-Nabawi",
+          "arabic": "المسجد النبوي"
+        },
+        "B": {
+          "english": "Masjid al-Haram",
+          "arabic": "المسجد الحرام"
+        },
+        "C": {
+          "english": "Great Mosque of Damascus",
+          "arabic": "الجامع الأموي الكبير"
+        },
+        "D": {
+          "english": "Mosque of Amr ibn al-As",
+          "arabic": "مسجد عمرو بن العاص"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "The Great Mosque of Damascus (Umayyad Mosque) was among the first mosques built with a minaret.",
+        "arabic": "الجامع الأموي الكبير في دمشق كان من أوائل المساجد التي بُنيت بمئذنة."
+      },
+      "reference": "Islamic Architecture History"
+    },
+    {
+      "id": "q139",
+      "category": "Quran",
+      "difficulty": 1,
+      "themes": [
+        "Prostration Verses"
+      ],
+      "context": {
+        "english": "Special Verses",
+        "arabic": "الآيات الخاصة"
+      },
+      "question": {
+        "english": "What should a Muslim do when reciting or hearing a verse of prostration (Sajdah)?",
+        "arabic": "ماذا يجب على المسلم فعله عند تلاوة أو سماع آية السجدة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Stand up",
+          "arabic": "يقف"
+        },
+        "B": {
+          "english": "Prostrate (Sajdah)",
+          "arabic": "يسجد"
+        },
+        "C": {
+          "english": "Sit down",
+          "arabic": "يجلس"
+        },
+        "D": {
+          "english": "Raise hands",
+          "arabic": "يرفع اليدين"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "When reciting or hearing a verse of prostration, Muslims should perform sajdah (prostration) as an act of worship.",
+        "arabic": "عند تلاوة أو سماع آية السجدة، يجب على المسلمين أداء السجدة كعبادة."
+      },
+      "reference": "Islamic Practice"
+    },
+    {
+      "id": "q140",
+      "category": "Islamic Sciences",
+      "difficulty": 5,
+      "themes": [
+        "Hadith Authentication"
+      ],
+      "context": {
+        "english": "Hadith Verification",
+        "arabic": "التحقق من الحديث"
+      },
+      "question": {
+        "english": "What is the study of hadith narrators' reliability called?",
+        "arabic": "ماذا يُسمى علم دراسة موثوقية رواة الحديث؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Ilm al-Jarh wa al-Ta'dil",
+          "arabic": "علم الجرح والتعديل"
+        },
+        "B": {
+          "english": "Ilm al-Tafsir",
+          "arabic": "علم التفسير"
+        },
+        "C": {
+          "english": "Ilm al-Fiqh",
+          "arabic": "علم الفقه"
+        },
+        "D": {
+          "english": "Ilm al-Kalam",
+          "arabic": "علم الكلام"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Ilm al-Jarh wa al-Ta'dil is the science of evaluating hadith narrators' reliability and character.",
+        "arabic": "علم الجرح والتعديل هو علم تقييم موثوقية وأخلاق رواة الحديث."
+      },
+      "reference": "Hadith Sciences"
+    },
+    {
+      "id": "q141",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Food Laws"
+      ],
+      "context": {
+        "english": "Dietary Regulations",
+        "arabic": "أنظمة الطعام"
+      },
+      "question": {
+        "english": "What makes meat halal for consumption?",
+        "arabic": "ما الذي يجعل اللحم حلالاً للأكل؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Being from a halal animal and properly slaughtered",
+          "arabic": "كونه من حيوان حلال ومذبوح بطريقة صحيحة"
+        },
+        "B": {
+          "english": "Being cooked well",
+          "arabic": "كونه مطبوخاً جيداً"
+        },
+        "C": {
+          "english": "Being blessed by an imam",
+          "arabic": "كونه مباركاً من إمام"
+        },
+        "D": {
+          "english": "Being expensive",
+          "arabic": "كونه غالي الثمن"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Meat is halal when it comes from a halal animal (like cattle, sheep) and is slaughtered according to Islamic guidelines with Allah's name.",
+        "arabic": "اللحم حلال عندما يأتي من حيوان حلال (مثل البقر، الغنم) ويُذبح وفقاً للإرشادات الإسلامية بذكر اسم الله."
+      },
+      "reference": "Quran 5:3"
+    },
+    {
+      "id": "q142",
+      "category": "Prophets",
+      "difficulty": 2,
+      "themes": [
+        "Prophet's Occupation"
+      ],
+      "context": {
+        "english": "Before Prophethood",
+        "arabic": "قبل النبوة"
+      },
+      "question": {
+        "english": "What was Prophet Muhammad's occupation before receiving prophethood?",
+        "arabic": "ما كانت مهنة النبي محمد قبل تلقي النبوة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Shepherd and trader",
+          "arabic": "راعي وتاجر"
+        },
+        "B": {
+          "english": "Blacksmith",
+          "arabic": "حداد"
+        },
+        "C": {
+          "english": "Farmer",
+          "arabic": "مزارع"
+        },
+        "D": {
+          "english": "Teacher",
+          "arabic": "معلم"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Prophet Muhammad worked as a shepherd in his youth and later became a successful trader before receiving prophethood.",
+        "arabic": "عمل النبي محمد كراعي في شبابه وأصبح لاحقاً تاجراً ناجحاً قبل تلقي النبوة."
+      },
+      "reference": "Seerah"
+    },
+    {
+      "id": "q143",
+      "category": "Islamic History",
+      "difficulty": 3,
+      "themes": [
+        "Early Expansion"
+      ],
+      "context": {
+        "english": "Islamic Conquests",
+        "arabic": "الفتوحات الإسلامية"
+      },
+      "question": {
+        "english": "Which was the first country outside Arabia to be conquered by Muslim armies?",
+        "arabic": "أي دولة كانت أول من فُتحت خارج الجزيرة العربية؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Iraq",
+          "arabic": "العراق"
+        },
+        "B": {
+          "english": "Syria",
+          "arabic": "الشام"
+        },
+        "C": {
+          "english": "Egypt",
+          "arabic": "مصر"
+        },
+        "D": {
+          "english": "Persia",
+          "arabic": "فارس"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Iraq was the first major territory outside the Arabian Peninsula to be conquered during the Rashidun Caliphate.",
+        "arabic": "العراق كان أول إقليم رئيسي خارج الجزيرة العربية يتم فتحه خلال الخلافة الراشدة."
+      },
+      "reference": "Islamic History"
+    },
+    {
+      "id": "q144",
+      "category": "Arabic Language",
+      "difficulty": 3,
+      "themes": [
+        "Religious Expressions"
+      ],
+      "context": {
+        "english": "Daily Phrases",
+        "arabic": "العبارات اليومية"
+      },
+      "question": {
+        "english": "What does 'Jazakallahu khayran' mean?",
+        "arabic": "ماذا تعني 'جزاك الله خيراً'؟"
+      },
+      "choices": {
+        "A": {
+          "english": "May Allah reward you with good",
+          "arabic": "جزاك الله خيراً"
+        },
+        "B": {
+          "english": "May Allah forgive you",
+          "arabic": "غفر الله لك"
+        },
+        "C": {
+          "english": "May Allah guide you",
+          "arabic": "هداك الله"
+        },
+        "D": {
+          "english": "May Allah help you",
+          "arabic": "أعانك الله"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "'Jazakallahu khayran' means 'May Allah reward you with good' and is used to thank someone.",
+        "arabic": "'جزاك الله خيراً' تعني دعاء بالخير والجزاء من الله وتُستخدم لشكر شخص."
+      },
+      "reference": "Islamic Etiquette"
+    },
+    {
+      "id": "q145",
+      "category": "Companions",
+      "difficulty": 4,
+      "themes": [
+        "Companions' Titles"
+      ],
+      "context": {
+        "english": "Noble Epithets",
+        "arabic": "الألقاب الشريفة"
+      },
+      "question": {
+        "english": "Who was known as 'The Sword of Allah Unsheathed'?",
+        "arabic": "من كان يُعرف بـ 'سيف الله المسلول'؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Ali ibn Abi Talib",
+          "arabic": "علي بن أبي طالب"
+        },
+        "B": {
+          "english": "Khalid ibn al-Walid",
+          "arabic": "خالد بن الوليد"
+        },
+        "C": {
+          "english": "Hamza ibn Abdul Muttalib",
+          "arabic": "حمزة بن عبد المطلب"
+        },
+        "D": {
+          "english": "Sa'd ibn Abi Waqqas",
+          "arabic": "سعد بن أبي وقاص"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Khalid ibn al-Walid earned the title 'Sayf Allah al-Maslul' (The Sword of Allah Unsheathed) for his military prowess.",
+        "arabic": "حصل خالد بن الوليد على لقب 'سيف الله المسلول' لبراعته العسكرية."
+      },
+      "reference": "Islamic History"
+    },
+    {
+      "id": "q146",
+      "category": "Islamic Ethics",
+      "difficulty": 2,
+      "themes": [
+        "Treatment of Animals"
+      ],
+      "context": {
+        "english": "Animal Welfare",
+        "arabic": "رعاية الحيوان"
+      },
+      "question": {
+        "english": "What does Islam teach about treating animals?",
+        "arabic": "ماذا يعلم الإسلام عن معاملة الحيوانات؟"
+      },
+      "choices": {
+        "A": {
+          "english": "They should be treated with kindness and compassion",
+          "arabic": "يجب معاملتها بلطف ورحمة"
+        },
+        "B": {
+          "english": "They have no rights",
+          "arabic": "ليس لها حقوق"
+        },
+        "C": {
+          "english": "They can be treated harshly",
+          "arabic": "يمكن معاملتها بقسوة"
+        },
+        "D": {
+          "english": "Only useful animals deserve care",
+          "arabic": "فقط الحيوانات المفيدة تستحق الرعاية"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Islam teaches that all animals should be treated with kindness and compassion, as they are part of Allah's creation.",
+        "arabic": "يعلم الإسلام أن جميع الحيوانات يجب معاملتها بلطف ورحمة، كونها جزء من خلق الله."
+      },
+      "reference": "Hadith - Sahih Bukhari"
+    },
+    {
+      "id": "q147",
+      "category": "Pillars of Islam",
+      "difficulty": 4,
+      "themes": [
+        "Hajj Timing"
+      ],
+      "context": {
+        "english": "Pilgrimage Schedule",
+        "arabic": "جدول الحج"
+      },
+      "question": {
+        "english": "In which Islamic month is Hajj performed?",
+        "arabic": "في أي شهر إسلامي يُؤدى الحج؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Dhul Qa'dah",
+          "arabic": "ذو القعدة"
+        },
+        "B": {
+          "english": "Dhul Hijjah",
+          "arabic": "ذو الحجة"
+        },
+        "C": {
+          "english": "Muharram",
+          "arabic": "محرم"
+        },
+        "D": {
+          "english": "Rajab",
+          "arabic": "رجب"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Hajj is performed in Dhul Hijjah, the 12th and final month of the Islamic calendar.",
+        "arabic": "يُؤدى الحج في ذي الحجة، الشهر الثاني عشر والأخير من التقويم الإسلامي."
+      },
+      "reference": "Quran 2:197"
+    },
+    {
+      "id": "q148",
+      "category": "Aqidah",
+      "difficulty": 5,
+      "themes": [
+        "Theological Concepts"
+      ],
+      "context": {
+        "english": "Divine Knowledge",
+        "arabic": "العلم الإلهي"
+      },
+      "question": {
+        "english": "What is the Islamic belief about Allah's knowledge?",
+        "arabic": "ما هو الاعتقاد الإسلامي حول علم الله؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Allah knows only the past",
+          "arabic": "الله يعلم الماضي فقط"
+        },
+        "B": {
+          "english": "Allah knows everything - past, present, and future",
+          "arabic": "الله يعلم كل شيء - الماضي والحاضر والمستقبل"
+        },
+        "C": {
+          "english": "Allah learns as time passes",
+          "arabic": "الله يتعلم مع مرور الوقت"
+        },
+        "D": {
+          "english": "Allah knows only what He chooses to know",
+          "arabic": "الله يعلم فقط ما يختار أن يعلمه"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Muslims believe that Allah is All-Knowing (Al-Aleem) and His knowledge encompasses everything - past, present, and future.",
+        "arabic": "يؤمن المسلمون أن الله عليم وعلمه يشمل كل شيء - الماضي والحاضر والمستقبل."
+      },
+      "reference": "Quran 2:255"
+    },
+    {
+      "id": "q149",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Prophet's Death"
+      ],
+      "context": {
+        "english": "Final Days",
+        "arabic": "الأيام الأخيرة"
+      },
+      "question": {
+        "english": "In which year did Prophet Muhammad pass away?",
+        "arabic": "في أي سنة توفي النبي محمد؟"
+      },
+      "choices": {
+        "A": {
+          "english": "10 AH",
+          "arabic": "١٠ هـ"
+        },
+        "B": {
+          "english": "11 AH",
+          "arabic": "١١ هـ"
+        },
+        "C": {
+          "english": "12 AH",
+          "arabic": "١٢ هـ"
+        },
+        "D": {
+          "english": "13 AH",
+          "arabic": "١٣ هـ"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Prophet Muhammad passed away in 11 AH (632 CE) in Medina at the age of 63.",
+        "arabic": "توفي النبي محمد في السنة ١١ هجرية (٦٣٢ م) في المدينة عن عمر ٦٣ سنة."
+      },
+      "reference": "Seerah"
+    },
+    {
+      "id": "q150",
+      "category": "Islamic Culture",
+      "difficulty": 1,
+      "themes": [
+        "Prayer Direction"
+      ],
+      "context": {
+        "english": "Basic Worship",
+        "arabic": "العبادة الأساسية"
+      },
+      "question": {
+        "english": "What must Muslims know before praying?",
+        "arabic": "ما الذي يجب على المسلمين معرفته قبل الصلاة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "The direction of Qiblah",
+          "arabic": "اتجاه القبلة"
+        },
+        "B": {
+          "english": "The weather forecast",
+          "arabic": "حالة الطقس"
+        },
+        "C": {
+          "english": "The local news",
+          "arabic": "الأخبار المحلية"
+        },
+        "D": {
+          "english": "The imam's schedule",
+          "arabic": "جدول الإمام"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Muslims must know the direction of Qiblah (towards Mecca) to face the correct direction during prayer.",
+        "arabic": "يجب على المسلمين معرفة اتجاه القبلة (نحو مكة) للتوجه في الاتجاه الصحيح أثناء الصلاة."
+      },
+      "reference": "Islamic Practice"
+    },
+    {
+      "id": "q151",
+      "category": "Quran",
+      "difficulty": 4,
+      "themes": ["Meccan Surahs"],
+      "context": {
+        "english": "Advanced Quranic Knowledge",
+        "arabic": "المعرفة القرآنية المتقدمة"
+      },
+      "question": {
+        "english": "Which surah is known as 'The Heart of the Quran'?",
+        "arabic": "أي سورة تُعرف بـ 'قلب القرآن'؟"
+      },
+      "choices": {
+        "A": {"english": "Al-Baqarah", "arabic": "البقرة"},
+        "B": {"english": "Yasin", "arabic": "يس"},
+        "C": {"english": "Al-Kahf", "arabic": "الكهف"},
+        "D": {"english": "Ar-Rahman", "arabic": "الرحمن"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Surah Yasin is often referred to as 'The Heart of the Quran' due to its spiritual significance.",
+        "arabic": "سورة يس تُشار إليها غالباً بـ 'قلب القرآن' نظراً لأهميتها الروحية."
+      },
+      "reference": "Quranic Studies"
+    },
+    {
+      "id": "q152",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": ["Prophet's Characteristics"],
+      "context": {
+        "english": "Noble Character",
+        "arabic": "الأخلاق النبيلة"
+      },
+      "question": {
+        "english": "What did Aisha (RA) say about the Prophet's character?",
+        "arabic": "ماذا قالت عائشة (رضي الله عنها) عن خلق النبي؟"
+      },
+      "choices": {
+        "A": {"english": "His character was the Quran", "arabic": "كان خلقه القرآن"},
+        "B": {"english": "He was very kind", "arabic": "كان لطيفاً جداً"},
+        "C": {"english": "He was patient", "arabic": "كان صبوراً"},
+        "D": {"english": "He was generous", "arabic": "كان كريماً"}
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Aisha (RA) described the Prophet's character as being 'the Quran' - meaning he embodied its teachings.",
+        "arabic": "وصفت عائشة (رضي الله عنها) خلق النبي بأنه 'القرآن' - أي أنه جسّد تعاليمه."
+      },
+      "reference": "Sahih Muslim"
+    },
+    {
+      "id": "q153",
+      "category": "Pillars of Islam",
+      "difficulty": 2,
+      "themes": ["Hajj Details"],
+      "context": {
+        "english": "Pilgrimage Rituals",
+        "arabic": "مناسك الحج"
+      },
+      "question": {
+        "english": "What is the first ritual performed upon entering Mecca for Hajj?",
+        "arabic": "ما هو أول منسك يؤدى عند دخول مكة للحج؟"
+      },
+      "choices": {
+        "A": {"english": "Sa'i", "arabic": "السعي"},
+        "B": {"english": "Tawaf al-Qudum", "arabic": "طواف القدوم"},
+        "C": {"english": "Wuquf at Arafat", "arabic": "الوقوف بعرفة"},
+        "D": {"english": "Cutting hair", "arabic": "قص الشعر"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Tawaf al-Qudum (arrival tawaf) is the first ritual performed upon entering Mecca for Hajj.",
+        "arabic": "طواف القدوم هو أول منسك يؤدى عند دخول مكة للحج."
+      },
+      "reference": "Hajj Guidelines"
+    },
+    {
+      "id": "q154",
+      "category": "Islamic History",
+      "difficulty": 4,
+      "themes": ["Umayyad Dynasty"],
+      "context": {
+        "english": "Islamic Dynasties",
+        "arabic": "السلالات الإسلامية"
+      },
+      "question": {
+        "english": "Who established the Umayyad Dynasty?",
+        "arabic": "من أسس الدولة الأموية؟"
+      },
+      "choices": {
+        "A": {"english": "Muawiya ibn Abi Sufyan", "arabic": "معاوية بن أبي سفيان"},
+        "B": {"english": "Abd al-Malik ibn Marwan", "arabic": "عبد الملك بن مروان"},
+        "C": {"english": "Umar ibn Abd al-Aziz", "arabic": "عمر بن عبد العزيز"},
+        "D": {"english": "Yazid ibn Muawiya", "arabic": "يزيد بن معاوية"}
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Muawiya ibn Abi Sufyan established the Umayyad Dynasty in 661 CE after the Rashidun period.",
+        "arabic": "أسس معاوية بن أبي سفيان الدولة الأموية عام ٦٦١ م بعد عهد الخلفاء الراشدين."
+      },
+      "reference": "Islamic History"
+    },
+    {
+      "id": "q155",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": ["Prayer Rules"],
+      "context": {
+        "english": "Prayer Jurisprudence",
+        "arabic": "فقه الصلاة"
+      },
+      "question": {
+        "english": "What makes prayer invalid (batil)?",
+        "arabic": "ما الذي يبطل الصلاة؟"
+      },
+      "choices": {
+        "A": {"english": "Talking intentionally", "arabic": "الكلام عمداً"},
+        "B": {"english": "Moving slightly", "arabic": "الحركة البسيطة"},
+        "C": {"english": "Yawning", "arabic": "التثاؤب"},
+        "D": {"english": "Thinking about worldly matters", "arabic": "التفكير في أمور الدنيا"}
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Intentionally talking during prayer invalidates it according to Islamic jurisprudence.",
+        "arabic": "الكلام عمداً أثناء الصلاة يبطلها حسب الفقه الإسلامي."
+      },
+      "reference": "Fiqh al-Salah"
+    },
+    {
+      "id": "q156",
+      "category": "Prophets",
+      "difficulty": 2,
+      "themes": ["Prophet Stories"],
+      "context": {
+        "english": "Prophetic History",
+        "arabic": "التاريخ النبوي"
+      },
+      "question": {
+        "english": "Which prophet was swallowed by a whale?",
+        "arabic": "أي نبي ابتلعه الحوت؟"
+      },
+      "choices": {
+        "A": {"english": "Yunus (Jonah)", "arabic": "يونس"},
+        "B": {"english": "Musa (Moses)", "arabic": "موسى"},
+        "C": {"english": "Isa (Jesus)", "arabic": "عيسى"},
+        "D": {"english": "Nuh (Noah)", "arabic": "نوح"}
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Prophet Yunus (Jonah) was swallowed by a whale and later saved by Allah's mercy.",
+        "arabic": "النبي يونس ابتلعه الحوت ثم نجاه الله برحمته."
+      },
+      "reference": "Quran 37:139-148"
+    },
+    {
+      "id": "q157",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": ["Divine Attributes"],
+      "context": {
+        "english": "Islamic Theology",
+        "arabic": "العقيدة الإسلامية"
+      },
+      "question": {
+        "english": "How many Beautiful Names (Asma al-Husna) of Allah are mentioned in the Quran and Hadith?",
+        "arabic": "كم عدد الأسماء الحسنى لله المذكورة في القرآن والحديث؟"
+      },
+      "choices": {
+        "A": {"english": "77", "arabic": "٧٧"},
+        "B": {"english": "99", "arabic": "٩٩"},
+        "C": {"english": "101", "arabic": "١٠١"},
+        "D": {"english": "114", "arabic": "١١٤"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "There are 99 Beautiful Names (Asma al-Husna) of Allah mentioned in Islamic sources.",
+        "arabic": "هناك ٩٩ اسماً من الأسماء الحسنى لله مذكورة في المصادر الإسلامية."
+      },
+      "reference": "Hadith Collection"
+    },
+    {
+      "id": "q158",
+      "category": "Companions",
+      "difficulty": 4,
+      "themes": ["Early Muslims"],
+      "context": {
+        "english": "Sahaba Knowledge",
+        "arabic": "معرفة الصحابة"
+      },
+      "question": {
+        "english": "Who was known as 'Sayf Allah al-Maslul' (The Drawn Sword of Allah)?",
+        "arabic": "من الذي لُقب بـ 'سيف الله المسلول'؟"
+      },
+      "choices": {
+        "A": {"english": "Ali ibn Abi Talib", "arabic": "علي بن أبي طالب"},
+        "B": {"english": "Khalid ibn al-Walid", "arabic": "خالد بن الوليد"},
+        "C": {"english": "Amr ibn al-As", "arabic": "عمرو بن العاص"},
+        "D": {"english": "Sa'd ibn Abi Waqqas", "arabic": "سعد بن أبي وقاص"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Khalid ibn al-Walid was given the title 'Sayf Allah al-Maslul' by Prophet Muhammad for his military prowess.",
+        "arabic": "أطلق النبي محمد على خالد بن الوليد لقب 'سيف الله المسلول' لبراعته العسكرية."
+      },
+      "reference": "Islamic Biography"
+    },
+    {
+      "id": "q159",
+      "category": "Islamic Ethics",
+      "difficulty": 2,
+      "themes": ["Social Justice"],
+      "context": {
+        "english": "Moral Values",
+        "arabic": "القيم الأخلاقية"
+      },
+      "question": {
+        "english": "What is the Islamic teaching about treating parents?",
+        "arabic": "ما هو التعليم الإسلامي حول معاملة الوالدين؟"
+      },
+      "choices": {
+        "A": {"english": "Respect them only if they're righteous", "arabic": "احترامهما فقط إن كانا صالحين"},
+        "B": {"english": "Be kind and respectful always", "arabic": "كن لطيفاً ومحترماً دائماً"},
+        "C": {"english": "Obey them in everything", "arabic": "أطعهما في كل شيء"},
+        "D": {"english": "Support them financially only", "arabic": "ادعمهما مالياً فقط"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Islam teaches to be kind and respectful to parents always, even if disagreeing with them.",
+        "arabic": "يعلم الإسلام أن نكون لطفاء ومحترمين للوالدين دائماً، حتى لو اختلفنا معهما."
+      },
+      "reference": "Quran 17:23"
+    },
+    {
+      "id": "q160",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": ["Meccan Period"],
+      "context": {
+        "english": "Prophet's Life",
+        "arabic": "حياة النبي"
+      },
+      "question": {
+        "english": "What was the first public sermon given by Prophet Muhammad?",
+        "arabic": "ما كانت أول خطبة علنية ألقاها النبي محمد؟"
+      },
+      "choices": {
+        "A": {"english": "At Mount Uhud", "arabic": "في جبل أحد"},
+        "B": {"english": "At Mount Safa", "arabic": "في جبل الصفا"},
+        "C": {"english": "At the Kaaba", "arabic": "في الكعبة"},
+        "D": {"english": "At his home", "arabic": "في بيته"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The Prophet's first public sermon was delivered from Mount Safa, calling his tribe to Islam.",
+        "arabic": "كانت أول خطبة علنية للنبي من جبل الصفا، يدعو قبيلته للإسلام."
+      },
+      "reference": "Seerah Literature"
+    },
+    {
+      "id": "q161",
+      "category": "Arabic Language",
+      "difficulty": 4,
+      "themes": ["Quranic Arabic"],
+      "context": {
+        "english": "Arabic Linguistics",
+        "arabic": "علم اللغة العربية"
+      },
+      "question": {
+        "english": "What does 'Alhamdulillahi Rabbil Alameen' mean?",
+        "arabic": "ما معنى 'الحمد لله رب العالمين'؟"
+      },
+      "choices": {
+        "A": {"english": "All praise to Allah, Lord of the worlds", "arabic": "الحمد كله لله رب العالمين"},
+        "B": {"english": "Allah is the greatest", "arabic": "الله أكبر"},
+        "C": {"english": "There is no god but Allah", "arabic": "لا إله إلا الله"},
+        "D": {"english": "In the name of Allah", "arabic": "بسم الله"}
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "'Alhamdulillahi Rabbil Alameen' translates to 'All praise is due to Allah, Lord of the worlds.'",
+        "arabic": "'الحمد لله رب العالمين' تعني 'جميع الحمد والثناء لله رب العالمين'."
+      },
+      "reference": "Quran 1:2"
+    },
+    {
+      "id": "q162",
+      "category": "Islamic Architecture",
+      "difficulty": 3,
+      "themes": ["Mosque Design"],
+      "context": {
+        "english": "Islamic Architecture",
+        "arabic": "العمارة الإسلامية"
+      },
+      "question": {
+        "english": "What is the niche in a mosque wall called that indicates the direction of prayer?",
+        "arabic": "ما اسم المحراب في جدار المسجد الذي يشير إلى اتجاه الصلاة؟"
+      },
+      "choices": {
+        "A": {"english": "Minbar", "arabic": "المنبر"},
+        "B": {"english": "Mihrab", "arabic": "المحراب"},
+        "C": {"english": "Minaret", "arabic": "المئذنة"},
+        "D": {"english": "Qiblah", "arabic": "القبلة"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The mihrab is the niche in the mosque wall that indicates the direction of Mecca for prayer.",
+        "arabic": "المحراب هو التجويف في جدار المسجد الذي يشير إلى اتجاه مكة للصلاة."
+      },
+      "reference": "Islamic Architecture"
+    },
+    {
+      "id": "q163",
+      "category": "Islamic Sciences",
+      "difficulty": 5,
+      "themes": ["Hadith Science"],
+      "context": {
+        "english": "Advanced Islamic Studies",
+        "arabic": "الدراسات الإسلامية المتقدمة"
+      },
+      "question": {
+        "english": "What is the term for a hadith with a broken chain of narration?",
+        "arabic": "ما المصطلح للحديث الذي سلسلة إسناده منقطعة؟"
+      },
+      "choices": {
+        "A": {"english": "Sahih", "arabic": "صحيح"},
+        "B": {"english": "Hasan", "arabic": "حسن"},
+        "C": {"english": "Munqati", "arabic": "منقطع"},
+        "D": {"english": "Mutawatir", "arabic": "متواتر"}
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "Munqati refers to a hadith with a broken or disconnected chain of narration.",
+        "arabic": "منقطع يشير إلى الحديث الذي سلسلة إسناده مكسورة أو منقطعة."
+      },
+      "reference": "Hadith Terminology"
+    },
+    {
+      "id": "q164",
+      "category": "Quran",
+      "difficulty": 2,
+      "themes": ["Quranic Stories"],
+      "context": {
+        "english": "Quranic Narratives",
+        "arabic": "القصص القرآنية"
+      },
+      "question": {
+        "english": "Which surah tells the story of Prophet Yusuf (Joseph)?",
+        "arabic": "أي سورة تحكي قصة النبي يوسف؟"
+      },
+      "choices": {
+        "A": {"english": "Surah Maryam", "arabic": "سورة مريم"},
+        "B": {"english": "Surah Yusuf", "arabic": "سورة يوسف"},
+        "C": {"english": "Surah Ibrahim", "arabic": "سورة إبراهيم"},
+        "D": {"english": "Surah Nuh", "arabic": "سورة نوح"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Surah Yusuf (Chapter 12) tells the complete story of Prophet Yusuf (Joseph).",
+        "arabic": "سورة يوسف (الفصل ١٢) تحكي القصة الكاملة للنبي يوسف."
+      },
+      "reference": "Quran Chapter 12"
+    },
+    {
+      "id": "q165",
+      "category": "Hadith",
+      "difficulty": 4,
+      "themes": ["Authentic Narrations"],
+      "context": {
+        "english": "Prophetic Sayings",
+        "arabic": "الأحاديث النبوية"
+      },
+      "question": {
+        "english": "Complete this hadith: 'Actions are but by...'",
+        "arabic": "أكمل هذا الحديث: 'إنما الأعمال...'؟"
+      },
+      "choices": {
+        "A": {"english": "...by results", "arabic": "...بالنتائج"},
+        "B": {"english": "...by intentions", "arabic": "...بالنيات"},
+        "C": {"english": "...by efforts", "arabic": "...بالجهود"},
+        "D": {"english": "...by rewards", "arabic": "...بالمكافآت"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The hadith states: 'Actions are but by intentions, and every person will have only what they intended.'",
+        "arabic": "يقول الحديث: 'إنما الأعمال بالنيات وإنما لكل امرئ ما نوى'."
+      },
+      "reference": "Sahih Bukhari"
+    },
+    {
+      "id": "q166",
+      "category": "Islamic Culture",
+      "difficulty": 1,
+      "themes": ["Islamic Greetings"],
+      "context": {
+        "english": "Daily Interactions",
+        "arabic": "التفاعلات اليومية"
+      },
+      "question": {
+        "english": "What is the proper response to 'Assalamualaikum'?",
+        "arabic": "ما هو الرد المناسب على 'السلام عليكم'؟"
+      },
+      "choices": {
+        "A": {"english": "Alhamdulillah", "arabic": "الحمد لله"},
+        "B": {"english": "Waalaykumussalam", "arabic": "وعليكم السلام"},
+        "C": {"english": "Barakallahu feek", "arabic": "بارك الله فيك"},
+        "D": {"english": "Jazakallahu khair", "arabic": "جزاك الله خيراً"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "'Waalaykumussalam' (And peace be upon you too) is the proper response to the Islamic greeting.",
+        "arabic": "'وعليكم السلام' (وعليكم السلام أيضاً) هو الرد المناسب على التحية الإسلامية."
+      },
+      "reference": "Islamic Etiquette"
+    },
+    {
+      "id": "q167",
+      "category": "Pillars of Iman",
+      "difficulty": 3,
+      "themes": ["Angels"],
+      "context": {
+        "english": "Islamic Belief",
+        "arabic": "العقيدة الإسلامية"
+      },
+      "question": {
+        "english": "Which angel is responsible for bringing rain?",
+        "arabic": "أي ملك مسؤول عن إنزال المطر؟"
+      },
+      "choices": {
+        "A": {"english": "Jibril (Gabriel)", "arabic": "جبريل"},
+        "B": {"english": "Mikail (Michael)", "arabic": "ميكائيل"},
+        "C": {"english": "Israfil", "arabic": "إسرافيل"},
+        "D": {"english": "Ridwan", "arabic": "رضوان"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Angel Mikail (Michael) is responsible for bringing rain and managing natural phenomena.",
+        "arabic": "الملك ميكائيل مسؤول عن إنزال المطر وإدارة الظواهر الطبيعية."
+      },
+      "reference": "Islamic Theology"
+    },
+    {
+      "id": "q168",
+      "category": "Fiqh",
+      "difficulty": 4,
+      "themes": ["Marriage Laws"],
+      "context": {
+        "english": "Islamic Jurisprudence",
+        "arabic": "الفقه الإسلامي"
+      },
+      "question": {
+        "english": "What is the waiting period called for a divorced woman?",
+        "arabic": "ما اسم فترة الانتظار للمرأة المطلقة؟"
+      },
+      "choices": {
+        "A": {"english": "Iddah", "arabic": "العدة"},
+        "B": {"english": "Mahr", "arabic": "المهر"},
+        "C": {"english": "Walimah", "arabic": "الوليمة"},
+        "D": {"english": "Nikah", "arabic": "النكاح"}
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Iddah is the waiting period that a divorced or widowed woman must observe before remarrying.",
+        "arabic": "العدة هي فترة الانتظار التي يجب على المرأة المطلقة أو الأرملة مراعاتها قبل الزواج مرة أخرى."
+      },
+      "reference": "Islamic Family Law"
+    },
+    {
+      "id": "q169",
+      "category": "Companions",
+      "difficulty": 2,
+      "themes": ["Wives of Prophet"],
+      "context": {
+        "english": "Mothers of Believers",
+        "arabic": "أمهات المؤمنين"
+      },
+      "question": {
+        "english": "Who was the Prophet's first wife?",
+        "arabic": "من كانت الزوجة الأولى للنبي؟"
+      },
+      "choices": {
+        "A": {"english": "Aisha", "arabic": "عائشة"},
+        "B": {"english": "Khadijah", "arabic": "خديجة"},
+        "C": {"english": "Hafsa", "arabic": "حفصة"},
+        "D": {"english": "Zainab", "arabic": "زينب"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Khadijah bint Khuwaylid was the Prophet's first wife and supported him throughout his early mission.",
+        "arabic": "خديجة بنت خويلد كانت الزوجة الأولى للنبي ودعمته طوال بداية دعوته."
+      },
+      "reference": "Seerah"
+    },
+    {
+      "id": "q170",
+      "category": "Islamic History",
+      "difficulty": 3,
+      "themes": ["Golden Age"],
+      "context": {
+        "english": "Islamic Golden Age",
+        "arabic": "العصر الذهبي الإسلامي"
+      },
+      "question": {
+        "english": "Which Islamic scholar is known as the 'Father of Algebra'?",
+        "arabic": "أي عالم إسلامي يُعرف بـ 'أبو الجبر'؟"
+      },
+      "choices": {
+        "A": {"english": "Al-Khwarizmi", "arabic": "الخوارزمي"},
+        "B": {"english": "Ibn Sina", "arabic": "ابن سينا"},
+        "C": {"english": "Al-Razi", "arabic": "الرازي"},
+        "D": {"english": "Ibn Rushd", "arabic": "ابن رشد"}
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Al-Khwarizmi is known as the 'Father of Algebra' for his foundational work in mathematics.",
+        "arabic": "الخوارزمي يُعرف بـ 'أبو الجبر' لعمله الأساسي في الرياضيات."
+      },
+      "reference": "Islamic Scientific Heritage"
+    },
+    {
+      "id": "q171",
+      "category": "Quran",
+      "difficulty": 5,
+      "themes": ["Quranic Sciences"],
+      "context": {
+        "english": "Advanced Quranic Studies",
+        "arabic": "علوم القرآن المتقدمة"
+      },
+      "question": {
+        "english": "What is the term for verses that were abrogated (cancelled) by later verses?",
+        "arabic": "ما المصطلح للآيات التي نُسخت (ألغيت) بآيات لاحقة؟"
+      },
+      "choices": {
+        "A": {"english": "Nasikh", "arabic": "ناسخ"},
+        "B": {"english": "Mansukh", "arabic": "منسوخ"},
+        "C": {"english": "Muhkam", "arabic": "محكم"},
+        "D": {"english": "Mutashabih", "arabic": "متشابه"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Mansukh refers to verses that were abrogated or cancelled by later revelations.",
+        "arabic": "منسوخ يشير إلى الآيات التي نُسخت أو ألغيت بواسطة وحي لاحق."
+      },
+      "reference": "Quranic Sciences"
+    },
+    {
+      "id": "q172",
+      "category": "Seerah",
+      "difficulty": 4,
+      "themes": ["Battles"],
+      "context": {
+        "english": "Islamic Military History",
+        "arabic": "التاريخ العسكري الإسلامي"
+      },
+      "question": {
+        "english": "In which battle did the Muslims first use catapults?",
+        "arabic": "في أي معركة استخدم المسلمون المنجنيق لأول مرة؟"
+      },
+      "choices": {
+        "A": {"english": "Battle of Badr", "arabic": "معركة بدر"},
+        "B": {"english": "Battle of Uhud", "arabic": "معركة أحد"},
+        "C": {"english": "Battle of Khaybar", "arabic": "معركة خيبر"},
+        "D": {"english": "Siege of Taif", "arabic": "حصار الطائف"}
+      },
+      "correct_answer": "D",
+      "explanation": {
+        "english": "The Siege of Taif was the first time Muslims used catapults in warfare.",
+        "arabic": "حصار الطائف كان أول مرة يستخدم فيها المسلمون المنجنيق في الحرب."
+      },
+      "reference": "Military History of Islam"
+    },
+    {
+      "id": "q173",
+      "category": "Arabic Language",
+      "difficulty": 3,
+      "themes": ["Islamic Terms"],
+      "context": {
+        "english": "Arabic Etymology",
+        "arabic": "علم اشتقاق الكلمات العربية"
+      },
+      "question": {
+        "english": "What does the word 'Islam' literally mean?",
+        "arabic": "ما معنى كلمة 'الإسلام' حرفياً؟"
+      },
+      "choices": {
+        "A": {"english": "Peace", "arabic": "السلام"},
+        "B": {"english": "Submission", "arabic": "الاستسلام"},
+        "C": {"english": "Peace through submission", "arabic": "السلام من خلال الاستسلام"},
+        "D": {"english": "Worship", "arabic": "العبادة"}
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "Islam literally means 'peace through submission to Allah' - combining peace (salam) and submission (taslim).",
+        "arabic": "الإسلام يعني حرفياً 'السلام من خلال الاستسلام لله' - يجمع بين السلام والتسليم."
+      },
+      "reference": "Arabic Etymology"
+    },
+    {
+      "id": "q174",
+      "category": "Islamic Ethics",
+      "difficulty": 2,
+      "themes": ["Business Ethics"],
+      "context": {
+        "english": "Commercial Morality",
+        "arabic": "الأخلاق التجارية"
+      },
+      "question": {
+        "english": "What is prohibited in Islamic business transactions?",
+        "arabic": "ما الذي محرم في المعاملات التجارية الإسلامية؟"
+      },
+      "choices": {
+        "A": {"english": "Making profit", "arabic": "تحقيق الربح"},
+        "B": {"english": "Charging interest (riba)", "arabic": "فرض الفوائد (الربا)"},
+        "C": {"english": "Selling goods", "arabic": "بيع البضائع"},
+        "D": {"english": "Fair competition", "arabic": "المنافسة العادلة"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Charging interest (riba) is strictly prohibited in Islamic business and financial transactions.",
+        "arabic": "فرض الفوائد (الربا) محرم تماماً في المعاملات التجارية والمالية الإسلامية."
+      },
+      "reference": "Islamic Economics"
+    },
+    {
+      "id": "q175",
+      "category": "Pillars of Islam",
+      "difficulty": 3,
+      "themes": ["Zakat Calculation"],
+      "context": {
+        "english": "Islamic Finance",
+        "arabic": "المالية الإسلامية"
+      },
+      "question": {
+        "english": "What percentage of wealth is typically paid as Zakat?",
+        "arabic": "ما النسبة المئوية من الثروة التي تُدفع عادة كزكاة؟"
+      },
+      "choices": {
+        "A": {"english": "1.5%", "arabic": "١.٥٪"},
+        "B": {"english": "2.5%", "arabic": "٢.٥٪"},
+        "C": {"english": "5%", "arabic": "٥٪"},
+        "D": {"english": "10%", "arabic": "١٠٪"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Zakat is typically calculated at 2.5% of eligible wealth that has been held for a full lunar year.",
+        "arabic": "الزكاة تُحسب عادة بنسبة ٢.٥٪ من الثروة المؤهلة التي احتُفظ بها لعام قمري كامل."
+      },
+      "reference": "Zakat Guidelines"
+    },
+    {
+      "id": "q176",
+      "category": "Quran",
+      "difficulty": 1,
+      "themes": ["Basic Knowledge"],
+      "context": {
+        "english": "Fundamental Quran",
+        "arabic": "القرآن الأساسي"
+      },
+      "question": {
+        "english": "What is the first word revealed in the Quran?",
+        "arabic": "ما أول كلمة نزلت في القرآن؟"
+      },
+      "choices": {
+        "A": {"english": "Bismillah", "arabic": "بسم الله"},
+        "B": {"english": "Iqra", "arabic": "اقرأ"},
+        "C": {"english": "Alhamdulillah", "arabic": "الحمد لله"},
+        "D": {"english": "Allahu Akbar", "arabic": "الله أكبر"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The first word revealed was 'Iqra' (Read) in Surah Al-Alaq.",
+        "arabic": "أول كلمة نزلت كانت 'اقرأ' في سورة العلق."
+      },
+      "reference": "Quran 96:1"
+    },
+    {
+      "id": "q177",
+      "category": "Hadith",
+      "difficulty": 5,
+      "themes": ["Scholarly Hadith"],
+      "context": {
+        "english": "Advanced Hadith Studies",
+        "arabic": "علوم الحديث المتقدمة"
+      },
+      "question": {
+        "english": "Who is known as the 'Amir al-Mu'minin fi al-Hadith' (Commander of Believers in Hadith)?",
+        "arabic": "من يُعرف بـ 'أمير المؤمنين في الحديث'؟"
+      },
+      "choices": {
+        "A": {"english": "Imam Bukhari", "arabic": "الإمام البخاري"},
+        "B": {"english": "Imam Muslim", "arabic": "الإمام مسلم"},
+        "C": {"english": "Imam Ahmad", "arabic": "الإمام أحمد"},
+        "D": {"english": "Shu'bah ibn al-Hajjaj", "arabic": "شعبة بن الحجاج"}
+      },
+      "correct_answer": "D",
+      "explanation": {
+        "english": "Shu'bah ibn al-Hajjaj was given this title for his expertise in hadith criticism and authentication.",
+        "arabic": "أُطلق على شعبة بن الحجاج هذا اللقب لخبرته في نقد الحديث وتوثيقه."
+      },
+      "reference": "Hadith Sciences History"
+    },
+    {
+      "id": "q178",
+      "category": "Fiqh",
+      "difficulty": 5,
+      "themes": ["Advanced Jurisprudence"],
+      "context": {
+        "english": "Islamic Legal Theory",
+        "arabic": "أصول الفقه الإسلامي"
+      },
+      "question": {
+        "english": "What is the principle called when a lesser harm is accepted to prevent a greater harm?",
+        "arabic": "ما مبدأ قبول الضرر الأقل لمنع الضرر الأكبر؟"
+      },
+      "choices": {
+        "A": {"english": "La darar wa la dirar", "arabic": "لا ضرر ولا ضرار"},
+        "B": {"english": "Irtikab akhaf al-dararayn", "arabic": "ارتكاب أخف الضررين"},
+        "C": {"english": "Al-mashaqqa tajlib al-taysir", "arabic": "المشقة تجلب التيسير"},
+        "D": {"english": "Al-yaqin la yuzal bil-shakk", "arabic": "اليقين لا يزال بالشك"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Irtikab akhaf al-dararayn means accepting the lesser of two harms when both cannot be avoided.",
+        "arabic": "ارتكاب أخف الضررين يعني قبول الضرر الأقل من بين ضررين عندما لا يمكن تجنبهما معاً."
+      },
+      "reference": "Qawa'id Fiqhiyyah"
+    },
+    {
+      "id": "q179",
+      "category": "Islamic History",
+      "difficulty": 4,
+      "themes": ["Abbasid Period"],
+      "context": {
+        "english": "Medieval Islamic Period",
+        "arabic": "العصر الإسلامي الوسيط"
+      },
+      "question": {
+        "english": "Which Abbasid Caliph established the House of Wisdom (Bayt al-Hikma) in Baghdad?",
+        "arabic": "أي خليفة عباسي أسس بيت الحكمة في بغداد؟"
+      },
+      "choices": {
+        "A": {"english": "Harun al-Rashid", "arabic": "هارون الرشيد"},
+        "B": {"english": "Al-Ma'mun", "arabic": "المأمون"},
+        "C": {"english": "Al-Mansur", "arabic": "المنصور"},
+        "D": {"english": "Al-Mutawakkil", "arabic": "المتوكل"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Caliph Al-Ma'mun established the House of Wisdom, a major center of learning and translation.",
+        "arabic": "الخليفة المأمون أسس بيت الحكمة، وهو مركز كبير للتعلم والترجمة."
+      },
+      "reference": "Abbasid History"
+    },
+    {
+      "id": "q180",
+      "category": "Companions",
+      "difficulty": 3,
+      "themes": ["Khulafa Rashidun"],
+      "context": {
+        "english": "Rightly Guided Caliphs",
+        "arabic": "الخلفاء الراشدون"
+      },
+      "question": {
+        "english": "Which Caliph was known for his justice and was called 'Al-Farooq'?",
+        "arabic": "أي خليفة اشتهر بعدله ولُقب بـ 'الفاروق'؟"
+      },
+      "choices": {
+        "A": {"english": "Abu Bakr", "arabic": "أبو بكر"},
+        "B": {"english": "Umar ibn al-Khattab", "arabic": "عمر بن الخطاب"},
+        "C": {"english": "Uthman ibn Affan", "arabic": "عثمان بن عفان"},
+        "D": {"english": "Ali ibn Abi Talib", "arabic": "علي بن أبي طالب"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Umar ibn al-Khattab was called 'Al-Farooq' (The Criterion) for his ability to distinguish between right and wrong.",
+        "arabic": "عمر بن الخطاب لُقب بـ 'الفاروق' لقدرته على التمييز بين الحق والباطل."
+      },
+      "reference": "Companions' Biographies"
+    },
+    {
+      "id": "q181",
+      "category": "Prophets",
+      "difficulty": 3,
+      "themes": ["Prophet Ibrahim"],
+      "context": {
+        "english": "Father of Prophets",
+        "arabic": "أبو الأنبياء"
+      },
+      "question": {
+        "english": "What title is given to Prophet Ibrahim in the Quran?",
+        "arabic": "ما اللقب الذي أُطلق على النبي إبراهيم في القرآن؟"
+      },
+      "choices": {
+        "A": {"english": "Khalil Allah (Friend of Allah)", "arabic": "خليل الله"},
+        "B": {"english": "Ruh Allah (Spirit of Allah)", "arabic": "روح الله"},
+        "C": {"english": "Kalim Allah (Speaker with Allah)", "arabic": "كليم الله"},
+        "D": {"english": "Habib Allah (Beloved of Allah)", "arabic": "حبيب الله"}
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Prophet Ibrahim is called 'Khalil Allah' (Friend of Allah) in the Quran.",
+        "arabic": "النبي إبراهيم يُطلق عليه 'خليل الله' في القرآن."
+      },
+      "reference": "Quran 4:125"
+    },
+    {
+      "id": "q182",
+      "category": "Aqidah",
+      "difficulty": 4,
+      "themes": ["Theology"],
+      "context": {
+        "english": "Islamic Creed",
+        "arabic": "العقيدة الإسلامية"
+      },
+      "question": {
+        "english": "What are the three levels of certainty (yaqeen) in Islamic theology?",
+        "arabic": "ما المستويات الثلاثة لليقين في العقيدة الإسلامية؟"
+      },
+      "choices": {
+        "A": {"english": "Ilm, Ayn, Haqq al-Yaqeen", "arabic": "علم، عين، حق اليقين"},
+        "B": {"english": "Iman, Islam, Ihsan", "arabic": "إيمان، إسلام، إحسان"},
+        "C": {"english": "Tawheed, Risalah, Akhirah", "arabic": "توحيد، رسالة، آخرة"},
+        "D": {"english": "Qada, Qadar, Hikmah", "arabic": "قضاء، قدر، حكمة"}
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The three levels are: Ilm al-Yaqeen (knowledge of certainty), Ayn al-Yaqeen (essence of certainty), and Haqq al-Yaqeen (truth of certainty).",
+        "arabic": "المستويات الثلاثة هي: علم اليقين، عين اليقين، وحق اليقين."
+      },
+      "reference": "Islamic Theology"
+    },
+    {
+      "id": "q183",
+      "category": "Arabic Language",
+      "difficulty": 5,
+      "themes": ["Classical Arabic"],
+      "context": {
+        "english": "Advanced Arabic",
+        "arabic": "اللغة العربية المتقدمة"
+      },
+      "question": {
+        "english": "What is the Arabic rhetorical device called 'saying something while meaning its opposite'?",
+        "arabic": "ما الوسيلة البلاغية العربية 'قول شيء والمقصود عكسه'؟"
+      },
+      "choices": {
+        "A": {"english": "Tashbih", "arabic": "تشبيه"},
+        "B": {"english": "Majaz", "arabic": "مجاز"},
+        "C": {"english": "Kinayah", "arabic": "كناية"},
+        "D": {"english": "Ta'arud", "arabic": "تعارض"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Majaz (metaphor/irony) is the rhetorical device where something is said while meaning its opposite or different meaning.",
+        "arabic": "المجاز هو الوسيلة البلاغية حيث يُقال شيء والمقصود معنى مختلف أو عكسه."
+      },
+      "reference": "Arabic Rhetoric"
+    },
+    {
+      "id": "q184",
+      "category": "Islamic Ethics",
+      "difficulty": 2,
+      "themes": ["Character Building"],
+      "context": {
+        "english": "Moral Development",
+        "arabic": "التطوير الأخلاقي"
+      },
+      "question": {
+        "english": "What is the Islamic concept of gradually improving one's character?",
+        "arabic": "ما المفهوم الإسلامي لتحسين الأخلاق تدريجياً؟"
+      },
+      "choices": {
+        "A": {"english": "Tazkiyyah", "arabic": "تزكية"},
+        "B": {"english": "Taqleed", "arabic": "تقليد"},
+        "C": {"english": "Tawakkul", "arabic": "توكل"},
+        "D": {"english": "Taqwa", "arabic": "تقوى"}
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Tazkiyyah refers to the purification and gradual improvement of one's character and soul.",
+        "arabic": "التزكية تشير إلى تطهير وتحسين الشخصية والروح تدريجياً."
+      },
+      "reference": "Islamic Character Development"
+    },
+    {
+      "id": "q185",
+      "category": "Seerah",
+      "difficulty": 2,
+      "themes": ["Madinah Period"],
+      "context": {
+        "english": "Prophetic Migration",
+        "arabic": "الهجرة النبوية"
+      },
+      "question": {
+        "english": "What was the first thing Prophet Muhammad built in Madinah?",
+        "arabic": "ما أول شيء بناه النبي محمد في المدينة؟"
+      },
+      "choices": {
+        "A": {"english": "His house", "arabic": "بيته"},
+        "B": {"english": "The mosque", "arabic": "المسجد"},
+        "C": {"english": "A school", "arabic": "مدرسة"},
+        "D": {"english": "A marketplace", "arabic": "سوق"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The first thing Prophet Muhammad built in Madinah was Masjid an-Nabawi (The Prophet's Mosque).",
+        "arabic": "أول شيء بناه النبي محمد في المدينة كان المسجد النبوي."
+      },
+      "reference": "Seerah Literature"
+    },
+    {
+      "id": "q186",
+      "category": "Islamic Culture",
+      "difficulty": 3,
+      "themes": ["Islamic Calendar"],
+      "context": {
+        "english": "Time and Calendar",
+        "arabic": "الوقت والتقويم"
+      },
+      "question": {
+        "english": "Which month marks the beginning of the Islamic calendar?",
+        "arabic": "أي شهر يمثل بداية التقويم الإسلامي؟"
+      },
+      "choices": {
+        "A": {"english": "Ramadan", "arabic": "رمضان"},
+        "B": {"english": "Muharram", "arabic": "محرم"},
+        "C": {"english": "Rajab", "arabic": "رجب"},
+        "D": {"english": "Dhul-Hijjah", "arabic": "ذو الحجة"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Muharram is the first month of the Islamic calendar, marking the beginning of the Hijri year.",
+        "arabic": "محرم هو الشهر الأول في التقويم الإسلامي، يمثل بداية السنة الهجرية."
+      },
+      "reference": "Islamic Calendar"
+    },
+    {
+      "id": "q187",
+      "category": "Pillars of Iman",
+      "difficulty": 4,
+      "themes": ["Day of Judgment"],
+      "context": {
+        "english": "Eschatology",
+        "arabic": "علم الآخرة"
+      },
+      "question": {
+        "english": "What is the name of the bridge that people will cross on the Day of Judgment?",
+        "arabic": "ما اسم الجسر الذي سيعبره الناس يوم القيامة؟"
+      },
+      "choices": {
+        "A": {"english": "As-Sirat", "arabic": "الصراط"},
+        "B": {"english": "Al-Mizan", "arabic": "الميزان"},
+        "C": {"english": "Al-Hawd", "arabic": "الحوض"},
+        "D": {"english": "Al-A'raf", "arabic": "الأعراف"}
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "As-Sirat is the bridge over Hell that people will cross on the Day of Judgment.",
+        "arabic": "الصراط هو الجسر فوق جهنم الذي سيعبره الناس يوم القيامة."
+      },
+      "reference": "Islamic Eschatology"
+    },
+    {
+      "id": "q188",
+      "category": "Islamic Architecture",
+      "difficulty": 4,
+      "themes": ["Sacred Architecture"],
+      "context": {
+        "english": "Holy Sites",
+        "arabic": "المواقع المقدسة"
+      },
+      "question": {
+        "english": "What is the black stone in the Kaaba called in Arabic?",
+        "arabic": "ما اسم الحجر الأسود في الكعبة بالعربية؟"
+      },
+      "choices": {
+        "A": {"english": "Hajar al-Aswad", "arabic": "الحجر الأسود"},
+        "B": {"english": "Rukn al-Yamani", "arabic": "الركن اليماني"},
+        "C": {"english": "Maqam Ibrahim", "arabic": "مقام إبراهيم"},
+        "D": {"english": "Hijr Ismail", "arabic": "حجر إسماعيل"}
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The black stone in the Kaaba is called 'Hajar al-Aswad' in Arabic.",
+        "arabic": "الحجر الأسود في الكعبة يُسمى 'الحجر الأسود' بالعربية."
+      },
+      "reference": "Hajj and Umrah"
+    },
+    {
+      "id": "q189",
+      "category": "Islamic Sciences",
+      "difficulty": 5,
+      "themes": ["Quranic Exegesis"],
+      "context": {
+        "english": "Tafsir Studies",
+        "arabic": "علوم التفسير"
+      },
+      "question": {
+        "english": "What is the difference between 'Tafsir' and 'Ta'wil' in Quranic interpretation?",
+        "arabic": "ما الفرق بين 'التفسير' و'التأويل' في تفسير القرآن؟"
+      },
+      "choices": {
+        "A": {"english": "No difference, same meaning", "arabic": "لا فرق، نفس المعنى"},
+        "B": {"english": "Tafsir is explanation, Ta'wil is interpretation", "arabic": "التفسير شرح، التأويل تفسير"},
+        "C": {"english": "Tafsir is literal, Ta'wil is metaphorical", "arabic": "التفسير حرفي، التأويل مجازي"},
+        "D": {"english": "Tafsir is general, Ta'wil is specific", "arabic": "التفسير عام، التأويل خاص"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Tafsir is explanation and clarification of Quranic text, while Ta'wil involves deeper interpretation and meaning extraction.",
+        "arabic": "التفسير هو شرح وتوضيح النص القرآني، بينما التأويل يتضمن تفسيراً أعمق واستخراج المعاني."
+      },
+      "reference": "Quranic Sciences"
+    },
+    {
+      "id": "q190",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": ["Character Hadith"],
+      "context": {
+        "english": "Prophetic Wisdom",
+        "arabic": "الحكمة النبوية"
+      },
+      "question": {
+        "english": "Complete this hadith: 'The believers in their mutual kindness, compassion, and sympathy are just like...'",
+        "arabic": "أكمل هذا الحديث: 'مثل المؤمنين في توادهم وتراحمهم وتعاطفهم مثل...'؟"
+      },
+      "choices": {
+        "A": {"english": "...a garden with different flowers", "arabic": "...حديقة بأزهار مختلفة"},
+        "B": {"english": "...one body", "arabic": "...الجسد الواحد"},
+        "C": {"english": "...a strong building", "arabic": "...البناء القوي"},
+        "D": {"english": "...stars in the sky", "arabic": "...النجوم في السماء"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The hadith states: 'like one body - if a limb aches, the whole body reacts with sleeplessness and fever.'",
+        "arabic": "يقول الحديث: 'مثل الجسد الواحد إذا اشتكى منه عضو تداعى له سائر الجسد بالسهر والحمى'."
+      },
+      "reference": "Sahih Muslim"
+    },
+    {
+      "id": "q191",
+      "category": "Fiqh",
+      "difficulty": 2,
+      "themes": ["Ritual Purity"],
+      "context": {
+        "english": "Purification Laws",
+        "arabic": "أحكام الطهارة"
+      },
+      "question": {
+        "english": "What is required before performing prayer if one is in a state of major impurity (janabah)?",
+        "arabic": "ما المطلوب قبل أداء الصلاة إذا كان الشخص في حالة الجنابة؟"
+      },
+      "choices": {
+        "A": {"english": "Wudu only", "arabic": "الوضوء فقط"},
+        "B": {"english": "Ghusl (full body wash)", "arabic": "الغسل (غسل الجسم كاملاً)"},
+        "C": {"english": "Tayammum", "arabic": "التيمم"},
+        "D": {"english": "Nothing special", "arabic": "لا شيء خاص"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Ghusl (full body ritual wash) is required to remove major impurity before prayer.",
+        "arabic": "الغسل (الاغتسال الشرعي الكامل) مطلوب لرفع الجنابة قبل الصلاة."
+      },
+      "reference": "Fiqh of Purification"
+    },
+    {
+      "id": "q192",
+      "category": "Companions",
+      "difficulty": 5,
+      "themes": ["Women Companions"],
+      "context": {
+        "english": "Female Companions",
+        "arabic": "الصحابيات"
+      },
+      "question": {
+        "english": "Who was the first woman to die for Islam?",
+        "arabic": "من كانت أول امرأة ماتت في سبيل الإسلام؟"
+      },
+      "choices": {
+        "A": {"english": "Khadijah bint Khuwaylid", "arabic": "خديجة بنت خويلد"},
+        "B": {"english": "Fatimah bint Muhammad", "arabic": "فاطمة بنت محمد"},
+        "C": {"english": "Sumayyah bint Khayyat", "arabic": "سمية بنت خياط"},
+        "D": {"english": "Asma bint Abu Bakr", "arabic": "أسماء بنت أبي بكر"}
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "Sumayyah bint Khayyat was the first martyr in Islam and the first woman to die for the faith.",
+        "arabic": "سمية بنت خياط كانت أول شهيدة في الإسلام وأول امرأة ماتت في سبيل الإيمان."
+      },
+      "reference": "Early Islamic History"
+    },
+    {
+      "id": "q193",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": ["Quranic Chapters"],
+      "context": {
+        "english": "Surah Knowledge",
+        "arabic": "معرفة السور"
+      },
+      "question": {
+        "english": "Which is the longest surah in the Quran?",
+        "arabic": "ما هي أطول سورة في القرآن؟"
+      },
+      "choices": {
+        "A": {"english": "Al-Baqarah", "arabic": "البقرة"},
+        "B": {"english": "Al-Imran", "arabic": "آل عمران"},
+        "C": {"english": "An-Nisa", "arabic": "النساء"},
+        "D": {"english": "Al-A'raf", "arabic": "الأعراف"}
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Surah Al-Baqarah is the longest chapter in the Quran with 286 verses.",
+        "arabic": "سورة البقرة هي أطول سورة في القرآن بـ ٢٨٦ آية."
+      },
+      "reference": "Quranic Structure"
+    },
+    {
+      "id": "q194",
+      "category": "Islamic History",
+      "difficulty": 5,
+      "themes": ["Ottoman Period"],
+      "context": {
+        "english": "Ottoman Empire",
+        "arabic": "الدولة العثمانية"
+      },
+      "question": {
+        "english": "Which Ottoman Sultan conquered Constantinople (Istanbul)?",
+        "arabic": "أي سلطان عثماني فتح القسطنطينية (إسطنبول)؟"
+      },
+      "choices": {
+        "A": {"english": "Mehmed II", "arabic": "محمد الثاني"},
+        "B": {"english": "Suleiman the Magnificent", "arabic": "سليمان القانوني"},
+        "C": {"english": "Osman I", "arabic": "عثمان الأول"},
+        "D": {"english": "Bayezid I", "arabic": "بايزيد الأول"}
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Sultan Mehmed II conquered Constantinople in 1453 CE, ending the Byzantine Empire.",
+        "arabic": "السلطان محمد الثاني فتح القسطنطينية عام ١٤٥٣ م، منهياً الإمبراطورية البيزنطية."
+      },
+      "reference": "Ottoman History"
+    },
+    {
+      "id": "q195",
+      "category": "Pillars of Islam",
+      "difficulty": 1,
+      "themes": ["Basic Beliefs"],
+      "context": {
+        "english": "Fundamental Faith",
+        "arabic": "الإيمان الأساسي"
+      },
+      "question": {
+        "english": "How many times a day do Muslims pray?",
+        "arabic": "كم مرة في اليوم يصلي المسلمون؟"
+      },
+      "choices": {
+        "A": {"english": "3 times", "arabic": "٣ مرات"},
+        "B": {"english": "4 times", "arabic": "٤ مرات"},
+        "C": {"english": "5 times", "arabic": "٥ مرات"},
+        "D": {"english": "6 times", "arabic": "٦ مرات"}
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "Muslims pray five times a day: Fajr, Dhuhr, Asr, Maghrib, and Isha.",
+        "arabic": "يصلي المسلمون خمس مرات في اليوم: الفجر، الظهر، العصر، المغرب، والعشاء."
+      },
+      "reference": "Basic Islamic Practice"
+    },
+    {
+      "id": "q196",
+      "category": "Arabic Language",
+      "difficulty": 2,
+      "themes": ["Islamic Expressions"],
+      "context": {
+        "english": "Common Phrases",
+        "arabic": "العبارات الشائعة"
+      },
+      "question": {
+        "english": "What does 'Subhan Allah' mean?",
+        "arabic": "ما معنى 'سبحان الله'؟"
+      },
+      "choices": {
+        "A": {"english": "God is great", "arabic": "الله أكبر"},
+        "B": {"english": "Glory be to Allah", "arabic": "تسبيح لله"},
+        "C": {"english": "Praise be to Allah", "arabic": "الحمد لله"},
+        "D": {"english": "Allah willing", "arabic": "إن شاء الله"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "'Subhan Allah' means 'Glory be to Allah' or 'Allah is perfect and free from all imperfections.'",
+        "arabic": "'سبحان الله' تعني 'تنزيه الله' أو 'الله منزه عن كل النقائص'."
+      },
+      "reference": "Islamic Expressions"
+    },
+    {
+      "id": "q197",
+      "category": "Islamic Ethics",
+      "difficulty": 4,
+      "themes": ["Advanced Ethics"],
+      "context": {
+        "english": "Moral Philosophy",
+        "arabic": "الفلسفة الأخلاقية"
+      },
+      "question": {
+        "english": "What is the Islamic principle regarding intention (niyyah) in actions?",
+        "arabic": "ما المبدأ الإسلامي المتعلق بالنية في الأعمال؟"
+      },
+      "choices": {
+        "A": {"english": "Actions are judged by results", "arabic": "الأعمال تُحكم بالنتائج"},
+        "B": {"english": "Actions are judged by intentions", "arabic": "الأعمال تُحكم بالنيات"},
+        "C": {"english": "Intention doesn't matter", "arabic": "النية لا تهم"},
+        "D": {"english": "Only visible actions count", "arabic": "الأعمال الظاهرة فقط تُحسب"}
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "In Islam, actions are judged by intentions - the Prophet said 'Actions are but by intentions.'",
+        "arabic": "في الإسلام، الأعمال تُحكم بالنيات - قال النبي 'إنما الأعمال بالنيات'."
+      },
+      "reference": "Hadith - Sahih Bukhari"
+    },
+    {
+      "id": "q198",
+      "category": "Seerah",
+      "difficulty": 5,
+      "themes": ["Battle Details"],
+      "context": {
+        "english": "Military History",
+        "arabic": "التاريخ العسكري"
+      },
+      "question": {
+        "english": "In the Battle of Badr, how many Muslims fought against how many Meccan fighters?",
+        "arabic": "في معركة بدر، كم مسلماً حارب ضد كم من مقاتلي مكة؟"
+      },
+      "choices": {
+        "A": {"english": "313 vs 1000", "arabic": "٣١٣ ضد ١٠٠٠"},
+        "B": {"english": "300 vs 900", "arabic": "٣٠٠ ضد ٩٠٠"},
+        "C": {"english": "400 vs 1000", "arabic": "٤٠٠ ضد ١٠٠٠"},
+        "D": {"english": "350 vs 950", "arabic": "٣٥٠ ضد ٩٥٠"}
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "In the Battle of Badr, 313 Muslims fought against approximately 1000 Meccan fighters.",
+        "arabic": "في معركة بدر، حارب ٣١٣ مسلماً ضد حوالي ١٠٠٠ من مقاتلي مكة."
+      },
+      "reference": "Battle of Badr History"
+    },
+    {
+      "id": "q199",
+      "category": "Islamic Culture",
+      "difficulty": 3,
+      "themes": ["Religious Observances"],
+      "context": {
+        "english": "Islamic Celebrations",
+        "arabic": "الاحتفالات الإسلامية"
+      },
+      "question": {
+        "english": "What are the two main Eid celebrations in Islam?",
+        "arabic": "ما هما العيدان الرئيسيان في الإسلام؟"
+      },
+      "choices": {
+        "A": {"english": "Eid al-Fitr and Eid al-Adha", "arabic": "عيد الفطر وعيد الأضحى"},
+        "B": {"english": "Eid al-Mawlid and Eid al-Miraj", "arabic": "عيد المولد وعيد المعراج"},
+        "C": {"english": "Eid al-Hijra and Eid al-Fitr", "arabic": "عيد الهجرة وعيد الفطر"},
+        "D": {"english": "Eid al-Ashura and Eid al-Adha", "arabic": "عيد عاشوراء وعيد الأضحى"}
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The two main Eids are Eid al-Fitr (after Ramadan) and Eid al-Adha (during Hajj season).",
+        "arabic": "العيدان الرئيسيان هما عيد الفطر (بعد رمضان) وعيد الأضحى (في موسم الحج)."
+      },
+      "reference": "Islamic Celebrations"
+    },
+    {
+      "id": "q200",
+      "category": "Quran",
+      "difficulty": 1,
+      "themes": ["Final Message"],
+      "context": {
+        "english": "Concluding Knowledge",
+        "arabic": "المعرفة الختامية"
+      },
+      "question": {
+        "english": "What is the significance of the Quran being the final revelation?",
+        "arabic": "ما أهمية كون القرآن الوحي الأخير؟"
+      },
+      "choices": {
+        "A": {"english": "It completes and confirms previous scriptures", "arabic": "يكمل ويؤكد الكتب السابقة"},
+        "B": {"english": "It replaces all previous books completely", "arabic": "يحل محل جميع الكتب السابقة تماماً"},
+        "C": {"english": "It is only for Arabs", "arabic": "هو للعرب فقط"},
+        "D": {"english": "It has no relation to previous scriptures", "arabic": "ليس له علاقة بالكتب السابقة"}
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The Quran is the final revelation that completes, confirms, and provides guidance for all humanity until the Day of Judgment.",
+        "arabic": "القرآن هو الوحي الأخير الذي يكمل ويؤكد ويوفر الهداية لجميع البشر حتى يوم القيامة."
+      },
+      "reference": "Quranic Purpose"
     }
   ]
 }

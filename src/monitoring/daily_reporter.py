@@ -162,18 +162,20 @@ class DailyHealthReporter:
             # Format daily stats
             stats = report_data.get("daily_stats", {})
 
+            # Create enhanced context with better field names and formatting
             context = {
-                "report_date": report_data.get("report_date"),
-                "uptime": f"{report_data.get('uptime_hours', 0):.1f} hours",
-                "overall_health": overall_health.upper(),
-                "cpu_usage": f"{cpu_status.get('usage_percent', 0):.1f}%",
-                "memory_usage": f"{memory_status.get('usage_percent', 0):.1f}%",
-                "disk_usage": f"{disk_status.get('usage_percent', 0):.1f}%",
-                "audio_sessions": stats.get("audio_sessions", 0),
-                "user_interactions": stats.get("user_interactions", 0),
-                "voice_activity": f"{stats.get('voice_joins', 0)} joins, {stats.get('voice_leaves', 0)} leaves",
-                "errors_today": stats.get("errors", 0),
-                "warnings_today": stats.get("warnings", 0),
+                "Report Date": report_data.get("report_date"),
+                "System Uptime": f"{report_data.get('uptime_hours', 0):.1f} hours",
+                "Overall Health": overall_health.upper(),
+                "CPU Usage": f"{cpu_status.get('usage_percent', 0):.1f}%",
+                "Memory Usage": f"{memory_status.get('usage_percent', 0):.1f}%",
+                "Disk Usage": f"{disk_status.get('usage_percent', 0):.1f}%",
+                "Audio Sessions": f"{stats.get('audio_sessions', 0)} sessions",
+                "User Interactions": f"{stats.get('user_interactions', 0)} interactions",
+                "Voice Activity": f"{stats.get('voice_joins', 0)} joins, {stats.get('voice_leaves', 0)} leaves",
+                "Errors Today": f"{stats.get('errors', 0)} errors",
+                "Warnings Today": f"{stats.get('warnings', 0)} warnings",
+                "System Status": overall_health.upper(),
             }
 
             description = f"""**24/7 VPS Health Report**

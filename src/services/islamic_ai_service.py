@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # =============================================================================
-# Enhanced Islamic AI Service with Advanced Features
+# QuranBot - Enhanced Islamic AI Service with Advanced Features
 # =============================================================================
 # This service extends the basic Islamic AI with:
 # 1. Hadith Integration - Search and cite authentic hadiths

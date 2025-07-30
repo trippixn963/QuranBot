@@ -1,8 +1,11 @@
-"""
-QuranBot Prometheus Metrics Collection and Exposition.
+# =============================================================================
+# QuranBot - Prometheus Metrics Collection and Exposition
+# =============================================================================
+# This module provides comprehensive Prometheus metrics for monitoring QuranBot
+# performance, usage patterns, and system health in production environments.
+# =============================================================================
 
-This module provides comprehensive Prometheus metrics for monitoring QuranBot
-performance, usage patterns, and system health in production environments.
+"""
 """
 
 import time

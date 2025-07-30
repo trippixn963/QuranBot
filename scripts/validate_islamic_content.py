@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""
-Islamic Content Validation Script for QuranBot
+# =============================================================================
+# QuranBot - Islamic Content Validation Script
+# =============================================================================
+# This script validates Islamic content in the codebase to ensure accuracy
+# and adherence to Islamic principles.
+# =============================================================================
 
-This script validates Islamic content in the codebase to ensure accuracy
-and adherence to Islamic principles. It checks:
+"""
+This script checks:
 - Quranic verse references and translations
 - Hadith authenticity and references
 - Islamic terminology usage

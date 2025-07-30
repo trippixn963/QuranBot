@@ -1,8 +1,11 @@
-"""QuranBot - SQLite Database Manager.
+# =============================================================================
+# QuranBot - SQLite Database Manager
+# =============================================================================
+# Robust SQLite database implementation replacing JSON storage with enterprise-grade
+# features including ACID transactions, connection pooling, and automatic migrations.
+# =============================================================================
 
-Robust SQLite database implementation replacing JSON storage with enterprise-grade
-features including ACID transactions, connection pooling, and automatic migrations.
-
+"""
 This module provides the core database infrastructure for QuranBot, offering
 reliable data persistence with performance optimization and data integrity guarantees.
 

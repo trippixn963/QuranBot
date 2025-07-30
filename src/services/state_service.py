@@ -1,8 +1,11 @@
-"""QuranBot - SQLite State Service.
+# =============================================================================
+# QuranBot - SQLite State Service
+# =============================================================================
+# Modern state management using SQLite database instead of JSON files.
+# Provides robust, ACID-compliant state persistence with better performance.
+# =============================================================================
 
-Modern state management using SQLite database instead of JSON files.
-Provides robust, ACID-compliant state persistence with better performance.
-
+"""
 This module provides a high-level SQLite-based state management service for QuranBot,
 replacing the legacy JSON-based state management system with a robust database solution
 that provides ACID transactions, better performance, and automatic recovery capabilities.

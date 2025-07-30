@@ -1,8 +1,11 @@
-"""QuranBot - Modern Webhook Logger.
+# =============================================================================
+# QuranBot - Modern Webhook Logger
+# =============================================================================
+# A modern, async-first webhook logger that integrates with the DI container
+# and provides reliable Discord notifications for monitoring and debugging.
+# =============================================================================
 
-A modern, async-first webhook logger that integrates with the DI container
-and provides reliable Discord notifications for monitoring and debugging.
-
+"""
 This module provides comprehensive webhook logging capabilities for QuranBot:
 - Real-time Discord notifications for bot events
 - User activity tracking and monitoring

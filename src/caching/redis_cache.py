@@ -1,8 +1,11 @@
-"""
-QuranBot Redis Distributed Caching System.
+# =============================================================================
+# QuranBot - Redis Distributed Caching System
+# =============================================================================
+# This module provides a comprehensive Redis-based caching solution that replaces
+# the in-memory caching system with distributed caching capabilities.
+# =============================================================================
 
-This module provides a comprehensive Redis-based caching solution that replaces
-the in-memory caching system with distributed caching capabilities, perfect for
+"""
 scaling across multiple instances and maintaining cache coherence.
 """
 

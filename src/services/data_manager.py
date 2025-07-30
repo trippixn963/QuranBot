@@ -1,8 +1,11 @@
-"""QuranBot - Hybrid Data Manager.
+# =============================================================================
+# QuranBot - Hybrid Data Manager
+# =============================================================================
+# Manages both SQLite database and JSON files with smart synchronization.
+# Provides easy manual editing of JSON files while maintaining SQLite performance.
+# =============================================================================
 
-Manages both SQLite database and JSON files with smart synchronization.
-Provides easy manual editing of JSON files while maintaining SQLite performance.
-
+"""
 This module provides a unified data management system that:
 - Keeps editable content in JSON files (quiz questions, verses, etc.)
 - Uses SQLite for critical state data and performance
