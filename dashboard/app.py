@@ -336,8 +336,9 @@ def handle_disconnect():
 def handle_update_request():
     """Handle real-time update request"""
     try:
-        overview_data = api_overview().get_json()
-        emit('dashboard_update', overview_data)
+        with app.app_context():
+            overview_data = api_overview().get_json()
+            emit('dashboard_update', overview_data)
     except Exception as e:
         emit('error', {'message': str(e)})
 
@@ -350,8 +351,9 @@ def background_updates():
     while True:
         try:
             socketio.sleep(REFRESH_INTERVAL)
-            overview_data = api_overview().get_json()
-            socketio.emit('dashboard_update', overview_data, broadcast=True)
+            with app.app_context():
+                overview_data = api_overview().get_json()
+                socketio.emit('dashboard_update', overview_data, broadcast=True)
         except Exception as e:
             print(f"Error in background updates: {e}")
             socketio.sleep(10)  # Wait longer on error
