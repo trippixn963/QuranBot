@@ -65,6 +65,12 @@ def get_daily_verses_manager():
     """
     try:
         # Access the global manager from the daily_verses module
+        if daily_verses.daily_verse_manager is None:
+            # Initialize the manager if it hasn't been initialized yet
+            daily_verses.daily_verse_manager = daily_verses.DailyVerseManager(Path("data"))
+            daily_verses.daily_verse_manager.load_verses()
+            daily_verses.daily_verse_manager.load_state()
+        
         return daily_verses.daily_verse_manager
     except Exception as e:
         log_error_with_traceback("Failed to access daily_verse_manager", e)
