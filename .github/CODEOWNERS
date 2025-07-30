@@ -1,0 +1,45 @@
+# =============================================================================
+# Code Owners for QuranBot Repository
+# =============================================================================
+# This file defines who should review changes to specific parts of the codebase
+# ensuring Islamic content accuracy and code quality.
+# =============================================================================
+
+# Global ownership - all files require review from core maintainers
+* @your-username
+
+# Core architecture and services
+/src/core/ @your-username
+/src/services/ @your-username
+/src/config/ @your-username
+
+# Islamic content - requires verification for accuracy
+/data/complete_quiz_questions.json @your-username
+/data/daily_verses_pool.json @your-username
+/data/bilingual_quiz_questions.json @your-username
+/src/services/enhanced_islamic_ai_service.py @your-username
+
+# Security-critical files
+/src/core/security.py @your-username
+/scripts/validate_islamic_content.py @your-username
+/scripts/validate_config.py @your-username
+/.github/workflows/ @your-username
+
+# Documentation - welcome community contributions but need review
+/docs/ @your-username
+/README*.md @your-username
+/CONTRIBUTING.md @your-username
+/SECURITY.md @your-username
+
+# Configuration examples
+/examples/ @your-username
+/config/ @your-username
+
+# Testing infrastructure
+/tests/ @your-username
+/.github/ @your-username
+/pyproject.toml @your-username
+
+# Audio management (requires understanding of Islamic audio requirements)
+/src/utils/audio_manager.py @your-username
+/src/services/audio_service.py @your-username

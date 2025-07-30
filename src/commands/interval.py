@@ -19,7 +19,6 @@ from src.core.exceptions import (
 from src.core.security import rate_limit, require_admin, validate_input
 from src.utils import daily_verses
 from src.utils import quiz_manager as quiz_mgr
-from src.utils.discord_logger import get_discord_logger
 from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
 
 
@@ -727,41 +726,24 @@ class IntervalCog(commands.Cog):
                 container = get_container()
                 if container:
                     enhanced_webhook = container.get("enhanced_webhook_router")
-                    if enhanced_webhook and hasattr(enhanced_webhook, "log_control_panel_activity"):
+                    if enhanced_webhook and hasattr(enhanced_webhook, "log_control_panel_interaction"):
                         changes_text = "\n".join([f"• {change}" for change in changes_made])
-                        await enhanced_webhook.log_control_panel_activity(
-                            admin_name=interaction.user.display_name,
-                            admin_id=interaction.user.id,
-                            action="Interval settings updated",
-                            action_details={
+                        await enhanced_webhook.log_control_panel_interaction(
+                            interaction_type="interval_command",
+                            user_name=interaction.user.display_name,
+                            user_id=interaction.user.id,
+                            action_performed="Interval settings updated",
+                            user_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None,
+                            panel_details={
                                 "changes_made": changes_text,
                                 "quiz_time": f"{quiz_time} ({format_time_display(quiz_hours)})" if quiz_hours else "unchanged",
                                 "verse_time": f"{verse_time} ({format_time_display(verse_hours)})" if verse_hours else "unchanged",
                                 "changes_count": len(changes_made),
                                 "timers_reset": "All timers reset to new intervals"
-                            },
-                            admin_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None
+                            }
                         )
             except Exception as e:
                 log_error_with_traceback("Failed to log to enhanced webhook router", e)
-                # Fallback to old discord logger
-                discord_logger = get_discord_logger()
-                if discord_logger and changes_made:
-                    try:
-                        changes_text = "\n".join([f"• {change}" for change in changes_made])
-                        await discord_logger.log_user_activity(
-                            f"Intervals Updated by {interaction.user.display_name}",
-                            f"⏰ **Bot intervals updated**\n\n"
-                            f"**Changes Made:**\n{changes_text}\n\n"
-                            f"All timers have been reset to reflect the new intervals.",
-                            {
-                                "Admin": interaction.user.display_name,
-                                "User ID": str(interaction.user.id),
-                                "Changes Count": str(len(changes_made)),
-                            },
-                        )
-                    except:
-                        pass
 
         except Exception as e:
             log_error_with_traceback("Error in interval command", e)

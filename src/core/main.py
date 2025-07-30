@@ -929,7 +929,7 @@ class ModernizedQuranBot:
 
             # Initialize Islamic AI mention listener
             try:
-                from src.utils.islamic_ai_listener import setup_islamic_ai_listener
+                from src.services.islamic_ai_listener import setup_islamic_ai_listener
                 await setup_islamic_ai_listener(self.bot, self.container)
                 await self.logger.info(
                     "Islamic AI mention listener initialized",

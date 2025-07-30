@@ -1,0 +1,178 @@
+# =============================================================================
+# Pre-commit Configuration for QuranBot
+# =============================================================================
+# Automated code quality checks before commits to maintain Islamic excellence
+# in code craftsmanship (Ihsan in software development)
+# =============================================================================
+
+repos:
+  # Code Formatting
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+      - id: black
+        name: "Format Python code with Black"
+        description: "Ensure consistent code formatting"
+        language_version: python3.11
+
+  # Import Sorting
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        name: "Sort Python imports"
+        description: "Organize imports for better maintainability"
+        args: ["--profile", "black", "--filter-files"]
+
+  # Linting and Code Quality
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.10
+    hooks:
+      - id: ruff
+        name: "Lint Python code with Ruff"
+        description: "Fast Python linter for code quality"
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+        name: "Format Python code with Ruff"
+        description: "Format code using Ruff's formatter"
+
+  # Type Checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.0
+    hooks:
+      - id: mypy
+        name: "Type check Python code"
+        description: "Static type checking for better code safety"
+        additional_dependencies: [
+          types-requests,
+          types-python-dateutil,
+          types-pytz,
+          pydantic
+        ]
+        args: [--ignore-missing-imports, --install-types, --non-interactive]
+
+  # Security Scanning
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.8
+    hooks:
+      - id: bandit
+        name: "Security scan with Bandit"
+        description: "Scan for common security issues"
+        args: ["-r", "src/", "-f", "json", "-o", "bandit-report.json"]
+        exclude: tests/
+
+  # General Hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        name: "Remove trailing whitespace"
+        description: "Clean up unnecessary whitespace"
+      - id: end-of-file-fixer
+        name: "Fix end of files"
+        description: "Ensure files end with newlines"
+      - id: check-yaml
+        name: "Check YAML files"
+        description: "Validate YAML syntax"
+      - id: check-toml
+        name: "Check TOML files"
+        description: "Validate TOML syntax"
+      - id: check-json
+        name: "Check JSON files"
+        description: "Validate JSON syntax"
+        exclude: "data/.*\\.json$"  # Exclude data files that may have comments
+      - id: check-merge-conflict
+        name: "Check for merge conflicts"
+        description: "Detect merge conflict markers"
+      - id: check-case-conflict
+        name: "Check case conflicts"
+        description: "Detect case-insensitive filename conflicts"
+      - id: check-docstring-first
+        name: "Check docstring placement"
+        description: "Ensure docstrings come first in modules"
+      - id: debug-statements
+        name: "Check for debug statements"
+        description: "Detect debugging statements left in code"
+
+  # Documentation
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 6.3.0
+    hooks:
+      - id: pydocstyle
+        name: "Check docstring style"
+        description: "Ensure consistent documentation style"
+        args: [--convention=google]
+        exclude: tests/
+
+  # Test Coverage Check
+  - repo: local
+    hooks:
+      - id: pytest-check
+        name: "Run pytest with coverage"
+        description: "Execute tests and check coverage"
+        entry: pytest
+        language: system
+        args: [--cov=src, --cov-fail-under=80, --no-cov-report]
+        pass_filenames: false
+        always_run: false
+        stages: [pre-push]
+
+  # Islamic Content Validation
+  - repo: local
+    hooks:
+      - id: islamic-content-validation
+        name: "Validate Islamic content accuracy"
+        description: "Ensure Islamic content meets religious standards"
+        entry: python
+        language: system
+        args: [scripts/validate_islamic_content.py]
+        files: "data/.*\\.(json|py)$"
+        pass_filenames: true
+        always_run: false
+
+  # Configuration Validation
+  - repo: local
+    hooks:
+      - id: config-validation
+        name: "Validate configuration files"
+        description: "Check configuration file completeness"
+        entry: python
+        language: system
+        args: [scripts/validate_config.py]
+        files: "config/.*\\.(py|toml|env)$"
+        pass_filenames: true
+
+# =============================================================================
+# Hook Configuration
+# =============================================================================
+
+default_language_version:
+  python: python3.11
+
+default_stages: [commit, push]
+
+# Exclude patterns for all hooks
+exclude: |
+  (?x)^(
+    .*\.min\.(js|css)$|
+    .*\.map$|
+    \.git/.*|
+    \.mypy_cache/.*|
+    \.pytest_cache/.*|
+    \.ruff_cache/.*|
+    __pycache__/.*|
+    \.venv/.*|
+    venv/.*|
+    node_modules/.*|
+    logs/.*|
+    audio/.*|
+    backup/.*|
+    \.env.*|
+    .*\.log$
+  )$
+
+# Fail fast - stop on first failure
+fail_fast: false
+
+# Minimum pre-commit version
+minimum_pre_commit_version: 3.0.0

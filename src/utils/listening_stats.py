@@ -1365,6 +1365,15 @@ def stop_leaderboard_updates():
     listening_stats_manager.stop_leaderboard_updates()
 
 
+def get_listening_stats_manager() -> "ListeningStatsManager":
+    """Get the global listening stats manager instance.
+    
+    Returns:
+        ListeningStatsManager: The global listening stats manager instance
+    """
+    return listening_stats_manager
+
+
 # =============================================================================
 # Export Functions
 # =============================================================================
@@ -1379,6 +1388,7 @@ __all__ = [
     "get_leaderboard_data",
     "format_listening_time",
     "listening_stats_manager",
+    "get_listening_stats_manager",
     # Data Protection Utilities (Listening Stats Only)
     "cleanup_old_backups",
     "verify_data_integrity",

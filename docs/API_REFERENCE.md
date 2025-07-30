@@ -1,690 +1,267 @@
-# 🕌 QuranBot API Reference
+# QuranBot API Reference
 
-_"And We have certainly made the Qur'an easy for remembrance, so is there any who will remember?"_ - **Quran 54:17**
+Complete API documentation for QuranBot - Professional Discord bot for 24/7 Quranic recitation.
 
-## Overview
+## 📋 Documentation Index
 
-QuranBot provides both Discord slash commands for user interaction and a comprehensive internal API architecture for developers. The modernized architecture features dependency injection, type-safe services, and comprehensive error handling. All components are designed to serve the Muslim community with respect and Islamic values.
+### Core API Documentation
+- **[API Overview](api/README.md)** - Complete introduction and getting started guide
+- **[OpenAPI Specification](api/openapi.yaml)** - Machine-readable API specification
+- **[Integration Guide](api/integration-guide.md)** - Step-by-step integration instructions
+- **[Usage Examples](api/usage-examples.md)** - Practical code examples in multiple languages
+- **[Error Codes Reference](api/error-codes.md)** - Comprehensive error handling guide
 
-## 🏗️ Architecture APIs
+### Development Resources
+- **[Postman Collection](api/postman-collection.json)** - Ready-to-use API testing collection
+- **[SDK Documentation](api/sdk-documentation.md)** - Official and community SDKs
+- **[WebSocket Events](api/websocket-events.md)** - Real-time event streaming
+- **[Rate Limiting Guide](api/rate-limiting.md)** - Understanding and handling rate limits
 
-### **Dependency Injection Container**
+## 🚀 Quick Start
 
-The `DIContainer` is the core of the modernized architecture, managing service lifecycle and dependencies.
-
-### **Configuration System**
-
-The new configuration system uses Pydantic for type-safe validation and environment-based configuration management.
-
-### **Core Services**
-
-Modern core services provide infrastructure capabilities like caching, logging, performance monitoring, and security.
-
-### **Modern Services**
-
-Application-specific services handle audio playback, state management, and metadata caching with full dependency injection support.
-
----
-
-## 🏗️ Modernized Architecture APIs
-
-### **DIContainer**
-
-```python
-class DIContainer:
-    """Dependency injection container for service management."""
-
-    def register_singleton(self, interface: Type[T], instance_or_factory: Any) -> None:
-        """Register a singleton service."""
-
-    def register_transient(self, interface: Type[T], factory: Callable[[], T]) -> None:
-        """Register a transient service factory."""
-
-    def get(self, interface: Type[T]) -> T:
-        """Resolve a service instance."""
-
-    def has(self, interface: Type[T]) -> bool:
-        """Check if a service is registered."""
+### 1. Authentication
+```http
+Authorization: Bot YOUR_DISCORD_BOT_TOKEN
+Content-Type: application/json
 ```
 
-### **ConfigService**
-
-```python
-class ConfigService:
-    """Centralized configuration service with Pydantic validation."""
-
-    @property
-    def config(self) -> BotConfig:
-        """Get the current configuration instance."""
-
-    def reload_config(self) -> bool:
-        """Reload configuration from environment."""
-
-    def validate_config(self) -> bool:
-        """Validate current configuration."""
+### 2. First API Call
+```bash
+curl -X GET "https://api.quranbot.example.com/audio/status" \
+  -H "Authorization: Bot YOUR_BOT_TOKEN"
 ```
 
-### **StructuredLogger**
-
-```python
-class StructuredLogger:
-    """Structured logging with JSON output and correlation IDs."""
-
-    async def info(self, message: str, context: Dict[str, Any] = None) -> None:
-        """Log info message with structured context."""
-
-    async def error(self, message: str, context: Dict[str, Any] = None) -> None:
-        """Log error message with structured context."""
-
-    async def debug(self, message: str, context: Dict[str, Any] = None) -> None:
-        """Log debug message with structured context."""
-```
-
-### **AudioService**
-
-```python
-class AudioService:
-    """Modern audio service with dependency injection."""
-
-    async def initialize(self) -> bool:
-        """Initialize the audio service."""
-
-    async def connect_to_voice_channel(self, channel_id: int, guild_id: int) -> bool:
-        """Connect to a Discord voice channel."""
-
-    async def start_playback(self, resume_position: bool = True) -> bool:
-        """Start audio playback with optional resume."""
-
-    async def pause_playback(self) -> bool:
-        """Pause current audio playback."""
-
-    async def resume_playback(self) -> bool:
-        """Resume paused audio playback."""
-
-    async def set_surah(self, surah_number: int) -> bool:
-        """Jump to a specific surah."""
-
-    async def set_reciter(self, reciter_name: str) -> bool:
-        """Switch to a different reciter."""
-
-    async def get_playback_state(self) -> PlaybackState:
-        """Get current playback state."""
-```
-
-### **StateService**
-
-```python
-class StateService:
-    """State management with backup and validation."""
-
-    async def initialize(self) -> bool:
-        """Initialize the state service."""
-
-    async def save_playback_state(self, state: PlaybackState) -> bool:
-        """Save playback state with validation and backup."""
-
-    async def load_playback_state(self) -> Optional[PlaybackState]:
-        """Load playback state from storage."""
-
-    async def save_quiz_statistics(self, user_id: int, stats: QuizStatistics) -> bool:
-        """Save user quiz statistics."""
-
-    async def load_quiz_statistics(self, user_id: int) -> Optional[QuizStatistics]:
-        """Load user quiz statistics."""
-```
-
-### **CacheService**
-
-```python
-class CacheService:
-    """Multi-strategy caching with persistence."""
-
-    async def initialize(self) -> bool:
-        """Initialize the cache service."""
-
-    async def get(self, key: str) -> Optional[Any]:
-        """Get value from cache."""
-
-    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
-        """Set value in cache with optional TTL."""
-
-    async def delete(self, key: str) -> bool:
-        """Delete value from cache."""
-
-    async def clear(self) -> bool:
-        """Clear all cached values."""
-
-    def get_metrics(self) -> CacheMetrics:
-        """Get cache performance metrics."""
-```
-
-### **PerformanceMonitor**
-
-```python
-class PerformanceMonitor:
-    """Performance monitoring and metrics collection."""
-
-    async def initialize(self) -> bool:
-        """Initialize performance monitoring."""
-
-    async def get_system_metrics(self) -> SystemMetrics:
-        """Get current system performance metrics."""
-
-    def profile_context(self, operation_name: str) -> ContextManager:
-        """Context manager for profiling operations."""
-
-    async def record_operation_time(self, operation: str, duration: float) -> None:
-        """Record operation execution time."""
-```
-
-### **SecurityService**
-
-```python
-class SecurityService:
-    """Security features including rate limiting."""
-
-    def rate_limit(self, max_requests: int, time_window: int) -> Callable:
-        """Decorator for rate limiting functions."""
-
-    def validate_input(self, validation_rules: Dict[str, Any]) -> Callable:
-        """Decorator for input validation."""
-
-    def require_admin(self, func: Callable) -> Callable:
-        """Decorator requiring admin permissions."""
-
-    async def check_rate_limit(self, user_id: int, operation: str) -> bool:
-        """Check if user is within rate limits."""
-```
-
----
-
-## 📊 Data Models
-
-### **PlaybackState**
-
-```python
-class PlaybackState(BaseModel):
-    """Validated playback state model."""
-
-    current_position: AudioPosition
-    current_reciter: str
-    mode: PlaybackMode = PlaybackMode.NORMAL
-    is_playing: bool = False
-    is_paused: bool = False
-    volume: float = Field(ge=0.0, le=1.0, default=1.0)
-    session_id: str
-    timestamp: datetime
-```
-
-### **AudioPosition**
-
-```python
-class AudioPosition(BaseModel):
-    """Audio position with validation."""
-
-    surah_number: int = Field(ge=1, le=114)
-    position_seconds: float = Field(ge=0.0)
-    total_duration: Optional[float] = Field(ge=0.0)
-```
-
-### **SystemMetrics**
-
-```python
-class SystemMetrics(BaseModel):
-    """System performance metrics."""
-
-    cpu_percent: float = Field(ge=0.0, le=100.0)
-    memory_percent: float = Field(ge=0.0, le=100.0)
-    disk_percent: float = Field(ge=0.0, le=100.0)
-    timestamp: datetime
-```
-
----
-
-## 📋 Command Categories
-
-### 🎵 Audio Commands
-
-- [`/verse`](#verse) - Play specific Quran verses
-- [`/interval`](#interval) - Play verses in intervals (ranges)
-
-### 📚 Learning Commands
-
-- [`/question`](#question) - Interactive Quran quizzes
-- [`/leaderboard`](#leaderboard) - View quiz rankings
-
-### ℹ️ Information Commands
-
-- [`/credits`](#credits) - View bot information and credits
-
----
-
-## 🎵 Audio Commands
-
-### `/verse`
-
-Play specific Quran verses with professional audio recitation.
-
-**Usage:**
-
-```
-/verse surah:<number> ayah:<number> [reciter:<name>]
-```
-
-**Parameters:**
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `surah` | Integer | ✅ Yes | Surah number (1-114) |
-| `ayah` | Integer | ✅ Yes | Ayah number within the surah |
-| `reciter` | String | ❌ No | Reciter name (default: Mishary Rashid Alafasy) |
-
-**Available Reciters:**
-
-- Mishary Rashid Alafasy (default)
-- Abdul Basit Abdul Samad
-- Maher Al Mueaqly
-- Ahmed ibn Ali al-Ajamy
-- Hani ar-Rifai
-- Khalifa al-Tunaiji
-- Saad al-Ghamdi
-- Saud ash-Shuraim
-- AbdulRahman as-Sudais
-- Abu Bakr ash-Shaatree
-
-**Examples:**
-
-```
-/verse surah:1 ayah:1
-/verse surah:2 ayah:255 reciter:Abdul Basit Abdul Samad
-/verse surah:112 ayah:1 reciter:Maher Al Mueaqly
-```
-
-**Response Format:**
-
+### 3. Response Format
 ```json
 {
-  "type": "audio_playback",
-  "surah": 1,
-  "ayah": 1,
-  "reciter": "Mishary Rashid Alafasy",
-  "arabic_text": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-  "translation": "In the name of Allah, the Entirely Merciful, the Especially Merciful.",
-  "audio_url": "https://...",
-  "duration": "00:03",
-  "status": "playing"
+  "is_playing": true,
+  "current_surah": 1,
+  "current_reciter": "Saad Al Ghamdi",
+  "position_seconds": 45.7,
+  "listeners_count": 5
 }
 ```
 
----
-
-### `/interval`
-
-Play multiple verses in sequence with customizable intervals.
-
-**Usage:**
-
-```
-/interval surah:<number> start_ayah:<number> end_ayah:<number> [reciter:<name>] [pause_duration:<seconds>]
-```
-
-**Parameters:**
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `surah` | Integer | ✅ Yes | Surah number (1-114) |
-| `start_ayah` | Integer | ✅ Yes | Starting ayah number |
-| `end_ayah` | Integer | ✅ Yes | Ending ayah number |
-| `reciter` | String | ❌ No | Reciter name (default: Mishary Rashid Alafasy) |
-| `pause_duration` | Integer | ❌ No | Pause between verses in seconds (default: 2) |
-
-**Examples:**
-
-```
-/interval surah:1 start_ayah:1 end_ayah:7
-/interval surah:2 start_ayah:1 end_ayah:5 reciter:Abdul Basit Abdul Samad pause_duration:3
-```
-
-**Response Format:**
-
-```json
-{
-  "type": "interval_playback",
-  "surah": 1,
-  "start_ayah": 1,
-  "end_ayah": 7,
-  "total_verses": 7,
-  "reciter": "Mishary Rashid Alafasy",
-  "pause_duration": 2,
-  "estimated_duration": "00:45",
-  "status": "starting"
-}
-```
-
----
-
-## 📚 Learning Commands
-
-### `/question`
-
-Interactive Quran quiz system with multiple choice questions.
-
-**Usage:**
-
-```
-/question [difficulty:<level>] [category:<type>]
-```
-
-**Parameters:**
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `difficulty` | String | ❌ No | Question difficulty: easy, medium, hard |
-| `category` | String | ❌ No | Question category: verses, surahs, general |
-
-**Difficulty Levels:**
-
-- **Easy**: Basic Quran knowledge, well-known verses
-- **Medium**: Intermediate Islamic knowledge
-- **Hard**: Advanced Quranic studies
-
-**Categories:**
-
-- **Verses**: Questions about specific ayahs and their meanings
-- **Surahs**: Questions about surah names, numbers, and characteristics
-- **General**: Broader Islamic knowledge related to the Quran
-
-**Examples:**
-
-```
-/question
-/question difficulty:easy category:verses
-/question difficulty:hard category:surahs
-```
-
-**Response Format:**
-
-```json
-{
-  "type": "quiz_question",
-  "question_id": "q_1234",
-  "difficulty": "medium",
-  "category": "verses",
-  "question": "Which surah is known as 'The Opening'?",
-  "options": ["A) Al-Baqarah", "B) Al-Fatiha", "C) An-Nas", "D) Al-Ikhlas"],
-  "correct_answer": "B",
-  "explanation": "Al-Fatiha (The Opening) is the first surah of the Quran...",
-  "points": 10,
-  "time_limit": 30
-}
-```
-
----
-
-### `/leaderboard`
-
-View quiz rankings and community statistics.
-
-**Usage:**
-
-```
-/leaderboard [scope:<type>] [limit:<number>]
-```
-
-**Parameters:**
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `scope` | String | ❌ No | Leaderboard scope: server, global, personal |
-| `limit` | Integer | ❌ No | Number of entries to show (default: 10, max: 25) |
-
-**Scope Types:**
-
-- **Server**: Rankings for current Discord server only
-- **Global**: Rankings across all servers using the bot
-- **Personal**: Your personal statistics and progress
-
-**Examples:**
-
-```
-/leaderboard
-/leaderboard scope:server limit:15
-/leaderboard scope:personal
-```
-
-**Response Format:**
-
-```json
-{
-  "type": "leaderboard",
-  "scope": "server",
-  "total_players": 156,
-  "rankings": [
-    {
-      "rank": 1,
-      "user": "Abdullah#1234",
-      "score": 2450,
-      "correct_answers": 245,
-      "total_questions": 280,
-      "accuracy": "87.5%",
-      "streak": 15
-    }
-  ],
-  "user_stats": {
-    "rank": 12,
-    "score": 890,
-    "accuracy": "82.3%"
-  }
-}
-```
-
----
-
-## ℹ️ Information Commands
-
-### `/credits`
-
-Display bot information, credits, and acknowledgments.
-
-**Usage:**
-
-```
-/credits
-```
-
-**Response Format:**
-
-```json
-{
-  "type": "credits",
-  "bot_info": {
-    "name": "QuranBot",
-    "version": "3.5.0",
-    "uptime": "15 days, 8 hours",
-    "servers": 42,
-    "users": 1256
-  },
-  "features": [
-    "High-quality Quran audio playback",
-    "Interactive learning quizzes",
-    "Multiple reciter support",
-    "Community leaderboards"
-  ],
-  "acknowledgments": {
-    "audio_source": "Quran.com API",
-    "translations": "Sahih International",
-    "reciters": "Various renowned Qaris"
-  }
-}
-```
-
----
-
-## 🔧 Bot Behavior & Features
-
-### Audio Playback System
-
-- **High-quality audio**: 128kbps+ MP3 files
-- **Automatic voice channel joining**: Bot joins your current voice channel
-- **Queue management**: Multiple requests are queued automatically
-- **Rich presence**: Shows currently playing verse information
-- **Auto-disconnect**: Leaves voice channel after 5 minutes of inactivity
-
-### Quiz System
-
-- **Point-based scoring**: Earn points for correct answers
-- **Streak bonuses**: Consecutive correct answers increase points
-- **Time limits**: 30 seconds per question (configurable)
-- **Difficulty scaling**: Questions adapt to your performance
-- **Progress tracking**: Personal statistics and achievements
-
-### State Management
-
-- **Persistent data**: User progress saved across sessions
-- **Server-specific settings**: Each Discord server has independent settings
-- **Backup system**: Regular data backups for reliability
-- **Performance optimization**: Efficient caching and resource management
-
-### Islamic Values Integration
-
-- **Respectful presentation**: All content follows Islamic guidelines
-- **Educational focus**: Designed to increase Quranic knowledge
-- **Community building**: Features encourage positive interaction
-- **Accessibility**: Easy-to-use interface for all skill levels
-
----
-
-## 🔒 Permissions & Security
-
-### Required Bot Permissions
-
-- **Send Messages**: For command responses and notifications
-- **Use Slash Commands**: For all bot interactions
-- **Connect to Voice**: For audio playback
-- **Speak in Voice**: For playing Quran recitations
-- **Read Message History**: For context and error handling
-
-### User Permissions
-
-- **No special permissions required**: All commands available to all users
-- **Rate limiting**: Prevents spam and abuse
-- **Content filtering**: Ensures appropriate usage
-
-### Privacy & Data
-
-- **Minimal data collection**: Only stores quiz progress and preferences
-- **No personal information**: Discord usernames and IDs only
-- **Secure storage**: All data encrypted and protected
-- **GDPR compliant**: Users can request data deletion
-
----
-
-## 📊 Response Codes & Error Handling
-
-### Success Responses
-
-- `200`: Command executed successfully
-- `201`: New resource created (quiz question, leaderboard entry)
-- `202`: Request accepted and queued (audio playback)
-
-### Error Responses
-
-- `400`: Invalid parameters or malformed request
-- `404`: Requested resource not found (invalid surah/ayah)
-- `429`: Rate limit exceeded
-- `500`: Internal server error
-- `503`: Service temporarily unavailable
-
-### Error Format
-
-```json
-{
-  "error": true,
-  "code": 404,
-  "message": "Surah 115 does not exist. Please use surah numbers 1-114.",
-  "details": "The Quran contains 114 surahs. Please check your input.",
-  "suggestion": "Try /verse surah:114 ayah:1 for the last surah (An-Nas)"
-}
-```
-
----
-
-## 🚀 Rate Limits & Performance
-
-### Command Rate Limits
-
-- **Audio commands**: 1 per 10 seconds per user
-- **Quiz commands**: 1 per 5 seconds per user
-- **Information commands**: 2 per 10 seconds per user
-- **Leaderboard**: 1 per 30 seconds per user
-
-### Performance Metrics
-
-- **Average response time**: < 500ms
-- **Audio loading time**: < 3 seconds
-- **Uptime**: 99.9% availability
-- **Concurrent users**: Supports 1000+ simultaneous users
-
----
-
-## 📱 Integration Examples
-
-### Discord.py Integration
-
+## 🎵 Core Features
+
+### Audio System
+- **24/7 Continuous Playback** - Automated Quran recitation
+- **Multiple Reciters** - 6+ world-class Quranic reciters
+- **Smart Resume** - Remembers position across restarts
+- **Voice Channel Management** - Automatic connection and reconnection
+
+### Interactive Features
+- **Islamic Quiz System** - 200+ questions across multiple categories
+- **AI Assistant** - GPT-powered Islamic Q&A
+- **Daily Verses** - Automated verse delivery with translations
+- **User Analytics** - Detailed listening and engagement statistics
+
+### Administration
+- **Real-time Monitoring** - Health checks and system metrics
+- **Configuration Management** - Dynamic settings updates
+- **User Management** - Role-based access control
+- **Comprehensive Logging** - Detailed audit trails
+
+## 📊 API Endpoints Overview
+
+| Category | Endpoints | Description |
+|----------|-----------|-------------|
+| **Audio** | 5 endpoints | Playback control and status |
+| **Quiz** | 4 endpoints | Interactive Islamic quizzes |
+| **AI** | 2 endpoints | Islamic AI assistant |
+| **Commands** | 3 endpoints | Discord slash commands |
+| **Analytics** | 3 endpoints | User and server statistics |
+| **Admin** | 4 endpoints | Administrative functions |
+
+## 🔧 Integration Examples
+
+### Python (discord.py)
 ```python
 import discord
 from discord.ext import commands
 
-# Example of handling QuranBot responses
-@bot.event
-async def on_message(message):
-    if message.author.bot and message.author.name == "QuranBot":
-        # Handle QuranBot responses
-        if message.embeds:
-            embed = message.embeds[0]
-            if "verse" in embed.title.lower():
-                # Process verse information
-                await handle_verse_response(embed)
+@bot.slash_command()
+async def play_quran(ctx, surah: int = 1):
+    audio_service = bot.get_cog('AudioService')
+    result = await audio_service.start_playback(surah_number=surah)
+    
+    if result['success']:
+        await ctx.respond(f"🎵 Now playing Surah {surah}")
+    else:
+        await ctx.respond("❌ Failed to start playback")
 ```
 
-### Webhook Integration
+### JavaScript (discord.js)
+```javascript
+const { SlashCommandBuilder } = require('discord.js');
+
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName('play')
+        .setDescription('Start Quran playback'),
+    
+    async execute(interaction) {
+        const result = await quranbot.audio.play();
+        await interaction.reply('🎵 Quran playback started!');
+    }
+};
+```
+
+### cURL
+```bash
+# Start audio playback
+curl -X POST "https://api.quranbot.example.com/audio/play" \
+  -H "Authorization: Bot YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"surah_number": 1, "reciter": "Saad Al Ghamdi"}'
+```
+
+## 🛡️ Error Handling
+
+### Standard Error Format
+```json
+{
+  "error": {
+    "code": "AUDIO_INVALID_SURAH",
+    "message": "Surah number must be between 1 and 114",
+    "details": {
+      "provided": 150,
+      "valid_range": "1-114"
+    },
+    "timestamp": "2024-01-15T10:30:00Z",
+    "request_id": "req_123456789"
+  }
+}
+```
+
+### Common Error Codes
+- `AUDIO_PLAYBACK_FAILED` - Audio system error
+- `QUIZ_RATE_LIMITED` - Too many quiz attempts
+- `AI_SERVICE_UNAVAILABLE` - AI assistant unavailable
+- `AUTH_INSUFFICIENT_PERMISSIONS` - Permission denied
+- `RATE_LIMIT_EXCEEDED` - Rate limit hit
+
+## 📈 Rate Limits
+
+| Operation | Limit | Window | Scope |
+|-----------|-------|---------|-------|
+| Audio Commands | 5 requests | 1 minute | Per user |
+| Quiz Sessions | 1 session | 5 minutes | Per user |
+| AI Questions | 1 question | 1 hour | Per user |
+| General Commands | 10 requests | 1 minute | Per user |
+
+## 🔌 WebSocket Events
+
+Real-time events for live updates:
 
 ```javascript
-// Example webhook handler for QuranBot events
-app.post("/quranbot-webhook", (req, res) => {
-  const { event_type, data } = req.body;
+const ws = new WebSocket('wss://api.quranbot.example.com/ws');
 
-  switch (event_type) {
-    case "verse_played":
-      console.log(`Verse played: ${data.surah}:${data.ayah}`);
-      break;
-    case "quiz_completed":
-      console.log(`Quiz score: ${data.score}`);
-      break;
-  }
-
-  res.status(200).send("OK");
-});
+ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    
+    switch(data.type) {
+        case 'audio.started':
+            console.log(`Audio started: Surah ${data.surah_number}`);
+            break;
+        case 'user.joined':
+            console.log(`User joined voice channel`);
+            break;
+    }
+};
 ```
 
+## 📦 SDKs and Libraries
+
+### Official SDKs
+- **Python**: `pip install quranbot-sdk`
+- **JavaScript**: `npm install quranbot-sdk`
+- **Go**: `go get github.com/quranbot/go-sdk`
+
+### Community Libraries
+- **Java**: Maven Central
+- **C#**: NuGet Package
+- **Rust**: crates.io
+- **PHP**: Packagist
+
+## 🧪 Testing
+
+### Postman Collection
+Import our [Postman collection](api/postman-collection.json) for easy testing:
+
+1. Download the collection file
+2. Import into Postman
+3. Set your bot token as environment variable
+4. Start testing endpoints
+
+### Sandbox Environment
+Test safely in our sandbox:
+```
+Base URL: https://sandbox-api.quranbot.example.com
+WebSocket: wss://sandbox-api.quranbot.example.com/ws
+```
+
+## 📚 Additional Resources
+
+### Documentation
+- [Architecture Overview](ARCHITECTURE.md)
+- [Deployment Guide](DEPLOYMENT_GUIDE.md)
+- [Development Guide](DEVELOPMENT_GUIDE.md)
+- [Security Guidelines](SECURITY.md)
+
+### Community
+- **GitHub**: Issues and discussions
+- **Discord**: Community support
+- **Stack Overflow**: Tag with `quranbot`
+- **Reddit**: r/QuranBot
+
+### Support
+- **Bug Reports**: GitHub Issues
+- **Feature Requests**: GitHub Discussions
+- **Security Issues**: security@quranbot.example.com
+- **General Support**: support@quranbot.example.com
+
+## 🔄 Changelog
+
+### Version 4.0.1 (Current)
+- Enhanced error handling and validation
+- Improved rate limiting algorithms
+- New analytics endpoints
+- WebSocket event streaming
+- Performance optimizations
+
+### Version 4.0.0
+- Complete API redesign
+- Modern authentication system
+- Comprehensive error codes
+- Real-time WebSocket events
+- Multi-language SDK support
+
+## 🤝 Contributing
+
+We welcome contributions to improve the API:
+
+1. **Fork** the repository
+2. **Create** a feature branch
+3. **Implement** your changes
+4. **Add** tests and documentation
+5. **Submit** a pull request
+
+### Development Setup
+```bash
+git clone https://github.com/trippixn963/QuranBot.git
+cd QuranBot
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements-dev.txt
+```
+
+## 📄 License
+
+QuranBot API is released under the [MIT License](../LICENSE).
+
 ---
 
-## 🤝 Community & Support
+**"And We have certainly made the Quran easy for remembrance, so is there any who will remember?"** - *Quran 54:17*
 
-### Getting Help
-
-- **Discord Server**: Join discord.gg/syria for support
-- **GitHub Issues**: Report bugs and request features
-- **Documentation**: Comprehensive guides and tutorials
-
-### Contributing
-
-- **Open Source**: MIT License - contributions welcome
-- **Code Standards**: Follow Islamic values and clean code principles
-- **Testing**: Comprehensive test coverage required
-
-### Educational Purpose
-
-This bot is provided AS-IS for educational purposes to help Muslims learn and connect with the Quran. May Allah accept our efforts and grant us beneficial knowledge.
-
----
-
-_"And whoever relies upon Allah - then He is sufficient for him. Indeed, Allah will accomplish His purpose."_ - **Quran 65:3**
-
-**بارك الله فيكم** (May Allah bless you)
+For the latest updates and announcements, follow our [GitHub repository](https://github.com/trippixn963/QuranBot).

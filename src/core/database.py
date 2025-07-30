@@ -130,6 +130,14 @@ class DatabaseManager:
             )
             raise DatabaseError(f"Database initialization failed: {e}")
             
+    async def shutdown(self) -> None:
+        """Shutdown the database manager and close all connections"""
+        try:
+            self.close_connection()
+            await self.logger.info("Database manager shutdown complete")
+        except Exception as e:
+            await self.logger.error("Error during database shutdown", {"error": str(e)})
+            
     def _initialize_sync(self) -> None:
         """Synchronous database initialization (runs in thread pool)"""
         with sqlite3.connect(self.db_path) as conn:
@@ -368,12 +376,20 @@ class DatabaseManager:
                 conn.rollback()
             raise DatabaseError(f"Database operation failed: {e}")
         finally:
-            if conn:
-                conn.close()
+            # Don't close the connection here - it's managed by _get_thread_connection
+            # The connection will be closed when the thread ends or when explicitly closed
+            pass
                 
     def _get_thread_connection(self) -> sqlite3.Connection:
         """Get a connection for the current thread"""
-        if not hasattr(self._local, 'connection'):
+        if not hasattr(self._local, 'connection') or self._local.connection is None or not self._is_connection_valid():
+            # Close existing connection if it exists but is invalid
+            if hasattr(self._local, 'connection') and self._local.connection is not None:
+                try:
+                    self._local.connection.close()
+                except Exception:
+                    pass
+                    
             conn = sqlite3.connect(
                 self.db_path,
                 timeout=30.0,  # 30 second timeout
@@ -381,9 +397,34 @@ class DatabaseManager:
             )
             # Set row factory for dict-like access
             conn.row_factory = sqlite3.Row
+            # Enable WAL mode for better concurrency
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA synchronous=NORMAL")
+            conn.execute("PRAGMA cache_size=10000")
+            conn.execute("PRAGMA temp_store=MEMORY")
             self._local.connection = conn
             
         return self._local.connection
+        
+    def _is_connection_valid(self) -> bool:
+        """Check if the current thread's connection is valid"""
+        if not hasattr(self._local, 'connection') or self._local.connection is None:
+            return False
+        try:
+            # Try a simple query to test the connection
+            self._local.connection.execute("SELECT 1")
+            return True
+        except Exception:
+            return False
+        
+    def close_connection(self):
+        """Close the current thread's database connection"""
+        if hasattr(self._local, 'connection'):
+            try:
+                self._local.connection.close()
+                delattr(self._local, 'connection')
+            except Exception as e:
+                self.logger.warning(f"Error closing database connection: {e}")
         
     async def execute_query(
         self, 

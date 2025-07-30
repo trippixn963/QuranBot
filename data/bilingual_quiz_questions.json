@@ -1,0 +1,650 @@
+{
+  "metadata": {
+    "total_questions": 50,
+    "categories": ["Quran", "Hadith", "Prophets Stories", "Pillars of Islam", "Islamic History", "Fiqh", "Aqeedah", "Islamic Ethics"],
+    "format": "bilingual",
+    "description": "Islamic knowledge quiz questions with Arabic and English content"
+  },
+  "questions": [
+    {
+      "id": "q001",
+      "category": "Quran",
+      "difficulty": 2,
+      "question": {
+        "arabic": "كم عدد سور القرآن الكريم؟",
+        "english": "How many chapters (surahs) are there in the Quran?"
+      },
+      "choices": {
+        "A": {
+          "english": "112 chapters",
+          "arabic": "١١٢ سورة"
+        },
+        "B": {
+          "english": "114 chapters", 
+          "arabic": "١١٤ سورة"
+        },
+        "C": {
+          "english": "116 chapters",
+          "arabic": "١١٦ سورة"
+        },
+        "D": {
+          "english": "118 chapters",
+          "arabic": "١١٨ سورة"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The Quran contains 114 chapters (surahs).",
+        "arabic": "يحتوي القرآن الكريم على ١١٤ سورة"
+      }
+    },
+    {
+      "id": "q002", 
+      "category": "Quran",
+      "difficulty": 1,
+      "question": {
+        "arabic": "ما اسم السورة الأولى في القرآن الكريم؟",
+        "english": "What is the name of the first chapter in the Quran?"
+      },
+      "choices": {
+        "A": {
+          "english": "Al-Baqarah",
+          "arabic": "البقرة"
+        },
+        "B": {
+          "english": "Al-Fatihah",
+          "arabic": "الفاتحة"
+        },
+        "C": {
+          "english": "An-Nas",
+          "arabic": "الناس"
+        },
+        "D": {
+          "english": "Al-Ikhlas",
+          "arabic": "الإخلاص"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Al-Fatihah (The Opening) is the first chapter of the Quran.",
+        "arabic": "الفاتحة هي السورة الأولى في القرآن الكريم"
+      }
+    },
+    {
+      "id": "q003",
+      "category": "Prophets Stories", 
+      "difficulty": 4,
+      "question": {
+        "arabic": "من الذي أخبر النبي سليمان عليه السلام بأخبار ملكة سبأ؟",
+        "english": "Who informed Prophet Sulaiman about the Queen of Sheba?"
+      },
+      "choices": {
+        "A": {
+          "english": "A powerful jinn",
+          "arabic": "عفريت من الجن"
+        },
+        "B": {
+          "english": "The hoopoe bird",
+          "arabic": "الهدهد"
+        },
+        "C": {
+          "english": "One of the soldiers",
+          "arabic": "أحد الجنود"
+        },
+        "D": {
+          "english": "A neighboring king",
+          "arabic": "ملك مجاور"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The hoopoe bird brought news of the Queen of Sheba to Prophet Sulaiman.",
+        "arabic": "الهدهد هو الذي أتى بأنباء ملكة سبأ إلى النبي سليمان عليه السلام"
+      }
+    },
+    {
+      "id": "q004",
+      "category": "Pillars of Islam",
+      "difficulty": 1,
+      "question": {
+        "arabic": "كم عدد أركان الإسلام؟",
+        "english": "How many pillars of Islam are there?"
+      },
+      "choices": {
+        "A": {
+          "english": "Four pillars",
+          "arabic": "أربعة أركان"
+        },
+        "B": {
+          "english": "Five pillars",
+          "arabic": "خمسة أركان"
+        },
+        "C": {
+          "english": "Six pillars",
+          "arabic": "ستة أركان"
+        },
+        "D": {
+          "english": "Seven pillars",
+          "arabic": "سبعة أركان"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Islam has five pillars: Shahada, Salah, Zakat, Sawm, and Hajj.",
+        "arabic": "أركان الإسلام خمسة: الشهادة والصلاة والزكاة والصوم والحج"
+      }
+    },
+    {
+      "id": "q005",
+      "category": "Hadith",
+      "difficulty": 2,
+      "question": {
+        "arabic": "من قال: 'إنما الأعمال بالنيات'؟",
+        "english": "Who said: 'Actions are but by intention'?"
+      },
+      "choices": {
+        "A": {
+          "english": "Prophet Muhammad (PBUH)",
+          "arabic": "النبي محمد صلى الله عليه وسلم"
+        },
+        "B": {
+          "english": "Umar ibn al-Khattab",
+          "arabic": "عمر بن الخطاب"
+        },
+        "C": {
+          "english": "Abu Bakr as-Siddiq",
+          "arabic": "أبو بكر الصديق"
+        },
+        "D": {
+          "english": "Ali ibn Abi Talib",
+          "arabic": "علي بن أبي طالب"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This famous hadith was narrated by Prophet Muhammad (PBUH).",
+        "arabic": "هذا الحديث الشريف قاله النبي محمد صلى الله عليه وسلم"
+      }
+    },
+    {
+      "id": "q006",
+      "category": "Quran",
+      "difficulty": 3,
+      "question": {
+        "arabic": "ما أطول سورة في القرآن الكريم؟",
+        "english": "What is the longest chapter in the Quran?"
+      },
+      "choices": {
+        "A": {
+          "english": "Al-Fatihah",
+          "arabic": "الفاتحة"
+        },
+        "B": {
+          "english": "Al-Baqarah",
+          "arabic": "البقرة"
+        },
+        "C": {
+          "english": "Al-Imran",
+          "arabic": "آل عمران"
+        },
+        "D": {
+          "english": "An-Nisa",
+          "arabic": "النساء"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Al-Baqarah (The Cow) is the longest chapter with 286 verses.",
+        "arabic": "سورة البقرة هي أطول سورة في القرآن وتحتوي على ٢٨٦ آية"
+      }
+    },
+    {
+      "id": "q007",
+      "category": "Prophets Stories",
+      "difficulty": 2,
+      "question": {
+        "arabic": "كم سنة لبث النبي نوح عليه السلام في قومه؟",
+        "english": "For how many years did Prophet Nuh call his people to Islam?"
+      },
+      "choices": {
+        "A": {
+          "english": "900 years",
+          "arabic": "٩٠٠ سنة"
+        },
+        "B": {
+          "english": "950 years",
+          "arabic": "٩٥٠ سنة"
+        },
+        "C": {
+          "english": "1000 years",
+          "arabic": "١٠٠٠ سنة"
+        },
+        "D": {
+          "english": "850 years",
+          "arabic": "٨٥٠ سنة"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Prophet Nuh called his people to Islam for 950 years.",
+        "arabic": "دعا النبي نوح عليه السلام قومه إلى الإسلام لمدة ٩٥٠ سنة"
+      }
+    },
+    {
+      "id": "q008",
+      "category": "Fiqh",
+      "difficulty": 2,
+      "question": {
+        "arabic": "ما المصطلح العربي للطهارة الطقوسية قبل الصلاة؟",
+        "english": "What is the Arabic term for ritual purification before prayer?"
+      },
+      "choices": {
+        "A": {
+          "english": "Ghusl",
+          "arabic": "الغسل"
+        },
+        "B": {
+          "english": "Wudu",
+          "arabic": "الوضوء"
+        },
+        "C": {
+          "english": "Tayammum",
+          "arabic": "التيمم"
+        },
+        "D": {
+          "english": "Istinja",
+          "arabic": "الاستنجاء"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Wudu is the ritual ablution performed before prayer.",
+        "arabic": "الوضوء هو الطهارة الطقوسية التي تُؤدى قبل الصلاة"
+      }
+    },
+    {
+      "id": "q009",
+      "category": "Islamic History",
+      "difficulty": 3,
+      "question": {
+        "arabic": "في أي عام هجري كانت غزوة بدر؟",
+        "english": "In which Hijri year did the Battle of Badr take place?"
+      },
+      "choices": {
+        "A": {
+          "english": "1st year",
+          "arabic": "السنة الأولى"
+        },
+        "B": {
+          "english": "2nd year",
+          "arabic": "السنة الثانية"
+        },
+        "C": {
+          "english": "3rd year",
+          "arabic": "السنة الثالثة"
+        },
+        "D": {
+          "english": "4th year",
+          "arabic": "السنة الرابعة"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The Battle of Badr took place in the 2nd year of Hijra.",
+        "arabic": "وقعت غزوة بدر في السنة الثانية من الهجرة"
+      }
+    },
+    {
+      "id": "q010",
+      "category": "Aqeedah",
+      "difficulty": 1,
+      "question": {
+        "arabic": "كم عدد أسماء الله الحسنى المشهورة؟",
+        "english": "How many beautiful names of Allah are commonly known?"
+      },
+      "choices": {
+        "A": {
+          "english": "99 names",
+          "arabic": "٩٩ اسماً"
+        },
+        "B": {
+          "english": "100 names",
+          "arabic": "١٠٠ اسم"
+        },
+        "C": {
+          "english": "101 names",
+          "arabic": "١٠١ اسم"
+        },
+        "D": {
+          "english": "98 names",
+          "arabic": "٩٨ اسماً"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Allah has 99 beautiful names (Asma ul-Husna).",
+        "arabic": "لله تعالى ٩٩ اسماً من الأسماء الحسنى"
+      }
+    },
+    {
+      "id": "q011",
+      "category": "Pillars of Islam",
+      "difficulty": 2,
+      "question": {
+        "arabic": "كم مرة يجب على المسلم أداء الحج في العمر؟",
+        "english": "How many times must a Muslim perform Hajj in their lifetime?"
+      },
+      "choices": {
+        "A": {
+          "english": "Once if able",
+          "arabic": "مرة واحدة إن استطاع"
+        },
+        "B": {
+          "english": "Twice minimum",
+          "arabic": "مرتان كحد أدنى"
+        },
+        "C": {
+          "english": "Three times",
+          "arabic": "ثلاث مرات"
+        },
+        "D": {
+          "english": "Every year",
+          "arabic": "كل سنة"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Hajj is obligatory once in a lifetime for those who are able.",
+        "arabic": "الحج واجب مرة واحدة في العمر لمن استطاع إليه سبيلاً"
+      }
+    },
+    {
+      "id": "q012",
+      "category": "Quran",
+      "difficulty": 2,
+      "question": {
+        "arabic": "ما معنى كلمة 'بسم الله'؟",
+        "english": "What does 'Bismillah' mean?"
+      },
+      "choices": {
+        "A": {
+          "english": "In the name of Allah",
+          "arabic": "باسم الله"
+        },
+        "B": {
+          "english": "Praise be to Allah",
+          "arabic": "الحمد لله"
+        },
+        "C": {
+          "english": "Allah is great",
+          "arabic": "الله أكبر"
+        },
+        "D": {
+          "english": "There is no god but Allah",
+          "arabic": "لا إله إلا الله"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Bismillah means 'In the name of Allah'.",
+        "arabic": "بسم الله تعني 'باسم الله'"
+      }
+    },
+    {
+      "id": "q013",
+      "category": "Prophets Stories",
+      "difficulty": 3,
+      "question": {
+        "arabic": "من هو النبي الذي ابتلعه الحوت؟",
+        "english": "Which prophet was swallowed by a whale?"
+      },
+      "choices": {
+        "A": {
+          "english": "Prophet Musa",
+          "arabic": "النبي موسى"
+        },
+        "B": {
+          "english": "Prophet Yunus",
+          "arabic": "النبي يونس"
+        },
+        "C": {
+          "english": "Prophet Isa",
+          "arabic": "النبي عيسى"
+        },
+        "D": {
+          "english": "Prophet Ibrahim",
+          "arabic": "النبي إبراهيم"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Prophet Yunus (Jonah) was swallowed by a whale.",
+        "arabic": "النبي يونس عليه السلام هو الذي ابتلعه الحوت"
+      }
+    },
+    {
+      "id": "q014",
+      "category": "Islamic Ethics",
+      "difficulty": 2,
+      "question": {
+        "arabic": "ما هو أعظم الذنوب في الإسلام؟",
+        "english": "What is the greatest sin in Islam?"
+      },
+      "choices": {
+        "A": {
+          "english": "Theft",
+          "arabic": "السرقة"
+        },
+        "B": {
+          "english": "Shirk (associating partners with Allah)",
+          "arabic": "الشرك بالله"
+        },
+        "C": {
+          "english": "Lying",
+          "arabic": "الكذب"
+        },
+        "D": {
+          "english": "Adultery",
+          "arabic": "الزنا"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Shirk (associating partners with Allah) is the greatest sin in Islam.",
+        "arabic": "الشرك بالله هو أعظم الذنوب في الإسلام"
+      }
+    },
+    {
+      "id": "q015",
+      "category": "Hadith",
+      "difficulty": 3,
+      "question": {
+        "arabic": "من هو راوي أكثر الأحاديث عن النبي صلى الله عليه وسلم؟",
+        "english": "Who narrated the most hadiths from Prophet Muhammad (PBUH)?"
+      },
+      "choices": {
+        "A": {
+          "english": "Abu Hurairah",
+          "arabic": "أبو هريرة"
+        },
+        "B": {
+          "english": "Aisha (RA)",
+          "arabic": "عائشة رضي الله عنها"
+        },
+        "C": {
+          "english": "Ibn Abbas",
+          "arabic": "ابن عباس"
+        },
+        "D": {
+          "english": "Anas ibn Malik",
+          "arabic": "أنس بن مالك"
+        }
+      },
+      "correct_answer": "A", 
+      "explanation": {
+        "english": "Abu Hurairah narrated the most hadiths from Prophet Muhammad (PBUH).",
+        "arabic": "أبو هريرة رضي الله عنه روى أكثر الأحاديث عن النبي صلى الله عليه وسلم"
+      }
+    },
+    {
+      "id": "q016",
+      "category": "Fiqh",
+      "difficulty": 1,
+      "question": {
+        "arabic": "كم عدد الصلوات المفروضة في اليوم؟",
+        "english": "How many obligatory prayers are there in a day?"
+      },
+      "choices": {
+        "A": {
+          "english": "Three prayers",
+          "arabic": "ثلاث صلوات"
+        },
+        "B": {
+          "english": "Four prayers",
+          "arabic": "أربع صلوات"
+        },
+        "C": {
+          "english": "Five prayers",
+          "arabic": "خمس صلوات"
+        },
+        "D": {
+          "english": "Six prayers",
+          "arabic": "ست صلوات"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "There are five obligatory prayers in a day: Fajr, Dhuhr, Asr, Maghrib, and Isha.",
+        "arabic": "الصلوات المفروضة خمس في اليوم: الفجر والظهر والعصر والمغرب والعشاء"
+      }
+    },
+    {
+      "id": "q017",
+      "category": "Quran",
+      "difficulty": 4,
+      "question": {
+        "arabic": "أي سورة تُعرف بـ 'قلب القرآن'؟",
+        "english": "Which surah is known as the 'Heart of the Quran'?"
+      },
+      "choices": {
+        "A": {
+          "english": "Al-Fatihah",
+          "arabic": "الفاتحة"
+        },
+        "B": {
+          "english": "Ya-Sin",
+          "arabic": "يس"
+        },
+        "C": {
+          "english": "Al-Baqarah",
+          "arabic": "البقرة"
+        },
+        "D": {
+          "english": "Al-Ikhlas",
+          "arabic": "الإخلاص"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Surah Ya-Sin is known as the 'Heart of the Quran'.",
+        "arabic": "سورة يس تُعرف بـ 'قلب القرآن'"
+      }
+    },
+    {
+      "id": "q018",
+      "category": "Islamic History",
+      "difficulty": 2,
+      "question": {
+        "arabic": "ما اسم أول مسجد بُني في الإسلام؟",
+        "english": "What is the name of the first mosque built in Islam?"
+      },
+      "choices": {
+        "A": {
+          "english": "Masjid al-Haram",
+          "arabic": "المسجد الحرام"
+        },
+        "B": {
+          "english": "Masjid an-Nabawi",
+          "arabic": "المسجد النبوي"
+        },
+        "C": {
+          "english": "Masjid Quba",
+          "arabic": "مسجد قباء"
+        },
+        "D": {
+          "english": "Masjid al-Aqsa",
+          "arabic": "المسجد الأقصى"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "Masjid Quba was the first mosque built in Islam.",
+        "arabic": "مسجد قباء هو أول مسجد بُني في الإسلام"
+      }
+    },
+    {
+      "id": "q019",
+      "category": "Aqeedah",
+      "difficulty": 1,
+      "question": {
+        "arabic": "ما هي الشهادة في الإسلام؟",
+        "english": "What is the Shahada in Islam?"
+      },
+      "choices": {
+        "A": {
+          "english": "La ilaha illa Allah, Muhammad rasul Allah",
+          "arabic": "لا إله إلا الله محمد رسول الله"
+        },
+        "B": {
+          "english": "Allahu Akbar",
+          "arabic": "الله أكبر"
+        },
+        "C": {
+          "english": "Alhamdulillah",
+          "arabic": "الحمد لله"
+        },
+        "D": {
+          "english": "Subhan Allah",
+          "arabic": "سبحان الله"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The Shahada is the declaration of faith: 'There is no god but Allah, Muhammad is the messenger of Allah'.",
+        "arabic": "الشهادة هي: 'لا إله إلا الله محمد رسول الله'"
+      }
+    },
+    {
+      "id": "q020",
+      "category": "Prophets Stories",
+      "difficulty": 3,
+      "question": {
+        "arabic": "كم عدد أولاد النبي يعقوب عليه السلام؟",
+        "english": "How many sons did Prophet Yaqub (Jacob) have?"
+      },
+      "choices": {
+        "A": {
+          "english": "10 sons",
+          "arabic": "١٠ أولاد"
+        },
+        "B": {
+          "english": "11 sons", 
+          "arabic": "١١ ولداً"
+        },
+        "C": {
+          "english": "12 sons",
+          "arabic": "١٢ ولداً"
+        },
+        "D": {
+          "english": "13 sons",
+          "arabic": "١٣ ولداً"
+        }
+      },
+      "correct_answer": "C", 
+      "explanation": {
+        "english": "Prophet Yaqub had 12 sons, who became the 12 tribes of Israel.",
+        "arabic": "كان للنبي يعقوب عليه السلام ١٢ ولداً، وهم الأسباط الاثنا عشر"
+      }
+    }
+  ]
+}

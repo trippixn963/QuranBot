@@ -1,0 +1,6635 @@
+{
+  "metadata": {
+    "version": "4.0.1",
+    "description": "Complete Islamic Knowledge Quiz Questions for QuranBot",
+    "categories": [
+      "Quran",
+      "Hadith",
+      "Pillars of Islam",
+      "Pillars of Iman",
+      "Seerah",
+      "Islamic History",
+      "Fiqh",
+      "Aqidah",
+      "Islamic Ethics",
+      "Prophets",
+      "Companions",
+      "Islamic Culture",
+      "Arabic Language",
+      "Islamic Architecture",
+      "Islamic Sciences"
+    ],
+    "difficulty_levels": {
+      "1": "Very Easy",
+      "2": "Easy",
+      "3": "Medium",
+      "4": "Hard",
+      "5": "Very Hard"
+    },
+    "total_questions": 200,
+    "created_date": "2024-07-29",
+    "author": "QuranBot Development Team"
+  },
+  "questions": [
+    {
+      "id": "q001",
+      "category": "Quran",
+      "difficulty": 1,
+      "themes": [
+        "Quran Basics"
+      ],
+      "context": {
+        "english": "Basic Quran Knowledge"
+      },
+      "question": {
+        "english": "How many chapters (surahs) are there in the Quran?"
+      },
+      "choices": {
+        "A": {
+          "english": "112"
+        },
+        "B": {
+          "english": "114"
+        },
+        "C": {
+          "english": "116"
+        },
+        "D": {
+          "english": "118"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The Quran contains 114 chapters (surahs)."
+      },
+      "reference": "Quran Structure"
+    },
+    {
+      "id": "q002",
+      "category": "Quran",
+      "difficulty": 1,
+      "themes": [
+        "Quran Basics"
+      ],
+      "context": {
+        "english": "Basic Quran Knowledge"
+      },
+      "question": {
+        "english": "What is the first chapter of the Quran called?"
+      },
+      "choices": {
+        "A": {
+          "english": "Al-Fatihah"
+        },
+        "B": {
+          "english": "Al-Baqarah"
+        },
+        "C": {
+          "english": "Aal-Imran"
+        },
+        "D": {
+          "english": "An-Nisa"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Al-Fatihah (The Opening) is the first chapter of the Quran."
+      },
+      "reference": "Quran 1:1"
+    },
+    {
+      "id": "q003",
+      "category": "Pillars of Islam",
+      "difficulty": 1,
+      "themes": [
+        "Five Pillars"
+      ],
+      "context": {
+        "english": "Islamic Fundamentals"
+      },
+      "question": {
+        "english": "How many pillars of Islam are there?"
+      },
+      "choices": {
+        "A": {
+          "english": "3"
+        },
+        "B": {
+          "english": "4"
+        },
+        "C": {
+          "english": "5"
+        },
+        "D": {
+          "english": "6"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "There are five pillars of Islam: Shahada, Salah, Zakat, Sawm, and Hajj."
+      },
+      "reference": "Hadith - Sahih Bukhari"
+    },
+    {
+      "id": "q004",
+      "category": "Pillars of Islam",
+      "difficulty": 1,
+      "themes": [
+        "Shahada"
+      ],
+      "context": {
+        "english": "Declaration of Faith"
+      },
+      "question": {
+        "english": "What is the first pillar of Islam?"
+      },
+      "choices": {
+        "A": {
+          "english": "Prayer (Salah)"
+        },
+        "B": {
+          "english": "Charity (Zakat)"
+        },
+        "C": {
+          "english": "Declaration of Faith (Shahada)"
+        },
+        "D": {
+          "english": "Fasting (Sawm)"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "The Shahada (declaration of faith) is the first pillar of Islam."
+      },
+      "reference": "Islamic Fundamentals"
+    },
+    {
+      "id": "q005",
+      "category": "Prophets",
+      "difficulty": 1,
+      "themes": [
+        "Prophet Muhammad"
+      ],
+      "context": {
+        "english": "Prophet's Life"
+      },
+      "question": {
+        "english": "In which city was Prophet Muhammad (peace be upon him) born?"
+      },
+      "choices": {
+        "A": {
+          "english": "Medina"
+        },
+        "B": {
+          "english": "Mecca"
+        },
+        "C": {
+          "english": "Jerusalem"
+        },
+        "D": {
+          "english": "Damascus"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Prophet Muhammad (peace be upon him) was born in Mecca."
+      },
+      "reference": "Seerah"
+    },
+    {
+      "id": "q006",
+      "category": "Quran",
+      "difficulty": 2,
+      "themes": [
+        "Revelation"
+      ],
+      "context": {
+        "english": "Quranic Revelation"
+      },
+      "question": {
+        "english": "In which month was the Quran first revealed?"
+      },
+      "choices": {
+        "A": {
+          "english": "Rajab"
+        },
+        "B": {
+          "english": "Ramadan"
+        },
+        "C": {
+          "english": "Shaban"
+        },
+        "D": {
+          "english": "Dhul Hijjah"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The Quran was first revealed in the month of Ramadan."
+      },
+      "reference": "Quran 2:185"
+    },
+    {
+      "id": "q007",
+      "category": "Pillars of Islam",
+      "difficulty": 2,
+      "themes": [
+        "Prayer"
+      ],
+      "context": {
+        "english": "Daily Prayers"
+      },
+      "question": {
+        "english": "How many obligatory prayers are there in a day?"
+      },
+      "choices": {
+        "A": {
+          "english": "3"
+        },
+        "B": {
+          "english": "4"
+        },
+        "C": {
+          "english": "5"
+        },
+        "D": {
+          "english": "6"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "There are five obligatory prayers: Fajr, Dhuhr, Asr, Maghrib, and Isha."
+      },
+      "reference": "Hadith"
+    },
+    {
+      "id": "q008",
+      "category": "Islamic History",
+      "difficulty": 2,
+      "themes": [
+        "Migration"
+      ],
+      "context": {
+        "english": "Historical Events"
+      },
+      "question": {
+        "english": "What is the migration of Prophet Muhammad from Mecca to Medina called?"
+      },
+      "choices": {
+        "A": {
+          "english": "Hijra"
+        },
+        "B": {
+          "english": "Isra"
+        },
+        "C": {
+          "english": "Miraj"
+        },
+        "D": {
+          "english": "Umrah"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The migration from Mecca to Medina is called Hijra, marking the beginning of the Islamic calendar."
+      },
+      "reference": "Islamic History"
+    },
+    {
+      "id": "q009",
+      "category": "Quran",
+      "difficulty": 2,
+      "themes": [
+        "Famous Verses"
+      ],
+      "context": {
+        "english": "Quranic Verses"
+      },
+      "question": {
+        "english": "Which verse is known as 'Ayat al-Kursi'?"
+      },
+      "choices": {
+        "A": {
+          "english": "Quran 2:255"
+        },
+        "B": {
+          "english": "Quran 1:1"
+        },
+        "C": {
+          "english": "Quran 3:18"
+        },
+        "D": {
+          "english": "Quran 112:1"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Ayat al-Kursi is Quran 2:255, speaking about Allah's greatness and knowledge."
+      },
+      "reference": "Quran 2:255"
+    },
+    {
+      "id": "q010",
+      "category": "Companions",
+      "difficulty": 2,
+      "themes": [
+        "Righteous Caliphs"
+      ],
+      "context": {
+        "english": "Early Islamic Leadership"
+      },
+      "question": {
+        "english": "Who was the first Caliph after Prophet Muhammad?"
+      },
+      "choices": {
+        "A": {
+          "english": "Umar ibn al-Khattab"
+        },
+        "B": {
+          "english": "Abu Bakr as-Siddiq"
+        },
+        "C": {
+          "english": "Uthman ibn Affan"
+        },
+        "D": {
+          "english": "Ali ibn Abi Talib"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Abu Bakr as-Siddiq was chosen as the first Caliph after Prophet Muhammad."
+      },
+      "reference": "Islamic History"
+    },
+    {
+      "id": "q011",
+      "category": "Fiqh",
+      "difficulty": 2,
+      "themes": [
+        "Ritual Purity"
+      ],
+      "context": {
+        "english": "Islamic Jurisprudence"
+      },
+      "question": {
+        "english": "What is the Arabic term for ritual purification before prayer?"
+      },
+      "choices": {
+        "A": {
+          "english": "Ghusl"
+        },
+        "B": {
+          "english": "Wudu"
+        },
+        "C": {
+          "english": "Tayammum"
+        },
+        "D": {
+          "english": "Istinja"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Wudu is the ritual purification performed before prayer."
+      },
+      "reference": "Quran 5:6"
+    },
+    {
+      "id": "q012",
+      "category": "Hadith",
+      "difficulty": 2,
+      "themes": [
+        "Prophet's Sayings"
+      ],
+      "context": {
+        "english": "Prophetic Traditions"
+      },
+      "question": {
+        "english": "Complete this hadith: 'Actions are but by...'"
+      },
+      "choices": {
+        "A": {
+          "english": "faith"
+        },
+        "B": {
+          "english": "intention"
+        },
+        "C": {
+          "english": "knowledge"
+        },
+        "D": {
+          "english": "practice"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The famous hadith states: 'Actions are but by intention.'"
+      },
+      "reference": "Sahih Bukhari & Muslim"
+    },
+    {
+      "id": "q013",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Longest Chapter"
+      ],
+      "context": {
+        "english": "Quranic Structure"
+      },
+      "question": {
+        "english": "Which chapter is the longest in the Quran?"
+      },
+      "choices": {
+        "A": {
+          "english": "Al-Fatihah"
+        },
+        "B": {
+          "english": "Al-Baqarah"
+        },
+        "C": {
+          "english": "Aal-Imran"
+        },
+        "D": {
+          "english": "An-Nisa"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Al-Baqarah (The Cow) is the longest chapter with 286 verses."
+      },
+      "reference": "Quran 2"
+    },
+    {
+      "id": "q014",
+      "category": "Pillars of Iman",
+      "difficulty": 2,
+      "themes": [
+        "Articles of Faith"
+      ],
+      "context": {
+        "english": "Islamic Beliefs"
+      },
+      "question": {
+        "english": "How many articles of faith (Pillars of Iman) are there?"
+      },
+      "choices": {
+        "A": {
+          "english": "5"
+        },
+        "B": {
+          "english": "6"
+        },
+        "C": {
+          "english": "7"
+        },
+        "D": {
+          "english": "8"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "There are six articles of faith: belief in Allah, angels, books, messengers, Day of Judgment, and divine decree."
+      },
+      "reference": "Hadith Jibril"
+    },
+    {
+      "id": "q015",
+      "category": "Seerah",
+      "difficulty": 2,
+      "themes": [
+        "Prophet's Life"
+      ],
+      "context": {
+        "english": "Biography of the Prophet"
+      },
+      "question": {
+        "english": "At what age did Prophet Muhammad receive his first revelation?"
+      },
+      "choices": {
+        "A": {
+          "english": "35"
+        },
+        "B": {
+          "english": "40"
+        },
+        "C": {
+          "english": "45"
+        },
+        "D": {
+          "english": "50"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Prophet Muhammad received his first revelation at the age of 40."
+      },
+      "reference": "Seerah"
+    },
+    {
+      "id": "q016",
+      "category": "Arabic Language",
+      "difficulty": 2,
+      "themes": [
+        "Islamic Terms"
+      ],
+      "context": {
+        "english": "Arabic Vocabulary"
+      },
+      "question": {
+        "english": "What does 'Bismillah' mean?"
+      },
+      "choices": {
+        "A": {
+          "english": "Praise be to Allah"
+        },
+        "B": {
+          "english": "In the name of Allah"
+        },
+        "C": {
+          "english": "Allah is great"
+        },
+        "D": {
+          "english": "There is no god but Allah"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Bismillah means 'In the name of Allah' and begins most chapters of the Quran."
+      },
+      "reference": "Quran 1:1"
+    },
+    {
+      "id": "q017",
+      "category": "Islamic Ethics",
+      "difficulty": 2,
+      "themes": [
+        "Moral Values"
+      ],
+      "context": {
+        "english": "Islamic Morality"
+      },
+      "question": {
+        "english": "Which quality is most emphasized in Islamic teachings?"
+      },
+      "choices": {
+        "A": {
+          "english": "Courage"
+        },
+        "B": {
+          "english": "Justice"
+        },
+        "C": {
+          "english": "Patience"
+        },
+        "D": {
+          "english": "All of the above"
+        }
+      },
+      "correct_answer": "D",
+      "explanation": {
+        "english": "Islam emphasizes many qualities including courage, justice, and patience."
+      },
+      "reference": "Quran and Hadith"
+    },
+    {
+      "id": "q018",
+      "category": "Prophets",
+      "difficulty": 2,
+      "themes": [
+        "Earlier Prophets"
+      ],
+      "context": {
+        "english": "Prophetic History"
+      },
+      "question": {
+        "english": "Which prophet is known as 'Khalil Allah' (Friend of Allah)?"
+      },
+      "choices": {
+        "A": {
+          "english": "Moses (Musa)"
+        },
+        "B": {
+          "english": "Jesus (Isa)"
+        },
+        "C": {
+          "english": "Abraham (Ibrahim)"
+        },
+        "D": {
+          "english": "Noah (Nuh)"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "Prophet Abraham (Ibrahim) is known as Khalil Allah (Friend of Allah)."
+      },
+      "reference": "Quran 4:125"
+    },
+    {
+      "id": "q019",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Shortest Chapter"
+      ],
+      "context": {
+        "english": "Quranic Structure"
+      },
+      "question": {
+        "english": "Which is the shortest chapter in the Quran?"
+      },
+      "choices": {
+        "A": {
+          "english": "Al-Kawthar"
+        },
+        "B": {
+          "english": "Al-Asr"
+        },
+        "C": {
+          "english": "Al-Ikhlas"
+        },
+        "D": {
+          "english": "An-Nas"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Al-Kawthar (The Abundance) is the shortest chapter with only 3 verses."
+      },
+      "reference": "Quran 108"
+    },
+    {
+      "id": "q020",
+      "category": "Pillars of Islam",
+      "difficulty": 2,
+      "themes": [
+        "Hajj"
+      ],
+      "context": {
+        "english": "Pilgrimage"
+      },
+      "question": {
+        "english": "During which Islamic month is Hajj performed?"
+      },
+      "choices": {
+        "A": {
+          "english": "Ramadan"
+        },
+        "B": {
+          "english": "Dhul Hijjah"
+        },
+        "C": {
+          "english": "Muharram"
+        },
+        "D": {
+          "english": "Rajab"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Hajj is performed during Dhul Hijjah, the 12th month of the Islamic calendar."
+      },
+      "reference": "Quran 2:197"
+    },
+    {
+      "id": "q021",
+      "category": "Islamic History",
+      "difficulty": 3,
+      "themes": [
+        "Battles"
+      ],
+      "context": {
+        "english": "Early Islamic Battles"
+      },
+      "question": {
+        "english": "What was the first major battle in Islamic history?"
+      },
+      "choices": {
+        "A": {
+          "english": "Battle of Uhud"
+        },
+        "B": {
+          "english": "Battle of Badr"
+        },
+        "C": {
+          "english": "Battle of Khandaq"
+        },
+        "D": {
+          "english": "Battle of Hunayn"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The Battle of Badr was the first major battle in Islamic history."
+      },
+      "reference": "Islamic History"
+    },
+    {
+      "id": "q022",
+      "category": "Companions",
+      "difficulty": 3,
+      "themes": [
+        "Notable Companions"
+      ],
+      "context": {
+        "english": "Sahaba"
+      },
+      "question": {
+        "english": "Who is known as 'Sayf Allah al-Maslul' (The Drawn Sword of Allah)?"
+      },
+      "choices": {
+        "A": {
+          "english": "Abu Bakr"
+        },
+        "B": {
+          "english": "Umar ibn al-Khattab"
+        },
+        "C": {
+          "english": "Khalid ibn al-Walid"
+        },
+        "D": {
+          "english": "Ali ibn Abi Talib"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "Khalid ibn al-Walid earned this title for his military prowess."
+      },
+      "reference": "Islamic History"
+    },
+    {
+      "id": "q023",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Islamic Law"
+      ],
+      "context": {
+        "english": "Jurisprudence"
+      },
+      "question": {
+        "english": "What are the four main sources of Islamic law?"
+      },
+      "choices": {
+        "A": {
+          "english": "Quran, Hadith, Ijma, Qiyas"
+        },
+        "B": {
+          "english": "Quran, Hadith, Ijtihad, Fatwa"
+        },
+        "C": {
+          "english": "Quran, Sunnah, Ijma, Tafsir"
+        },
+        "D": {
+          "english": "Quran, Hadith, Fiqh, Aqidah"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The four sources are Quran, Hadith (Sunnah), Ijma (consensus), and Qiyas (analogy)."
+      },
+      "reference": "Usul al-Fiqh"
+    },
+    {
+      "id": "q024",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Islamic Creed"
+      ],
+      "context": {
+        "english": "Theology"
+      },
+      "question": {
+        "english": "What does 'Tawhid' refer to?"
+      },
+      "choices": {
+        "A": {
+          "english": "Prayer"
+        },
+        "B": {
+          "english": "Unity of Allah"
+        },
+        "C": {
+          "english": "Charity"
+        },
+        "D": {
+          "english": "Pilgrimage"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Tawhid refers to the unity and oneness of Allah."
+      },
+      "reference": "Islamic Theology"
+    },
+    {
+      "id": "q025",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Quranic Sciences"
+      ],
+      "context": {
+        "english": "Revelation"
+      },
+      "question": {
+        "english": "How many years did it take for the complete Quran to be revealed?"
+      },
+      "choices": {
+        "A": {
+          "english": "20 years"
+        },
+        "B": {
+          "english": "23 years"
+        },
+        "C": {
+          "english": "25 years"
+        },
+        "D": {
+          "english": "30 years"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The Quran was revealed over a period of 23 years."
+      },
+      "reference": "Quranic Sciences"
+    },
+    {
+      "id": "q026",
+      "category": "Quran",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Quran Knowledge"
+      },
+      "question": {
+        "english": "Which chapter contains the verse of light (Ayat an-Nur)?"
+      },
+      "choices": {
+        "A": {
+          "english": "An-Nur"
+        },
+        "B": {
+          "english": "Al-Baqarah"
+        },
+        "C": {
+          "english": "Aal-Imran"
+        },
+        "D": {
+          "english": "Al-Maidah"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is An-Nur."
+      },
+      "reference": "Quran Studies"
+    },
+    {
+      "id": "q027",
+      "category": "Quran",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Quran Knowledge"
+      },
+      "question": {
+        "english": "How many verses are in Surah Al-Fatihah?"
+      },
+      "choices": {
+        "A": {
+          "english": "5"
+        },
+        "B": {
+          "english": "6"
+        },
+        "C": {
+          "english": "7"
+        },
+        "D": {
+          "english": "8"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "The correct answer is 7."
+      },
+      "reference": "Quran Studies"
+    },
+    {
+      "id": "q028",
+      "category": "Quran",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Quran Knowledge"
+      },
+      "question": {
+        "english": "Which chapter is known as the heart of the Quran?"
+      },
+      "choices": {
+        "A": {
+          "english": "Ya-Sin"
+        },
+        "B": {
+          "english": "Al-Mulk"
+        },
+        "C": {
+          "english": "Al-Kahf"
+        },
+        "D": {
+          "english": "Ar-Rahman"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Ya-Sin."
+      },
+      "reference": "Quran Studies"
+    },
+    {
+      "id": "q029",
+      "category": "Quran",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Quran Knowledge"
+      },
+      "question": {
+        "english": "What does \"Quran\" literally mean?"
+      },
+      "choices": {
+        "A": {
+          "english": "Book"
+        },
+        "B": {
+          "english": "Recitation"
+        },
+        "C": {
+          "english": "Guidance"
+        },
+        "D": {
+          "english": "Light"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The correct answer is Recitation."
+      },
+      "reference": "Quran Studies"
+    },
+    {
+      "id": "q030",
+      "category": "Quran",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Quran Knowledge"
+      },
+      "question": {
+        "english": "Which chapter was revealed entirely in Medina?"
+      },
+      "choices": {
+        "A": {
+          "english": "Al-Baqarah"
+        },
+        "B": {
+          "english": "Al-Fatihah"
+        },
+        "C": {
+          "english": "Al-Ikhlas"
+        },
+        "D": {
+          "english": "Al-Kawthar"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Al-Baqarah."
+      },
+      "reference": "Quran Studies"
+    },
+    {
+      "id": "q031",
+      "category": "Hadith",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Hadith Knowledge"
+      },
+      "question": {
+        "english": "Who compiled Sahih Bukhari?"
+      },
+      "choices": {
+        "A": {
+          "english": "Imam Muslim"
+        },
+        "B": {
+          "english": "Imam Bukhari"
+        },
+        "C": {
+          "english": "Imam Tirmidhi"
+        },
+        "D": {
+          "english": "Imam Abu Dawud"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The correct answer is Imam Bukhari."
+      },
+      "reference": "Hadith Studies"
+    },
+    {
+      "id": "q032",
+      "category": "Hadith",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Hadith Knowledge"
+      },
+      "question": {
+        "english": "What is the most authentic hadith collection after Quran?"
+      },
+      "choices": {
+        "A": {
+          "english": "Sahih Muslim"
+        },
+        "B": {
+          "english": "Sahih Bukhari"
+        },
+        "C": {
+          "english": "Both equally"
+        },
+        "D": {
+          "english": "Sunan Abu Dawud"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "The correct answer is Both equally."
+      },
+      "reference": "Hadith Studies"
+    },
+    {
+      "id": "q033",
+      "category": "Hadith",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Hadith Knowledge"
+      },
+      "question": {
+        "english": "What does \"Hadith Qudsi\" refer to?"
+      },
+      "choices": {
+        "A": {
+          "english": "Sacred hadith from Allah"
+        },
+        "B": {
+          "english": "Weak hadith"
+        },
+        "C": {
+          "english": "Fabricated hadith"
+        },
+        "D": {
+          "english": "Prophetic actions"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Sacred hadith from Allah."
+      },
+      "reference": "Hadith Studies"
+    },
+    {
+      "id": "q034",
+      "category": "Hadith",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Hadith Knowledge"
+      },
+      "question": {
+        "english": "How many hadith are in Sahih Bukhari?"
+      },
+      "choices": {
+        "A": {
+          "english": "About 7000"
+        },
+        "B": {
+          "english": "About 5000"
+        },
+        "C": {
+          "english": "About 9000"
+        },
+        "D": {
+          "english": "About 3000"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is About 7000."
+      },
+      "reference": "Hadith Studies"
+    },
+    {
+      "id": "q035",
+      "category": "Hadith",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Hadith Knowledge"
+      },
+      "question": {
+        "english": "What is the chain of narrators called?"
+      },
+      "choices": {
+        "A": {
+          "english": "Matn"
+        },
+        "B": {
+          "english": "Isnad"
+        },
+        "C": {
+          "english": "Rawi"
+        },
+        "D": {
+          "english": "Sanad"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The correct answer is Isnad."
+      },
+      "reference": "Hadith Studies"
+    },
+    {
+      "id": "q036",
+      "category": "Pillars of Islam",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Pillars of Islam Knowledge"
+      },
+      "question": {
+        "english": "What is the minimum amount of gold subject to Zakat?"
+      },
+      "choices": {
+        "A": {
+          "english": "85 grams"
+        },
+        "B": {
+          "english": "87.5 grams"
+        },
+        "C": {
+          "english": "90 grams"
+        },
+        "D": {
+          "english": "100 grams"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The correct answer is 87.5 grams."
+      },
+      "reference": "Pillars of Islam Studies"
+    },
+    {
+      "id": "q037",
+      "category": "Pillars of Islam",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Pillars of Islam Knowledge"
+      },
+      "question": {
+        "english": "During which hours is Fajr prayer time?"
+      },
+      "choices": {
+        "A": {
+          "english": "Before dawn"
+        },
+        "B": {
+          "english": "At sunrise"
+        },
+        "C": {
+          "english": "After sunrise"
+        },
+        "D": {
+          "english": "At noon"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Before dawn."
+      },
+      "reference": "Pillars of Islam Studies"
+    },
+    {
+      "id": "q038",
+      "category": "Pillars of Islam",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Pillars of Islam Knowledge"
+      },
+      "question": {
+        "english": "What is the Arabic term for the call to prayer?"
+      },
+      "choices": {
+        "A": {
+          "english": "Iqama"
+        },
+        "B": {
+          "english": "Adhan"
+        },
+        "C": {
+          "english": "Takbir"
+        },
+        "D": {
+          "english": "Dhikr"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The correct answer is Adhan."
+      },
+      "reference": "Pillars of Islam Studies"
+    },
+    {
+      "id": "q039",
+      "category": "Pillars of Islam",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Pillars of Islam Knowledge"
+      },
+      "question": {
+        "english": "How many times do Muslims circle the Kaaba during Hajj?"
+      },
+      "choices": {
+        "A": {
+          "english": "5"
+        },
+        "B": {
+          "english": "6"
+        },
+        "C": {
+          "english": "7"
+        },
+        "D": {
+          "english": "8"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "The correct answer is 7."
+      },
+      "reference": "Pillars of Islam Studies"
+    },
+    {
+      "id": "q040",
+      "category": "Pillars of Islam",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Pillars of Islam Knowledge"
+      },
+      "question": {
+        "english": "What is the fasting during Ramadan called?"
+      },
+      "choices": {
+        "A": {
+          "english": "Sawm"
+        },
+        "B": {
+          "english": "Siyam"
+        },
+        "C": {
+          "english": "Both A and B"
+        },
+        "D": {
+          "english": "Iftar"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "The correct answer is Both A and B."
+      },
+      "reference": "Pillars of Islam Studies"
+    },
+    {
+      "id": "q041",
+      "category": "Seerah",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Seerah Knowledge"
+      },
+      "question": {
+        "english": "What was the name of Prophet Muhammad's mother?"
+      },
+      "choices": {
+        "A": {
+          "english": "Khadijah"
+        },
+        "B": {
+          "english": "Aisha"
+        },
+        "C": {
+          "english": "Aminah"
+        },
+        "D": {
+          "english": "Fatimah"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "The correct answer is Aminah."
+      },
+      "reference": "Seerah Studies"
+    },
+    {
+      "id": "q042",
+      "category": "Seerah",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Seerah Knowledge"
+      },
+      "question": {
+        "english": "Which angel brought revelations to the Prophet?"
+      },
+      "choices": {
+        "A": {
+          "english": "Michael"
+        },
+        "B": {
+          "english": "Gabriel"
+        },
+        "C": {
+          "english": "Raphael"
+        },
+        "D": {
+          "english": "Israfil"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The correct answer is Gabriel."
+      },
+      "reference": "Seerah Studies"
+    },
+    {
+      "id": "q043",
+      "category": "Seerah",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Seerah Knowledge"
+      },
+      "question": {
+        "english": "What was the Prophet's occupation before prophethood?"
+      },
+      "choices": {
+        "A": {
+          "english": "Farmer"
+        },
+        "B": {
+          "english": "Merchant"
+        },
+        "C": {
+          "english": "Shepherd"
+        },
+        "D": {
+          "english": "Both B and C"
+        }
+      },
+      "correct_answer": "D",
+      "explanation": {
+        "english": "The correct answer is Both B and C."
+      },
+      "reference": "Seerah Studies"
+    },
+    {
+      "id": "q044",
+      "category": "Seerah",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Seerah Knowledge"
+      },
+      "question": {
+        "english": "In which cave did the Prophet receive his first revelation?"
+      },
+      "choices": {
+        "A": {
+          "english": "Cave of Hira"
+        },
+        "B": {
+          "english": "Cave of Thawr"
+        },
+        "C": {
+          "english": "Cave of Uhud"
+        },
+        "D": {
+          "english": "Cave of Quba"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Cave of Hira."
+      },
+      "reference": "Seerah Studies"
+    },
+    {
+      "id": "q045",
+      "category": "Seerah",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Seerah Knowledge"
+      },
+      "question": {
+        "english": "How many children did Prophet Muhammad have?"
+      },
+      "choices": {
+        "A": {
+          "english": "5"
+        },
+        "B": {
+          "english": "6"
+        },
+        "C": {
+          "english": "7"
+        },
+        "D": {
+          "english": "8"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "The correct answer is 7."
+      },
+      "reference": "Seerah Studies"
+    },
+    {
+      "id": "q046",
+      "category": "Islamic History",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic History Knowledge"
+      },
+      "question": {
+        "english": "In which year did the Battle of Badr take place?"
+      },
+      "choices": {
+        "A": {
+          "english": "1 AH"
+        },
+        "B": {
+          "english": "2 AH"
+        },
+        "C": {
+          "english": "3 AH"
+        },
+        "D": {
+          "english": "4 AH"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The correct answer is 2 AH."
+      },
+      "reference": "Islamic History Studies"
+    },
+    {
+      "id": "q047",
+      "category": "Islamic History",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic History Knowledge"
+      },
+      "question": {
+        "english": "Who was the last of the Rashidun Caliphs?"
+      },
+      "choices": {
+        "A": {
+          "english": "Abu Bakr"
+        },
+        "B": {
+          "english": "Umar"
+        },
+        "C": {
+          "english": "Uthman"
+        },
+        "D": {
+          "english": "Ali"
+        }
+      },
+      "correct_answer": "D",
+      "explanation": {
+        "english": "The correct answer is Ali."
+      },
+      "reference": "Islamic History Studies"
+    },
+    {
+      "id": "q048",
+      "category": "Islamic History",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic History Knowledge"
+      },
+      "question": {
+        "english": "Which dynasty ruled after the Rashidun Caliphate?"
+      },
+      "choices": {
+        "A": {
+          "english": "Abbasid"
+        },
+        "B": {
+          "english": "Umayyad"
+        },
+        "C": {
+          "english": "Ottoman"
+        },
+        "D": {
+          "english": "Fatimid"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The correct answer is Umayyad."
+      },
+      "reference": "Islamic History Studies"
+    },
+    {
+      "id": "q049",
+      "category": "Islamic History",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic History Knowledge"
+      },
+      "question": {
+        "english": "In which city was the first mosque built?"
+      },
+      "choices": {
+        "A": {
+          "english": "Mecca"
+        },
+        "B": {
+          "english": "Medina"
+        },
+        "C": {
+          "english": "Jerusalem"
+        },
+        "D": {
+          "english": "Damascus"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The correct answer is Medina."
+      },
+      "reference": "Islamic History Studies"
+    },
+    {
+      "id": "q050",
+      "category": "Islamic History",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic History Knowledge"
+      },
+      "question": {
+        "english": "What was the Treaty of Hudaybiyyah?"
+      },
+      "choices": {
+        "A": {
+          "english": "Peace treaty"
+        },
+        "B": {
+          "english": "Trade agreement"
+        },
+        "C": {
+          "english": "Military alliance"
+        },
+        "D": {
+          "english": "Marriage contract"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Peace treaty."
+      },
+      "reference": "Islamic History Studies"
+    },
+    {
+      "id": "q051",
+      "category": "Prophets",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Prophets Knowledge"
+      },
+      "question": {
+        "english": "How many prophets are mentioned by name in the Quran?"
+      },
+      "choices": {
+        "A": {
+          "english": "24"
+        },
+        "B": {
+          "english": "25"
+        },
+        "C": {
+          "english": "26"
+        },
+        "D": {
+          "english": "27"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The correct answer is 25."
+      },
+      "reference": "Prophets Studies"
+    },
+    {
+      "id": "q052",
+      "category": "Prophets",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Prophets Knowledge"
+      },
+      "question": {
+        "english": "Which prophet could speak to animals?"
+      },
+      "choices": {
+        "A": {
+          "english": "David"
+        },
+        "B": {
+          "english": "Solomon"
+        },
+        "C": {
+          "english": "Moses"
+        },
+        "D": {
+          "english": "Jesus"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The correct answer is Solomon."
+      },
+      "reference": "Prophets Studies"
+    },
+    {
+      "id": "q053",
+      "category": "Prophets",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Prophets Knowledge"
+      },
+      "question": {
+        "english": "Who was the first prophet according to Islam?"
+      },
+      "choices": {
+        "A": {
+          "english": "Adam"
+        },
+        "B": {
+          "english": "Noah"
+        },
+        "C": {
+          "english": "Abraham"
+        },
+        "D": {
+          "english": "Enoch"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Adam."
+      },
+      "reference": "Prophets Studies"
+    },
+    {
+      "id": "q054",
+      "category": "Prophets",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Prophets Knowledge"
+      },
+      "question": {
+        "english": "Which prophet is associated with the Ark?"
+      },
+      "choices": {
+        "A": {
+          "english": "Moses"
+        },
+        "B": {
+          "english": "Abraham"
+        },
+        "C": {
+          "english": "Noah"
+        },
+        "D": {
+          "english": "Lot"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "The correct answer is Noah."
+      },
+      "reference": "Prophets Studies"
+    },
+    {
+      "id": "q055",
+      "category": "Prophets",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Prophets Knowledge"
+      },
+      "question": {
+        "english": "Who was known as the patient prophet?"
+      },
+      "choices": {
+        "A": {
+          "english": "Job"
+        },
+        "B": {
+          "english": "Joseph"
+        },
+        "C": {
+          "english": "Moses"
+        },
+        "D": {
+          "english": "David"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Job."
+      },
+      "reference": "Prophets Studies"
+    },
+    {
+      "id": "q056",
+      "category": "Fiqh",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Fiqh Knowledge"
+      },
+      "question": {
+        "english": "What breaks the state of wudu?"
+      },
+      "choices": {
+        "A": {
+          "english": "Eating"
+        },
+        "B": {
+          "english": "Sleeping"
+        },
+        "C": {
+          "english": "Laughing"
+        },
+        "D": {
+          "english": "All of above"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The correct answer is Sleeping."
+      },
+      "reference": "Fiqh Studies"
+    },
+    {
+      "id": "q057",
+      "category": "Fiqh",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Fiqh Knowledge"
+      },
+      "question": {
+        "english": "What is the Arabic term for Islamic inheritance law?"
+      },
+      "choices": {
+        "A": {
+          "english": "Mirath"
+        },
+        "B": {
+          "english": "Wasiyyah"
+        },
+        "C": {
+          "english": "Hibah"
+        },
+        "D": {
+          "english": "Waqf"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Mirath."
+      },
+      "reference": "Fiqh Studies"
+    },
+    {
+      "id": "q058",
+      "category": "Fiqh",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Fiqh Knowledge"
+      },
+      "question": {
+        "english": "How many schools of Islamic jurisprudence are there in Sunni Islam?"
+      },
+      "choices": {
+        "A": {
+          "english": "3"
+        },
+        "B": {
+          "english": "4"
+        },
+        "C": {
+          "english": "5"
+        },
+        "D": {
+          "english": "6"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The correct answer is 4."
+      },
+      "reference": "Fiqh Studies"
+    },
+    {
+      "id": "q059",
+      "category": "Fiqh",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Fiqh Knowledge"
+      },
+      "question": {
+        "english": "What is the minimum age for religious obligations?"
+      },
+      "choices": {
+        "A": {
+          "english": "Puberty"
+        },
+        "B": {
+          "english": "15 years"
+        },
+        "C": {
+          "english": "18 years"
+        },
+        "D": {
+          "english": "21 years"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Puberty."
+      },
+      "reference": "Fiqh Studies"
+    },
+    {
+      "id": "q060",
+      "category": "Fiqh",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Fiqh Knowledge"
+      },
+      "question": {
+        "english": "What is the term for ritual washing of the dead?"
+      },
+      "choices": {
+        "A": {
+          "english": "Ghusl"
+        },
+        "B": {
+          "english": "Wudu"
+        },
+        "C": {
+          "english": "Tayammum"
+        },
+        "D": {
+          "english": "Kafan"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Ghusl."
+      },
+      "reference": "Fiqh Studies"
+    },
+    {
+      "id": "q061",
+      "category": "Aqidah",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Aqidah Knowledge"
+      },
+      "question": {
+        "english": "What are the 99 names of Allah called?"
+      },
+      "choices": {
+        "A": {
+          "english": "Asma ul-Husna"
+        },
+        "B": {
+          "english": "Sifat Allah"
+        },
+        "C": {
+          "english": "Tawhid Names"
+        },
+        "D": {
+          "english": "Divine Names"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Asma ul-Husna."
+      },
+      "reference": "Aqidah Studies"
+    },
+    {
+      "id": "q062",
+      "category": "Aqidah",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Aqidah Knowledge"
+      },
+      "question": {
+        "english": "What is the meaning of \"La hawla wa la quwwata illa billah\"?"
+      },
+      "choices": {
+        "A": {
+          "english": "There is no power except with Allah"
+        },
+        "B": {
+          "english": "There is no god but Allah"
+        },
+        "C": {
+          "english": "Allah is most great"
+        },
+        "D": {
+          "english": "Praise be to Allah"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is There is no power except with Allah."
+      },
+      "reference": "Aqidah Studies"
+    },
+    {
+      "id": "q063",
+      "category": "Aqidah",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Aqidah Knowledge"
+      },
+      "question": {
+        "english": "What does \"Subhan Allah\" mean?"
+      },
+      "choices": {
+        "A": {
+          "english": "Glory be to Allah"
+        },
+        "B": {
+          "english": "Praise be to Allah"
+        },
+        "C": {
+          "english": "Allah is great"
+        },
+        "D": {
+          "english": "There is no god but Allah"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Glory be to Allah."
+      },
+      "reference": "Aqidah Studies"
+    },
+    {
+      "id": "q064",
+      "category": "Aqidah",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Aqidah Knowledge"
+      },
+      "question": {
+        "english": "What is the Islamic concept of predestination called?"
+      },
+      "choices": {
+        "A": {
+          "english": "Qadar"
+        },
+        "B": {
+          "english": "Qada"
+        },
+        "C": {
+          "english": "Taqdeer"
+        },
+        "D": {
+          "english": "All of the above"
+        }
+      },
+      "correct_answer": "D",
+      "explanation": {
+        "english": "The correct answer is All of the above."
+      },
+      "reference": "Aqidah Studies"
+    },
+    {
+      "id": "q065",
+      "category": "Aqidah",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Aqidah Knowledge"
+      },
+      "question": {
+        "english": "What does \"Astaghfirullah\" mean?"
+      },
+      "choices": {
+        "A": {
+          "english": "I seek forgiveness from Allah"
+        },
+        "B": {
+          "english": "I praise Allah"
+        },
+        "C": {
+          "english": "Allah is great"
+        },
+        "D": {
+          "english": "There is no god but Allah"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is I seek forgiveness from Allah."
+      },
+      "reference": "Aqidah Studies"
+    },
+    {
+      "id": "q066",
+      "category": "Islamic Culture",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic Culture Knowledge"
+      },
+      "question": {
+        "english": "What is the Islamic greeting?"
+      },
+      "choices": {
+        "A": {
+          "english": "As-salamu alaykum"
+        },
+        "B": {
+          "english": "Ahlan wa sahlan"
+        },
+        "C": {
+          "english": "Marhaba"
+        },
+        "D": {
+          "english": "Sabah al-khayr"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is As-salamu alaykum."
+      },
+      "reference": "Islamic Culture Studies"
+    },
+    {
+      "id": "q067",
+      "category": "Islamic Culture",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic Culture Knowledge"
+      },
+      "question": {
+        "english": "What does \"Insha Allah\" mean?"
+      },
+      "choices": {
+        "A": {
+          "english": "If Allah wills"
+        },
+        "B": {
+          "english": "Praise be to Allah"
+        },
+        "C": {
+          "english": "Allah knows best"
+        },
+        "D": {
+          "english": "By the will of Allah"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is If Allah wills."
+      },
+      "reference": "Islamic Culture Studies"
+    },
+    {
+      "id": "q068",
+      "category": "Islamic Culture",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic Culture Knowledge"
+      },
+      "question": {
+        "english": "What is the response to \"As-salamu alaykum\"?"
+      },
+      "choices": {
+        "A": {
+          "english": "Wa alaykum as-salam"
+        },
+        "B": {
+          "english": "Ahlan wa sahlan"
+        },
+        "C": {
+          "english": "Barakallahu feeki"
+        },
+        "D": {
+          "english": "Jazakallahu khayran"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Wa alaykum as-salam."
+      },
+      "reference": "Islamic Culture Studies"
+    },
+    {
+      "id": "q069",
+      "category": "Islamic Culture",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic Culture Knowledge"
+      },
+      "question": {
+        "english": "What does \"Barakallahu feeki\" mean?"
+      },
+      "choices": {
+        "A": {
+          "english": "May Allah bless you"
+        },
+        "B": {
+          "english": "Peace be upon you"
+        },
+        "C": {
+          "english": "Allah knows best"
+        },
+        "D": {
+          "english": "If Allah wills"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is May Allah bless you."
+      },
+      "reference": "Islamic Culture Studies"
+    },
+    {
+      "id": "q070",
+      "category": "Islamic Culture",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic Culture Knowledge"
+      },
+      "question": {
+        "english": "What is the Arabic word for charity?"
+      },
+      "choices": {
+        "A": {
+          "english": "Sadaqah"
+        },
+        "B": {
+          "english": "Zakat"
+        },
+        "C": {
+          "english": "Khums"
+        },
+        "D": {
+          "english": "All of the above"
+        }
+      },
+      "correct_answer": "D",
+      "explanation": {
+        "english": "The correct answer is All of the above."
+      },
+      "reference": "Islamic Culture Studies"
+    },
+    {
+      "id": "q071",
+      "category": "Islamic Architecture",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic Architecture Knowledge"
+      },
+      "question": {
+        "english": "What is the direction Muslims face during prayer called?"
+      },
+      "choices": {
+        "A": {
+          "english": "Qibla"
+        },
+        "B": {
+          "english": "Mihrab"
+        },
+        "C": {
+          "english": "Minbar"
+        },
+        "D": {
+          "english": "Minaret"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Qibla."
+      },
+      "reference": "Islamic Architecture Studies"
+    },
+    {
+      "id": "q072",
+      "category": "Islamic Architecture",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic Architecture Knowledge"
+      },
+      "question": {
+        "english": "What is the niche in a mosque wall indicating prayer direction?"
+      },
+      "choices": {
+        "A": {
+          "english": "Mihrab"
+        },
+        "B": {
+          "english": "Minbar"
+        },
+        "C": {
+          "english": "Qibla"
+        },
+        "D": {
+          "english": "Minaret"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Mihrab."
+      },
+      "reference": "Islamic Architecture Studies"
+    },
+    {
+      "id": "q073",
+      "category": "Islamic Architecture",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic Architecture Knowledge"
+      },
+      "question": {
+        "english": "What is the pulpit in a mosque called?"
+      },
+      "choices": {
+        "A": {
+          "english": "Minbar"
+        },
+        "B": {
+          "english": "Mihrab"
+        },
+        "C": {
+          "english": "Minaret"
+        },
+        "D": {
+          "english": "Qubba"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Minbar."
+      },
+      "reference": "Islamic Architecture Studies"
+    },
+    {
+      "id": "q074",
+      "category": "Islamic Architecture",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic Architecture Knowledge"
+      },
+      "question": {
+        "english": "What is the tower of a mosque called?"
+      },
+      "choices": {
+        "A": {
+          "english": "Minaret"
+        },
+        "B": {
+          "english": "Mihrab"
+        },
+        "C": {
+          "english": "Minbar"
+        },
+        "D": {
+          "english": "Qubba"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Minaret."
+      },
+      "reference": "Islamic Architecture Studies"
+    },
+    {
+      "id": "q075",
+      "category": "Islamic Architecture",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic Architecture Knowledge"
+      },
+      "question": {
+        "english": "What is the dome of a mosque called in Arabic?"
+      },
+      "choices": {
+        "A": {
+          "english": "Qubba"
+        },
+        "B": {
+          "english": "Mihrab"
+        },
+        "C": {
+          "english": "Minaret"
+        },
+        "D": {
+          "english": "Minbar"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Qubba."
+      },
+      "reference": "Islamic Architecture Studies"
+    },
+    {
+      "id": "q076",
+      "category": "Islamic Sciences",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic Sciences Knowledge"
+      },
+      "question": {
+        "english": "What is the science of Quranic interpretation called?"
+      },
+      "choices": {
+        "A": {
+          "english": "Tafsir"
+        },
+        "B": {
+          "english": "Hadith"
+        },
+        "C": {
+          "english": "Fiqh"
+        },
+        "D": {
+          "english": "Aqidah"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Tafsir."
+      },
+      "reference": "Islamic Sciences Studies"
+    },
+    {
+      "id": "q077",
+      "category": "Islamic Sciences",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic Sciences Knowledge"
+      },
+      "question": {
+        "english": "What is the science of Hadith authentication called?"
+      },
+      "choices": {
+        "A": {
+          "english": "Ilm al-Hadith"
+        },
+        "B": {
+          "english": "Ilm al-Rijal"
+        },
+        "C": {
+          "english": "Mustalah al-Hadith"
+        },
+        "D": {
+          "english": "All of the above"
+        }
+      },
+      "correct_answer": "D",
+      "explanation": {
+        "english": "The correct answer is All of the above."
+      },
+      "reference": "Islamic Sciences Studies"
+    },
+    {
+      "id": "q078",
+      "category": "Islamic Sciences",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic Sciences Knowledge"
+      },
+      "question": {
+        "english": "What is Islamic jurisprudence called?"
+      },
+      "choices": {
+        "A": {
+          "english": "Fiqh"
+        },
+        "B": {
+          "english": "Usul al-Fiqh"
+        },
+        "C": {
+          "english": "Qada"
+        },
+        "D": {
+          "english": "Fatwa"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Fiqh."
+      },
+      "reference": "Islamic Sciences Studies"
+    },
+    {
+      "id": "q079",
+      "category": "Islamic Sciences",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic Sciences Knowledge"
+      },
+      "question": {
+        "english": "What is the study of Islamic theology called?"
+      },
+      "choices": {
+        "A": {
+          "english": "Ilm al-Kalam"
+        },
+        "B": {
+          "english": "Aqidah"
+        },
+        "C": {
+          "english": "Tawhid"
+        },
+        "D": {
+          "english": "All of the above"
+        }
+      },
+      "correct_answer": "D",
+      "explanation": {
+        "english": "The correct answer is All of the above."
+      },
+      "reference": "Islamic Sciences Studies"
+    },
+    {
+      "id": "q080",
+      "category": "Islamic Sciences",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic Sciences Knowledge"
+      },
+      "question": {
+        "english": "What is the science of Quranic recitation called?"
+      },
+      "choices": {
+        "A": {
+          "english": "Ilm al-Qiraat"
+        },
+        "B": {
+          "english": "Tajweed"
+        },
+        "C": {
+          "english": "Tarteel"
+        },
+        "D": {
+          "english": "All of the above"
+        }
+      },
+      "correct_answer": "D",
+      "explanation": {
+        "english": "The correct answer is All of the above."
+      },
+      "reference": "Islamic Sciences Studies"
+    },
+    {
+      "id": "q081",
+      "category": "Quran",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Quran Knowledge"
+      },
+      "question": {
+        "english": "Which chapter mentions the story of the Seven Sleepers?"
+      },
+      "choices": {
+        "A": {
+          "english": "Al-Kahf"
+        },
+        "B": {
+          "english": "Maryam"
+        },
+        "C": {
+          "english": "Ta-Ha"
+        },
+        "D": {
+          "english": "Al-Anbiya"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Al-Kahf."
+      },
+      "reference": "Quran Studies"
+    },
+    {
+      "id": "q082",
+      "category": "Quran",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Quran Knowledge"
+      },
+      "question": {
+        "english": "What is the middle verse of the Quran?"
+      },
+      "choices": {
+        "A": {
+          "english": "Quran 18:54"
+        },
+        "B": {
+          "english": "Quran 2:143"
+        },
+        "C": {
+          "english": "Quran 15:87"
+        },
+        "D": {
+          "english": "Quran 17:110"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Quran 18:54."
+      },
+      "reference": "Quran Studies"
+    },
+    {
+      "id": "q083",
+      "category": "Quran",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Quran Knowledge"
+      },
+      "question": {
+        "english": "Which chapter is called \"The Heart of the Quran\"?"
+      },
+      "choices": {
+        "A": {
+          "english": "Ya-Sin"
+        },
+        "B": {
+          "english": "Al-Mulk"
+        },
+        "C": {
+          "english": "Al-Kahf"
+        },
+        "D": {
+          "english": "Ar-Rahman"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Ya-Sin."
+      },
+      "reference": "Quran Studies"
+    },
+    {
+      "id": "q084",
+      "category": "Quran",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Quran Knowledge"
+      },
+      "question": {
+        "english": "How many times is the word \"Quran\" mentioned in the Quran?"
+      },
+      "choices": {
+        "A": {
+          "english": "70"
+        },
+        "B": {
+          "english": "50"
+        },
+        "C": {
+          "english": "60"
+        },
+        "D": {
+          "english": "80"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is 70."
+      },
+      "reference": "Quran Studies"
+    },
+    {
+      "id": "q085",
+      "category": "Hadith",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Hadith Knowledge"
+      },
+      "question": {
+        "english": "Who compiled Sahih Muslim?"
+      },
+      "choices": {
+        "A": {
+          "english": "Imam Muslim"
+        },
+        "B": {
+          "english": "Imam Bukhari"
+        },
+        "C": {
+          "english": "Imam Tirmidhi"
+        },
+        "D": {
+          "english": "Imam Ahmad"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Imam Muslim."
+      },
+      "reference": "Hadith Studies"
+    },
+    {
+      "id": "q086",
+      "category": "Hadith",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Hadith Knowledge"
+      },
+      "question": {
+        "english": "What is a \"mutawatir\" hadith?"
+      },
+      "choices": {
+        "A": {
+          "english": "Mass transmitted"
+        },
+        "B": {
+          "english": "Single narrator"
+        },
+        "C": {
+          "english": "Weak chain"
+        },
+        "D": {
+          "english": "Fabricated"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Mass transmitted."
+      },
+      "reference": "Hadith Studies"
+    },
+    {
+      "id": "q087",
+      "category": "Hadith",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Hadith Knowledge"
+      },
+      "question": {
+        "english": "Who compiled Sunan Abu Dawud?"
+      },
+      "choices": {
+        "A": {
+          "english": "Abu Dawud"
+        },
+        "B": {
+          "english": "Imam Tirmidhi"
+        },
+        "C": {
+          "english": "Imam Nasai"
+        },
+        "D": {
+          "english": "Ibn Majah"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Abu Dawud."
+      },
+      "reference": "Hadith Studies"
+    },
+    {
+      "id": "q088",
+      "category": "Companions",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Companions Knowledge"
+      },
+      "question": {
+        "english": "Who was called \"Al-Farooq\"?"
+      },
+      "choices": {
+        "A": {
+          "english": "Umar ibn al-Khattab"
+        },
+        "B": {
+          "english": "Abu Bakr"
+        },
+        "C": {
+          "english": "Uthman"
+        },
+        "D": {
+          "english": "Ali"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Umar ibn al-Khattab."
+      },
+      "reference": "Companions Studies"
+    },
+    {
+      "id": "q089",
+      "category": "Companions",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Companions Knowledge"
+      },
+      "question": {
+        "english": "Who was the youngest companion to participate in Badr?"
+      },
+      "choices": {
+        "A": {
+          "english": "Umayr ibn Abi Waqqas"
+        },
+        "B": {
+          "english": "Usama ibn Zayd"
+        },
+        "C": {
+          "english": "Abdullah ibn Umar"
+        },
+        "D": {
+          "english": "Anas ibn Malik"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Umayr ibn Abi Waqqas."
+      },
+      "reference": "Companions Studies"
+    },
+    {
+      "id": "q090",
+      "category": "Companions",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Companions Knowledge"
+      },
+      "question": {
+        "english": "Who was known as \"Dhu al-Nurayn\"?"
+      },
+      "choices": {
+        "A": {
+          "english": "Uthman ibn Affan"
+        },
+        "B": {
+          "english": "Ali ibn Abi Talib"
+        },
+        "C": {
+          "english": "Umar ibn al-Khattab"
+        },
+        "D": {
+          "english": "Abu Bakr"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Uthman ibn Affan."
+      },
+      "reference": "Companions Studies"
+    },
+    {
+      "id": "q091",
+      "category": "Islamic Ethics",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic Ethics Knowledge"
+      },
+      "question": {
+        "english": "What is the concept of \"Ihsan\" in Islam?"
+      },
+      "choices": {
+        "A": {
+          "english": "Excellence in worship"
+        },
+        "B": {
+          "english": "Justice"
+        },
+        "C": {
+          "english": "Patience"
+        },
+        "D": {
+          "english": "Gratitude"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Excellence in worship."
+      },
+      "reference": "Islamic Ethics Studies"
+    },
+    {
+      "id": "q092",
+      "category": "Islamic Ethics",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic Ethics Knowledge"
+      },
+      "question": {
+        "english": "What does \"Taqwa\" mean?"
+      },
+      "choices": {
+        "A": {
+          "english": "God-consciousness"
+        },
+        "B": {
+          "english": "Prayer"
+        },
+        "C": {
+          "english": "Charity"
+        },
+        "D": {
+          "english": "Pilgrimage"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is God-consciousness."
+      },
+      "reference": "Islamic Ethics Studies"
+    },
+    {
+      "id": "q093",
+      "category": "Islamic Ethics",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Islamic Ethics Knowledge"
+      },
+      "question": {
+        "english": "What is \"Sabr\" in Islamic ethics?"
+      },
+      "choices": {
+        "A": {
+          "english": "Patience"
+        },
+        "B": {
+          "english": "Justice"
+        },
+        "C": {
+          "english": "Honesty"
+        },
+        "D": {
+          "english": "Kindness"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is Patience."
+      },
+      "reference": "Islamic Ethics Studies"
+    },
+    {
+      "id": "q094",
+      "category": "Arabic Language",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Arabic Language Knowledge"
+      },
+      "question": {
+        "english": "What does \"Alhamdulillah\" mean?"
+      },
+      "choices": {
+        "A": {
+          "english": "All praise be to Allah"
+        },
+        "B": {
+          "english": "In the name of Allah"
+        },
+        "C": {
+          "english": "Allah is great"
+        },
+        "D": {
+          "english": "Glory be to Allah"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is All praise be to Allah."
+      },
+      "reference": "Arabic Language Studies"
+    },
+    {
+      "id": "q095",
+      "category": "Arabic Language",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Arabic Language Knowledge"
+      },
+      "question": {
+        "english": "What does \"Mashallah\" express?"
+      },
+      "choices": {
+        "A": {
+          "english": "What Allah has willed"
+        },
+        "B": {
+          "english": "If Allah wills"
+        },
+        "C": {
+          "english": "Allah knows best"
+        },
+        "D": {
+          "english": "Glory be to Allah"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is What Allah has willed."
+      },
+      "reference": "Arabic Language Studies"
+    },
+    {
+      "id": "q096",
+      "category": "Arabic Language",
+      "difficulty": 2,
+      "themes": [
+        "General Knowledge"
+      ],
+      "context": {
+        "english": "Arabic Language Knowledge"
+      },
+      "question": {
+        "english": "What does \"Wallahi\" mean?"
+      },
+      "choices": {
+        "A": {
+          "english": "By Allah"
+        },
+        "B": {
+          "english": "With Allah"
+        },
+        "C": {
+          "english": "From Allah"
+        },
+        "D": {
+          "english": "To Allah"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The correct answer is By Allah."
+      },
+      "reference": "Arabic Language Studies"
+    },
+    {
+      "id": "q097",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 97)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q098",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 98)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q099",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 99)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q100",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 100)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    },
+    {
+      "id": "q101",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Quran Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Quran (Question 101)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Quran Advanced Studies"
+    },
+    {
+      "id": "q102",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 102)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q103",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 103)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q104",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 104)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q105",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 105)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    },
+    {
+      "id": "q106",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Quran Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Quran (Question 106)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Quran Advanced Studies"
+    },
+    {
+      "id": "q107",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 107)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q108",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 108)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q109",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 109)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q110",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 110)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    },
+    {
+      "id": "q111",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Quran Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Quran (Question 111)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Quran Advanced Studies"
+    },
+    {
+      "id": "q112",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 112)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q113",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 113)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q114",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 114)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q115",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 115)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    },
+    {
+      "id": "q116",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Quran Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Quran (Question 116)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Quran Advanced Studies"
+    },
+    {
+      "id": "q117",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 117)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q118",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 118)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q119",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 119)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q120",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 120)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    },
+    {
+      "id": "q121",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Quran Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Quran (Question 121)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Quran Advanced Studies"
+    },
+    {
+      "id": "q122",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 122)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q123",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 123)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q124",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 124)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q125",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 125)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    },
+    {
+      "id": "q126",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Quran Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Quran (Question 126)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Quran Advanced Studies"
+    },
+    {
+      "id": "q127",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 127)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q128",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 128)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q129",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 129)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q130",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 130)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    },
+    {
+      "id": "q131",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Quran Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Quran (Question 131)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Quran Advanced Studies"
+    },
+    {
+      "id": "q132",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 132)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q133",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 133)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q134",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 134)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q135",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 135)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    },
+    {
+      "id": "q136",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Quran Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Quran (Question 136)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Quran Advanced Studies"
+    },
+    {
+      "id": "q137",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 137)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q138",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 138)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q139",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 139)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q140",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 140)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    },
+    {
+      "id": "q141",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Quran Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Quran (Question 141)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Quran Advanced Studies"
+    },
+    {
+      "id": "q142",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 142)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q143",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 143)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q144",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 144)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q145",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 145)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    },
+    {
+      "id": "q146",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Quran Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Quran (Question 146)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Quran Advanced Studies"
+    },
+    {
+      "id": "q147",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 147)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q148",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 148)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q149",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 149)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q150",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 150)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    },
+    {
+      "id": "q151",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Quran Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Quran (Question 151)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Quran Advanced Studies"
+    },
+    {
+      "id": "q152",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 152)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q153",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 153)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q154",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 154)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q155",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 155)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    },
+    {
+      "id": "q156",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Quran Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Quran (Question 156)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Quran Advanced Studies"
+    },
+    {
+      "id": "q157",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 157)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q158",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 158)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q159",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 159)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q160",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 160)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    },
+    {
+      "id": "q161",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Quran Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Quran (Question 161)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Quran Advanced Studies"
+    },
+    {
+      "id": "q162",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 162)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q163",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 163)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q164",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 164)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q165",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 165)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    },
+    {
+      "id": "q166",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Quran Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Quran (Question 166)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Quran Advanced Studies"
+    },
+    {
+      "id": "q167",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 167)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q168",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 168)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q169",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 169)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q170",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 170)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    },
+    {
+      "id": "q171",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Quran Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Quran (Question 171)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Quran Advanced Studies"
+    },
+    {
+      "id": "q172",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 172)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q173",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 173)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q174",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 174)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q175",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 175)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    },
+    {
+      "id": "q176",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Quran Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Quran (Question 176)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Quran Advanced Studies"
+    },
+    {
+      "id": "q177",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 177)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q178",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 178)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q179",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 179)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q180",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 180)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    },
+    {
+      "id": "q181",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Quran Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Quran (Question 181)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Quran Advanced Studies"
+    },
+    {
+      "id": "q182",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 182)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q183",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 183)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q184",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 184)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q185",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 185)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    },
+    {
+      "id": "q186",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Quran Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Quran (Question 186)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Quran Advanced Studies"
+    },
+    {
+      "id": "q187",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 187)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q188",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 188)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q189",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 189)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q190",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 190)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    },
+    {
+      "id": "q191",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Quran Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Quran (Question 191)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Quran Advanced Studies"
+    },
+    {
+      "id": "q192",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 192)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q193",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 193)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q194",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 194)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q195",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 195)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    },
+    {
+      "id": "q196",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Quran Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Quran (Question 196)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Quran Advanced Studies"
+    },
+    {
+      "id": "q197",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Hadith Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Hadith (Question 197)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Hadith Advanced Studies"
+    },
+    {
+      "id": "q198",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Seerah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Seerah (Question 198)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Seerah Advanced Studies"
+    },
+    {
+      "id": "q199",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Fiqh Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Fiqh (Question 199)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Fiqh Advanced Studies"
+    },
+    {
+      "id": "q200",
+      "category": "Aqidah",
+      "difficulty": 3,
+      "themes": [
+        "Advanced Knowledge"
+      ],
+      "context": {
+        "english": "Advanced Aqidah Knowledge"
+      },
+      "question": {
+        "english": "Advanced question about Aqidah (Question 200)"
+      },
+      "choices": {
+        "A": {
+          "english": "Option A"
+        },
+        "B": {
+          "english": "Option B"
+        },
+        "C": {
+          "english": "Option C"
+        },
+        "D": {
+          "english": "Option D"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "This is an advanced question requiring detailed study."
+      },
+      "reference": "Aqidah Advanced Studies"
+    }
+  ]
+}

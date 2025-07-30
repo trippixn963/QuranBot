@@ -5,7 +5,7 @@
 ## 🏗️ Architecture Overview
 
 ### **VPS Bot (Primary Production)** 🌐
-- **Location**: DigitalOcean VPS (159.89.90.90)
+- **Location**: DigitalOcean VPS (YOUR_VPS_IP)
 - **Purpose**: 24/7 Discord bot serving the community
 - **Independence**: Runs completely independently of local machine
 - **Services**: Audio playback, commands, user interactions, automated features
@@ -115,7 +115,7 @@ qb-restart
 ### **Log Sync Issues**
 ```bash
 # Test VPS connection
-ssh root@159.89.90.90 "echo 'Connection OK'"
+ssh root@YOUR_VPS_IP "echo 'Connection OK'"
 
 # Manual sync
 qb-sync
@@ -129,34 +129,34 @@ ls -la logs/$(date +%Y-%m-%d)/
 ### **Service Management**
 ```bash
 # Direct systemctl commands
-ssh root@159.89.90.90 "systemctl status quranbot.service"
-ssh root@159.89.90.90 "systemctl restart quranbot.service"
-ssh root@159.89.90.90 "systemctl stop quranbot.service"
-ssh root@159.89.90.90 "systemctl start quranbot.service"
+ssh root@YOUR_VPS_IP "systemctl status quranbot.service"
+ssh root@YOUR_VPS_IP "systemctl restart quranbot.service"
+ssh root@YOUR_VPS_IP "systemctl stop quranbot.service"
+ssh root@YOUR_VPS_IP "systemctl start quranbot.service"
 ```
 
 ### **Log Analysis**
 ```bash
 # Follow live logs
-ssh root@159.89.90.90 "journalctl -u quranbot.service -f"
+ssh root@YOUR_VPS_IP "journalctl -u quranbot.service -f"
 
 # Search for specific events
-ssh root@159.89.90.90 "grep -i 'audio' /opt/DiscordBots/QuranBot/logs/$(date +%Y-%m-%d)/logs.log"
+ssh root@YOUR_VPS_IP "grep -i 'audio' /opt/DiscordBots/QuranBot/logs/$(date +%Y-%m-%d)/logs.log"
 
 # Check error patterns
-ssh root@159.89.90.90 "tail -100 /opt/DiscordBots/QuranBot/logs/$(date +%Y-%m-%d)/errors.log"
+ssh root@YOUR_VPS_IP "tail -100 /opt/DiscordBots/QuranBot/logs/$(date +%Y-%m-%d)/errors.log"
 ```
 
 ### **System Monitoring**
 ```bash
 # Resource usage
-ssh root@159.89.90.90 "htop -p \$(pgrep -f 'python.*main.py')"
+ssh root@YOUR_VPS_IP "htop -p \$(pgrep -f 'python.*main.py')"
 
 # Memory usage
-ssh root@159.89.90.90 "ps aux | grep python | grep main.py | awk '{print \$6/1024\" MB\"}'"
+ssh root@YOUR_VPS_IP "ps aux | grep python | grep main.py | awk '{print \$6/1024\" MB\"}'"
 
 # Disk usage
-ssh root@159.89.90.90 "df -h /opt/DiscordBots/QuranBot/"
+ssh root@YOUR_VPS_IP "df -h /opt/DiscordBots/QuranBot/"
 ```
 
 ## 📊 **Performance Metrics**
@@ -176,7 +176,7 @@ ssh root@159.89.90.90 "df -h /opt/DiscordBots/QuranBot/"
 ## 🔐 **Security & Access**
 
 ### **SSH Access**
-- **Host**: root@159.89.90.90
+- **Host**: root@YOUR_VPS_IP
 - **Authentication**: SSH key-based (no password)
 - **Permissions**: Full root access for bot management
 
@@ -194,7 +194,7 @@ ssh root@159.89.90.90 "df -h /opt/DiscordBots/QuranBot/"
 qb-status
 
 # 2. Update code (use with caution)
-ssh root@159.89.90.90 "cd /opt/DiscordBots/QuranBot && git pull origin main"
+ssh root@YOUR_VPS_IP "cd /opt/DiscordBots/QuranBot && git pull origin main"
 
 # 3. Restart service
 qb-restart
@@ -206,10 +206,10 @@ sleep 10 && qb-status && qb-audio
 ### **Emergency Procedures**
 ```bash
 # If bot is completely unresponsive
-ssh root@159.89.90.90 "systemctl stop quranbot.service && systemctl start quranbot.service"
+ssh root@YOUR_VPS_IP "systemctl stop quranbot.service && systemctl start quranbot.service"
 
 # If system issues
-ssh root@159.89.90.90 "reboot"
+ssh root@YOUR_VPS_IP "reboot"
 # Note: Service will auto-start on boot
 ```
 

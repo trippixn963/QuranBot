@@ -760,9 +760,12 @@ class ModernWebhookLogger:
 
         if context:
             for key, value in context.items():
-                fields.append(
-                    EmbedField(key.replace("_", " ").title(), str(value), True)
-                )
+                # Skip None values and handle non-string types safely
+                if value is not None:
+                    safe_value = str(value) if not isinstance(value, (dict, list)) else str(value)
+                    fields.append(
+                        EmbedField(key.replace("_", " ").title(), safe_value, True)
+                    )
 
         if ping_owner and self.config.enable_pings and self.config.owner_user_id:
             content = f"🚨 <@{self.config.owner_user_id}> **ERROR DETECTED** 🚨"
@@ -813,9 +816,12 @@ class ModernWebhookLogger:
 
         if context:
             for key, value in context.items():
-                fields.append(
-                    EmbedField(key.replace("_", " ").title(), str(value), True)
-                )
+                # Skip None values and handle non-string types safely
+                if value is not None:
+                    safe_value = str(value) if not isinstance(value, (dict, list)) else str(value)
+                    fields.append(
+                        EmbedField(key.replace("_", " ").title(), safe_value, True)
+                    )
 
         if ping_owner and self.config.enable_pings and self.config.owner_user_id:
             content = f"🆘 <@{self.config.owner_user_id}> **CRITICAL ERROR** 🆘"
@@ -849,9 +855,12 @@ class ModernWebhookLogger:
 
         if context:
             for key, value in context.items():
-                fields.append(
-                    EmbedField(key.replace("_", " ").title(), str(value), True)
-                )
+                # Skip None values and handle non-string types safely
+                if value is not None:
+                    safe_value = str(value) if not isinstance(value, (dict, list)) else str(value)
+                    fields.append(
+                        EmbedField(key.replace("_", " ").title(), safe_value, True)
+                    )
 
         message = WebhookMessage(
             title=title, description=description, level=LogLevel.WARNING, fields=fields
@@ -878,9 +887,12 @@ class ModernWebhookLogger:
 
         if context:
             for key, value in context.items():
-                fields.append(
-                    EmbedField(key.replace("_", " ").title(), str(value), True)
-                )
+                # Skip None values and handle non-string types safely
+                if value is not None:
+                    safe_value = str(value) if not isinstance(value, (dict, list)) else str(value)
+                    fields.append(
+                        EmbedField(key.replace("_", " ").title(), safe_value, True)
+                    )
 
         message = WebhookMessage(
             title=title, description=description, level=LogLevel.INFO, fields=fields
@@ -907,9 +919,12 @@ class ModernWebhookLogger:
 
         if context:
             for key, value in context.items():
-                fields.append(
-                    EmbedField(key.replace("_", " ").title(), str(value), True)
-                )
+                # Skip None values and handle non-string types safely
+                if value is not None:
+                    safe_value = str(value) if not isinstance(value, (dict, list)) else str(value)
+                    fields.append(
+                        EmbedField(key.replace("_", " ").title(), safe_value, True)
+                    )
 
         message = WebhookMessage(
             title=title, description=description, level=LogLevel.SUCCESS, fields=fields
@@ -936,9 +951,12 @@ class ModernWebhookLogger:
 
         if context:
             for key, value in context.items():
-                fields.append(
-                    EmbedField(key.replace("_", " ").title(), str(value), True)
-                )
+                # Skip None values and handle non-string types safely
+                if value is not None:
+                    safe_value = str(value) if not isinstance(value, (dict, list)) else str(value)
+                    fields.append(
+                        EmbedField(key.replace("_", " ").title(), safe_value, True)
+                    )
 
         message = WebhookMessage(
             title=title, description=description, level=LogLevel.SYSTEM, fields=fields
@@ -975,9 +993,12 @@ class ModernWebhookLogger:
 
         if context:
             for key, value in context.items():
-                fields.append(
-                    EmbedField(key.replace("_", " ").title(), str(value), True)
-                )
+                # Skip None values and handle non-string types safely
+                if value is not None:
+                    safe_value = str(value) if not isinstance(value, (dict, list)) else str(value)
+                    fields.append(
+                        EmbedField(key.replace("_", " ").title(), safe_value, True)
+                    )
 
         message = WebhookMessage(
             title=title,
@@ -1032,9 +1053,12 @@ class ModernWebhookLogger:
 
         if command_details:
             for key, value in command_details.items():
-                fields.append(
-                    EmbedField(key.replace("_", " ").title(), str(value)[:1024], True)
-                )
+                # Skip None values and handle non-string types safely
+                if value is not None:
+                    safe_value = str(value) if not isinstance(value, (dict, list)) else str(value)
+                    fields.append(
+                        EmbedField(key.replace("_", " ").title(), safe_value[:1024], True)
+                    )
 
         message = WebhookMessage(
             title=f"{emoji} QuranBot Command Used",
@@ -1084,9 +1108,12 @@ class ModernWebhookLogger:
 
         if additional_info:
             for key, value in additional_info.items():
-                fields.append(
-                    EmbedField(key.replace("_", " ").title(), str(value)[:1024], True)
-                )
+                # Skip None values and handle non-string types safely
+                if value is not None:
+                    safe_value = str(value) if not isinstance(value, (dict, list)) else str(value)
+                    fields.append(
+                        EmbedField(key.replace("_", " ").title(), safe_value[:1024], True)
+                    )
 
         message = WebhookMessage(
             title=f"{emoji} Voice Channel Activity",
@@ -1144,9 +1171,12 @@ class ModernWebhookLogger:
 
         if panel_details:
             for key, value in panel_details.items():
-                fields.append(
-                    EmbedField(key.replace("_", " ").title(), str(value)[:1024], True)
-                )
+                # Skip None values and handle non-string types safely
+                if value is not None:
+                    safe_value = str(value) if not isinstance(value, (dict, list)) else str(value)
+                    fields.append(
+                        EmbedField(key.replace("_", " ").title(), safe_value[:1024], True)
+                    )
 
         message = WebhookMessage(
             title=f"{emoji} Control Panel Interaction",
@@ -1184,26 +1214,57 @@ class ModernWebhookLogger:
         """
         emoji = "✅" if is_correct else "❌"
         result_text = "Correct!" if is_correct else "Incorrect"
+        
+        # Use different log levels for correct vs incorrect answers
+        log_level = LogLevel.SUCCESS if is_correct else LogLevel.ERROR
 
+        # Parse question_text properly - handle dictionary format
+        safe_question_text = "Unknown question"
+        if question_text is not None:
+            if isinstance(question_text, dict):
+                # Handle dictionary format like {'arabic': '...', 'english': '...'}
+                if 'english' in question_text:
+                    safe_question_text = question_text['english']
+                elif 'arabic' in question_text:
+                    safe_question_text = question_text['arabic']
+                else:
+                    safe_question_text = str(question_text)
+            else:
+                safe_question_text = str(question_text)
+        
+        # Truncate if too long
+        safe_question_text = safe_question_text[:1000] if len(safe_question_text) > 1000 else safe_question_text
+        
         fields = [
             EmbedField("Result", f"{emoji} {result_text}", True),
             EmbedField("User ID", str(user_id), True),
             EmbedField("Time", f"<t:{int(time.time())}:R>", True),
-            EmbedField("Question", question_text[:1000], False),
+            EmbedField("Question", safe_question_text, False),
             EmbedField("User Answer", user_answer, True),
             EmbedField("Correct Answer", correct_answer, True),
         ]
 
         if quiz_stats:
             for key, value in quiz_stats.items():
-                fields.append(
-                    EmbedField(key.replace("_", " ").title(), str(value), True)
-                )
+                # Skip None values and format response time properly
+                if value is not None:
+                    if key == "response_time_seconds" and value != "None":
+                        fields.append(
+                            EmbedField("Response Time", f"{value} seconds", True)
+                        )
+                    elif key == "points_earned" and value != "None":
+                        fields.append(
+                            EmbedField("Points Earned", str(value), True)
+                        )
+                    else:
+                        fields.append(
+                            EmbedField(key.replace("_", " ").title(), str(value), True)
+                        )
 
         message = WebhookMessage(
             title=f"🧠 Quran Quiz - {result_text}",
             description=f"**{user_name}** answered a Quran quiz question",
-            level=LogLevel.USER,
+            level=log_level,  # Use different colors for correct/incorrect
             fields=fields,
             thumbnail_url=user_avatar_url,  # Use user avatar as thumbnail instead of author
         )
@@ -1274,9 +1335,12 @@ class ModernWebhookLogger:
 
         if audio_details:
             for key, value in audio_details.items():
-                fields.append(
-                    EmbedField(key.replace("_", " ").title(), str(value)[:1024], True)
-                )
+                # Skip None values and handle non-string types safely
+                if value is not None:
+                    safe_value = str(value) if not isinstance(value, (dict, list)) else str(value)
+                    fields.append(
+                        EmbedField(key.replace("_", " ").title(), safe_value[:1024], True)
+                    )
 
         # Add owner ping for critical events
         content = None
@@ -1403,9 +1467,12 @@ class ModernWebhookLogger:
 
         if crash_context:
             for key, value in crash_context.items():
-                fields.append(
-                    EmbedField(key.replace("_", " ").title(), str(value)[:1024], True)
-                )
+                # Skip None values and handle non-string types safely
+                if value is not None:
+                    safe_value = str(value) if not isinstance(value, (dict, list)) else str(value)
+                    fields.append(
+                        EmbedField(key.replace("_", " ").title(), safe_value[:1024], True)
+                    )
 
         content = None
         if ping_owner and self.config.enable_pings and self.config.owner_user_id:
@@ -1548,9 +1615,12 @@ class ModernWebhookLogger:
             
         if additional_info:
             for key, value in additional_info.items():
-                fields.append(
-                    EmbedField(key.replace("_", " ").title(), str(value)[:1024], True)
-                )
+                # Skip None values and handle non-string types safely
+                if value is not None:
+                    safe_value = str(value) if not isinstance(value, (dict, list)) else str(value)
+                    fields.append(
+                        EmbedField(key.replace("_", " ").title(), safe_value[:1024], True)
+                    )
 
         # Add owner ping for critical connection issues
         content = None

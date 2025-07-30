@@ -692,7 +692,17 @@ class HealthMonitor:
                             "inline": True
                         })
             
-            await self.webhook_logger.send_embed(embed)
+            # Use the appropriate webhook method instead of send_embed
+            if hasattr(self.webhook_logger, 'log_bot_event'):
+                await self.webhook_logger.log_bot_event(
+                    event_type="health_report",
+                    title=embed["title"],
+                    description=embed["description"],
+                    context={"overall_status": overall_status, "checks_count": len(health_checks)}
+                )
+            else:
+                # Fallback to direct webhook if available
+                await self.logger.warning("Webhook logger doesn't support log_bot_event method")
             
         except Exception as e:
             await self.logger.error(
@@ -721,7 +731,17 @@ class HealthMonitor:
                 }
             }
             
-            await self.webhook_logger.send_embed(embed)
+            # Use the appropriate webhook method instead of send_embed
+            if hasattr(self.webhook_logger, 'log_bot_event'):
+                await self.webhook_logger.log_bot_event(
+                    event_type="health_monitor_startup",
+                    title=embed["title"],
+                    description=embed["description"],
+                    context={"check_interval": self.check_interval_minutes, "alert_interval": self.alert_interval_minutes}
+                )
+            else:
+                # Fallback to direct webhook if available
+                await self.logger.warning("Webhook logger doesn't support log_bot_event method")
             
         except Exception as e:
             await self.logger.error(
@@ -747,7 +767,17 @@ class HealthMonitor:
                 }
             }
             
-            await self.webhook_logger.send_embed(embed)
+            # Use the appropriate webhook method instead of send_embed
+            if hasattr(self.webhook_logger, 'log_bot_event'):
+                await self.webhook_logger.log_bot_event(
+                    event_type="health_monitor_shutdown",
+                    title=embed["title"],
+                    description=embed["description"],
+                    context={"shutdown_time": datetime.now(timezone.utc).isoformat()}
+                )
+            else:
+                # Fallback to direct webhook if available
+                await self.logger.warning("Webhook logger doesn't support log_bot_event method")
             
         except Exception as e:
             await self.logger.error(

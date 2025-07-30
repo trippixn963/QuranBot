@@ -1,43 +1,55 @@
 # =============================================================================
 # QuranBot - Configuration Management Module
 # =============================================================================
-# Configuration management module for QuranBot.
-# This module provides centralized configuration management with:
-# - Type-safe configuration using Pydantic
-# - Environment variable loading and validation
-# - Singleton configuration service
-# - Consistent error handling
-#
-# Usage:
-#     from src.config import BotConfig, ConfigService, get_config
-#
-#     # Get configuration service (singleton)
-#     config_service = ConfigService()
-#
-#     # Get configuration directly
-#     config = get_config()
-#
-#     # Access configuration values
-#     token = config_service.get_discord_token()
-#     guild_id = config_service.get_guild_id()
+# Configuration system with single source of truth.
+# All configuration is centralized in config.py for easy management.
 # =============================================================================
 
-from .bot_config import BotConfig, LogLevel, ReciterName
-from .config_service import ConfigService, get_config, get_config_service
-from .exceptions import ConfigurationError, MissingConfigurationError, ValidationError
+# Primary configuration system
+from .config import (
+    QuranBotConfig,
+    Environment,
+    LogLevel,
+    ReciterName,
+    get_config,
+    reload_config,
+    validate_config,
+    print_config_summary,
+    # Convenience functions
+    is_admin,
+    get_discord_token,
+    get_guild_id,
+    get_target_channel_id,
+    get_audio_folder,
+    get_ffmpeg_path,
+    is_webhook_logging_enabled,
+    get_webhook_url,
+)
+
+# =============================================================================
+# PRIMARY EXPORTS
+# =============================================================================
 
 __all__ = [
-    # Core configuration classes
-    "BotConfig",
-    "ConfigService",
-    # Enums
+    # Main configuration class and enums
+    "QuranBotConfig",
+    "Environment", 
     "LogLevel",
     "ReciterName",
-    # Convenience functions
+    
+    # Configuration access functions
     "get_config",
-    "get_config_service",
-    # Exceptions
-    "ConfigurationError",
-    "MissingConfigurationError",
-    "ValidationError",
+    "reload_config",
+    "validate_config",
+    "print_config_summary",
+    
+    # Convenience functions
+    "is_admin",
+    "get_discord_token",
+    "get_guild_id",
+    "get_target_channel_id",
+    "get_audio_folder",
+    "get_ffmpeg_path",
+    "is_webhook_logging_enabled",
+    "get_webhook_url",
 ]

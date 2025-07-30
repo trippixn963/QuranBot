@@ -1,0 +1,89 @@
+{
+  "questions": [
+    {
+      "question": "How many chapters (surahs) are there in the Quran?",
+      "options": [
+        "114",
+        "116",
+        "112",
+        "118"
+      ],
+      "correct_answer": 0,
+      "difficulty": "easy",
+      "category": "general",
+      "created_at": "2025-07-29T17:30:57.046873+00:00",
+      "times_asked": 0,
+      "times_correct": 0,
+      "last_asked": null
+    },
+    {
+      "question": "What is the first chapter of the Quran called?",
+      "options": [
+        "Al-Baqarah",
+        "Al-Fatihah",
+        "An-Nas",
+        "Al-Ikhlas"
+      ],
+      "correct_answer": 1,
+      "difficulty": "easy",
+      "category": "surah_names",
+      "created_at": "2025-07-29T17:30:57.048787+00:00",
+      "times_asked": 0,
+      "times_correct": 0,
+      "last_asked": null
+    },
+    {
+      "question": "Which prophet is mentioned most frequently in the Quran?",
+      "options": [
+        "Prophet Muhammad (PBUH)",
+        "Prophet Ibrahim (PBUH)",
+        "Prophet Musa (PBUH)",
+        "Prophet Isa (PBUH)"
+      ],
+      "correct_answer": 2,
+      "difficulty": "medium",
+      "category": "prophets",
+      "created_at": "2025-07-29T17:30:57.050459+00:00",
+      "times_asked": 0,
+      "times_correct": 0,
+      "last_asked": null
+    },
+    {
+      "question": "What does 'Bismillah' mean?",
+      "options": [
+        "In the name of Allah",
+        "Praise be to Allah",
+        "Allah is great",
+        "There is no god but Allah"
+      ],
+      "correct_answer": 0,
+      "difficulty": "easy",
+      "category": "vocabulary",
+      "created_at": "2025-07-29T17:30:57.052562+00:00",
+      "times_asked": 0,
+      "times_correct": 0,
+      "last_asked": null
+    },
+    {
+      "question": "Which surah is known as the 'Heart of the Quran'?",
+      "options": [
+        "Al-Fatihah",
+        "Yaseen",
+        "Al-Baqarah",
+        "Al-Ikhlas"
+      ],
+      "correct_answer": 1,
+      "difficulty": "medium",
+      "category": "surah_names",
+      "created_at": "2025-07-29T17:30:57.054326+00:00",
+      "times_asked": 0,
+      "times_correct": 0,
+      "last_asked": null
+    }
+  ],
+  "user_scores": {},
+  "recent_questions": [
+    "3588730024175867832"
+  ],
+  "last_sent_time": "2025-07-29T16:58:51.668535+00:00"
+}

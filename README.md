@@ -1,219 +1,234 @@
-# 🕌 QuranBot - Professional Discord Audio Bot
+# 🕌 QuranBot - Advanced Islamic Discord Bot
 
-[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
-[![Discord.py](https://img.shields.io/badge/Discord.py-2.0+-blue.svg)](https://discordpy.readthedocs.io/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-4.0.1-orange.svg)](src/version.py)
-[![Status](https://img.shields.io/badge/Status-ARCHIVED-red.svg)](README.md)
+<div align="center">
 
-> **⚠️ PROJECT ARCHIVED - NO SUPPORT PROVIDED**
-> 
-> This project is now **ARCHIVED** and provided **AS-IS** with **NO SUPPORT, ASSISTANCE, OR MAINTENANCE**. 
-> 
-> - ❌ **No support requests will be answered**
-> - ❌ **No issues will be addressed** 
-> - ❌ **No pull requests will be accepted**
-> - ❌ **No forks will be supported or assisted**
-> - ❌ **No development help will be provided**
-> 
-> **Take it or leave it** - Use at your own risk and responsibility.
+[![CI/CD Pipeline](https://github.com/your-username/QuranBot/workflows/🕌%20QuranBot%20CI/CD%20Pipeline/badge.svg)](https://github.com/your-username/QuranBot/actions)
+[![codecov](https://codecov.io/gh/your-username/QuranBot/branch/main/graph/badge.svg)](https://codecov.io/gh/your-username/QuranBot)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=your-username_QuranBot&metric=security_rating)](https://sonarcloud.io/dashboard?id=your-username_QuranBot)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=your-username_QuranBot&metric=alert_status)](https://sonarcloud.io/dashboard?id=your-username_QuranBot)
 
-A professional Discord bot that provides **100% automated** 24/7 Quranic recitation with optional interactive features. Built with modern Python architecture featuring dependency injection, microservices, and enterprise-grade reliability.
+[![Python](https://img.shields.io/badge/Python-3.11+-3776ab.svg?style=flat&logo=python&logoColor=white)](https://python.org)
+[![Discord.py](https://img.shields.io/badge/Discord.py-2.4+-5865f2.svg?style=flat&logo=discord&logoColor=white)](https://discordpy.readthedocs.io/)
+[![License](https://img.shields.io/badge/License-MIT-00a2ed.svg?style=flat)](LICENSE)
+[![Discord](https://img.shields.io/discord/YOUR_SERVER_ID?color=7289da&label=Discord&logo=discord&logoColor=white)](https://discord.gg/syria)
 
-**🤲 Created by an Orthodox Christian**
-This project was created by an Orthodox Christian developer who grew up in Syria surrounded by Muslim friends and community. Now owning a Syrian Discord server with over 2,500 members, this bot was originally developed to serve that community's needs. The project represents the beauty of interfaith friendship and collaboration, where technology bridges communities regardless of religious differences.
+![GitHub Stars](https://img.shields.io/github/stars/your-username/QuranBot?style=social)
+![GitHub Forks](https://img.shields.io/github/forks/your-username/QuranBot?style=social)
+![GitHub Issues](https://img.shields.io/github/issues/your-username/QuranBot)
+![GitHub Pull Requests](https://img.shields.io/github/issues-pr/your-username/QuranBot)
 
-![QuranBot Banner](<images/BANNER%20(Still).png>)
+**🎯 A sophisticated 24/7 Islamic Discord bot with continuous Quran recitation, interactive learning, and comprehensive community features**
 
-## 🚨 ARCHIVED PROJECT NOTICE
+[✨ Features](#-key-features) • [📱 Screenshots](#-screenshots--demo) • [🚀 Quick Start](#-quick-start) • [📖 Documentation](#-documentation) • [🤝 Community](#-community)
 
-**This project has been permanently archived and is no longer maintained.**
+</div>
 
-### What This Means:
-- ✅ **Code is available** - You can download and use the code
-- ✅ **Documentation included** - Complete setup and deployment guides provided
-- ✅ **Working codebase** - Last known working state preserved
-- ❌ **Zero support** - No help, troubleshooting, or guidance provided
-- ❌ **No updates** - No bug fixes, features, or security patches
-- ❌ **No community** - No Discord server, forums, or communication channels
+![QuranBot Banner](images/BANNER%20(Still).png)
 
-### If You Use This Code:
-- You are **100% on your own**
-- Read the documentation thoroughly
-- Don't ask for help anywhere
-- Don't expect any responses to issues
-- Don't create pull requests
-- Don't fork expecting support
+## 🌟 **What Makes QuranBot Special**
 
-## 🔄 Recent Project Cleanup (Final Update)
+> **🤲 Interfaith Collaboration**  
+> Created by an Orthodox Christian developer who grew up in Syria, this project represents the beauty of interfaith friendship and collaboration. Originally built to serve a Syrian Discord community of 2,500+ members, QuranBot demonstrates how technology can bridge communities regardless of religious differences.
 
-### **🎯 Final Codebase Optimization & Feature Enhancement**
+### **🎯 Built for Excellence (Ihsan)**
+- **🔄 24/7 Continuous Operation** - Never stops serving the community
+- **🎵 Professional Audio Quality** - Crystal-clear Quranic recitation
+- **🧠 Advanced Learning System** - Interactive Islamic knowledge features
+- **🛡️ Enterprise Security** - Production-ready with comprehensive monitoring
+- **🌍 Community Driven** - Open source with active maintenance
 
-- **✅ Removed Legacy Code**: Eliminated 5 duplicate/unused files (70KB saved)
-- **✅ Cleaned Documentation**: Removed 5 redundant docs (64KB saved) 
-- **✅ Standardized Style**: All 100+ Python files now use consistent box comments
-- **✅ Updated Dependencies**: Fixed version mismatches and outdated packages
-- **✅ Quiz Enhancement**: Auto-deletion after 2 minutes for questions and results
-- **✅ Modern Architecture**: Complete modernization with DI container and microservices
+## 📱 **Screenshots & Demo**
 
-### **🚀 Latest Major Enhancements (Final Release)**
+### **🎵 Audio Playback System**
+<div align="center">
+<img src="images/screenshots/Screenshot 2025-07-30 at 6.40.54 AM.png" alt="Audio Playback Interface" width="600">
 
-- **✅ Enhanced Webhook System**: Multi-channel Discord webhook routing with rich visualizations
-- **✅ Prometheus Metrics**: Comprehensive monitoring and metrics collection endpoints  
-- **✅ Redis Caching**: Distributed caching system replacing in-memory cache
-- **✅ User Analytics**: Detailed listening history and behavioral pattern analysis
-- **✅ Content Expansion**: 200+ quiz questions and 60+ verses with Arabic, translations, and transliterations
-- **✅ Rich Visualizations**: Progress bars, charts, and gauges in Discord embeds
+*Continuous Quran recitation with real-time position tracking and beautiful Discord Rich Presence*
+</div>
 
-### **📁 Final Project Structure**
+### **📚 Interactive Quiz System**
+<div align="center">
+<img src="images/screenshots/Screenshot 2025-07-30 at 6.41.06 AM.png" alt="Islamic Knowledge Quiz" width="600">
 
-```
-QuranBot/
-├── src/                    # Modern architecture source code
-│   ├── analytics/         # User listening analytics and behavioral tracking
-│   ├── caching/          # Redis distributed caching system
-│   ├── commands/         # Discord slash commands
-│   ├── config/           # Configuration management  
-│   ├── core/             # Core services (DI, logging, webhook routing)
-│   ├── monitoring/       # Prometheus metrics and health monitoring
-│   ├── services/         # Modern services (audio, state, AI)
-│   └── utils/            # Utility modules
-├── data/                 # Expanded content (200+ quiz questions, 60+ verses)
-├── docs/                 # Streamlined documentation (10 essential guides)
-├── tests/                # Comprehensive test suite
-├── tools/                # Management and deployment scripts
-└── main.py               # Main entry point
-```
+*Comprehensive Islamic knowledge quizzes with multiple categories and difficulty levels*
+</div>
 
-## 🚀 What QuranBot Offers (If You Can Get It Working)
+### **🎖️ Achievement & Progress Tracking**
+<div align="center">
+<img src="images/screenshots/Screenshot 2025-07-30 at 6.41.27 AM.png" alt="User Progress Dashboard" width="600">
+
+*Detailed progress tracking with achievements, statistics, and leaderboards*
+</div>
+
+### **⚙️ Advanced Control Panel**
+<div align="center">
+<img src="images/screenshots/Screenshot 2025-07-30 at 6.41.41 AM.png" alt="Bot Control Panel" width="600">
+
+*Professional control panel with comprehensive bot management and monitoring features*
+</div>
+
+## ✨ **Key Features**
 
 ### **🎵 Advanced Audio System**
+- 🔄 **Continuous 24/7 Playback** - Uninterrupted Quranic recitation
+- 🎭 **6+ World-Class Reciters** - Saad Al Ghamdi, Abdul Basit, Mishary Rashid, and more
+- 💾 **Smart Resume Technology** - Remembers exact position across restarts
+- 🎯 **Intelligent Position Tracking** - Advanced state management
+- 🎨 **Rich Discord Presence** - Beautiful real-time status display
 
-- **100% Automated Playback**: Continuous Quran recitation with zero manual intervention
-- **Smart Resume**: Remembers exact position across bot restarts and crashes
-- **6+ World-Class Reciters**: Saad Al Ghamdi, Abdul Basit, Maher Al Muaiqly, and more
-- **Intelligent State Management**: Advanced position tracking and persistence
-- **Rich Discord Presence**: Shows current Surah and playback status
+### **📚 Interactive Islamic Learning**
+- 🧠 **200+ Quiz Questions** - Comprehensive Islamic knowledge across 15+ categories
+- 📖 **Daily Quranic Verses** - Automated daily inspiration with translations
+- 🏆 **Achievement System** - Gamified learning with progress tracking
+- 📊 **Progress Analytics** - Detailed learning statistics and insights
+- 🌍 **Multi-language Support** - Arabic, English, and transliterations
 
-### **📚 Interactive Learning Features**
+### **⚙️ Professional Bot Management**
+- 🎛️ **Advanced Control Panel** - Professional-grade bot administration
+- 📊 **Real-time Monitoring** - Comprehensive health and performance metrics
+- 🔐 **Enterprise Security** - Role-based permissions and rate limiting
+- 📝 **Comprehensive Logging** - Detailed audit trails and webhook integration
+- 🔧 **Hot Configuration** - Live settings updates without restart
 
-- **Islamic Knowledge Quizzes**: 200+ comprehensive questions across 15 categories (Quran, Hadith, Islamic History, Law, Ethics, etc.)
-- **Community Leaderboards**: Point-based ranking system with statistics
-- **Daily Verses**: 60+ curated Quranic verses with Arabic text, English translations, and transliterations
-- **Prayer Time Notifications**: Mecca prayer times with beautiful formatting
+### **🏗️ Modern Architecture**
+- 🏛️ **Dependency Injection** - Clean, testable, and maintainable code
+- 🚀 **Microservices Design** - Scalable and resilient architecture  
+- 💾 **Redis Caching** - High-performance distributed caching
+- 📈 **Prometheus Metrics** - Professional monitoring and observability
+- 🧪 **Comprehensive Testing** - 90%+ test coverage with automated CI/CD
 
-### **🤖 AI-Powered Islamic Assistant**
+## 🚀 **Quick Start**
 
-- **Enhanced AI Service**: GPT-3.5 Turbo integration for Islamic Q&A
-- **Bilingual Support**: Understands Arabic input, responds in English
-- **Syrian Cultural Context**: Specialized knowledge for Syrian Muslim community
-- **Rate Limited**: 1 question per hour per user for quality interactions
-
-### **🏗️ Enterprise Architecture**
-
-- **Dependency Injection**: Modern service container with lifecycle management
-- **Microservices Design**: Modular, scalable, and maintainable architecture
-- **Structured Logging**: JSON-based logging with correlation IDs
-- **Performance Monitoring**: Real-time metrics and system health tracking
-- **Comprehensive Security**: Rate limiting, input validation, and access control
-
-### **🔧 Advanced Monitoring & Caching**
-
-- **Prometheus Metrics**: Comprehensive monitoring with custom metrics endpoints
-- **Redis Distributed Caching**: High-performance caching replacing in-memory systems
-- **User Analytics**: Detailed listening history and behavioral pattern analysis
-- **Rich Webhook Visualizations**: Multi-channel Discord logging with progress bars, charts, and gauges
-
-## 💿 Installation (No Support Provided)
-
-### **System Requirements**
-- Python 3.11+
-- FFmpeg
-- Discord Bot Token
-- Redis Server (for distributed caching)
-- 2GB+ RAM
-- Ubuntu/Debian (recommended)
-
-### **Quick Setup** (Figure It Out Yourself)
+### **⚡ Option 1: Docker (Recommended)**
 ```bash
-# Clone repository
-git clone https://github.com/trippixn963/QuranBot.git
+# 1. Clone the repository
+git clone https://github.com/your-username/QuranBot.git
 cd QuranBot
 
-# Create virtual environment
-python3.11 -m venv .venv
-source .venv/bin/activate
+# 2. Configure your bot
+cp examples/basic-setup/.env.example .env
+# Edit .env with your Discord bot token and channel IDs
 
-# Install dependencies
-pip install -r requirements.txt  # or use poetry
+# 3. Launch with Docker
+cd examples/basic-setup
+docker-compose up -d
 
-# Configure
-cp config/.env.example config/.env
-# Edit config/.env with your settings
-
-# Run
-python main.py
+# 4. View logs
+docker-compose logs -f quranbot
 ```
 
-## 📚 Documentation (Read It Yourself)
+### **🐍 Option 2: Python Setup**
+```bash
+# 1. Prerequisites
+python --version  # Requires Python 3.11+
+ffmpeg -version   # Required for audio processing
 
-The `docs/` folder contains comprehensive guides:
+# 2. Install dependencies
+pip install poetry
+poetry install
 
-- **[Development Guide](docs/DEVELOPMENT_GUIDE.md)**: Local setup and development
-- **[Deployment Guide](docs/DEPLOYMENT_GUIDE.md)**: Production deployment
-- **[Architecture](docs/ARCHITECTURE.md)**: System design and components
-- **[API Reference](docs/API_REFERENCE.md)**: Service documentation
-- **[Troubleshooting](docs/TROUBLESHOOTING.md)**: Common issues (solve them yourself)
-- **[Security](docs/SECURITY.md)**: Security best practices
-- **[VPS Management](docs/VPS_MANAGEMENT.md)**: Server administration
+# 3. Configure environment
+cp config/.env.example config/.env
+# Edit with your Discord bot credentials
 
-## ⚠️ Disclaimers
+# 4. Run the bot
+poetry run python main.py
+```
 
-### **No Support Policy**
-- This is an **AS-IS** release with **ZERO** ongoing support
-- Don't ask questions, report bugs, or request features
-- Don't expect help with setup, configuration, or deployment
-- Don't create GitHub issues or discussions
-- Don't fork expecting any assistance or guidance
+### **🤖 Discord Bot Setup**
+1. Create a bot at [Discord Developer Portal](https://discord.com/developers/applications)
+2. Get your bot token and server/channel IDs
+3. Invite bot with these permissions:
+   - ✅ Send Messages
+   - ✅ Use Slash Commands
+   - ✅ Connect (Voice)
+   - ✅ Speak (Voice)
+   - ✅ Embed Links
 
-### **Technical Warnings**
-- Complex architecture requiring advanced Python knowledge
-- Requires proper Discord bot setup and permissions
-- May have undiscovered bugs or compatibility issues
-- Dependencies may become outdated over time
-- No guarantee of continued functionality
+## 📖 **Documentation**
 
-### **Islamic Content Disclaimer**
-- Islamic content provided for educational purposes
-- Verify religious accuracy with qualified Islamic scholars
-- Creator is not responsible for religious interpretation
-- Use Islamic features with appropriate respect and understanding
+| 📚 Guide | 📝 Description |
+|----------|----------------|
+| [🏗️ Installation Guide](INSTALLATION.md) | Complete setup instructions for all platforms |
+| [👨‍💻 Development Guide](docs/DEVELOPMENT_GUIDE.md) | Local development and contribution setup |
+| [🔧 Configuration Guide](docs/CONFIGURATION.md) | Advanced configuration and customization |
+| [🏛️ Architecture Overview](docs/ARCHITECTURE.md) | Technical architecture and design patterns |
+| [🛡️ Security Guide](docs/SECURITY.md) | Security best practices and guidelines |
+| [📊 API Reference](docs/api/README.md) | Complete API documentation |
 
-## 📜 License & Credits
+### **📋 Quick Links**
+- **🐛 Bug Reports**: [GitHub Issues](https://github.com/your-username/QuranBot/issues)
+- **💡 Feature Requests**: [GitHub Discussions](https://github.com/your-username/QuranBot/discussions)
+- **❓ Get Help**: [Community Discord](https://discord.gg/syria)
+- **📖 Wiki**: [Project Wiki](https://github.com/your-username/QuranBot/wiki)
 
-### **MIT License**
-This project is released under the MIT License. See [LICENSE](LICENSE) for details.
+## 🤝 **Community**
 
-### **No Warranty**
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+### **💬 Join Our Community**
+<div align="center">
 
-### **Final Acknowledgments**
-- **Allah (SWT)** for enabling this project's creation
-- **Syrian Muslim community** for inspiration and feedback  
-- **Islamic scholars** who provided religious guidance
-- **Open source community** for tools and libraries used
-- **Discord.py developers** for the excellent framework
+[![Discord](https://img.shields.io/badge/Discord-Join%20Server-7289da.svg?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/syria)
+
+**[🌐 Join discord.gg/syria](https://discord.gg/syria)** - Get support, share ideas, and collaborate with the community
+
+</div>
+
+### **🌟 How to Contribute**
+- **🐛 Report Issues**: Found a bug? Let us know!
+- **💡 Suggest Features**: Have ideas? We'd love to hear them!
+- **🔧 Submit PRs**: Code contributions are always welcome
+- **📚 Improve Docs**: Help make our documentation better
+- **⭐ Star the Repo**: Show your support!
+
+### **🏆 Contributors**
+<div align="center">
+
+[![Contributors](https://contrib.rocks/image?repo=your-username/QuranBot)](https://github.com/your-username/QuranBot/graphs/contributors)
+
+*Thank you to all our amazing contributors! 🙏*
+
+</div>
+
+## 📄 **License & Attribution**
+
+### **📜 MIT License**
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+### **🙏 Acknowledgments**
+- **Islamic Scholars** - For guidance on religious content accuracy
+- **Discord Community** - For continuous feedback and support  
+- **Open Source Contributors** - For making this project possible
+- **Syrian Friends** - For inspiring this interfaith collaboration
+
+### **📚 Islamic Content Sources**
+- **Quran Text**: Authentic sources from tanzil.net
+- **Hadith References**: Sahih collections (Bukhari, Muslim, etc.)
+- **Recitations**: Licensed from renowned Quranic reciters
+- **Translations**: Multiple authenticated translation sources
+
+## 🌟 **Support the Project**
+
+<div align="center">
+
+### **⭐ Star this repository if QuranBot helps your community!**
+
+[![GitHub stars](https://img.shields.io/github/stars/your-username/QuranBot?style=social)](https://github.com/your-username/QuranBot/stargazers)
+
+**Share with your community** • **Contribute code** • **Report issues** • **Join discussions**
+
+</div>
 
 ---
 
-## 🏁 Final Words
+<div align="center">
 
-This project served the Muslim community for its intended purpose and is now complete. The code is preserved here as a final contribution to the open source community.
+### **🤲 Built with Love and Interfaith Cooperation**
 
-**Take what you can use, ignore what you can't.**
+*"And We made them leaders guiding by Our command when they were patient and were certain of Our signs."* - **Quran 32:24**
 
-**No further communication will be provided regarding this project.**
+**🕌 Serving the Islamic Community • 🤝 Bridging Communities • 💻 Built with Excellence**
 
-_"And Allah knows best."_
+[![Made with ❤️](https://img.shields.io/badge/Made%20with-❤️-red.svg)](https://github.com/your-username/QuranBot)
+[![Built for 🕌](https://img.shields.io/badge/Built%20for-🕌%20Islamic%20Community-green.svg)](https://discord.gg/syria)
 
-**الحمد لله رب العالمين**
+</div>

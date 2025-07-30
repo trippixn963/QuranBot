@@ -82,6 +82,28 @@ class TestPrayerCog(commands.Cog):
             embed.set_footer(text="Created by حَـــــنَـــــا")
             await interaction.response.send_message(embed=embed, ephemeral=True)
             
+            # Log to enhanced webhook router
+            try:
+                from src.core.di_container import get_container
+                container = get_container()
+                if container:
+                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    if enhanced_webhook and hasattr(enhanced_webhook, "log_quran_command_usage"):
+                        await enhanced_webhook.log_quran_command_usage(
+                            admin_name=interaction.user.display_name,
+                            admin_id=interaction.user.id,
+                            command_name="/test-prayer",
+                            command_details={
+                                "prayer_tested": prayer.capitalize(),
+                                "command_type": "Admin Test Command",
+                                "test_result": "Success",
+                                "notification_sent": "Daily verse channel"
+                            },
+                            admin_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None
+                        )
+            except Exception:
+                pass  # Don't fail the command if webhook logging fails
+            
         except Exception as e:
             embed = discord.Embed(
                 title="❌ Test Failed",

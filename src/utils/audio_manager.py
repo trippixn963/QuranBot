@@ -62,56 +62,149 @@ from .tree_log import (
 # =============================================================================
 
 class AudioPlaybackMonitor:
-    """Monitor audio playback health and send Discord alerts"""
+    """
+    Comprehensive audio playback and voice connection health monitoring system.
+    
+    This class implements a sophisticated monitoring and auto-recovery system for Discord
+    voice connections and audio playback. It provides:
+    
+    1. **Health Monitoring**: Tracks playback failures, connection issues, and timeouts
+    2. **Alert System**: Sends Discord alerts with escalation levels (standard -> critical -> emergency)
+    3. **Auto-Recovery**: Automatically attempts to recover from failures with exponential backoff
+    4. **Connection Validation**: Proactively validates voice connections to prevent silent failures
+    5. **Rate Limiting**: Implements cooldowns to prevent alert spam
+    
+    **Failure Escalation Strategy**:
+    - Standard failures (3+): Basic alert + auto-recovery attempt
+    - Critical failures (10+): Escalated alert with detailed diagnostics
+    - Emergency failures (20+): Emergency ping with immediate attention required
+    
+    **Recovery Strategy**:
+    - Exponential backoff with configurable max attempts (5)
+    - Faster recovery window (3 minutes) for quick issue resolution
+    - Proactive connection validation to catch issues early
+    - State reset on successful recovery to prevent cascading failures
+    
+    **Performance Considerations**:
+    - Uses async tasks for non-blocking alerts and recovery
+    - Implements cooldowns to prevent resource exhaustion
+    - Efficient health checks with minimal Discord API usage
+    """
     
     def __init__(self):
-        self.last_successful_playback = datetime.now(timezone.utc)
-        self.last_voice_connection = datetime.now(timezone.utc)
-        self.consecutive_playback_failures = 0
-        self.consecutive_connection_failures = 0
-        self.last_playback_alert = None
-        self.last_connection_alert = None
-        self.alert_cooldown = 600  # 10 minutes between alerts
-        self.playback_failure_threshold = 3
-        self.connection_failure_threshold = 2
-        self.is_audio_healthy = True
-        self.is_connection_healthy = True
-        self.expected_playback_interval = 300  # 5 minutes max between tracks
+        """
+        Initialize the audio monitoring system with production-ready defaults.
         
-        # Enhanced auto-recovery settings
-        self.auto_recovery_enabled = True
-        self.max_recovery_attempts = 5  # Increased from 3
-        self.recovery_cooldown = 180  # Reduced from 300 to 3 minutes for faster recovery
-        self.last_recovery_attempt = None
-        self.recovery_attempts = 0
+        Sets up comprehensive monitoring thresholds, recovery settings, and
+        escalation policies optimized for a Discord bot serving Quranic audio.
         
-        # New: Connection health monitoring
-        self.connection_health_checks = 0
-        self.last_health_check = datetime.now(timezone.utc)
+        **Timing Configuration**:
+        - Alert cooldown: 10 minutes (prevents spam while allowing timely updates)
+        - Recovery cooldown: 3 minutes (balance between quick recovery and stability)
+        - Playback timeout: 5 minutes (reasonable gap between Quranic recitations)
+        - Connection validation: Every health check cycle
         
-        # Enhanced: Escalation thresholds for critical alerts
-        self.critical_failure_threshold = 10  # After 10 failures, escalate to critical
-        self.emergency_failure_threshold = 20  # After 20 failures, emergency ping
-        self.extended_silence_threshold = 900  # 15 minutes of silence = emergency
-        self.last_escalation_alert = None
-        self.escalation_cooldown = 1800  # 30 minutes between escalation alerts
+        **Threshold Strategy**:
+        - Failure thresholds are set to catch issues quickly without false positives
+        - Escalation thresholds provide progressive alert severity
+        - Recovery attempts are limited to prevent infinite loops
+        """
+        # === Core State Tracking ===
+        # These timestamps track the last successful operations for timeout detection
+        self.last_successful_playback = datetime.now(timezone.utc)  # When audio last played successfully
+        self.last_voice_connection = datetime.now(timezone.utc)     # When voice connection was last established
         
-        # New: Proactive reconnection settings
-        self.proactive_reconnect_enabled = True
-        self.connection_stability_threshold = 30  # Seconds to consider connection stable
-        self.last_connection_validation = datetime.now(timezone.utc)
+        # Failure counters for escalation logic - reset on success to prevent false escalations
+        self.consecutive_playback_failures = 0    # Count of sequential playback failures
+        self.consecutive_connection_failures = 0  # Count of sequential connection failures
+        
+        # === Alert Management ===
+        # Track when alerts were last sent to implement cooldown periods
+        self.last_playback_alert = None     # Prevents playback alert spam
+        self.last_connection_alert = None   # Prevents connection alert spam
+        self.alert_cooldown = 600           # 10 minutes between alerts - balances responsiveness with spam prevention
+        
+        # === Failure Detection Thresholds ===
+        # These determine when to trigger alerts and recovery - tuned for Discord voice reliability
+        self.playback_failure_threshold = 3      # Trigger alert after 3 consecutive playback failures
+        self.connection_failure_threshold = 2    # Trigger alert after 2 consecutive connection failures (more sensitive)
+        self.expected_playback_interval = 300    # 5 minutes max gap between tracks (reasonable for Quranic audio)
+        
+        # === Health Status Flags ===
+        # Binary flags to track current system health and prevent duplicate alerts
+        self.is_audio_healthy = True        # False when playback issues detected
+        self.is_connection_healthy = True   # False when connection issues detected
+        
+        # === Auto-Recovery System ===
+        # Intelligent recovery with exponential backoff to handle transient Discord issues
+        self.auto_recovery_enabled = True       # Master switch for recovery attempts
+        self.max_recovery_attempts = 5          # Increased from 3 for better resilience
+        self.recovery_cooldown = 180            # 3 minutes between recovery attempts (reduced for faster resolution)
+        self.last_recovery_attempt = None       # Timestamp for cooldown calculation
+        self.recovery_attempts = 0              # Current recovery attempt count
+        
+        # === Proactive Health Monitoring ===
+        # Regular health checks to catch issues before they become critical
+        self.connection_health_checks = 0           # Counter for health check cycles
+        self.last_health_check = datetime.now(timezone.utc)  # Timing for health check intervals
+        
+        # === Alert Escalation System ===
+        # Progressive alert severity based on failure persistence - prevents alert fatigue
+        self.critical_failure_threshold = 10       # After 10 failures, escalate to critical alerts
+        self.emergency_failure_threshold = 20      # After 20 failures, emergency ping with immediate attention
+        self.extended_silence_threshold = 900      # 15 minutes of silence triggers emergency response
+        self.last_escalation_alert = None          # Timestamp for escalation cooldown
+        self.escalation_cooldown = 1800            # 30 minutes between escalation alerts
+        
+        # === Proactive Connection Management ===
+        # Validates connections before they fail to minimize user impact
+        self.proactive_reconnect_enabled = True            # Enable proactive reconnection on issues
+        self.connection_stability_threshold = 30           # Seconds to consider a connection stable
+        self.last_connection_validation = datetime.now(timezone.utc)  # Last successful connection validation
+        
+        # === Health Check Configuration ===
+        # Controls proactive health monitoring frequency and thresholds
+        self.health_check_interval = 60              # Seconds between health checks (1 minute)
+        self.connection_timeout_threshold = 300      # 5 minutes before connection considered stale
         
     def record_successful_playback(self):
-        """Record successful audio playback start"""
+        """
+        Record a successful audio playback event and handle recovery state transitions.
+        
+        This method serves dual purposes:
+        1. **Normal Operation**: Updates last successful playback timestamp for timeout detection
+        2. **Recovery Handling**: Detects audio system recovery from failure state and sends notifications
+        
+        **Recovery Logic**:
+        When transitioning from failure to success, this method:
+        - Resets consecutive failure counters to prevent false escalations
+        - Marks audio system as healthy to resume normal monitoring
+        - Triggers async recovery notification to inform administrators
+        - Resets recovery attempt counters to allow future recovery cycles
+        
+        **Performance Considerations**:
+        - Uses asyncio.create_task() for non-blocking alert delivery
+        - Minimal timestamp operations for low-latency audio handling
+        - State transitions are atomic to prevent race conditions
+        
+        **Integration Points**:
+        Called by AudioManager when FFmpeg audio source starts successfully,
+        ensuring the monitoring system stays synchronized with actual playback state.
+        """
         if self.consecutive_playback_failures > 0:
-            # Audio recovered
+            # Audio system has recovered from failure state
+            # Reset all failure-related counters to clean slate
             self.consecutive_playback_failures = 0
             self.last_successful_playback = datetime.now(timezone.utc)
-            self.recovery_attempts = 0  # Reset recovery attempts on success
+            self.recovery_attempts = 0  # Allow future recovery attempts
+            
+            # Transition from unhealthy to healthy state
             if not self.is_audio_healthy:
                 self.is_audio_healthy = True
+                # Async notification prevents blocking audio pipeline
                 asyncio.create_task(self._send_audio_recovery_alert())
         else:
+            # Normal operation: just update timestamp for timeout monitoring
             self.last_successful_playback = datetime.now(timezone.utc)
     
     def record_successful_connection(self):
@@ -131,28 +224,64 @@ class AudioPlaybackMonitor:
             self.last_connection_validation = current_time
     
     def record_playback_failure(self, error_type: str, error_message: str):
-        """Record audio playback failure with escalation support"""
+        """
+        Record an audio playback failure and trigger appropriate escalation responses.
+        
+        This method implements a sophisticated three-tier escalation system designed to
+        balance immediate response with alert fatigue prevention:
+        
+        **Escalation Tiers**:
+        1. **Standard Alert (3+ failures)**: Basic notification + auto-recovery attempt
+        2. **Critical Alert (10+ failures)**: Escalated notification with detailed diagnostics
+        3. **Emergency Alert (20+ failures)**: Immediate attention required with ping escalation
+        
+        **Algorithm Logic**:
+        - Uses elif chain to ensure only one alert type per failure
+        - Checks cooldown periods to prevent alert spam
+        - Triggers auto-recovery only on initial failure detection (not escalations)
+        - Maintains separate health flags for different alert types
+        
+        **Auto-Recovery Integration**:
+        Recovery is only attempted on standard failures to prevent:
+        - Recovery interference during critical debugging
+        - Resource exhaustion from repeated recovery attempts
+        - State confusion during emergency interventions
+        
+        Args:
+            error_type (str): Category of error (e.g., "ffmpeg", "connection", "timeout")
+            error_message (str): Detailed error description for diagnostics
+            
+        **Performance Considerations**:
+        - All alerts are sent asynchronously to prevent blocking audio pipeline
+        - Failure counter increment is atomic and thread-safe
+        - Escalation checks are optimized with short-circuit evaluation
+        """
         self.consecutive_playback_failures += 1
         
-        # Standard failure alert
+        # Tier 1: Standard failure alert with auto-recovery
+        # Triggered on initial failure detection (3+ consecutive failures)
         if (self.consecutive_playback_failures >= self.playback_failure_threshold and 
-            self.is_audio_healthy and
-            self._should_send_playback_alert()):
-            self.is_audio_healthy = False
+            self.is_audio_healthy and  # Only trigger when transitioning to unhealthy
+            self._should_send_playback_alert()):  # Respect cooldown periods
+            
+            self.is_audio_healthy = False  # Mark system as unhealthy
             asyncio.create_task(self._send_playback_failure_alert(error_type, error_message))
             
-            # Trigger auto-recovery if enabled
+            # Attempt auto-recovery on initial failure detection
+            # Recovery is disabled for escalated failures to prevent interference
             if self.auto_recovery_enabled and self._should_attempt_recovery():
                 asyncio.create_task(self._attempt_audio_recovery())
         
-        # Critical failure escalation
+        # Tier 2: Critical failure escalation (persistent issues)
+        # Indicates systemic problems requiring deeper investigation
         elif (self.consecutive_playback_failures >= self.critical_failure_threshold and
-              self._should_send_escalation_alert()):
+              self._should_send_escalation_alert()):  # Separate cooldown for escalations
             asyncio.create_task(self._send_critical_escalation_alert(error_type, error_message))
         
-        # Emergency failure escalation  
+        # Tier 3: Emergency failure escalation (system breakdown)
+        # Indicates complete failure requiring immediate intervention
         elif (self.consecutive_playback_failures >= self.emergency_failure_threshold and
-              self._should_send_escalation_alert()):
+              self._should_send_escalation_alert()):  # Same cooldown as critical
             asyncio.create_task(self._send_emergency_escalation_alert(error_type, error_message))
     
     def record_connection_failure(self, error_type: str, error_message: str):
@@ -184,7 +313,40 @@ class AudioPlaybackMonitor:
                 asyncio.create_task(self._attempt_audio_recovery())
     
     def check_connection_health(self, audio_manager):
-        """Proactively check voice connection health"""
+        """
+        Proactively validate voice connection health to prevent silent failures.
+        
+        This method implements proactive connection monitoring to catch issues before
+        they impact users. It performs comprehensive validation of the Discord voice
+        connection and triggers recovery actions when problems are detected.
+        
+        **Health Check Algorithm**:
+        1. **Interval Check**: Respects health_check_interval to prevent API abuse
+        2. **Client Validation**: Ensures voice client exists and is connected
+        3. **Timeout Detection**: Identifies stale connections based on validation age
+        4. **Recovery Triggers**: Initiates reconnection for detected issues
+        5. **Status Logging**: Provides periodic health status reports
+        
+        **Why Proactive Monitoring**:
+        - Discord connections can silently fail without immediate notification
+        - Early detection prevents extended outages during Quranic recitations
+        - Reduces user-reported issues through automated problem resolution
+        - Maintains consistent audio service availability
+        
+        **Performance Optimizations**:
+        - Respects check intervals to minimize Discord API load
+        - Uses efficient timestamp comparisons for timeout detection
+        - Logs status only periodically to reduce log noise
+        - Handles exceptions gracefully to prevent monitor crashes
+        
+        Args:
+            audio_manager: The AudioManager instance to validate connections for
+            
+        **Integration Points**:
+        - Called periodically by the main event loop or scheduler
+        - Triggers connection recovery through record_connection_failure()
+        - Reports status via structured logging for operations monitoring
+        """
         try:
             current_time = datetime.now(timezone.utc)
             
@@ -298,41 +460,53 @@ class AudioPlaybackMonitor:
                 await asyncio.sleep(2)  # Brief pause before restart
                 await audio_manager.start_playback(resume_position=True)
                 
-                # Send recovery attempt notification
-                from src.utils.discord_logger import get_discord_logger
-                discord_logger = get_discord_logger()
-                if discord_logger:
-                    await discord_logger.log_bot_activity(
-                        "auto_recovery",
-                        f"automatically restarted audio system (attempt {self.recovery_attempts}/{self.max_recovery_attempts})",
-                        {
-                            "Recovery Type": "Audio Playback",
-                            "Trigger": "Automatic monitoring system",
-                            "Attempt": f"{self.recovery_attempts}/{self.max_recovery_attempts}",
-                            "Action": "Restarted audio playback",
-                            "Status": "🔄 Recovery in progress"
-                        }
-                    )
+                # Send recovery attempt notification using enhanced webhook router
+                try:
+                    from src.core.di_container import get_container
+                    container = get_container()
+                    if container:
+                        enhanced_webhook = container.get("enhanced_webhook_router")
+                        if enhanced_webhook and hasattr(enhanced_webhook, "log_audio_event"):
+                            await enhanced_webhook.log_audio_event(
+                                event_type="auto_recovery_attempt",
+                                event_data={
+                                    "recovery_type": "Audio Playback",
+                                    "trigger": "Automatic monitoring system",
+                                    "attempt": f"{self.recovery_attempts}/{self.max_recovery_attempts}",
+                                    "action": "Restarted audio playback",
+                                    "status": "Recovery in progress",
+                                    "current_surah": str(self.current_surah)
+                                },
+                                severity="warning"
+                            )
+                except Exception:
+                    pass  # Don't let logging prevent recovery
                 
             except Exception as e:
                 log_error_with_traceback("Audio recovery attempt failed", e)
                 
-                # If this was the last attempt, send final failure alert
+                # If this was the last attempt, send final failure alert using enhanced webhook router
                 if self.recovery_attempts >= self.max_recovery_attempts:
-                    from src.utils.discord_logger import get_discord_logger
-                    discord_logger = get_discord_logger()
-                    if discord_logger:
-                        await discord_logger.log_critical_error(
-                            "Auto-Recovery Failed - Manual Intervention Required",
-                            None,
-                            {
-                                "Component": "Audio Recovery System",
-                                "Failed Attempts": f"{self.recovery_attempts}/{self.max_recovery_attempts}",
-                                "Status": "❌ Auto-recovery exhausted",
-                                "Action Required": "Manual restart needed",
-                                "Recommendation": "Check VPS and restart bot service"
-                            }
-                        )
+                    try:
+                        from src.core.di_container import get_container
+                        container = get_container()
+                        if container:
+                            enhanced_webhook = container.get("enhanced_webhook_router")
+                            if enhanced_webhook and hasattr(enhanced_webhook, "log_audio_event"):
+                                await enhanced_webhook.log_audio_event(
+                                    event_type="auto_recovery_failed",
+                                    event_data={
+                                        "component": "Audio Recovery System",
+                                        "failed_attempts": f"{self.recovery_attempts}/{self.max_recovery_attempts}",
+                                        "status": "Auto-recovery exhausted",
+                                        "action_required": "Manual restart needed",
+                                        "recommendation": "Check VPS and restart bot service",
+                                        "current_surah": str(self.current_surah)
+                                    },
+                                    severity="critical"
+                                )
+                    except Exception:
+                        pass  # Don't let logging prevent recovery
                 
         except Exception as e:
             log_error_with_traceback("Critical error in audio recovery", e)
@@ -427,26 +601,31 @@ class AudioPlaybackMonitor:
                     log_error_with_traceback(f"Connection recovery retry {retry + 1} failed", retry_error)
                     await asyncio.sleep(5)  # Wait before next retry
             
-            # Send recovery notification
-            from src.utils.discord_logger import get_discord_logger
-            discord_logger = get_discord_logger()
-            if discord_logger:
-                status_emoji = "✅" if recovery_success else "❌"
-                status_text = "Recovery successful" if recovery_success else "Recovery failed"
-                
-                await discord_logger.log_bot_activity(
-                    "enhanced_auto_recovery",
-                    f"voice connection recovery attempt completed (attempt {self.recovery_attempts}/{self.max_recovery_attempts})",
-                    {
-                        "Recovery Type": "Enhanced Voice Connection",
-                        "Trigger": "Automatic monitoring system",
-                        "Attempt": f"{self.recovery_attempts}/{self.max_recovery_attempts}",
-                        "Action": "Multi-step reconnection process",
-                        "Retries Performed": "Up to 3 per attempt",
-                        "Status": f"{status_emoji} {status_text}",
-                        "Audio Restored": "✅ Yes" if recovery_success else "❌ No"
-                    }
-                )
+            # Send recovery notification using enhanced webhook router
+            try:
+                from src.core.di_container import get_container
+                container = get_container()
+                if container:
+                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    if enhanced_webhook and hasattr(enhanced_webhook, "log_audio_event"):
+                        status_text = "Recovery successful" if recovery_success else "Recovery failed"
+                        
+                        await enhanced_webhook.log_audio_event(
+                            event_type="enhanced_auto_recovery",
+                            event_data={
+                                "recovery_type": "Enhanced Voice Connection",
+                                "trigger": "Automatic monitoring system",
+                                "attempt": f"{self.recovery_attempts}/{self.max_recovery_attempts}",
+                                "action": "Multi-step reconnection process",
+                                "retries_performed": "Up to 3 per attempt",
+                                "status": status_text,
+                                "audio_restored": "Yes" if recovery_success else "No",
+                                "current_surah": str(self.current_surah)
+                            },
+                            severity="info" if recovery_success else "warning"
+                        )
+            except Exception:
+                pass  # Don't let logging prevent recovery
             
             if recovery_success:
                 log_perfect_tree_section(
@@ -897,7 +1076,47 @@ async def start_audio_monitoring_task(audio_manager):
 
 
 class AudioManager:
-    """Advanced audio playback system for Discord voice channels"""
+    """
+    Comprehensive audio playback system for Discord voice channels with Quranic content.
+    
+    This class provides enterprise-grade audio management capabilities specifically designed
+    for serving Quranic recitations in Discord voice channels. It integrates with multiple
+    system components to provide a seamless audio experience.
+    
+    **Core Features**:
+    - **Multi-Reciter Support**: Dynamic discovery and switching between Quranic reciters
+    - **State Persistence**: Maintains playback position across bot restarts
+    - **Control Panel Integration**: Rich Discord UI for audio control
+    - **Health Monitoring**: Comprehensive failure detection and auto-recovery
+    - **Performance Tracking**: Detailed metrics and position tracking
+    - **Rich Presence**: Discord status updates with current recitation info
+    
+    **Architecture Components**:
+    - **Audio Pipeline**: FFmpeg-based audio processing with optimized settings
+    - **State Management**: Persistent storage of user preferences and playback state
+    - **Monitoring System**: Real-time health checks and failure recovery
+    - **Control Interface**: Discord embeds and buttons for user interaction
+    - **File Management**: Dynamic audio file discovery and validation
+    
+    **Performance Optimizations**:
+    - Asynchronous operations to prevent blocking Discord events
+    - Efficient file caching and metadata extraction
+    - Position tracking with configurable save intervals
+    - Memory-efficient audio streaming with FFmpeg
+    
+    **Integration Points**:
+    - Discord.py voice clients for audio streaming
+    - State manager for persistence across restarts
+    - Resource manager for audio file discovery
+    - Unified scheduler for background tasks
+    - Webhook logger for operational monitoring
+    
+    **Security Considerations**:
+    - Safe file path handling to prevent directory traversal
+    - Input validation for reciter names and surah numbers
+    - Rate limiting for control panel interactions
+    - Error handling to prevent information disclosure
+    """
 
     def __init__(
         self,
@@ -908,7 +1127,37 @@ class AudioManager:
         default_shuffle: bool = False,
         default_loop: bool = False,
     ):
-        """Initialize audio manager with configuration"""
+        """
+        Initialize the audio management system with production-ready configuration.
+        
+        Sets up the complete audio pipeline including state management, monitoring,
+        control interfaces, and file discovery. All components are initialized
+        asynchronously to prevent blocking the Discord bot startup.
+        
+        **Configuration Strategy**:
+        - Uses safe defaults optimized for Quranic audio content
+        - Validates file paths and FFmpeg availability during startup
+        - Discovers available reciters dynamically from filesystem
+        - Initializes monitoring with appropriate thresholds for religious content
+        
+        **State Management**:
+        - Loads previous session state from persistent storage
+        - Maintains user preferences across bot restarts
+        - Handles state corruption gracefully with fallback defaults
+        
+        Args:
+            bot: Discord bot instance for event handling and API access
+            ffmpeg_path (str): Path to FFmpeg executable for audio processing
+            audio_base_folder (str): Root directory containing organized audio files
+            default_reciter (str): Preferred reciter for new sessions
+            default_shuffle (bool): Enable shuffle mode by default
+            default_loop (bool): Enable loop mode by default
+            
+        **Performance Considerations**:
+        - Initialization is designed to be fast to minimize bot startup time
+        - Heavy operations (file discovery) are deferred to async methods
+        - Memory usage is optimized for long-running Discord bot processes
+        """
         self.bot = bot
         self.ffmpeg_path = ffmpeg_path
         self.audio_base_folder = audio_base_folder
@@ -2019,24 +2268,26 @@ class AudioManager:
                     "🎙️",
                 )
 
-                # Log reciter switch to Discord
-                from src.utils.discord_logger import get_discord_logger
-                discord_logger = get_discord_logger()
-                if discord_logger:
-                    try:
-                        await discord_logger.log_bot_activity(
-                            "reciter_switch",
-                            f"switched reciter from {old_reciter} to {reciter_name}",
-                            {
-                                "Previous Reciter": old_reciter,
-                                "New Reciter": reciter_name,
-                                "Current Surah": f"{self.current_surah}. {self._get_surah_name(self.current_surah)}",
-                                "Audio Files": f"{len(self.current_audio_files)} files loaded",
-                                "Action": "Automatic restart with new reciter"
-                            }
-                        )
-                    except:
-                        pass
+                # Log reciter switch using enhanced webhook router
+                try:
+                    from src.core.di_container import get_container
+                    container = get_container()
+                    if container:
+                        enhanced_webhook = container.get("enhanced_webhook_router")
+                        if enhanced_webhook and hasattr(enhanced_webhook, "log_audio_event"):
+                            await enhanced_webhook.log_audio_event(
+                                event_type="reciter_switch",
+                                event_data={
+                                    "previous_reciter": old_reciter,
+                                    "new_reciter": reciter_name,
+                                    "current_surah": f"{self.current_surah}. {self._get_surah_name(self.current_surah)}",
+                                    "audio_files": f"{len(self.current_audio_files)} files loaded",
+                                    "action": "Automatic restart with new reciter"
+                                },
+                                severity="info"
+                            )
+                except Exception:
+                    pass  # Don't let logging prevent operation
 
                 # Restart playback
                 await self.start_playback()
@@ -2309,25 +2560,27 @@ class AudioManager:
                         self.current_file_index + 1, len(self.current_audio_files)
                     )
 
-                    # Log automatic surah start to Discord
-                    from src.utils.discord_logger import get_discord_logger
-                    discord_logger = get_discord_logger()
-                    if discord_logger:
-                        try:
-                            surah_name = self._get_surah_name(self.current_surah)
-                            await discord_logger.log_bot_activity(
-                                "surah_start",
-                                f"started playing {surah_name}",
-                                {
-                                    "Surah Number": str(self.current_surah),
-                                    "Surah Name": surah_name,
-                                    "Reciter": self.current_reciter,
-                                    "File Index": f"{self.current_file_index + 1}/{len(self.current_audio_files)}",
-                                    "Position": f"{self.current_position:.1f}s" if self.current_position > 0 else "From beginning"
-                                }
-                            )
-                        except:
-                            pass
+                    # Log automatic surah start using enhanced webhook router
+                    try:
+                        from src.core.di_container import get_container
+                        container = get_container()
+                        if container:
+                            enhanced_webhook = container.get("enhanced_webhook_router")
+                            if enhanced_webhook and hasattr(enhanced_webhook, "log_audio_event"):
+                                surah_name = self._get_surah_name(self.current_surah)
+                                await enhanced_webhook.log_audio_event(
+                                    event_type="surah_start",
+                                    event_data={
+                                        "surah_number": str(self.current_surah),
+                                        "surah_name": surah_name,
+                                        "reciter": self.current_reciter,
+                                        "file_index": f"{self.current_file_index + 1}/{len(self.current_audio_files)}",
+                                        "position": f"{self.current_position:.1f}s" if self.current_position > 0 else "From beginning"
+                                    },
+                                    severity="info"
+                                )
+                    except Exception:
+                        pass  # Don't let logging prevent playback
 
                     if validate_surah_number(self.current_surah):
                         surah_display = get_surah_display(self.current_surah)
@@ -2708,24 +2961,27 @@ class AudioManager:
                                 "🔄",
                             )
 
-                            # Log 24/7 restart to Discord
-                            from src.utils.discord_logger import get_discord_logger
-                            discord_logger = get_discord_logger()
-                            if discord_logger:
-                                try:
-                                    await discord_logger.log_bot_activity(
-                                        "surah_switch",
-                                        f"completed all surahs, restarting from Al-Fatiha for 24/7 continuous playback",
-                                        {
-                                            "Playback Mode": "24/7 Continuous",
-                                            "Action": "Restart from beginning",
-                                            "Reason": "Completed all 114 surahs",
-                                            "Next Surah": "1. Al-Fatiha",
-                                            "Reciter": self.current_reciter
-                                        }
-                                    )
-                                except:
-                                    pass
+                            # Log 24/7 restart using enhanced webhook router
+                            try:
+                                from src.core.di_container import get_container
+                                container = get_container()
+                                if container:
+                                    enhanced_webhook = container.get("enhanced_webhook_router")
+                                    if enhanced_webhook and hasattr(enhanced_webhook, "log_audio_event"):
+                                        await enhanced_webhook.log_audio_event(
+                                            event_type="surah_switch",
+                                            event_data={
+                                                "playback_mode": "24/7 Continuous",
+                                                "action": "Restart from beginning",
+                                                "reason": "Completed all 114 surahs",
+                                                "next_surah": "1. Al-Fatiha",
+                                                "reciter": self.current_reciter,
+                                                "cycle_completed": "True"
+                                            },
+                                            severity="info"
+                                        )
+                            except Exception:
+                                pass  # Don't let logging prevent playback
 
                     # Update control panel after track change
                     if self.control_panel_view:

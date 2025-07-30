@@ -45,7 +45,6 @@ import random
 import discord
 import pytz
 
-from .discord_logger import get_discord_logger
 from .tree_log import (
     log_error_with_traceback,
     log_perfect_tree_section,
@@ -919,38 +918,7 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
                                         },
                                     )
 
-                                    # Log to Discord with user profile picture
-
-                                    discord_logger = get_discord_logger()
-                                    if discord_logger:
-                                        try:
-                                            user_avatar_url = (
-                                                user.avatar.url
-                                                if user.avatar
-                                                else user.default_avatar.url
-                                            )
-                                            await discord_logger.log_user_interaction(
-                                                "dua_reaction",
-                                                user.display_name,
-                                                user.id,
-                                                "made dua (🤲) on daily verse",
-                                                {
-                                                    "Reaction": "🤲",
-                                                    "Surah": str(verse["surah"]),
-                                                    "Ayah": str(
-                                                        verse.get(
-                                                            "ayah", verse["verse"]
-                                                        )
-                                                    ),
-                                                    "Reaction Time": datetime.now(
-                                                        pytz.timezone("US/Eastern")
-                                                    ).strftime("%m/%d %I:%M %p EST"),
-                                                    "Verse Type": "Daily Verse",
-                                                },
-                                                user_avatar_url,
-                                            )
-                                        except:
-                                            pass
+                                    # Enhanced webhook router logging handled elsewhere
 
                             except TimeoutError:
                                 pass  # Stop monitoring after timeout
@@ -974,24 +942,30 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
                         "📬",
                     )
 
-                    # Log daily verse posting to Discord
-
-                    discord_logger = get_discord_logger()
-                    if discord_logger:
-                        try:
-                            await discord_logger.log_bot_activity(
-                                "daily_verse",
-                                f"posted daily verse from {verse['surah']} (verse {verse.get('ayah', verse['verse'])})",
-                                {
-                                    "Surah": str(verse["surah"]),
-                                    "Verse": str(verse.get("ayah", verse["verse"])),
-                                    "Channel ID": str(channel_id),
-                                    "Verse Type": "Daily Verse",
-                                    "Action": "Automatic posting",
-                                },
-                            )
-                        except:
-                            pass
+                    # Log daily verse posting to enhanced webhook router first
+                    try:
+                        from src.core.di_container import get_container
+                        container = get_container()
+                        if container:
+                            enhanced_webhook = container.get("enhanced_webhook_router")
+                            if enhanced_webhook and hasattr(enhanced_webhook, "log_bot_event"):
+                                await enhanced_webhook.log_bot_event(
+                                    event_type="daily_verse_posted",
+                                    event_data={
+                                        "surah_number": str(verse["surah"]),
+                                        "surah_name": verse.get("surah_name", f"Surah {verse['surah']}"),
+                                        "verse_number": str(verse.get("ayah", verse["verse"])),
+                                        "channel_id": str(channel_id),
+                                        "verse_type": "Automated Daily Verse",
+                                        "arabic_text_length": len(verse.get("arabic", verse.get("text", ""))),
+                                        "translation_length": len(verse.get("translation", "")),
+                                        "posting_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
+                                    },
+                                    severity="info"
+                                )
+                    except Exception as e:
+                        # No fallback - enhanced webhook router is the primary logging method
+                        pass
 
     except Exception as e:
         log_error_with_traceback("Error checking and posting verse", e)
@@ -1163,38 +1137,7 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
                                         },
                                     )
 
-                                    # Log to Discord with user profile picture
-
-                                    discord_logger = get_discord_logger()
-                                    if discord_logger:
-                                        try:
-                                            user_avatar_url = (
-                                                user.avatar.url
-                                                if user.avatar
-                                                else user.default_avatar.url
-                                            )
-                                            await discord_logger.log_user_interaction(
-                                                "dua_reaction",
-                                                user.display_name,
-                                                user.id,
-                                                "made dua (🤲) on scheduled verse",
-                                                {
-                                                    "Reaction": "🤲",
-                                                    "Surah": str(verse["surah"]),
-                                                    "Ayah": str(
-                                                        verse.get(
-                                                            "ayah", verse["verse"]
-                                                        )
-                                                    ),
-                                                    "Reaction Time": datetime.now(
-                                                        pytz.timezone("US/Eastern")
-                                                    ).strftime("%m/%d %I:%M %p EST"),
-                                                    "Verse Type": "Scheduled Verse",
-                                                },
-                                                user_avatar_url,
-                                            )
-                                        except:
-                                            pass
+                                    # Enhanced webhook router logging handled elsewhere
 
                             except TimeoutError:
                                 pass  # Stop monitoring after timeout
@@ -1225,25 +1168,31 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
                         "📬",
                     )
 
-                    # Log scheduled verse posting to Discord
-
-                    discord_logger = get_discord_logger()
-                    if discord_logger:
-                        try:
-                            await discord_logger.log_bot_activity(
-                                "scheduled_verse",
-                                f"posted scheduled verse from {verse['surah']} (verse {verse.get('ayah', verse['verse'])})",
-                                {
-                                    "Surah": str(verse["surah"]),
-                                    "Verse": str(verse.get("ayah", verse["verse"])),
-                                    "Channel ID": str(channel_id),
-                                    "Verse Type": "Scheduled Verse",
-                                    "Interval": f"{daily_verse_manager.get_interval_hours()}h",
-                                    "Action": "Automatic posting",
-                                },
-                            )
-                        except:
-                            pass
+                    # Log scheduled verse posting to enhanced webhook router first
+                    try:
+                        from src.core.di_container import get_container
+                        container = get_container()
+                        if container:
+                            enhanced_webhook = container.get("enhanced_webhook_router")
+                            if enhanced_webhook and hasattr(enhanced_webhook, "log_bot_event"):
+                                await enhanced_webhook.log_bot_event(
+                                    event_type="scheduled_verse_posted",
+                                    event_data={
+                                        "surah_number": str(verse["surah"]),
+                                        "surah_name": verse.get("surah_name", f"Surah {verse['surah']}"),
+                                        "verse_number": str(verse.get("ayah", verse["verse"])),
+                                        "channel_id": str(channel_id),
+                                        "verse_type": "Scheduled Verse",
+                                        "interval_hours": str(daily_verse_manager.get_interval_hours()),
+                                        "arabic_text_length": len(verse.get("arabic", verse.get("text", ""))),
+                                        "translation_length": len(verse.get("translation", "")),
+                                        "posting_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
+                                    },
+                                    severity="info"
+                                )
+                    except Exception as e:
+                        # No fallback - enhanced webhook router is the primary logging method
+                        pass
 
     except Exception as e:
         log_error_with_traceback("Error checking and sending scheduled verse", e)

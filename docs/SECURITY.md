@@ -1,347 +1,280 @@
-# Security Documentation
+# 🛡️ Security Policy
 
-## Overview
+## 📋 **Security Overview**
 
-QuranBot implements comprehensive security measures to protect against various attack vectors and ensure safe operation. This document outlines all security features, best practices, and configuration guidelines.
+QuranBot takes security seriously to protect Islamic communities and their Discord servers. This document outlines our security practices, how to report vulnerabilities, and security guidelines for contributors and users.
 
-## Security Features
+## 🚨 **Reporting Security Vulnerabilities**
 
-### 1. Rate Limiting
+### **DO NOT** report security vulnerabilities through public GitHub issues!
 
-#### Sliding Window Rate Limiting
+### **Preferred Reporting Method**
+1. **Email**: Send details to [your-security-email@domain.com]
+2. **GitHub Security**: Use GitHub's private security reporting feature
+3. **Discord**: Contact maintainers privately via Discord
 
-- **Purpose**: Prevents API abuse and spam attacks
-- **Implementation**: `RateLimiter` class with sliding window algorithm
-- **Default**: 10 requests per minute per user
-- **Scope**: Per-user, per-command, and global limits
+### **What to Include**
+- Description of the vulnerability
+- Steps to reproduce the issue
+- Potential impact assessment
+- Any proof-of-concept code (if applicable)
+- Your contact information for follow-up
 
-```python
-@rate_limit(limit=5, window=60)
-async def sensitive_command(ctx):
-    # Command implementation
-    pass
-```
+### **Response Timeline**
+- **Initial Response**: Within 48 hours
+- **Assessment**: Within 7 days
+- **Fix Development**: 2-4 weeks (depending on severity)
+- **Public Disclosure**: After fix is deployed and tested
 
-#### Token Bucket Rate Limiting
+## 🔒 **Supported Versions**
 
-- **Purpose**: Prevents burst attacks while allowing legitimate usage
-- **Implementation**: Token bucket algorithm with configurable refill rates
-- **Use Cases**: High-frequency commands, audio controls
+| Version | Supported          |
+| ------- | ------------------ |
+| 4.x.x   | ✅ Yes            |
+| 3.x.x   | ⚠️ Security fixes only |
+| 2.x.x   | ❌ No             |
+| 1.x.x   | ❌ No             |
 
-### 2. Input Validation and Sanitization
+## 🛡️ **Security Features & Practices**
 
-#### Malicious Input Detection
+### **Environment-Based Configuration**
+- **✅ No hardcoded secrets** - All sensitive data in environment variables
+- **✅ Example configurations** - `.env.example` files with safe defaults
+- **✅ Gitignore protection** - Comprehensive exclusion of sensitive files
 
-- **SQL Injection**: Detects and blocks SQL injection attempts
-- **XSS Prevention**: Filters script tags and JavaScript execution attempts
-- **Command Injection**: Prevents shell command injection
-- **Path Traversal**: Blocks directory traversal attacks
+### **Input Validation & Sanitization**
+- **✅ Discord command validation** - All user inputs validated
+- **✅ SQL injection prevention** - Parameterized queries only
+- **✅ XSS protection** - Embed content sanitization
+- **✅ Path traversal prevention** - File operation validation
 
-```python
-@validate_input
-async def command_with_input(ctx, user_input: str):
-    # Input is automatically validated before execution
-    pass
-```
+### **Authentication & Authorization**
+- **✅ Discord OAuth2** - Secure Discord API integration
+- **✅ Role-based access** - Admin command protection
+- **✅ Rate limiting** - Protection against abuse
+- **✅ Permission checks** - Granular permission validation
 
-#### Input Sanitization
+### **Data Protection**
+- **✅ Encrypted storage** - Sensitive data encryption at rest
+- **✅ Secure transmission** - HTTPS/WSS for all external communication
+- **✅ Data minimization** - Only collect necessary information
+- **✅ Automatic cleanup** - Temporary data removal
 
-- **Length Limits**: Configurable maximum input lengths
-- **Unicode Normalization**: Prevents Unicode-based bypass attempts
-- **Character Filtering**: Removes or escapes dangerous characters
+### **Infrastructure Security**
+- **✅ Container isolation** - Docker deployment support
+- **✅ Process monitoring** - Health checks and monitoring
+- **✅ Automatic recovery** - Failure detection and restart
+- **✅ Audit logging** - Comprehensive operation logging
 
-### 3. Permission and Access Control
+## 🔧 **Security Configuration**
 
-#### Admin-Only Commands
-
-```python
-@require_admin
-async def admin_command(ctx):
-    # Only admin users can execute this command
-    pass
-```
-
-#### Guild-Based Permissions
-
-- **Isolation**: Permissions are isolated per Discord server
-- **Role-Based**: Integration with Discord role system
-- **Escalation Prevention**: Users cannot elevate their own permissions
-
-### 4. Data Protection and Privacy
-
-#### Sensitive Data Sanitization
-
-- **Logging**: Automatically redacts tokens, passwords, and API keys
-- **Configuration**: Removes sensitive data from configuration files
-- **URLs**: Sanitizes query parameters containing secrets
-
-#### User Data Anonymization
-
-- **User IDs**: Hashed for logging and analytics
-- **Message Content**: Sanitized before logging
-- **Timestamps**: Preserved for legitimate use
-
-### 5. Configuration Security
-
-#### Environment Variable Validation
-
-- **Token Format**: Validates Discord token format and length
-- **ID Validation**: Ensures Discord IDs are valid integers
-- **Path Security**: Validates file paths for safety
-
-#### Secure Defaults
-
-- **No Hardcoded Secrets**: All sensitive data in environment variables
-- **Template Files**: `.env.example` with placeholder values
-- **File Permissions**: Secure default permissions for configuration files
-
-## Security Configuration
-
-### Environment Variables
+### **Essential Security Settings**
 
 ```bash
-# Security Configuration
-RATE_LIMIT_PER_MINUTE=10
+# Security-focused environment configuration
+ENVIRONMENT=production
+LOG_LEVEL=INFO  # Avoid DEBUG in production
 USE_WEBHOOK_LOGGING=true
+RATE_LIMIT_PER_MINUTE=10  # Reasonable rate limiting
 
-# Admin Configuration
-ADMIN_USER_ID=123456789012345678
-DEVELOPER_ID=123456789012345678
+# Discord Security
+DISCORD_TOKEN=your_secure_bot_token
+ADMIN_USER_ID=your_discord_user_id
+PANEL_ACCESS_ROLE_ID=your_admin_role_id
 
-# Discord Configuration (use placeholders in .env.example)
-DISCORD_TOKEN=YOUR_DISCORD_BOT_TOKEN_HERE
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN
+# Optional AI Integration (keep secure)
+OPENAI_API_KEY=your_openai_api_key  # Only if using AI features
 ```
 
-### File Permissions
+### **Recommended Discord Bot Permissions**
+```
+Minimum Required Permissions:
+- Send Messages
+- Use Slash Commands
+- Connect to Voice Channels
+- Speak in Voice Channels
+- Add Reactions
 
-Ensure configuration files have secure permissions:
-
-```bash
-chmod 600 config/.env
-chmod 644 config/.env.example
+Additional Permissions (if needed):
+- Manage Messages (for cleanup)
+- Embed Links
+- Attach Files
+- Use External Emojis
 ```
 
-### Git Security
+### **Server Security Recommendations**
 
-The `.gitignore` file is configured to prevent accidental commits of sensitive data:
+#### **Discord Server Setup**
+- **✅ Enable 2FA** for all administrators
+- **✅ Limit bot permissions** to minimum required
+- **✅ Use role-based access** for bot commands
+- **✅ Monitor bot activity** through audit logs
+- **✅ Regular permission audits** of bot access
 
-```gitignore
-# Environment files
-config/.env
-*.env
+#### **VPS/Server Security**
+- **✅ Keep system updated** - Regular security updates
+- **✅ Firewall configuration** - Only open required ports
+- **✅ SSH key authentication** - Disable password login
+- **✅ Regular backups** - Automated, encrypted backups
+- **✅ Monitor system logs** - Watch for suspicious activity
 
-# Sensitive data patterns
-*token*
-*TOKEN*
-*key*
-*KEY*
-*.token
-*.key
+## 🔍 **Security Best Practices for Users**
+
+### **Installation Security**
+1. **Verify Source**: Only download from official GitHub repository
+2. **Check Dependencies**: Review all required packages
+3. **Secure Configuration**: Never commit secrets to version control
+4. **Update Regularly**: Keep QuranBot and dependencies updated
+
+### **Deployment Security**
+1. **Environment Isolation**: Use virtual environments
+2. **Principle of Least Privilege**: Minimum required permissions
+3. **Network Security**: Proper firewall and network configuration
+4. **Monitoring**: Set up logging and monitoring
+5. **Backup Strategy**: Regular, secure backups
+
+### **Operational Security**
+1. **Access Control**: Limit admin access to trusted individuals
+2. **Regular Audits**: Review bot permissions and activity
+3. **Incident Response**: Have a plan for security incidents
+4. **Community Guidelines**: Establish clear usage policies
+
+## 🔐 **Developer Security Guidelines**
+
+### **Code Security Standards**
+- **Input Validation**: Validate all user inputs
+- **Error Handling**: Don't expose sensitive information in errors
+- **Logging**: Log security events, but not sensitive data
+- **Secrets Management**: Use environment variables, never hardcode
+- **Dependency Management**: Keep dependencies updated and audited
+
+### **Secure Development Practices**
+```python
+# ✅ Good: Parameterized queries
+cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+
+# ❌ Bad: String concatenation
+cursor.execute(f"SELECT * FROM users WHERE id = {user_id}")
+
+# ✅ Good: Input validation
+if not isinstance(user_input, str) or len(user_input) > 100:
+    raise ValueError("Invalid input")
+
+# ✅ Good: Environment variables
+api_key = os.getenv("OPENAI_API_KEY")
+
+# ❌ Bad: Hardcoded secrets
+api_key = "sk-1234567890abcdef"
 ```
 
-## Security Best Practices
+### **Security Testing**
+- **Unit Tests**: Include security-focused test cases
+- **Integration Tests**: Test authentication and authorization
+- **Penetration Testing**: Regular security assessments
+- **Dependency Scanning**: Automated vulnerability detection
 
-### 1. Development Security
+## 🎯 **Common Security Risks & Mitigations**
 
-#### Code Review
+### **Discord Bot Specific Risks**
 
-- All security-related code requires review
-- Input validation must be tested
-- Rate limiting should be verified
-- Permission checks must be comprehensive
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| **Token Exposure** | Complete bot compromise | Environment variables, .gitignore |
+| **Command Injection** | Server compromise | Input validation, sanitization |
+| **Rate Limit Abuse** | Service disruption | Built-in rate limiting |
+| **Permission Escalation** | Unauthorized access | Role-based access control |
+| **Data Exposure** | Privacy breach | Data minimization, encryption |
 
-#### Testing
+### **Infrastructure Risks**
 
-- Security tests in `tests/test_security_comprehensive.py`
-- Rate limiting tests with concurrent scenarios
-- Input validation tests with known attack vectors
-- Permission escalation prevention tests
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| **Unauthorized Access** | Data breach | Strong authentication, 2FA |
+| **DDoS Attacks** | Service disruption | Rate limiting, monitoring |
+| **Data Loss** | Service disruption | Regular backups, redundancy |
+| **System Compromise** | Complete breach | Regular updates, monitoring |
 
-### 2. Deployment Security
+## 📊 **Security Monitoring**
 
-#### Environment Setup
+### **What We Monitor**
+- **Authentication Events**: Login attempts, permission changes
+- **Command Usage**: Admin command execution, unusual patterns
+- **System Health**: Performance metrics, error rates
+- **Network Activity**: Unusual traffic patterns, blocked requests
 
-1. Copy `config/.env.example` to `config/.env`
-2. Fill in actual values (never commit real `.env`)
-3. Set secure file permissions
-4. Verify all required variables are set
+### **Alerting Thresholds**
+- **Failed Authentication**: >5 attempts per minute
+- **High Error Rate**: >10% error rate for 5 minutes
+- **Resource Usage**: >80% CPU/memory for 10 minutes
+- **Unusual Patterns**: Abnormal command usage or access patterns
 
-#### VPS Security
+## 🔄 **Incident Response Plan**
 
-- Use SSH key authentication
-- Disable password authentication
-- Keep system updated
-- Use firewall rules
-- Monitor access logs
+### **Detection Phase**
+1. **Automated Monitoring**: System alerts and notifications
+2. **Community Reports**: User reports of suspicious activity
+3. **Regular Audits**: Scheduled security assessments
 
-### 3. Operational Security
+### **Response Phase**
+1. **Immediate Assessment**: Determine scope and impact
+2. **Containment**: Isolate affected systems if necessary
+3. **Investigation**: Root cause analysis and evidence collection
+4. **Communication**: Notify affected users and stakeholders
 
-#### Monitoring
+### **Recovery Phase**
+1. **Fix Implementation**: Deploy security patches/fixes
+2. **System Restoration**: Restore services to normal operation
+3. **Monitoring**: Enhanced monitoring post-incident
+4. **Documentation**: Update security procedures based on lessons learned
 
-- Log all security events
-- Monitor rate limiting violations
-- Track failed authentication attempts
-- Alert on suspicious patterns
+## 📞 **Security Contacts**
 
-#### Incident Response
+### **Security Team**
+- **Primary Contact**: [Security email]
+- **Backup Contact**: [Backup email]
+- **Emergency Contact**: [Emergency contact method]
 
-1. **Detection**: Automated alerts for security events
-2. **Analysis**: Review logs and patterns
-3. **Containment**: Rate limiting and blocking
-4. **Recovery**: Restore normal operation
-5. **Documentation**: Update security measures
+### **Community Security**
+- **Discord Server**: Join our community at [discord.gg/syria](https://discord.gg/syria)
+- **GitHub Discussions**: [For public security discussions]
+- **Documentation**: [Links to security documentation]
 
-## Attack Vector Protection
+## 🎓 **Security Resources**
 
-### 1. Discord API Abuse
+### **Learning Resources**
+- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
+- [Discord Developer Security](https://discord.com/developers/docs/topics/security)
+- [Python Security Best Practices](https://python.org/dev/security/)
 
-- **Rate Limiting**: Prevents API quota exhaustion
-- **Token Protection**: Secure token storage and validation
-- **Webhook Security**: Validates webhook URLs and sanitizes data
+### **Tools & Utilities**
+- **Dependency Scanning**: GitHub Dependabot, Snyk
+- **Code Analysis**: Bandit, SemGrep
+- **Monitoring**: Custom monitoring dashboards
+- **Backup Verification**: Automated backup testing
 
-### 2. Command Injection
+## 📜 **Security Policy Updates**
 
-- **Input Validation**: Filters shell commands and scripts
-- **Path Validation**: Prevents directory traversal
-- **Sanitization**: Removes dangerous characters
+This security policy is reviewed and updated regularly. Major changes will be:
+- **Announced**: In GitHub releases and community channels
+- **Versioned**: Changes tracked in git history
+- **Communicated**: Via established communication channels
 
-### 3. Data Extraction
+**Last Updated**: [Current Date]
+**Next Review**: [Next Review Date]
 
-- **Access Controls**: Admin-only sensitive commands
-- **Data Sanitization**: Removes PII from logs
-- **Permission Isolation**: Guild-based access control
+---
 
-### 4. Resource Exhaustion
+## 🙏 **Acknowledgments**
 
-- **Rate Limiting**: Prevents spam and DoS attempts
-- **Memory Management**: Cleanup of expired rate limit data
-- **Concurrent Limits**: Controls parallel operations
+We thank the security community, contributors, and users who help keep QuranBot secure. Special recognition to:
 
-## Security Testing
+- Security researchers who responsibly disclose vulnerabilities
+- Contributors who implement security improvements
+- Community members who report suspicious activity
+- Islamic community leaders who provide guidance on appropriate security measures
 
-### Automated Tests
+**Together, we can keep the Islamic community safe while serving through technology.**
 
-Run the comprehensive security test suite:
+---
 
-```bash
-# Run all security tests
-pytest tests/test_security_comprehensive.py -v
-
-# Run specific test categories
-pytest tests/test_security_comprehensive.py::TestRateLimiterSecurity -v
-pytest tests/test_security_comprehensive.py::TestInputValidationSecurity -v
-pytest tests/test_security_comprehensive.py::TestPermissionSecurity -v
-```
-
-### Manual Testing
-
-#### Rate Limiting
-
-1. Send commands rapidly to test rate limits
-2. Verify different users have isolated limits
-3. Test global rate limiting under load
-
-#### Input Validation
-
-1. Test with known SQL injection payloads
-2. Attempt XSS attacks in text inputs
-3. Try command injection in various fields
-
-#### Permissions
-
-1. Test admin commands with non-admin users
-2. Verify guild isolation
-3. Attempt permission escalation
-
-## Security Monitoring
-
-### Log Analysis
-
-Security events are logged with structured data:
-
-```json
-{
-  "event": "rate_limit_exceeded",
-  "user_id": "[REDACTED]",
-  "command": "verse",
-  "timestamp": "2025-01-15T10:30:00Z",
-  "details": {
-    "limit": 10,
-    "window": 60,
-    "current_count": 11
-  }
-}
-```
-
-### Alerts
-
-Configure alerts for:
-
-- Rate limiting violations
-- Failed authentication attempts
-- Input validation failures
-- Permission escalation attempts
-- Suspicious activity patterns
-
-## Compliance and Auditing
-
-### Data Protection
-
-- PII sanitization in logs
-- User data anonymization
-- Secure data transmission
-- Access logging
-
-### Audit Trail
-
-- All admin actions logged
-- Configuration changes tracked
-- Security events recorded
-- User interactions monitored
-
-## Incident Response
-
-### Security Incident Procedure
-
-1. **Immediate Response**
-   - Stop any ongoing attack
-   - Enable additional rate limiting
-   - Block suspicious users if necessary
-
-2. **Investigation**
-   - Review security logs
-   - Analyze attack patterns
-   - Identify compromised data
-
-3. **Containment**
-   - Update security measures
-   - Patch vulnerabilities
-   - Strengthen configurations
-
-4. **Recovery**
-   - Restore normal operation
-   - Verify system integrity
-   - Update documentation
-
-5. **Prevention**
-   - Update security tests
-   - Improve monitoring
-   - Train team on new threats
-
-## Contact and Reporting
-
-For security concerns or to report vulnerabilities:
-
-1. **Internal Team**: Contact project maintainers
-2. **Security Issues**: Create private issue or contact directly
-3. **Documentation**: Update this document with new security measures
-
-## Version History
-
-- **v3.0.0**: Initial security framework implementation
-- **v3.1.0**: Added comprehensive rate limiting
-- **v3.2.0**: Enhanced input validation and sanitization
-- **v3.3.0**: Implemented permission system and access controls
-- **v3.4.0**: Added data protection and privacy features
-- **v3.5.0**: Comprehensive security testing and documentation
+*"And whoever saves a life, it is as if he has saved all of mankind."* - **Quran 5:32**

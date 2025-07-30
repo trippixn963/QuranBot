@@ -406,15 +406,30 @@ class EnhancedWebhookRouter:
     def _categorize_event(self, event_type: str, context: Dict[str, Any] = None) -> EventCategory:
         """Categorize an event based on its type and context.
         
-        Uses keyword analysis and context information to intelligently
-        categorize events for appropriate channel routing.
+        This method implements intelligent event categorization using keyword analysis
+        and contextual information to route events to appropriate Discord channels.
+        The categorization algorithm processes event types through multiple filters:
+        
+        Categorization Strategy:
+        1. Bot lifecycle keywords (startup, shutdown, crash, restart)
+        2. Connection-related keywords (connect, disconnect, reconnect)
+        3. Audio playback keywords (audio, surah, reciter, play, pause)
+        4. Voice channel keywords (voice, channel)
+        5. User interaction keywords (command, quiz, user, activity)
+        6. Database operation keywords (database, save, load, backup)
+        7. Error severity keywords (error, warning, critical)
+        8. Performance keywords (performance, metrics, latency)
+        
+        The method uses case-insensitive matching and falls back to SYSTEM_HEALTH
+        for unrecognized event types to ensure all events are properly routed.
+        Context information can provide additional hints for edge cases.
         
         Args:
-            event_type: String describing the event type
-            context: Optional context information for categorization
+            event_type: String describing the event type (e.g., 'audio_playback_start')
+            context: Optional context dictionary with additional categorization hints
             
         Returns:
-            EventCategory: Determined event category for routing
+            EventCategory: Determined event category for routing to appropriate channel
         """
         event_type_lower = event_type.lower()
         
@@ -483,14 +498,25 @@ class EnhancedWebhookRouter:
     def _get_webhook_logger(self, channel: WebhookChannel) -> Optional[ModernWebhookLogger]:
         """Get the webhook logger for a specific channel with fallback.
         
-        Retrieves the webhook logger for the specified channel, falling back
-        to the legacy single webhook logger if channel-specific logger is unavailable.
+        This method implements a robust webhook logger resolution strategy that
+        ensures message delivery even when specific channel loggers are unavailable.
+        The fallback mechanism provides backward compatibility and reliability:
+        
+        Resolution Strategy:
+        1. Try to retrieve the channel-specific webhook logger
+        2. Fall back to the legacy single webhook logger if available
+        3. Return None if no webhook logging is configured
+        
+        This approach allows the enhanced multi-channel system to coexist with
+        legacy single-webhook configurations, ensuring smooth migrations and
+        maintaining service availability during configuration changes.
         
         Args:
-            channel: Target webhook channel
+            channel: Target webhook channel from WebhookChannel enum
             
         Returns:
-            Optional[ModernWebhookLogger]: Webhook logger instance or None
+            Optional[ModernWebhookLogger]: Channel-specific logger, fallback logger,
+                                          or None if no webhook logging available
         """
         # Try to get the specific channel logger
         logger = self._webhook_loggers.get(channel)
@@ -559,12 +585,16 @@ class EnhancedWebhookRouter:
                         EmbedField(key.replace("_", " ").title(), str(value)[:1024], True)
                     )
             
+            # Extract thumbnail URL from kwargs
+            thumbnail_url = kwargs.pop("thumbnail_url", None)
+            
             # Create and send webhook message
             message = WebhookMessage(
                 title=enhanced_title,
                 description=enhanced_description,
                 level=level,
                 fields=fields,
+                thumbnail_url=thumbnail_url,
                 **kwargs
             )
             
@@ -633,14 +663,33 @@ class EnhancedWebhookRouter:
     def _enhance_title_for_channel(self, title: str, channel: WebhookChannel) -> str:
         """Add channel-specific enhancements to the title.
         
-        Adds appropriate emoji prefixes and formatting based on the target channel.
+        This method applies contextual formatting to webhook message titles based on
+        the target Discord channel. The enhancement process:
+        
+        Enhancement Logic:
+        1. Map each webhook channel to appropriate emoji prefixes
+        2. Detect if title already contains emoji to avoid duplication
+        3. Apply channel-specific formatting conventions
+        4. Maintain visual consistency across channel types
+        
+        Channel-Specific Emojis:
+        - BOT_STATUS: 🤖 (system and bot lifecycle events)
+        - QURAN_AUDIO: 🎵 (audio playback and voice channel events)
+        - COMMANDS_PANEL: ⚡ (command usage and panel interactions)
+        - USER_ACTIVITY: 👤 (user engagement and quiz activities)
+        - DATA_ANALYTICS: 📊 (database operations and metrics)
+        - ERRORS_ALERTS: 🚨 (error messages and critical alerts)
+        - DAILY_REPORTS: 📈 (analytics summaries and reports)
+        
+        The method uses basic emoji detection to prevent double-prefixing
+        when titles already contain visual indicators.
         
         Args:
-            title: Original message title
-            channel: Target webhook channel
+            title: Original message title to enhance
+            channel: Target webhook channel determining enhancement style
             
         Returns:
-            str: Enhanced title with channel-appropriate formatting
+            str: Enhanced title with appropriate emoji prefix and formatting
         """
         channel_prefixes = {
             WebhookChannel.BOT_STATUS: "🤖",
@@ -668,16 +717,32 @@ class EnhancedWebhookRouter:
     ) -> str:
         """Add channel-specific context to the description.
         
-        Enhances the message description with channel-appropriate context
-        and formatting to provide better organization and readability.
+        This method enriches webhook message descriptions with contextual information
+        that helps users understand the message scope and system component involved.
+        
+        Enhancement Process:
+        1. Add channel-specific header indicating system component
+        2. Analyze event type for additional contextual information
+        3. Append relevant operational context based on event category
+        4. Format with markdown for improved Discord display
+        
+        Contextual Enhancements:
+        - QURAN_AUDIO: Adds 24/7 continuous recitation context for audio events
+        - USER_ACTIVITY: Distinguishes between quiz activities and bot interactions
+        - DATA_ANALYTICS: Provides database and performance context
+        - ERRORS_ALERTS: Emphasizes error severity and impact
+        - BOT_STATUS: Indicates system status and operational state
+        
+        The method maintains consistent formatting while providing channel-specific
+        context that helps users quickly understand the nature and scope of events.
         
         Args:
-            description: Original message description
-            channel: Target webhook channel
-            event_type: Type of event for additional context
+            description: Original message description to enhance
+            channel: Target webhook channel determining context style
+            event_type: Event type string for additional contextual analysis
             
         Returns:
-            str: Enhanced description with channel-specific context
+            str: Enhanced description with channel-specific context header and formatting
         """
         
         channel_contexts = {
@@ -812,7 +877,8 @@ class EnhancedWebhookRouter:
         title: str,
         description: str,
         level: LogLevel = LogLevel.INFO,
-        context: Dict[str, Any] = None
+        context: Dict[str, Any] = None,
+        thumbnail_url: str = None,
     ) -> bool:
         """Log a data or analytics event."""
         return await self.route_event(
@@ -821,7 +887,8 @@ class EnhancedWebhookRouter:
             description=description,
             level=level,
             context=context,
-            force_channel=WebhookChannel.DATA_ANALYTICS
+            force_channel=WebhookChannel.DATA_ANALYTICS,
+            thumbnail_url=thumbnail_url,
         )
     
     async def log_error_event(
@@ -1310,6 +1377,7 @@ class EnhancedWebhookRouter:
         cache_hit_rate: float,
         cpu_history: List[float] = None,
         memory_history: List[float] = None,
+        bot_avatar_url: str = None,
     ) -> bool:
         """Log performance metrics with visualizations."""
         # Create performance gauges
@@ -1365,7 +1433,8 @@ class EnhancedWebhookRouter:
                 "memory": f"{memory_percent:.1f}%",
                 "latency": f"{latency_ms:.0f}ms",
                 "cache_hits": f"{cache_hit_rate:.1f}%",
-            }
+            },
+            thumbnail_url=bot_avatar_url,
         )
     
     async def log_quiz_stats_visual(

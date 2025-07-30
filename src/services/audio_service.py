@@ -137,6 +137,7 @@ class AudioService:
         # Track state for resume functionality
         self._track_start_time: float | None = None
         self._pause_timestamp: float | None = None
+        self._resume_offset: float = 0.0
 
     async def initialize(self) -> None:
         """Initialize the audio service.
@@ -236,6 +237,14 @@ class AudioService:
 
             # Shutdown cache
             await self._cache.shutdown()
+            
+            # Shutdown state service
+            try:
+                state_service = self._container.get(SQLiteStateService)
+                if state_service:
+                    await state_service.shutdown()
+            except Exception as e:
+                await self._logger.warning("Failed to shutdown state service", {"error": str(e)})
 
             await self._logger.info("Audio service shutdown complete")
 
@@ -821,11 +830,12 @@ class AudioService:
             
             if saved_data:
                 # Convert SQLite data to PlaybackState objects
+                current_position = saved_data.get("current_position", {})
                 position = PlaybackPosition(
-                    surah_number=saved_data.get("current_surah", 1),
-                    position_seconds=saved_data.get("current_position", 0.0),
-                    total_duration=saved_data.get("total_duration"),
-                    track_index=saved_data.get("track_index", 0),
+                    surah_number=current_position.get("surah_number", 1),
+                    position_seconds=current_position.get("position_seconds", 0.0),
+                    total_duration=current_position.get("total_duration"),
+                    track_index=current_position.get("track_index", 0),
                     timestamp=datetime.now(UTC)
                 )
                 
@@ -929,12 +939,11 @@ class AudioService:
 
                 # Create audio source
                 try:
+                    should_resume = resume_position and self._current_state.current_position.position_seconds > 0
                     audio_source = await self._create_audio_source(
                         file_path,
-                        resume_position
-                        and self._current_state.current_position.position_seconds > 0,
+                        should_resume,
                     )
-                    resume_position = False  # Only resume once
 
                 except Exception as e:
                     raise FFmpegError(
@@ -952,7 +961,18 @@ class AudioService:
                 try:
                     self._voice_client.play(audio_source)
                     self._current_state.is_playing = True
-                    self._track_start_time = asyncio.get_event_loop().time()
+                    
+                    # Set track start time for position tracking
+                    current_time = asyncio.get_event_loop().time()
+                    if resume_position and self._current_state.current_position.position_seconds > 0:
+                        # If resuming, store the original position and start tracking from now
+                        self._resume_offset = self._current_state.current_position.position_seconds
+                        self._track_start_time = current_time
+                    else:
+                        # Normal start from beginning
+                        self._resume_offset = 0.0
+                        self._track_start_time = current_time
+                    
                     self._last_successful_playback = datetime.now(UTC)
 
                     # Update position info
@@ -985,6 +1005,9 @@ class AudioService:
 
                     # Wait for playback to complete
                     await self._wait_for_playback_completion()
+                    
+                    # Reset resume flag after first track
+                    resume_position = False
 
                 except Exception as e:
                     raise AudioError(
@@ -1077,7 +1100,11 @@ class AudioService:
             # Update position
             if self._track_start_time:
                 elapsed = asyncio.get_event_loop().time() - self._track_start_time
-                self._current_state.current_position.position_seconds = elapsed
+                # Add resume offset to the elapsed time for correct position tracking
+                total_position = self._resume_offset + max(0.0, elapsed)
+                self._current_state.current_position.position_seconds = total_position
+                
+
 
     async def _advance_to_next_track(self) -> None:
         """Advance to the next track based on playback mode.
@@ -1223,27 +1250,16 @@ class AudioService:
         
         while True:
             try:
-                # More frequent health checks for 24/7 stability
-                await asyncio.sleep(min(self._health_check_interval, 10))
+                # Less frequent health checks to avoid aggressive reconnection
+                await asyncio.sleep(min(self._health_check_interval, 30))  # Increased from 10 to 30 seconds
 
-                # Check voice connection health
+                # Check voice connection health - only disconnect if clearly disconnected
                 connection_lost = False
-                if not self._voice_client or not self._voice_client.is_connected():
+                if not self._voice_client:
                     connection_lost = True
-                elif self._voice_client and hasattr(self._voice_client, 'ws') and self._voice_client.ws:
-                    # Check if WebSocket connection is closed using the proper method
-                    try:
-                        # For Discord.py 2.x, check if WebSocket is open
-                        if hasattr(self._voice_client.ws, 'closed') and self._voice_client.ws.closed:
-                            connection_lost = True
-                        elif hasattr(self._voice_client.ws, 'open') and not self._voice_client.ws.open:
-                            connection_lost = True
-                        elif not hasattr(self._voice_client.ws, 'closed') and not hasattr(self._voice_client.ws, 'open'):
-                            # If neither attribute exists, assume connection is fine (fallback)
-                            pass
-                    except AttributeError:
-                        # If we can't check WebSocket state, skip this check
-                        pass
+                elif not self._voice_client.is_connected():
+                    connection_lost = True
+                # Removed aggressive WebSocket checking that was causing false disconnections
                     
                 if connection_lost:
                     consecutive_failures += 1
@@ -1270,7 +1286,7 @@ class AudioService:
                             
                             # Attempt reconnection with retries
                             success = False
-                            for attempt in range(3):  # 3 attempts per health check
+                            for attempt in range(1):  # Reduced from 3 to 1 attempt per health check
                                 try:
                                     await self.connect_to_voice_channel(
                                         self._target_channel_id, self._guild_id
@@ -1286,11 +1302,10 @@ class AudioService:
                                     
                                 except Exception as e:
                                     await self._logger.warning(
-                                        f"Reconnection attempt {attempt + 1}/3 failed",
+                                        f"Reconnection attempt {attempt + 1}/1 failed",
                                         {"error": str(e)}
                                     )
-                                    if attempt < 2:  # Don't sleep after last attempt
-                                        await asyncio.sleep(2)
+                                    # No sleep needed since we only try once
                             
                             if not success:
                                 await self._logger.error(
@@ -1401,25 +1416,28 @@ class AudioService:
                         
                         # Prepare state data for SQLite
                         state_data = {
-                            "current_surah": self._current_state.current_position.surah_number,
-                            "current_position": self._current_state.current_position.position_seconds,
+                            "current_position": {
+                                "surah_number": self._current_state.current_position.surah_number,
+                                "position_seconds": self._current_state.current_position.position_seconds,
+                                "total_duration": self._current_state.current_position.total_duration,
+                            },
                             "current_reciter": self._current_state.current_reciter,
                             "volume": self._current_state.volume,
-                            "playback_mode": self._current_state.mode.value,
+                            "is_playing": self._current_state.is_playing,
+                            "is_paused": self._current_state.is_paused,
+                            "mode": self._current_state.mode.value,
                             "voice_channel_id": self._current_state.voice_channel_id,
                             "guild_id": self._current_state.guild_id,
-                            "total_duration": self._current_state.current_position.total_duration,
-                            "track_index": self._current_state.current_position.track_index,
                         }
                         
-                        # Save to SQLite
+                        # Save to SQLite with proper structure
                         await state_service.save_playback_state(state_data)
                         
                         await self._logger.debug(
                             "Saved playback position",
                             {
-                                "surah": state_data["current_surah"],
-                                "position": f"{state_data['current_position']:.1f}s",
+                                "surah": state_data["current_position"]["surah_number"],
+                                "position": f"{state_data['current_position']['position_seconds']:.1f}s",
                                 "reciter": state_data["current_reciter"],
                             }
                         )
@@ -1435,15 +1453,18 @@ class AudioService:
                     if self._current_state.is_playing:
                         state_service = self._container.get(SQLiteStateService)
                         state_data = {
-                            "current_surah": self._current_state.current_position.surah_number,
-                            "current_position": self._current_state.current_position.position_seconds,
+                            "current_position": {
+                                "surah_number": self._current_state.current_position.surah_number,
+                                "position_seconds": self._current_state.current_position.position_seconds,
+                                "total_duration": self._current_state.current_position.total_duration,
+                            },
                             "current_reciter": self._current_state.current_reciter,
                             "volume": self._current_state.volume,
-                            "playback_mode": self._current_state.mode.value,
+                            "is_playing": self._current_state.is_playing,
+                            "is_paused": self._current_state.is_paused,
+                            "mode": self._current_state.mode.value,
                             "voice_channel_id": self._current_state.voice_channel_id,
                             "guild_id": self._current_state.guild_id,
-                            "total_duration": self._current_state.current_position.total_duration,
-                            "track_index": self._current_state.current_position.track_index,
                         }
                         await state_service.save_playback_state(state_data)
                         await self._logger.info("Saved final playback position before shutdown")

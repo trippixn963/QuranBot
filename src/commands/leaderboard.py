@@ -286,6 +286,29 @@ class LeaderboardCog(commands.Cog):
                 "🏆",
             )
 
+            # Log to enhanced webhook router
+            try:
+                from src.core.di_container import get_container
+                container = get_container()
+                if container:
+                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    if enhanced_webhook and hasattr(enhanced_webhook, "log_quran_command_usage"):
+                        await enhanced_webhook.log_quran_command_usage(
+                            admin_name=interaction.user.display_name,
+                            admin_id=interaction.user.id,
+                            command_name="/leaderboard",
+                            command_details={
+                                "total_users_on_board": str(len(sorted_users)),
+                                "total_pages": str(view.max_pages),
+                                "top_scorer": sorted_users[0][1].get("username", "Unknown") if sorted_users else "None",
+                                "top_score": str(sorted_users[0][1].get("points", 0)) if sorted_users else "0",
+                                "command_type": "Leaderboard View"
+                            },
+                            admin_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None
+                        )
+            except Exception as e:
+                log_error_with_traceback("Failed to log to enhanced webhook router", e)
+
         except Exception as e:
             log_error_with_traceback("Error in leaderboard command", e)
             error_embed = discord.Embed(

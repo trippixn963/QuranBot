@@ -518,30 +518,31 @@ class QuestionCog(commands.Cog):
                     "🏆",
                 )
 
-                # Send success notification to Discord logger
-                from src.utils.discord_logger import get_discord_logger
-
-                discord_logger = get_discord_logger()
-                if discord_logger:
-                    try:
-                        await discord_logger.log_user_activity(
-                            f"Manual Quiz Sent by {interaction.user.display_name}",
-                            f"📝 **Quiz delivered manually**\n\n"
-                            f"**Question Details:**\n"
-                            f"• Category: {question_data.get('category', 'Unknown')}\n"
-                            f"• Difficulty: {question_data.get('difficulty', 'Unknown')}\n"
-                            f"• Channel: {channel.mention}\n"
-                            f"• Timer: 60 seconds\n\n"
-                            f"Quiz timer has been reset.",
-                            {
-                                "Admin": interaction.user.display_name,
-                                "User ID": str(interaction.user.id),
-                                "Question ID": str(question_data.get("id", "Unknown")),
-                                "Message ID": str(message.id),
-                            },
-                        )
-                    except:
-                        pass
+                # Send success notification to enhanced webhook router first
+                try:
+                    from src.core.di_container import get_container
+                    container = get_container()
+                    if container:
+                        enhanced_webhook = container.get("enhanced_webhook_router")
+                        if enhanced_webhook and hasattr(enhanced_webhook, "log_quran_command_usage"):
+                            await enhanced_webhook.log_quran_command_usage(
+                                admin_name=interaction.user.display_name,
+                                admin_id=interaction.user.id,
+                                command_name="/question",
+                                command_details={
+                                    "question_category": question_data.get('category', 'Unknown'),
+                                    "question_difficulty": question_data.get('difficulty', 'Unknown'),
+                                    "question_id": str(question_data.get("id", "Unknown")),
+                                    "channel": f"#{channel.name}",
+                                    "message_id": str(message.id),
+                                    "timer_duration": "60 seconds",
+                                    "quiz_type": "Manual Quiz"
+                                },
+                                admin_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None
+                            )
+                except Exception as e:
+                    log_error_with_traceback("Failed to log to enhanced webhook router", e)
+                    # No fallback - enhanced webhook router is the primary logging method
 
             except discord.Forbidden:
                 log_error_with_traceback(

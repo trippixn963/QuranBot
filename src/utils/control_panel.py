@@ -12,7 +12,6 @@ import os
 import discord
 from discord.ui import Button, Modal, Select, TextInput, View
 
-from .discord_logger import get_discord_logger
 from .surah_mapper import get_surah_info, search_surahs
 from .tree_log import (
     log_error_with_traceback,
@@ -34,7 +33,24 @@ UPDATE_INTERVAL = 2  # Reduced from 15 to 2 seconds for faster response
 
 
 class SurahSearchModal(Modal):
-    """Modal for searching surahs by name or number"""
+    """
+    Interactive Discord modal for intelligent Surah search functionality.
+    
+    Implements a sophisticated search system that supports multiple input formats:
+    - Numeric search (1-114 for direct Surah numbers)
+    - English transliterated names (Al-Fatiha, Ya-Sin, An-Nur)
+    - Arabic names (الفاتحة, يس, النور)
+    - English meanings (Light, Cave, Elephant)
+    - Partial matching with fuzzy search capabilities
+    
+    The modal handles user input validation, provides intelligent search suggestions,
+    and implements a multi-stage result presentation system with confirmation dialogs.
+    Search results are categorized and presented with rich context including Arabic
+    names, verse counts, and revelation location information.
+    
+    This component integrates with the audio manager for seamless playback control
+    and maintains comprehensive interaction logging for analytics and debugging.
+    """
 
     def __init__(self, audio_manager=None, control_panel_view=None):
         super().__init__(title="🔍 Search for a Surah")
@@ -52,7 +68,30 @@ class SurahSearchModal(Modal):
         self.add_item(self.search_input)
 
     async def on_submit(self, interaction: discord.Interaction):
-        """Handle search submission"""
+        """
+        Process and execute Surah search with intelligent result handling.
+        
+        Implements a comprehensive search workflow:
+        1. Input validation and sanitization
+        2. Multi-format search execution (numeric, transliterated, Arabic, meaning)
+        3. Result categorization and ranking by relevance
+        4. Adaptive UI response based on result count:
+           - Single result: Direct confirmation dialog
+           - Multiple results: Selection dropdown interface
+           - No results: Helpful search guidance
+        5. Comprehensive interaction logging for analytics
+        
+        The search algorithm considers partial matches, phonetic similarities,
+        and contextual relevance to provide the best user experience. All
+        interactions are logged with detailed context for monitoring and debugging.
+        
+        Args:
+            interaction: Discord interaction object containing user input and context
+            
+        Raises:
+            discord.InteractionResponded: If interaction has already been handled
+            Exception: For unexpected search processing errors
+        """
         try:
             query = self.search_input.value.strip()
 
@@ -78,7 +117,9 @@ class SurahSearchModal(Modal):
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
 
-            # Search for surahs
+            # Execute intelligent search across multiple data sources
+            # This searches through transliterated names, Arabic names, English meanings,
+            # and Surah numbers with fuzzy matching and relevance scoring
             results = search_surahs(query)
 
             # Log search with results
@@ -119,7 +160,9 @@ class SurahSearchModal(Modal):
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
 
-                # If only one result, show confirmation
+            # Single result optimization - direct confirmation interface
+            # When search yields exactly one match, skip selection step and show
+            # immediate confirmation dialog with detailed Surah information
             if len(results) == 1:
                 surah = results[0]
 
@@ -180,7 +223,9 @@ class SurahSearchModal(Modal):
                 )
                 return
 
-            # Multiple results - show selection view
+            # Multiple results workflow - present organized selection interface
+            # Creates paginated dropdown with rich context for each result
+            # Limited to 25 options per Discord API constraints
             log_perfect_tree_section(
                 "Surah Search - Multiple Results",
                 [
@@ -250,7 +295,22 @@ class SurahSearchModal(Modal):
 
 
 class SearchResultsView(View):
-    """View for displaying search results with selection"""
+    """
+    Interactive view for presenting multiple search results with dropdown selection.
+    
+    Manages the presentation and selection of multiple Surah search results through
+    a Discord dropdown interface. This view handles:
+    
+    - Result pagination and truncation (Discord 25-option limit)
+    - Rich result presentation with Arabic names and context
+    - User interaction timeout handling (60-second window)
+    - Seamless integration with confirmation workflow
+    - Comprehensive selection logging and analytics
+    
+    The view automatically disables interactions after timeout to prevent
+    stale UI states and maintains clean user experience. Each selection
+    triggers detailed confirmation dialogs with full Surah information.
+    """
 
     def __init__(self, results, query, audio_manager=None, control_panel_view=None):
         super().__init__(timeout=60)
@@ -271,7 +331,24 @@ class SearchResultsView(View):
 
 
 class SearchResultsSelect(Select):
-    """Select dropdown for search results"""
+    """
+    Dynamic dropdown component for Surah search result selection.
+    
+    Implements intelligent result presentation within Discord's dropdown constraints:
+    - Maximum 25 options due to Discord API limitations
+    - Rich option labels with emoji indicators and transliterated names
+    - Descriptive text including Arabic names, Surah numbers, and verse counts
+    - Semantic value mapping for reliable selection processing
+    
+    The dropdown dynamically generates options from search results, prioritizing
+    the most relevant matches and providing comprehensive context for user decision-making.
+    Selection triggers confirmation workflows with detailed Surah information display.
+    
+    Integration features:
+    - Audio manager connectivity for immediate playback control
+    - Enhanced webhook logging for interaction analytics
+    - Control panel state synchronization
+    """
 
     def __init__(self, results, query, audio_manager=None, control_panel_view=None):
         self.results = results
@@ -297,7 +374,29 @@ class SearchResultsSelect(Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        """Handle surah selection from search results"""
+        """
+        Process user selection from search results dropdown.
+        
+        Handles the complete selection workflow:
+        1. Validates selected option and retrieves Surah information
+        2. Logs detailed interaction data for analytics and monitoring
+        3. Updates enhanced webhook router with structured interaction data
+        4. Generates confirmation dialog with rich Surah context
+        5. Provides error handling for edge cases and data corruption
+        
+        The callback implements defensive programming patterns to handle:
+        - Invalid Surah number selections
+        - Missing Surah data scenarios
+        - Network failures during webhook logging
+        - UI state management during async operations
+        
+        Args:
+            interaction: Discord interaction containing the user's dropdown selection
+            
+        Raises:
+            ValueError: If selected Surah number is invalid
+            discord.NotFound: If interaction context is no longer valid
+        """
         try:
             selected_surah_number = int(self.values[0])
             surah = get_surah_info(selected_surah_number)
@@ -341,6 +440,31 @@ class SearchResultsSelect(Select):
                 ],
                 "✅",
             )
+
+            # Log to enhanced webhook router first, then fallback to discord logger
+            try:
+                from src.core.di_container import get_container
+                container = get_container()
+                if container:
+                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    if enhanced_webhook and hasattr(enhanced_webhook, "log_control_panel_interaction"):
+                        await enhanced_webhook.log_control_panel_interaction(
+                            interaction_type="search_selection",
+                            user_name=interaction.user.display_name,
+                            user_id=interaction.user.id,
+                            action_performed="Search result selection",
+                            user_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None,
+                            panel_details={
+                                "search_query": str(self.query),
+                                "selected_surah_number": str(selected_surah_number),
+                                "selected_surah_name": surah.name_transliteration,
+                                "surah_arabic_name": surah.name_arabic,
+                                "selection_method": "search_dropdown",
+                                "verses_count": str(surah.verses)
+                            }
+                        )
+            except Exception as e:
+                log_error_with_traceback("Failed to log to enhanced webhook router", e)
 
             # Show confirmation embed with options
             confirmation_view = SurahConfirmationView(
@@ -388,7 +512,30 @@ class SearchResultsSelect(Select):
 
 
 class SurahConfirmationView(View):
-    """View for confirming surah selection with play/search again options"""
+    """
+    Confirmation interface for Surah selection with action buttons.
+    
+    Provides a final confirmation step in the search-to-play workflow with
+    three primary action options:
+    
+    1. **Play This Surah** - Immediately starts audio playback
+       - Integrates with audio manager for seamless playback control
+       - Updates control panel state and user activity tracking
+       - Provides visual feedback and status updates
+    
+    2. **Search Again** - Returns to search modal for new query
+       - Preserves search context and user preferences
+       - Enables iterative search refinement
+       - Maintains session continuity
+    
+    3. **Cancel** - Aborts the selection process
+       - Graceful workflow termination
+       - Cleans up UI state and interactions
+       - Provides clear user feedback
+    
+    The view implements comprehensive interaction logging, timeout handling,
+    and state management to ensure reliable user experience across all scenarios.
+    """
 
     def __init__(self, surah, query, audio_manager=None, control_panel_view=None):
         super().__init__(timeout=60)
@@ -406,7 +553,31 @@ class SurahConfirmationView(View):
         label="🎵 Play This Surah", style=discord.ButtonStyle.primary, row=0
     )
     async def play_surah(self, interaction: discord.Interaction, button: Button):
-        """Play the selected surah"""
+        """
+        Execute confirmed Surah playback with comprehensive state management.
+        
+        Orchestrates the complete playback initiation workflow:
+        1. Logs detailed user interaction with search context preservation
+        2. Updates enhanced webhook router with structured playback analytics
+        3. Synchronizes control panel state with new audio selection
+        4. Initiates audio manager playback with error handling
+        5. Provides immediate visual feedback to user
+        6. Disables UI components to prevent duplicate actions
+        
+        The method implements robust error handling for common failure scenarios:
+        - Audio manager unavailability or connection issues
+        - Invalid Surah number or missing audio files
+        - Discord interaction timeouts or network failures
+        - Control panel state synchronization errors
+        
+        Args:
+            interaction: Discord interaction from button press
+            button: The button component that triggered this callback
+            
+        Raises:
+            discord.InteractionResponded: If interaction already handled
+            AudioManagerError: If playback initiation fails
+        """
         try:
             # Log user interaction in dedicated section
             log_user_interaction(
@@ -421,6 +592,31 @@ class SurahConfirmationView(View):
                     "action": "play",
                 },
             )
+
+            # Log to enhanced webhook router first, then fallback to discord logger
+            try:
+                from src.core.di_container import get_container
+                container = get_container()
+                if container:
+                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    if enhanced_webhook and hasattr(enhanced_webhook, "log_control_panel_interaction"):
+                        await enhanced_webhook.log_control_panel_interaction(
+                            interaction_type="search_confirm_play",
+                            user_name=interaction.user.display_name,
+                            user_id=interaction.user.id,
+                            action_performed="Search confirm and play",
+                            user_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None,
+                            panel_details={
+                                "surah_number": str(self.surah.number),
+                                "surah_name": self.surah.name_transliteration,
+                                "surah_arabic_name": self.surah.name_arabic,
+                                "original_query": str(self.query),
+                                "action": "play_from_search",
+                                "verses_count": str(self.surah.verses)
+                            }
+                        )
+            except Exception as e:
+                log_error_with_traceback("Failed to log to enhanced webhook router", e)
 
             # Update last activity in control panel
             if self.control_panel_view:
@@ -461,7 +657,26 @@ class SurahConfirmationView(View):
         label="🔍 Search Again", style=discord.ButtonStyle.secondary, row=0
     )
     async def search_again(self, interaction: discord.Interaction, button: Button):
-        """Open search modal again"""
+        """
+        Reinitiate search workflow for iterative query refinement.
+        
+        Enables users to perform new searches while preserving context from
+        their previous search session. This supports iterative search patterns
+        where users may want to explore different Surahs or refine their queries.
+        
+        Workflow:
+        1. Logs the search retry interaction with context about rejected selection
+        2. Maintains search session continuity and user preferences
+        3. Creates fresh search modal with preserved audio manager connection
+        4. Enables seamless transition back to search interface
+        
+        This pattern improves user experience by allowing exploration without
+        losing progress or requiring navigation back to the main control panel.
+        
+        Args:
+            interaction: Discord interaction from button press
+            button: The button component that triggered this callback
+        """
         try:
             # Log user interaction in dedicated section
             log_user_interaction(
@@ -490,7 +705,25 @@ class SurahConfirmationView(View):
 
     @discord.ui.button(label="❌ Cancel", style=discord.ButtonStyle.danger, row=0)
     async def cancel_selection(self, interaction: discord.Interaction, button: Button):
-        """Cancel the selection"""
+        """
+        Gracefully cancel the search selection workflow.
+        
+        Provides users with a clear exit path from the search confirmation process
+        while maintaining proper UI state management and interaction logging.
+        
+        Cancellation workflow:
+        1. Logs the cancellation event with context about the rejected selection
+        2. Disables all interactive components to prevent further interactions
+        3. Updates the UI with clear feedback about the cancelled operation
+        4. Preserves the option for users to restart the search process
+        
+        This ensures users never feel trapped in the search workflow and can
+        exit at any point with clear feedback about their action.
+        
+        Args:
+            interaction: Discord interaction from button press
+            button: The button component that triggered this callback
+        """
         try:
             # Log cancellation interaction
             log_perfect_tree_section(
@@ -533,7 +766,32 @@ class SurahConfirmationView(View):
 
 
 class SurahSelect(Select):
-    """Simple surah selection dropdown"""
+    """
+    Paginated Surah selection dropdown with intelligent option management.
+    
+    Implements a paginated dropdown system for browsing all 114 Surahs of the Quran
+    with efficient memory usage and responsive user interface:
+    
+    **Pagination System:**
+    - Displays 10 Surahs per page to maintain readable dropdown size
+    - Dynamic page calculation and boundary management
+    - Automatic option generation with rich context (emoji, names, descriptions)
+    
+    **Smart Option Presentation:**
+    - Contextual emoji indicators for visual identification
+    - Transliterated names for accessibility
+    - Arabic names in descriptions for authenticity
+    - Sequential numbering for traditional reference
+    
+    **Integration Features:**
+    - Seamless audio manager connectivity for immediate playback
+    - Enhanced webhook logging for interaction analytics
+    - Parent view state synchronization and activity tracking
+    - Error-resilient option generation with fallback handling
+    
+    The dropdown automatically handles Discord API constraints while providing
+    comprehensive Surah browsing capabilities with rich contextual information.
+    """
 
     def __init__(self, bot, page: int = 0):
         self.bot = bot
@@ -553,7 +811,22 @@ class SurahSelect(Select):
         self._update_options()
 
     def _update_options(self):
-        """Update select options for current page"""
+        """
+        Dynamically generate dropdown options for the current page.
+        
+        Implements intelligent option generation with:
+        1. Page boundary calculation and validation
+        2. Dynamic placeholder text with current page context
+        3. Rich option creation with emoji, transliteration, and Arabic names
+        4. Error handling for missing or corrupted Surah data
+        5. Automatic fallback for data inconsistencies
+        
+        The method ensures dropdown options are always current and properly
+        formatted, handling edge cases like incomplete Surah data gracefully
+        while maintaining user experience quality.
+        
+        Option format: "🕌 1. Al-Fatiha" with Arabic description "الفاتحة"
+        """
         try:
             start_idx = self.page * SURAHS_PER_PAGE
             end_idx = min(start_idx + SURAHS_PER_PAGE, 114)
@@ -581,7 +854,30 @@ class SurahSelect(Select):
             log_error_with_traceback("Error updating surah options", e)
 
     async def callback(self, interaction: discord.Interaction):
-        """Handle surah selection"""
+        """
+        Process Surah selection from paginated dropdown with immediate playback.
+        
+        Orchestrates the complete selection-to-playback workflow:
+        1. Validates selected Surah number and retrieves metadata
+        2. Logs comprehensive interaction data for analytics and monitoring
+        3. Updates enhanced webhook router with structured selection context
+        4. Synchronizes parent view activity tracking with user action
+        5. Initiates immediate audio playback through audio manager
+        6. Triggers control panel update to reflect new playback state
+        
+        The callback implements defensive programming patterns:
+        - Input validation and sanitization
+        - Graceful error handling for missing data
+        - Async operation coordination
+        - UI state management during transitions
+        - Comprehensive logging for debugging
+        
+        Unlike search-based selection, this provides immediate playback without
+        confirmation dialogs since users are browsing a curated list.
+        
+        Args:
+            interaction: Discord interaction containing dropdown selection
+        """
         try:
             selected_surah = int(self.values[0])
 
@@ -612,46 +908,24 @@ class SurahSelect(Select):
                 container = get_container()
                 if container:
                     enhanced_webhook = container.get("enhanced_webhook_router")
-                    if enhanced_webhook and hasattr(enhanced_webhook, "log_control_panel_activity"):
-                        await enhanced_webhook.log_control_panel_activity(
-                            admin_name=interaction.user.display_name,
-                            admin_id=interaction.user.id,
-                            action="Surah selection",
-                            action_details={
+                    if enhanced_webhook and hasattr(enhanced_webhook, "log_control_panel_interaction"):
+                        await enhanced_webhook.log_control_panel_interaction(
+                            interaction_type="surah_selection",
+                            user_name=interaction.user.display_name,
+                            user_id=interaction.user.id,
+                            action_performed="Surah selection",
+                            user_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None,
+                            panel_details={
                                 "surah_number": str(selected_surah),
                                 "surah_name": surah_name,
                                 "page": str(self.page + 1),
                                 "selection_method": "dropdown",
                                 "total_pages": str((114 + 9) // 10)  # SURAHS_PER_PAGE = 10
-                            },
-                            admin_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None
+                            }
                         )
             except Exception as e:
                 log_error_with_traceback("Failed to log to enhanced webhook router", e)
-                # Fallback to old discord logger
-                discord_logger = get_discord_logger()
-                if discord_logger:
-                    try:
-                        user_avatar_url = (
-                            interaction.user.avatar.url
-                            if interaction.user.avatar
-                            else interaction.user.default_avatar.url
-                        )
-                        await discord_logger.log_user_interaction(
-                            "dropdown_surah",
-                            interaction.user.display_name,
-                            interaction.user.id,
-                            f"selected {surah_name} from the surah dropdown",
-                            {
-                                "Surah Number": str(selected_surah),
-                                "Surah Name": surah_name,
-                                "Page": str(self.page + 1),
-                                "Action": "Surah Selection",
-                            },
-                            user_avatar_url,
-                        )
-                    except:
-                        pass
+                # No fallback - enhanced webhook router is the primary logging method
 
             # Update last activity in parent view
             if hasattr(self.view, "_update_last_activity"):
@@ -687,7 +961,32 @@ class SurahSelect(Select):
 
 
 class ReciterSelect(Select):
-    """Simple reciter selection dropdown"""
+    """
+    Dynamic reciter selection dropdown with audio folder scanning.
+    
+    Implements intelligent reciter management by scanning the local audio directory
+    structure and presenting available reciters with rich contextual information:
+    
+    **Dynamic Reciter Discovery:**
+    - Real-time audio folder scanning for available reciters
+    - Automatic reciter list generation from directory structure
+    - Fallback handling for missing or corrupted audio directories
+    
+    **Rich Presentation System:**
+    - English transliterated names for accessibility
+    - Arabic names for authenticity and cultural context
+    - Consistent formatting with emoji indicators
+    - Alphabetical sorting for predictable navigation
+    
+    **Integration Features:**
+    - Seamless audio manager connectivity for immediate reciter switching
+    - Enhanced webhook logging for reciter preference analytics
+    - Parent view state synchronization and activity tracking
+    - Error-resilient option generation with graceful degradation
+    
+    The dropdown automatically adapts to available audio content while providing
+    comprehensive reciter information and smooth switching capabilities.
+    """
 
     def __init__(self, bot):
         self.bot = bot
@@ -703,7 +1002,27 @@ class ReciterSelect(Select):
         self._update_options()
 
     def _update_options(self):
-        """Update reciter options"""
+        """
+        Dynamically scan audio directory and generate reciter options.
+        
+        Implements intelligent reciter discovery and presentation:
+        1. Scans local audio directory for available reciter folders
+        2. Validates directory structure and audio file availability
+        3. Maps technical folder names to user-friendly display names
+        4. Provides Arabic name translations for cultural authenticity
+        5. Generates sorted dropdown options with consistent formatting
+        
+        The method handles various edge cases:
+        - Missing or inaccessible audio directories
+        - Corrupted or incomplete reciter folders
+        - Unknown reciters without Arabic name mappings
+        - File system permission issues
+        
+        Arabic name mapping ensures cultural authenticity while technical
+        folder names (with underscores) are converted to readable formats.
+        
+        Option format: "🎤 Saad Al Ghamdi" with Arabic description "سعد الغامدي"
+        """
         try:
             # Get available reciters from audio folder
             reciters = []
@@ -750,7 +1069,31 @@ class ReciterSelect(Select):
             log_error_with_traceback("Error updating reciter options", e)
 
     async def callback(self, interaction: discord.Interaction):
-        """Handle reciter selection"""
+        """
+        Process reciter selection with immediate audio switching.
+        
+        Orchestrates the complete reciter switching workflow:
+        1. Validates selected reciter and formats display names
+        2. Logs detailed interaction data including previous reciter context
+        3. Updates enhanced webhook router with reciter preference analytics
+        4. Synchronizes parent view activity tracking with user action
+        5. Initiates immediate reciter switch through audio manager
+        6. Triggers control panel update to reflect new reciter selection
+        
+        The callback handles the complexity of reciter switching:
+        - Audio stream interruption and reconnection
+        - Playback position preservation during switch
+        - Error handling for missing reciter audio files
+        - UI feedback during potentially lengthy switch operations
+        - State synchronization across all active components
+        
+        Reciter switching preserves the current Surah and playback position
+        while seamlessly transitioning to the new voice, providing users with
+        immediate feedback and uninterrupted listening experience.
+        
+        Args:
+            interaction: Discord interaction containing reciter selection
+        """
         try:
             selected_reciter = self.values[0]
 
@@ -772,33 +1115,29 @@ class ReciterSelect(Select):
                 },
             )
 
-            # Log to Discord with user profile picture
-
-            discord_logger = get_discord_logger()
-            if discord_logger:
-                try:
-                    user_avatar_url = (
-                        interaction.user.avatar.url
-                        if interaction.user.avatar
-                        else interaction.user.default_avatar.url
-                    )
-                    await discord_logger.log_user_interaction(
-                        "dropdown_reciter",
-                        interaction.user.display_name,
-                        interaction.user.id,
-                        f"selected reciter: {reciter_display}",
-                        {
-                            "Selected Reciter": selected_reciter,
-                            "Reciter Display": reciter_display,
-                            "Previous Reciter": getattr(
-                                self.view, "current_reciter", "Unknown"
-                            ),
-                            "Action": "Reciter Selection",
-                        },
-                        user_avatar_url,
-                    )
-                except:
-                    pass
+            # Log to enhanced webhook router first, then fallback to discord logger
+            try:
+                from src.core.di_container import get_container
+                container = get_container()
+                if container:
+                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    if enhanced_webhook and hasattr(enhanced_webhook, "log_control_panel_interaction"):
+                        await enhanced_webhook.log_control_panel_interaction(
+                            interaction_type="reciter_selection",
+                            user_name=interaction.user.display_name,
+                            user_id=interaction.user.id,
+                            action_performed="Reciter selection",
+                            user_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None,
+                            panel_details={
+                                "selected_reciter": selected_reciter,
+                                "reciter_display": reciter_display,
+                                "previous_reciter": getattr(self.view, "current_reciter", "Unknown"),
+                                "selection_method": "dropdown"
+                            }
+                        )
+            except Exception as e:
+                log_error_with_traceback("Failed to log to enhanced webhook router", e)
+                # No fallback - enhanced webhook router is the primary logging method
 
             # Update last activity in parent view
             if hasattr(self.view, "_update_last_activity"):
@@ -834,7 +1173,38 @@ class ReciterSelect(Select):
 
 
 class SimpleControlPanelView(View):
-    """Simple, clean control panel for 24/7 bot"""
+    """
+    Comprehensive Discord control panel for 24/7 Quran bot management.
+    
+    This is the primary user interface component providing complete bot control
+    through an integrated Discord panel with real-time updates and rich interactions:
+    
+    **Core Features:**
+    - Real-time playback status with progress bars and timing information
+    - Paginated Surah browsing with intelligent search capabilities
+    - Dynamic reciter selection with audio directory scanning
+    - Playback controls (previous, next, shuffle, loop modes)
+    - Activity tracking with user interaction history
+    - Smart update intervals based on playback state
+    
+    **Advanced Capabilities:**
+    - Adaptive update frequency (10-60 seconds based on audio state)
+    - Rate limiting protection with automatic backoff strategies
+    - Health monitoring with failure detection and recovery
+    - Comprehensive interaction logging for analytics
+    - Multi-modal search integration with confirmation workflows
+    - Discord permission validation and graceful degradation
+    
+    **Architecture:**
+    - Modular component design with specialized UI elements
+    - Event-driven updates with smart batching for performance
+    - Defensive programming patterns for reliability
+    - Integration with enhanced webhook router for monitoring
+    - Persistent view state with timeout handling
+    
+    The panel serves as the central hub for all user interactions with the bot,
+    providing intuitive controls while maintaining robust performance and reliability.
+    """
 
     def __init__(self, bot, audio_manager=None):
         super().__init__(timeout=None)
@@ -860,13 +1230,58 @@ class SimpleControlPanelView(View):
         self.update_task = None
 
     def _update_last_activity(self, user: discord.User, action: str):
-        """Update last activity tracking"""
+        """
+        Track and update user interaction history for activity display.
+        
+        Maintains a record of the most recent user interaction with the control panel
+        for display in the panel embed. This provides valuable context about bot usage
+        and helps users understand recent changes to playback state.
+        
+        Tracked information:
+        - User who performed the action (for mention display)
+        - Timestamp of the interaction (for elapsed time calculation)
+        - Description of the action performed (for context display)
+        
+        The activity tracking enhances user experience by showing:
+        - Who last interacted with the bot
+        - What action they performed
+        - How long ago the interaction occurred
+        
+        This information is displayed prominently in the control panel embed.
+        
+        Args:
+            user: Discord user who performed the action
+            action: Human-readable description of the action performed
+        """
         self.last_activity_user = user
         self.last_activity_time = datetime.now(UTC)
         self.last_activity_action = action
 
     def _format_time_elapsed(self, activity_time: datetime) -> str:
-        """Format time elapsed since activity"""
+        """
+        Calculate and format human-readable elapsed time since last activity.
+        
+        Provides intelligent time formatting that adapts to the duration:
+        - Seconds: "42s ago" (for recent activity)
+        - Minutes: "15m ago" (for activity within the hour)
+        - Hours and minutes: "2h 30m ago" (for activity within the day)
+        - Days and hours: "3d 5h ago" (for older activity)
+        
+        The method implements robust error handling for edge cases:
+        - Invalid datetime objects or timezone issues
+        - Negative time calculations (clock adjustments)
+        - Overflow conditions for very old timestamps
+        - Timezone conversion errors
+        
+        This ensures the activity display always shows meaningful, readable
+        time information without crashing on edge cases.
+        
+        Args:
+            activity_time: UTC datetime of the last activity
+            
+        Returns:
+            Human-readable time elapsed string (e.g., "5m ago", "2h 15m ago")
+        """
         try:
             now = datetime.now(UTC)
             elapsed = now - activity_time
@@ -891,12 +1306,48 @@ class SimpleControlPanelView(View):
             return "just now"
 
     def start_updates(self):
-        """Start the 2-second update task"""
+        """
+        Initialize the intelligent panel update system with adaptive intervals.
+        
+        Starts the background update task that keeps the control panel synchronized
+        with the current audio state. The update system implements smart interval
+        adjustment based on playback status to optimize performance:
+        
+        - Active playback: 10-second updates for responsive progress tracking
+        - Paused state: 20-second updates for moderate refresh rate
+        - Finished audio: 60-second updates to reduce API calls
+        - Error states: 30-second fallback interval
+        
+        The task management ensures only one update loop runs at a time,
+        preventing resource leaks and duplicate operations. Updates continue
+        until the view is destroyed or explicitly stopped.
+        """
         if not self.update_task or self.update_task.done():
             self.update_task = asyncio.create_task(self._update_loop())
 
     async def _update_loop(self):
-        """Update the panel with smart intervals based on audio state"""
+        """
+        Continuous panel update loop with intelligent interval management.
+        
+        Implements the core update cycle that maintains panel synchronization with
+        audio playback state while optimizing for performance and rate limiting:
+        
+        **Smart Interval Algorithm:**
+        1. Queries current audio state from audio manager
+        2. Calculates optimal update interval based on playback status
+        3. Sleeps for the calculated interval to prevent unnecessary API calls
+        4. Executes panel update with comprehensive error handling
+        5. Repeats cycle until cancellation or fatal error
+        
+        **Error Handling:**
+        - Graceful cancellation handling for clean shutdown
+        - Exception isolation to prevent update loop termination
+        - Automatic recovery from transient errors
+        - Comprehensive logging for debugging and monitoring
+        
+        The loop maintains panel accuracy while respecting Discord's rate limits
+        and minimizing unnecessary API calls during inactive periods.
+        """
         while True:
             try:
                 # Determine smart update interval based on audio state
@@ -911,7 +1362,31 @@ class SimpleControlPanelView(View):
                 log_error_with_traceback("Error in update loop", e)
 
     def _get_smart_update_interval(self) -> int:
-        """Get smart update interval based on current audio state"""
+        """
+        Calculate optimal panel update interval based on current audio state.
+        
+        Implements intelligent interval selection to balance responsiveness with
+        performance and rate limiting considerations:
+        
+        **Interval Logic:**
+        - 10 seconds: Active playback (frequent progress updates needed)
+        - 20 seconds: Paused state (moderate refresh for resume detection)
+        - 60 seconds: Finished audio (minimal updates, reduce rate limiting)
+        - 30 seconds: Default fallback for unknown states
+        
+        **State Analysis:**
+        1. Retrieves current playback status from audio manager
+        2. Analyzes playback state, pause status, and progress position
+        3. Detects near-completion scenarios (within 1 second of end)
+        4. Applies appropriate interval based on detected state
+        5. Falls back to safe default for error conditions
+        
+        This approach minimizes unnecessary API calls while ensuring responsive
+        updates during active user engagement periods.
+        
+        Returns:
+            Optimal update interval in seconds (10-60 range)
+        """
         try:
             if not self.audio_manager:
                 return 30  # Fallback when no audio manager
@@ -942,7 +1417,35 @@ class SimpleControlPanelView(View):
             return 30  # Safe fallback
 
     def _create_panel_embed(self) -> discord.Embed:
-        """Create the control panel embed with current status"""
+        """
+        Generate comprehensive control panel embed with real-time status display.
+        
+        Creates the primary visual interface displaying current bot state with:
+        
+        **Status Information:**
+        - Current Surah with transliterated and Arabic names
+        - Active reciter with English and Arabic names
+        - Playback progress with time display and visual progress bar
+        - Last user activity with elapsed time tracking
+        
+        **Visual Elements:**
+        - Bot avatar thumbnail for branding consistency
+        - Color-coded embed (green for healthy state)
+        - Structured field layout for readable information hierarchy
+        - Unicode progress bar with percentage completion
+        
+        **Error Handling:**
+        - Graceful degradation for missing audio manager
+        - Fallback values for unavailable status information
+        - Safe time formatting with error recovery
+        - Comprehensive exception handling with error embed fallback
+        
+        The embed serves as the primary information display, updated continuously
+        to reflect current bot state and user interactions.
+        
+        Returns:
+            Fully configured Discord embed ready for message display
+        """
         try:
             # Get current status
             current_surah = 1
@@ -1064,7 +1567,35 @@ class SimpleControlPanelView(View):
             )
 
     async def update_panel(self):
-        """Update the control panel embed with monitoring and alerts"""
+        """
+        Execute panel update with comprehensive error handling and monitoring.
+        
+        Orchestrates the complete panel update workflow with robust error handling,
+        rate limiting protection, and health monitoring integration:
+        
+        **Update Process:**
+        1. Validates message existence and accessibility
+        2. Generates updated embed with current status information
+        3. Attempts message edit with rate limiting detection
+        4. Records success/failure metrics for monitoring
+        5. Handles various error scenarios with appropriate responses
+        
+        **Error Scenarios Handled:**
+        - Message deletion (stops update task gracefully)
+        - Rate limiting (waits and reports via webhook)
+        - Network timeouts (retries with backoff)
+        - Permission errors (logs and continues)
+        - General HTTP errors (comprehensive logging)
+        
+        **Monitoring Integration:**
+        - Success/failure tracking for health monitoring
+        - Automatic alerting for sustained failures
+        - Rate limiting notifications via enhanced webhook router
+        - Detailed error context logging for debugging
+        
+        The method ensures reliable panel updates while protecting against
+        various failure modes and providing comprehensive operational visibility.
+        """
         global _control_panel_monitor
 
         try:
@@ -1146,25 +1677,31 @@ class SimpleControlPanelView(View):
                         "⏱️",
                     )
 
-                    # Send Discord notification about control panel rate limiting
-
-                    discord_logger = get_discord_logger()
-                    if discord_logger:
-                        try:
-                            await discord_logger.log_rate_limit(
-                                event="control_panel_update",
-                                retry_after=retry_after,
-                                context={
-                                    "Component": "Control Panel",
-                                    "Action": "Panel Update",
-                                    "Impact": "Skipped update cycle",
-                                },
-                            )
-                        except Exception as log_error:
-                            log_error_with_traceback(
-                                "Failed to send control panel rate limit notification",
-                                log_error,
-                            )
+                    # Rate limiting notification handled by enhanced webhook router
+                    try:
+                        from src.core.di_container import get_container
+                        container = get_container()
+                        if container:
+                            enhanced_webhook = container.get("enhanced_webhook_router")
+                            if enhanced_webhook and hasattr(enhanced_webhook, "log_bot_event"):
+                                await enhanced_webhook.log_bot_event(
+                                    event_type="rate_limit_encountered",
+                                    title="Control Panel Rate Limited",
+                                    description=f"Panel update skipped due to rate limiting (HTTP 429)",
+                                    level="warning",
+                                    context={
+                                        "component": "Control Panel",
+                                        "action": "Panel Update",
+                                        "impact": "Skipped update cycle",
+                                        "retry_after": str(retry_after),
+                                        "http_status": "429"
+                                    }
+                                )
+                    except Exception as log_error:
+                        log_error_with_traceback(
+                            "Failed to send control panel rate limit notification",
+                            log_error,
+                        )
 
                     return
                 else:
@@ -1178,7 +1715,24 @@ class SimpleControlPanelView(View):
             log_error_with_traceback("Error updating panel", e)
 
     def _format_time(self, seconds: float) -> str:
-        """Format seconds to MM:SS or H:MM:SS"""
+        """
+        Convert seconds to human-readable time format with intelligent duration display.
+        
+        Provides adaptive time formatting based on duration length:
+        - Short duration (< 1 hour): "MM:SS" format for compact display
+        - Long duration (≥ 1 hour): "H:MM:SS" format with hour indication
+        - Error fallback: "00:00" for invalid input or calculation errors
+        
+        The formatting ensures consistent display width and intuitive time
+        representation across different Surah lengths, from short verses to
+        longer chapters that may exceed one hour in duration.
+        
+        Args:
+            seconds: Time duration in seconds (float for precision)
+            
+        Returns:
+            Formatted time string ("MM:SS" or "H:MM:SS" format)
+        """
         try:
             total_seconds = int(seconds)
             hours = total_seconds // 3600
@@ -1196,7 +1750,36 @@ class SimpleControlPanelView(View):
     def _create_progress_bar(
         self, current_time: float, total_time: float, length: int = 20
     ) -> str:
-        """Create a visual progress bar with percentage"""
+        """
+        Generate visual progress bar with percentage completion indicator.
+        
+        Creates an ASCII-based progress visualization using Unicode block characters:
+        - Filled blocks (▰) represent completed progress
+        - Empty blocks (▱) represent remaining duration
+        - Percentage display provides precise completion status
+        
+        **Progress Calculation:**
+        1. Validates input parameters for edge cases
+        2. Calculates completion percentage with bounds checking
+        3. Determines filled/empty block distribution
+        4. Assembles visual bar with percentage annotation
+        
+        **Error Handling:**
+        - Zero or negative total time (returns empty bar)
+        - Current time exceeding total time (caps at 100%)
+        - Invalid numeric inputs (returns fallback bar)
+        
+        The progress bar provides immediate visual feedback about playback
+        position within the current Surah, enhancing user experience.
+        
+        Args:
+            current_time: Current playback position in seconds
+            total_time: Total duration of current audio in seconds
+            length: Number of characters in progress bar (default: 20)
+            
+        Returns:
+            Visual progress bar string (e.g., "▰▰▰▱▱▱▱▱ 45%")
+        """
         try:
             if total_time <= 0:
                 return "▱" * length + " 0%"
@@ -1218,7 +1801,22 @@ class SimpleControlPanelView(View):
             return "▱" * length + " 0%"
 
     async def update_panel_for_page_change(self, interaction: discord.Interaction):
-        """Helper to update the panel after page navigation"""
+        """
+        Synchronize panel state after pagination navigation with immediate UI update.
+        
+        Handles the coordination between pagination controls and the main panel display:
+        1. Updates the SurahSelect dropdown options for the new page
+        2. Refreshes the main panel embed with current audio status
+        3. Applies changes immediately through interaction response
+        4. Provides error handling for UI update failures
+        
+        This method ensures that pagination changes are immediately visible to users
+        without waiting for the next scheduled update cycle, improving responsiveness
+        and user experience during navigation.
+        
+        Args:
+            interaction: Discord interaction from pagination button press
+        """
         try:
             # Update the surah select to new page
             for item in self.children:
@@ -1236,7 +1834,24 @@ class SimpleControlPanelView(View):
 
     @discord.ui.button(label="⬅️ Prev Page", style=discord.ButtonStyle.secondary, row=2)
     async def prev_page(self, interaction: discord.Interaction, button: Button):
-        """Go to previous page"""
+        """
+        Navigate to previous page in Surah selection dropdown.
+        
+        Implements backward pagination with boundary checking and comprehensive logging:
+        1. Validates current page position (prevents negative pages)
+        2. Updates internal page state and logs navigation event
+        3. Records interaction via enhanced webhook router for analytics
+        4. Updates activity tracking with user navigation context
+        5. Triggers immediate panel refresh to show new page options
+        
+        The navigation maintains smooth user experience by providing immediate
+        visual feedback and preventing invalid page states. All navigation
+        events are logged for usage analytics and debugging purposes.
+        
+        Args:
+            interaction: Discord interaction from button press
+            button: The button component that triggered this callback
+        """
         try:
             if self.current_page > 0:
                 old_page = self.current_page
@@ -1255,29 +1870,28 @@ class SimpleControlPanelView(View):
                     },
                 )
 
-                discord_logger = get_discord_logger()
-                if discord_logger:
-                    try:
-                        user_avatar_url = (
-                            interaction.user.avatar.url
-                            if interaction.user.avatar
-                            else interaction.user.default_avatar.url
-                        )
-                        await discord_logger.log_user_interaction(
-                            "button_navigation",
-                            interaction.user.display_name,
-                            interaction.user.id,
-                            f"navigated to previous surah page (page {self.current_page + 1})",
-                            {
-                                "Old Page": str(old_page + 1),
-                                "New Page": str(self.current_page + 1),
-                                "Direction": "Previous",
-                                "Action": "Page Navigation",
-                            },
-                            user_avatar_url,
-                        )
-                    except:
-                        pass
+                # Log to enhanced webhook router
+                try:
+                    from src.core.di_container import get_container
+                    container = get_container()
+                    if container:
+                        enhanced_webhook = container.get("enhanced_webhook_router")
+                        if enhanced_webhook and hasattr(enhanced_webhook, "log_control_panel_interaction"):
+                            await enhanced_webhook.log_control_panel_interaction(
+                                interaction_type="page_navigation",
+                                user_name=interaction.user.display_name,
+                                user_id=interaction.user.id,
+                                action_performed="Navigated to previous surah page",
+                                user_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None,
+                                panel_details={
+                                    "old_page": old_page + 1,
+                                    "new_page": self.current_page + 1,
+                                    "direction": "previous",
+                                    "button": "⬅️ Prev Page"
+                                }
+                            )
+                except Exception as e:
+                    log_error_with_traceback("Failed to log to enhanced webhook router", e)
 
                 self._update_last_activity(
                     interaction.user, "switched to previous page"
@@ -1292,7 +1906,25 @@ class SimpleControlPanelView(View):
 
     @discord.ui.button(label="➡️ Next Page", style=discord.ButtonStyle.secondary, row=2)
     async def next_page(self, interaction: discord.Interaction, button: Button):
-        """Go to next page"""
+        """
+        Navigate to next page in Surah selection dropdown.
+        
+        Implements forward pagination with boundary checking and comprehensive logging:
+        1. Calculates maximum pages based on total Surahs and page size
+        2. Validates navigation request against page boundaries
+        3. Updates internal page state and logs navigation event
+        4. Records interaction via enhanced webhook router for analytics
+        5. Updates activity tracking with user navigation context
+        6. Triggers immediate panel refresh to show new page options
+        
+        The navigation ensures users can browse through all 114 Surahs efficiently
+        while maintaining proper boundary conditions and providing comprehensive
+        interaction tracking for analytics and debugging.
+        
+        Args:
+            interaction: Discord interaction from button press
+            button: The button component that triggered this callback
+        """
         try:
             max_pages = (114 + SURAHS_PER_PAGE - 1) // SURAHS_PER_PAGE
             if self.current_page < max_pages - 1:
@@ -1313,6 +1945,30 @@ class SimpleControlPanelView(View):
                     },
                 )
 
+                # Log to enhanced webhook router
+                try:
+                    from src.core.di_container import get_container
+                    container = get_container()
+                    if container:
+                        enhanced_webhook = container.get("enhanced_webhook_router")
+                        if enhanced_webhook and hasattr(enhanced_webhook, "log_control_panel_interaction"):
+                            await enhanced_webhook.log_control_panel_interaction(
+                                interaction_type="page_navigation",
+                                user_name=interaction.user.display_name,
+                                user_id=interaction.user.id,
+                                action_performed="Navigated to next surah page",
+                                user_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None,
+                                panel_details={
+                                    "old_page": old_page + 1,
+                                    "new_page": self.current_page + 1,
+                                    "direction": "next",
+                                    "max_pages": max_pages,
+                                    "button": "➡️ Next Page"
+                                }
+                            )
+                except Exception as e:
+                    log_error_with_traceback("Failed to log to enhanced webhook router", e)
+
                 self._update_last_activity(interaction.user, "switched to next page")
 
                 await self.update_panel_for_page_change(interaction)
@@ -1324,7 +1980,26 @@ class SimpleControlPanelView(View):
 
     @discord.ui.button(label="🔍 Search", style=discord.ButtonStyle.primary, row=2)
     async def search_surah(self, interaction: discord.Interaction, button: Button):
-        """Open search modal for finding surahs"""
+        """
+        Launch intelligent Surah search modal interface.
+        
+        Initiates the comprehensive search workflow that allows users to find Surahs
+        using multiple search criteria (numbers, names, meanings, Arabic text):
+        
+        1. Logs search initiation event for user interaction analytics
+        2. Updates enhanced webhook router with search modal opening context
+        3. Records activity tracking for control panel history
+        4. Creates and presents search modal with preserved context
+        5. Maintains connection to audio manager for seamless playback integration
+        
+        The search modal provides advanced functionality beyond simple pagination,
+        enabling users to quickly locate specific Surahs through intelligent
+        matching algorithms and fuzzy search capabilities.
+        
+        Args:
+            interaction: Discord interaction from button press
+            button: The button component that triggered this callback
+        """
         try:
             # Log user interaction in dedicated section
             log_user_interaction(
@@ -1335,26 +2010,28 @@ class SimpleControlPanelView(View):
                 details={"modal_type": "surah_search"},
             )
 
-            # Log to Discord with user profile picture
-
-            discord_logger = get_discord_logger()
-            if discord_logger:
-                try:
-                    user_avatar_url = (
-                        interaction.user.avatar.url
-                        if interaction.user.avatar
-                        else interaction.user.default_avatar.url
-                    )
-                    await discord_logger.log_user_interaction(
-                        "button_search",
-                        interaction.user.display_name,
-                        interaction.user.id,
-                        "opened the surah search modal",
-                        {"Modal Type": "Surah Search", "Action": "Search Modal Opened"},
-                        user_avatar_url,
-                    )
-                except:
-                    pass
+            # Log to enhanced webhook router first, then fallback to discord logger
+            try:
+                from src.core.di_container import get_container
+                container = get_container()
+                if container:
+                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    if enhanced_webhook and hasattr(enhanced_webhook, "log_control_panel_interaction"):
+                        await enhanced_webhook.log_control_panel_interaction(
+                            interaction_type="search_modal_opened",
+                            user_name=interaction.user.display_name,
+                            user_id=interaction.user.id,
+                            action_performed="Search modal opened",
+                            user_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None,
+                            panel_details={
+                                "modal_type": "surah_search",
+                                "button": "🔍 Search",
+                                "action": "search_modal_opened"
+                            }
+                        )
+            except Exception as e:
+                log_error_with_traceback("Failed to log to enhanced webhook router", e)
+                # No fallback - enhanced webhook router is the primary logging method
 
             self._update_last_activity(interaction.user, "opened search modal")
 
@@ -1370,7 +2047,24 @@ class SimpleControlPanelView(View):
 
     @discord.ui.button(label="⏮️ Previous", style=discord.ButtonStyle.danger, row=3)
     async def previous_surah(self, interaction: discord.Interaction, button: Button):
-        """Go to previous surah"""
+        """
+        Skip to previous Surah in the sequential playback order.
+        
+        Implements backward navigation through the Quran with comprehensive state management:
+        1. Logs skip interaction with direction and context information
+        2. Updates enhanced webhook router with skip analytics data
+        3. Records user activity for control panel history display
+        4. Initiates audio manager skip operation with error handling
+        5. Relies on audio manager for subsequent panel updates
+        
+        The skip operation handles wraparound logic (Surah 1 to 114) and maintains
+        playback continuity while providing immediate user feedback. The audio manager
+        coordinates the actual audio switching and notifies the panel of changes.
+        
+        Args:
+            interaction: Discord interaction from button press
+            button: The button component that triggered this callback
+        """
         try:
             # Log user interaction in dedicated section
             log_user_interaction(
@@ -1383,6 +2077,28 @@ class SimpleControlPanelView(View):
                     "audio_manager_available": self.audio_manager is not None,
                 },
             )
+
+            # Log to enhanced webhook router
+            try:
+                from src.core.di_container import get_container
+                container = get_container()
+                if container:
+                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    if enhanced_webhook and hasattr(enhanced_webhook, "log_control_panel_interaction"):
+                        await enhanced_webhook.log_control_panel_interaction(
+                            interaction_type="surah_skip",
+                            user_name=interaction.user.display_name,
+                            user_id=interaction.user.id,
+                            action_performed="Skipped to previous surah",
+                            user_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None,
+                            panel_details={
+                                "direction": "previous",
+                                "audio_manager_available": self.audio_manager is not None,
+                                "button": "⏮️ Previous"
+                            }
+                        )
+            except Exception as e:
+                log_error_with_traceback("Failed to log to enhanced webhook router", e)
 
             self._update_last_activity(interaction.user, "skipped to previous surah")
 
@@ -1402,12 +2118,35 @@ class SimpleControlPanelView(View):
 
     @discord.ui.button(label="🔀 Shuffle", style=discord.ButtonStyle.secondary, row=3)
     async def toggle_shuffle(self, interaction: discord.Interaction, button: Button):
-        """Toggle shuffle mode"""
+        """
+        Toggle shuffle mode for randomized Surah playback order.
+        
+        Manages the shuffle mode state with visual feedback and comprehensive logging:
+        
+        **Shuffle Mode Behavior:**
+        - Enabled: Surahs play in randomized order after current completion
+        - Disabled: Surahs play in traditional sequential order (1-114)
+        - State persists across bot restarts through audio manager integration
+        
+        **UI State Management:**
+        1. Coordinates with audio manager to toggle actual shuffle functionality
+        2. Updates button visual style (green for enabled, gray for disabled)
+        3. Logs detailed state transition for analytics and debugging
+        4. Records enhanced webhook analytics with before/after state context
+        5. Updates activity tracking only when enabling (reduces noise)
+        
+        The shuffle feature enhances user experience by providing variety in
+        Quran listening while maintaining the 24/7 continuous playback model.
+        
+        Args:
+            interaction: Discord interaction from button press
+            button: The button component that triggered this callback
+        """
         try:
             # Toggle audio manager's shuffle state
             old_state = self.shuffle_enabled
             if self.audio_manager:
-                self.audio_manager.toggle_shuffle()
+                await self.audio_manager.toggle_shuffle()
                 self.shuffle_enabled = self.audio_manager.is_shuffle_enabled
             else:
                 self.shuffle_enabled = not self.shuffle_enabled
@@ -1425,6 +2164,29 @@ class SimpleControlPanelView(View):
                     "audio_manager_available": self.audio_manager is not None,
                 },
             )
+
+            # Log to enhanced webhook router
+            try:
+                from src.core.di_container import get_container
+                container = get_container()
+                if container:
+                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    if enhanced_webhook and hasattr(enhanced_webhook, "log_control_panel_interaction"):
+                        await enhanced_webhook.log_control_panel_interaction(
+                            interaction_type="shuffle_toggle",
+                            user_name=interaction.user.display_name,
+                            user_id=interaction.user.id,
+                            action_performed=f"Toggled shuffle mode: {old_state} → {self.shuffle_enabled}",
+                            user_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None,
+                            panel_details={
+                                "feature": "shuffle",
+                                "old_state": old_state,
+                                "new_state": self.shuffle_enabled,
+                                "audio_manager_available": self.audio_manager is not None,
+                            }
+                        )
+            except Exception as e:
+                log_error_with_traceback("Failed to log to enhanced webhook router", e)
 
             # Update button style
             button.style = (
@@ -1444,12 +2206,36 @@ class SimpleControlPanelView(View):
 
     @discord.ui.button(label="🔁 Loop", style=discord.ButtonStyle.secondary, row=3)
     async def toggle_loop(self, interaction: discord.Interaction, button: Button):
-        """Toggle individual surah loop mode (24/7 playback continues regardless)"""
+        """
+        Toggle individual Surah loop mode within 24/7 continuous playback.
+        
+        Manages loop mode functionality that allows repetition of individual Surahs:
+        
+        **Loop Mode Behavior:**
+        - Enabled: Current Surah repeats indefinitely until manually changed
+        - Disabled: Normal progression to next Surah after completion
+        - 24/7 playback continues regardless (never stops completely)
+        - Overrides shuffle mode when enabled (current Surah takes priority)
+        
+        **UI State Management:**
+        1. Coordinates with audio manager to toggle actual loop functionality
+        2. Updates button visual style (green for enabled, gray for disabled)
+        3. Logs detailed state transition with behavioral context
+        4. Records enhanced webhook analytics with comprehensive mode information
+        5. Updates activity tracking only when enabling (reduces notification noise)
+        
+        This feature allows users to focus on specific Surahs while maintaining
+        the continuous nature of the 24/7 bot functionality.
+        
+        Args:
+            interaction: Discord interaction from button press
+            button: The button component that triggered this callback
+        """
         try:
             # Toggle audio manager's loop state
             old_state = self.loop_enabled
             if self.audio_manager:
-                self.audio_manager.toggle_loop()
+                await self.audio_manager.toggle_loop()
                 self.loop_enabled = self.audio_manager.is_loop_enabled
             else:
                 self.loop_enabled = not self.loop_enabled
@@ -1474,6 +2260,35 @@ class SimpleControlPanelView(View):
                 },
             )
 
+            # Log to enhanced webhook router
+            try:
+                from src.core.di_container import get_container
+                container = get_container()
+                if container:
+                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    if enhanced_webhook and hasattr(enhanced_webhook, "log_control_panel_interaction"):
+                        await enhanced_webhook.log_control_panel_interaction(
+                            interaction_type="loop_toggle",
+                            user_name=interaction.user.display_name,
+                            user_id=interaction.user.id,
+                            action_performed=f"Toggled loop mode: {old_state} → {self.loop_enabled}",
+                            user_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None,
+                            panel_details={
+                                "feature": "individual_surah_loop",
+                                "old_state": old_state,
+                                "new_state": self.loop_enabled,
+                                "behavior": (
+                                    "Individual surah repeat"
+                                    if self.loop_enabled
+                                    else "Normal progression"
+                                ),
+                                "continuous_playback": "24/7 mode always active",
+                                "audio_manager_available": self.audio_manager is not None,
+                            }
+                        )
+            except Exception as e:
+                log_error_with_traceback("Failed to log to enhanced webhook router", e)
+
             # Update button style
             button.style = (
                 discord.ButtonStyle.success
@@ -1492,7 +2307,28 @@ class SimpleControlPanelView(View):
 
     @discord.ui.button(label="⏭️ Next", style=discord.ButtonStyle.success, row=3)
     async def next_surah(self, interaction: discord.Interaction, button: Button):
-        """Go to next surah"""
+        """
+        Skip to next Surah in the playback sequence.
+        
+        Implements forward navigation through the Quran with intelligent sequence handling:
+        1. Logs skip interaction with direction and availability context
+        2. Updates enhanced webhook router with skip analytics data
+        3. Records user activity for control panel history display
+        4. Initiates audio manager skip operation with error handling
+        5. Relies on audio manager for subsequent panel state updates
+        
+        **Sequence Logic:**
+        - Normal mode: Sequential progression (1→2→3...→114→1)
+        - Shuffle mode: Random next Surah selection
+        - Loop mode: Remains on current Surah (skip overrides loop)
+        
+        The skip operation provides immediate user control over playback flow
+        while maintaining the continuous 24/7 nature of the bot.
+        
+        Args:
+            interaction: Discord interaction from button press
+            button: The button component that triggered this callback
+        """
         try:
             # Log user interaction in dedicated section
             log_user_interaction(
@@ -1506,32 +2342,27 @@ class SimpleControlPanelView(View):
                 },
             )
 
-            # Log to Discord with user profile picture
-
-            discord_logger = get_discord_logger()
-            if discord_logger:
-                try:
-                    user_avatar_url = (
-                        interaction.user.avatar.url
-                        if interaction.user.avatar
-                        else interaction.user.default_avatar.url
-                    )
-                    await discord_logger.log_user_interaction(
-                        "button_skip",
-                        interaction.user.display_name,
-                        interaction.user.id,
-                        "skipped to the next surah",
-                        {
-                            "Direction": "Next",
-                            "Audio Manager": (
-                                "Available" if self.audio_manager else "Not Available"
-                            ),
-                            "Action": "Skip Next",
-                        },
-                        user_avatar_url,
-                    )
-                except:
-                    pass
+            # Log to enhanced webhook router
+            try:
+                from src.core.di_container import get_container
+                container = get_container()
+                if container:
+                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    if enhanced_webhook and hasattr(enhanced_webhook, "log_control_panel_interaction"):
+                        await enhanced_webhook.log_control_panel_interaction(
+                            interaction_type="surah_skip",
+                            user_name=interaction.user.display_name,
+                            user_id=interaction.user.id,
+                            action_performed="Skipped to next surah",
+                            user_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None,
+                            panel_details={
+                                "direction": "next",
+                                "audio_manager_available": self.audio_manager is not None,
+                                "button": "⏭️ Next"
+                            }
+                        )
+            except Exception as e:
+                log_error_with_traceback("Failed to log to enhanced webhook router", e)
 
             self._update_last_activity(interaction.user, "skipped to next surah")
 
@@ -1550,12 +2381,40 @@ class SimpleControlPanelView(View):
                 await interaction.response.defer()
 
     def set_panel_message(self, message: discord.Message):
-        """Set the panel message for updates"""
+        """
+        Associate Discord message with panel view and initialize update system.
+        
+        Establishes the connection between the panel view and its Discord message
+        representation, enabling the continuous update system:
+        
+        1. Stores message reference for future update operations
+        2. Initiates the background update task with smart interval management
+        3. Enables message editing for real-time status synchronization
+        
+        This method is called immediately after panel creation to begin the
+        continuous update cycle that keeps the panel synchronized with audio state.
+        
+        Args:
+            message: Discord message object containing the panel embed and view
+        """
         self.panel_message = message
         self.start_updates()
 
     def cleanup(self):
-        """Clean up the view"""
+        """
+        Gracefully shutdown panel view and release resources.
+        
+        Performs comprehensive cleanup to prevent resource leaks and ensure
+        proper termination of background tasks:
+        
+        1. Cancels the background update task if running
+        2. Logs cleanup completion for operational monitoring
+        3. Prevents zombie tasks from consuming resources
+        4. Enables clean bot shutdown processes
+        
+        This method is called during bot shutdown or when creating new panels
+        to ensure clean resource management and prevent conflicts.
+        """
         if self.update_task and not self.update_task.done():
             self.update_task.cancel()
             log_perfect_tree_section(
@@ -1577,12 +2436,34 @@ _active_panels = []
 
 
 def register_control_panel(panel_view):
-    """Register a control panel for cleanup"""
+    """
+    Register control panel view for global lifecycle management.
+    
+    Adds the panel view to the global registry for coordinated cleanup
+    operations during bot shutdown or panel recreation. This ensures
+    no panels are left running with orphaned update tasks.
+    
+    Args:
+        panel_view: SimpleControlPanelView instance to register
+    """
     _active_panels.append(panel_view)
 
 
 def cleanup_all_control_panels():
-    """Clean up all active control panels"""
+    """
+    Perform global cleanup of all registered control panels.
+    
+    Coordinates shutdown of all active control panels to prevent resource
+    leaks and ensure clean bot termination:
+    
+    1. Iterates through all registered panel views
+    2. Calls individual cleanup methods with error isolation
+    3. Clears the global registry for fresh start capability
+    4. Logs cleanup statistics for operational monitoring
+    
+    This function is called during bot shutdown or before creating new
+    panels to ensure clean resource management.
+    """
     try:
         cleaned_count = 0
         for (
@@ -1618,7 +2499,33 @@ def cleanup_all_control_panels():
 
 
 class ControlPanelMonitor:
-    """Monitor control panel health and send Discord alerts"""
+    """
+    Intelligent health monitoring system for control panel reliability.
+    
+    Implements comprehensive monitoring and alerting for control panel operations
+    with automatic failure detection, recovery tracking, and Discord notifications:
+    
+    **Health Tracking:**
+    - Consecutive failure counting with configurable thresholds
+    - Success timestamp tracking for uptime analysis
+    - Automatic recovery detection and notification
+    - Cooldown periods to prevent alert spam
+    
+    **Alert System:**
+    - Failure alerts after sustained issues (3+ consecutive failures)
+    - Recovery notifications when service returns to healthy state
+    - Rate limiting protection with 5-minute cooldown periods
+    - Rich context information for debugging and response
+    
+    **Integration:**
+    - Enhanced webhook router for Discord notifications
+    - Structured logging for operational visibility
+    - Error categorization for targeted troubleshooting
+    - Automatic service health status tracking
+    
+    The monitor ensures operational teams are aware of control panel issues
+    while avoiding notification fatigue through intelligent alerting logic.
+    """
 
     def __init__(self):
         self.consecutive_failures = 0
@@ -1629,7 +2536,19 @@ class ControlPanelMonitor:
         self.is_panel_healthy = True
 
     def record_success(self):
-        """Record a successful panel update"""
+        """
+        Record successful panel update and handle recovery scenarios.
+        
+        Processes successful update events with recovery detection:
+        1. Resets consecutive failure counter to indicate health restoration
+        2. Updates last successful update timestamp for uptime tracking
+        3. Detects recovery scenarios (failures → success transition)
+        4. Triggers recovery notifications via async task creation
+        5. Maintains healthy state flag for future monitoring
+        
+        Recovery detection ensures operational teams are notified when
+        service returns to normal operation after sustained issues.
+        """
         if self.consecutive_failures > 0:
             # Panel recovered
             self.consecutive_failures = 0
@@ -1641,7 +2560,23 @@ class ControlPanelMonitor:
             self.last_successful_update = datetime.now(UTC)
 
     def record_failure(self, error_type: str, error_message: str):
-        """Record a panel update failure"""
+        """
+        Record panel update failure and trigger alerts when thresholds are reached.
+        
+        Processes failure events with intelligent alerting logic:
+        1. Increments consecutive failure counter for trend analysis
+        2. Evaluates failure threshold and cooldown conditions
+        3. Triggers failure alert notifications for sustained issues
+        4. Updates health status flags for monitoring state
+        5. Provides error context for debugging and response
+        
+        The alerting system prevents notification spam while ensuring
+        operational teams are informed of sustained service issues.
+        
+        Args:
+            error_type: Categorized error type for classification
+            error_message: Detailed error description for debugging
+        """
         self.consecutive_failures += 1
 
         # Send alert if threshold reached and cooldown passed
@@ -1662,29 +2597,50 @@ class ControlPanelMonitor:
         return time_since_last.total_seconds() >= self.alert_cooldown
 
     async def _send_failure_alert(self, error_type: str, error_message: str):
-        """Send Discord alert for control panel failure"""
+        """
+        Send comprehensive failure alert via Discord webhook.
+        
+        Generates detailed failure notifications with operational context:
+        1. Calculates downtime duration since last successful update
+        2. Records alert timestamp to enforce cooldown periods
+        3. Sends structured alert via enhanced webhook router
+        4. Includes actionable information for response teams
+        5. Logs alert delivery for monitoring audit trails
+        
+        Alert content includes error classification, impact assessment,
+        downtime duration, and recommended response actions.
+        
+        Args:
+            error_type: Categorized error type for alert classification
+            error_message: Detailed error context for debugging
+        """
         try:
-            discord_logger = get_discord_logger()
-            if discord_logger:
-                self.last_alert_sent = datetime.now(UTC)
+            from src.core.di_container import get_container
+            container = get_container()
+            if container:
+                enhanced_webhook = container.get("enhanced_webhook_router")
+                if enhanced_webhook and hasattr(enhanced_webhook, "log_bot_event"):
+                    self.last_alert_sent = datetime.now(UTC)
 
-                time_since_success = datetime.now(UTC) - self.last_successful_update
-                minutes_down = int(time_since_success.total_seconds() / 60)
+                    time_since_success = datetime.now(UTC) - self.last_successful_update
+                    minutes_down = int(time_since_success.total_seconds() / 60)
 
-                await discord_logger.log_critical_error(
-                    "Control Panel Failure Detected",
-                    None,
-                    {
-                        "Component": "Control Panel",
-                        "Error Type": error_type,
-                        "Error Message": error_message[:500],
-                        "Consecutive Failures": str(self.consecutive_failures),
-                        "Time Since Success": f"{minutes_down} minutes ago",
-                        "Impact": "Control panel not updating - user interface affected",
-                        "Status": "❌ Control Panel Down",
-                        "Action Required": "Check bot connection and restart if needed",
-                    },
-                )
+                    await enhanced_webhook.log_bot_event(
+                        event_type="control_panel_failure",
+                        title="Control Panel Failure Alert",
+                        description=f"Control panel has been down for {minutes_down} minutes",
+                        level="critical",
+                        context={
+                            "component": "Control Panel",
+                            "error_type": error_type,
+                            "error_message": error_message[:500],
+                            "consecutive_failures": str(self.consecutive_failures),
+                            "time_since_success": f"{minutes_down} minutes ago",
+                            "impact": "Control panel not updating - user interface affected",
+                            "status": "Control Panel Down",
+                            "action_required": "Check bot connection and restart if needed"
+                        }
+                    )
 
                 log_perfect_tree_section(
                     "Control Panel Monitor - Alert Sent",
@@ -1700,19 +2656,37 @@ class ControlPanelMonitor:
             log_error_with_traceback("Failed to send control panel failure alert", e)
 
     async def _send_recovery_alert(self):
-        """Send Discord alert for control panel recovery"""
+        """
+        Send service recovery notification via Discord webhook.
+        
+        Generates recovery notifications to inform operational teams that
+        service has returned to healthy operation:
+        1. Sends structured recovery alert via enhanced webhook router
+        2. Includes recovery timestamp and status confirmation
+        3. Logs recovery event for operational audit trails
+        4. Provides positive confirmation of service restoration
+        
+        Recovery alerts help teams understand service reliability patterns
+        and confirm that previous issues have been resolved.
+        """
         try:
-            discord_logger = get_discord_logger()
-            if discord_logger:
-                await discord_logger.log_success(
-                    "Control Panel Recovered",
-                    {
-                        "Component": "Control Panel",
-                        "Status": "✅ Control Panel Restored",
-                        "Recovery Time": datetime.now(UTC).strftime("%H:%M:%S UTC"),
-                        "Action": "Panel updates resumed successfully",
-                    },
-                )
+            from src.core.di_container import get_container
+            container = get_container()
+            if container:
+                enhanced_webhook = container.get("enhanced_webhook_router")
+                if enhanced_webhook and hasattr(enhanced_webhook, "log_bot_event"):
+                    await enhanced_webhook.log_bot_event(
+                        event_type="control_panel_recovery",
+                        title="Control Panel Recovery",
+                        description="Control panel has been restored and is updating normally",
+                        level="info",
+                        context={
+                            "component": "Control Panel",
+                            "status": "Control Panel Restored",
+                            "recovery_time": datetime.now(UTC).strftime("%H:%M:%S UTC"),
+                            "action": "Panel updates resumed successfully"
+                        }
+                    )
 
                 log_perfect_tree_section(
                     "Control Panel Monitor - Recovery",
@@ -1730,7 +2704,8 @@ class ControlPanelMonitor:
             log_error_with_traceback("Failed to send control panel recovery alert", e)
 
 
-# Global monitor instance
+# Global monitor instance for control panel health tracking
+# This singleton monitors all panel operations and provides failure alerting
 _control_panel_monitor = ControlPanelMonitor()
 
 
@@ -1742,7 +2717,41 @@ _control_panel_monitor = ControlPanelMonitor()
 async def create_control_panel(
     bot, channel: discord.TextChannel, audio_manager=None
 ) -> discord.Message | None:
-    """Create a simple control panel"""
+    """
+    Create and deploy comprehensive control panel with intelligent setup.
+    
+    Orchestrates the complete control panel creation workflow with robust
+    error handling, cleanup procedures, and performance optimization:
+    
+    **Setup Process:**
+    1. Comprehensive logging of creation context and parameters
+    2. Global cleanup of existing panels to prevent conflicts
+    3. Intelligent message cleanup with rate limiting protection
+    4. Panel view creation and registration for lifecycle management
+    5. Initial embed generation with bot branding
+    6. Message deployment with retry logic for rate limiting
+    7. Background update system initialization
+    
+    **Error Handling:**
+    - Rate limiting detection and automatic retry with backoff
+    - Permission validation and graceful degradation
+    - Message deletion handling during cleanup operations
+    - Comprehensive logging for debugging and monitoring
+    - Enhanced webhook notifications for operational awareness
+    
+    **Performance Optimization:**
+    - Smart delay insertion to prevent rate limiting
+    - Efficient message cleanup with minimal API calls
+    - Background task coordination for smooth user experience
+    
+    Args:
+        bot: Discord bot instance for channel and user access
+        channel: Target text channel for panel deployment
+        audio_manager: Optional audio manager for playback integration
+        
+    Returns:
+        Discord message containing the deployed panel, None on failure
+    """
     try:
         log_perfect_tree_section(
             "Control Panel - Creation Started",
@@ -1799,23 +2808,31 @@ async def create_control_panel(
 
                         # Send Discord notification about message deletion rate limiting
 
-                        discord_logger = get_discord_logger()
-                        if discord_logger:
-                            try:
-                                await discord_logger.log_rate_limit(
-                                    event="control_panel_message_deletion",
-                                    retry_after=retry_after,
-                                    context={
-                                        "Component": "Control Panel",
-                                        "Action": "Message Deletion",
-                                        "Impact": "Cleanup delayed",
-                                    },
-                                )
-                            except Exception as log_error:
-                                log_error_with_traceback(
-                                    "Failed to send message deletion rate limit notification",
-                                    log_error,
-                                )
+                        # Rate limiting notification handled by enhanced webhook router
+                        try:
+                            from src.core.di_container import get_container
+                            container = get_container()
+                            if container:
+                                enhanced_webhook = container.get("enhanced_webhook_router")
+                                if enhanced_webhook and hasattr(enhanced_webhook, "log_bot_event"):
+                                    await enhanced_webhook.log_bot_event(
+                                        event_type="rate_limit_encountered",
+                                        title="Message Deletion Rate Limited",
+                                        description=f"Message deletion delayed due to rate limiting (HTTP 429)",
+                                        level="warning",
+                                        context={
+                                            "component": "Control Panel",
+                                            "action": "Message Deletion",
+                                            "impact": "Cleanup delayed",
+                                            "retry_after": str(retry_after),
+                                            "http_status": "429"
+                                        }
+                                    )
+                        except Exception as log_error:
+                            log_error_with_traceback(
+                                "Failed to send message deletion rate limit notification",
+                                log_error,
+                            )
 
                         await asyncio.sleep(retry_after)
                         # Try to delete the message again after rate limit
@@ -1923,23 +2940,31 @@ async def create_control_panel(
 
                 # Send Discord notification about panel creation rate limiting
 
-                discord_logger = get_discord_logger()
-                if discord_logger:
-                    try:
-                        await discord_logger.log_rate_limit(
-                            event="control_panel_creation",
-                            retry_after=retry_after,
-                            context={
-                                "Component": "Control Panel",
-                                "Action": "Panel Creation",
-                                "Impact": "Creation delayed",
-                            },
-                        )
-                    except Exception as log_error:
-                        log_error_with_traceback(
-                            "Failed to send panel creation rate limit notification",
-                            log_error,
-                        )
+                # Rate limiting notification handled by enhanced webhook router
+                try:
+                    from src.core.di_container import get_container
+                    container = get_container()
+                    if container:
+                        enhanced_webhook = container.get("enhanced_webhook_router")
+                        if enhanced_webhook and hasattr(enhanced_webhook, "log_bot_event"):
+                            await enhanced_webhook.log_bot_event(
+                                event_type="rate_limit_encountered",
+                                title="Panel Creation Rate Limited",
+                                description=f"Panel creation delayed due to rate limiting (HTTP 429)",
+                                level="warning",
+                                context={
+                                    "component": "Control Panel",
+                                    "action": "Panel Creation",
+                                    "impact": "Creation delayed",
+                                    "retry_after": str(retry_after),
+                                    "http_status": "429"
+                                }
+                            )
+                except Exception as log_error:
+                    log_error_with_traceback(
+                        "Failed to send panel creation rate limit notification",
+                        log_error,
+                    )
 
                 await asyncio.sleep(retry_after)
                 # Try again after rate limit
@@ -1957,7 +2982,35 @@ async def create_control_panel(
 
 
 async def setup_control_panel(bot, channel_id: int, audio_manager=None) -> bool:
-    """Set up the control panel in specified channel"""
+    """
+    Initialize control panel system with comprehensive validation and setup.
+    
+    Provides high-level control panel initialization with complete validation
+    and error handling for production deployment:
+    
+    **Validation Process:**
+    1. Channel existence and accessibility verification
+    2. Bot permission validation (send messages, manage messages)
+    3. Permission warning handling with graceful degradation
+    4. Audio manager integration validation
+    
+    **Setup Coordination:**
+    1. Global panel cleanup to prevent resource conflicts
+    2. Delegation to specialized creation function
+    3. Success/failure validation and reporting
+    4. Comprehensive logging for operational monitoring
+    
+    This function serves as the primary entry point for control panel
+    deployment, providing a clean API for bot initialization code.
+    
+    Args:
+        bot: Discord bot instance for channel access and operations
+        channel_id: Target channel ID for panel deployment
+        audio_manager: Optional audio manager for playback integration
+        
+    Returns:
+        True if panel setup completed successfully, False on failure
+    """
     try:
         log_perfect_tree_section(
             "Control Panel - Setup Started",

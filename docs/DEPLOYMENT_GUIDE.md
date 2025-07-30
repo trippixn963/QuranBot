@@ -47,7 +47,7 @@ cd /opt/QuranBot
 
 ```bash
 # Clone the latest code
-git clone https://github.com/trippixn963/QuranBot.git .
+git clone https://github.com/your-username/QuranBot.git .
 
 # Verify modernized files exist
 ls -la main_modernized.py src/core/ src/services/
@@ -124,7 +124,7 @@ LOG_LEVEL=INFO
 USE_WEBHOOK_LOGGING=true
 DISCORD_WEBHOOK_URL=YOUR_WEBHOOK_URL
 
-# VPS Configuration
+# VPS Configuration (if using VPS deployment)
 VPS_HOST=root@YOUR_VPS_IP
 ```
 
@@ -432,7 +432,7 @@ sudo systemctl stop quranbot
 
 ### **Contact Information**
 
-- **GitHub Issues**: [Report problems](https://github.com/trippixn963/QuranBot/issues)
+- **GitHub Issues**: [Report problems](https://github.com/your-username/QuranBot/issues)
 - **Documentation**: [Full documentation](../docs/)
 - **Community**: Discord support server
 

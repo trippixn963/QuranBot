@@ -1,0 +1,30 @@
+# =============================================================================
+# GitHub Sponsors Configuration for QuranBot
+# =============================================================================
+# Supporting the development and maintenance of QuranBot for the Islamic community
+# =============================================================================
+
+# These are supported funding model platforms
+
+# GitHub Sponsors (if you have GitHub Sponsors enabled)
+# github: your-github-username
+
+# OpenCollective
+# open_collective: quranbot
+
+# Ko-fi
+# ko_fi: quranbot
+
+# Tidelift
+# tidelift: npm/quranbot
+
+# Community Driven Project
+# This is an open-source project created to serve the Islamic community.
+# Financial support helps maintain servers, improve features, and ensure
+# continuous development.
+
+# Custom funding links (you can add your preferred donation methods)
+custom: 
+  - "https://discord.gg/syria"  # Join our community
+  # - "https://paypal.me/your-paypal"
+  # - "https://buymeacoffee.com/your-handle"

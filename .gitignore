@@ -1,9 +1,8 @@
 # =============================================================================
-# QuranBot .gitignore - Archived Project (No Further Development)
+# QuranBot .gitignore - Open Source Project
 # =============================================================================
-# Comprehensive exclusions for security and cleanliness
-# Project is now archived - these patterns preserve security and prevent
-# accidental commits of sensitive data or generated files.
+# Comprehensive exclusions for security, performance, and clean repository
+# Ensures only necessary source code and documentation are committed
 # =============================================================================
 
 # CRITICAL SECURITY: Environment and Configuration Files
@@ -52,8 +51,7 @@ emergency_bot_stats_*
 *.rar
 *.7z
 
-# Data Files (contain user-specific information)
-data/
+# Runtime Data Files (contain user-specific information)
 user_data/
 *.sqlite
 *.db
@@ -61,6 +59,11 @@ playback_state.json
 bot_stats.json
 listening_stats.json
 *.json.backup
+
+# Keep essential data files for open source
+!data/complete_quiz_questions.json
+!data/daily_verses_pool.json
+!data/bilingual_quiz_questions.json
 
 # Python
 __pycache__/
@@ -109,18 +112,21 @@ nohup.out
 # VPS Management - Personal deployment files (not part of public project)
 vps/
 
-# Audio Files (too large for git)
-audio/
+# Audio Files (too large for git, but keep example structure)
+audio/*
 *.mp3
 *.wav
 *.ogg
 *.m4a
 
+# Keep audio directory structure with README
+!audio/
+!audio/README.md
+
 # Development Files (keep private)
-VPS_DEPLOYMENT_GUIDE.md
-docs/DEVELOPMENT_README.md
 development_notes.md
 internal_docs/
+personal_notes.md
 
 # Temporary Files
 *.tmp
@@ -205,9 +211,9 @@ Icon?
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
 
-# Archived Project Specific
+# Open Source Project Specific
 # These patterns prevent accidentally committing files that shouldn't be tracked
-# in an archived project
+# in an open source project
 *.draft
 *.wip
 *.temp.*
@@ -217,6 +223,22 @@ test_*_local.py
 local_*
 personal_*
 
+# Generated Documentation and Reports
+README_OPENSOURCE.md
+README_ENHANCED.md
+*.report.md
+coverage-report.html
+security-report.json
+bandit-report.json
+
+# Node.js (for any future web dashboard)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
 # =============================================================================
-# End of .gitignore for Archived QuranBot Project
+# End of .gitignore for Open Source QuranBot Project
 # =============================================================================

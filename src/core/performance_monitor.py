@@ -207,7 +207,7 @@ class PerformanceMonitor:
         self,
         container: DIContainer,
         logger: StructuredLogger | None = None,
-        collection_interval: int = 30,
+        collection_interval: int = 300,  # 5 minutes instead of 30 seconds
         enable_detailed_profiling: bool = False,
     ):
         """Initialize performance monitor"""
@@ -666,6 +666,9 @@ class PerformanceMonitor:
                 # Update metric series
                 await self._update_metric_series()
 
+                # Send performance metrics to webhook (every 5 minutes)
+                await self._send_performance_webhook()
+
             except asyncio.CancelledError:
                 break
             except Exception as e:
@@ -993,6 +996,68 @@ class PerformanceMonitor:
                     self._operation_timers[op_name] = self._operation_timers[op_name][
                         -1000:
                     ]
+
+    async def _send_performance_webhook(self) -> None:
+        """Send performance metrics to webhook system"""
+        try:
+            # Get webhook router from container
+            webhook_router = self._container.get("enhanced_webhook_router")
+            if not webhook_router or not hasattr(webhook_router, "log_performance_visual"):
+                return
+
+            # Get current metrics
+            cpu_percent = self._system_metrics.cpu_percent
+            memory_percent = self._system_metrics.memory_percent
+            latency_ms = self._app_metrics.discord_api_latency_ms
+            cache_hit_rate = self._app_metrics.cache_hit_rate
+
+            # Get historical data for trends
+            cpu_series = self._metrics.get("cpu_percent")
+            memory_series = self._metrics.get("memory_percent")
+            
+            cpu_history = None
+            memory_history = None
+            
+            if cpu_series:
+                cpu_history = [mv.value for mv in list(cpu_series.values)[-20:]]
+            if memory_series:
+                memory_history = [mv.value for mv in list(memory_series.values)[-20:]]
+
+            # Get bot's profile picture URL
+            bot_avatar_url = None
+            try:
+                bot = self._container.get("bot")
+                if bot and bot.user and bot.user.avatar:
+                    bot_avatar_url = str(bot.user.avatar.url)
+            except Exception as e:
+                await self._logger.debug("Could not get bot avatar", {"error": str(e)})
+
+            # Send to webhook with bot avatar as thumbnail
+            await webhook_router.log_performance_visual(
+                cpu_percent=cpu_percent,
+                memory_percent=memory_percent,
+                latency_ms=latency_ms,
+                cache_hit_rate=cache_hit_rate,
+                cpu_history=cpu_history,
+                memory_history=memory_history,
+                bot_avatar_url=bot_avatar_url,
+            )
+
+            await self._logger.debug(
+                "Performance metrics sent to webhook",
+                {
+                    "cpu": f"{cpu_percent:.1f}%",
+                    "memory": f"{memory_percent:.1f}%",
+                    "latency": f"{latency_ms:.1f}ms",
+                    "cache_hits": f"{cache_hit_rate:.1f}%",
+                    "bot_avatar": bot_avatar_url is not None,
+                }
+            )
+
+        except Exception as e:
+            await self._logger.warning(
+                "Failed to send performance webhook", {"error": str(e)}
+            )
 
     async def _export_performance_data(self) -> None:
         """Export performance data to files"""

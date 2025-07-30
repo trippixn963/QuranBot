@@ -12,7 +12,6 @@ from src.config import get_config_service
 from src.core.exceptions import DiscordAPIError, ServiceError, handle_errors
 from src.core.security import rate_limit
 from src.core.structured_logger import StructuredLogger
-from src.core.webhook_logger import ModernWebhookLogger
 
 # Import tree logging functions
 from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
@@ -114,27 +113,26 @@ class CreditsCog(commands.Cog):
             # Send the embed
             await interaction.response.send_message(embed=embed, ephemeral=False)
 
-            # Log credits command usage via webhook
+            # Log credits command usage via enhanced webhook router first
             try:
                 if self.container:
-                    webhook_logger = self.container.get(ModernWebhookLogger)
-                    if webhook_logger and webhook_logger.initialized:
-                        await webhook_logger.log_quran_command_usage(
-                            command_name="credits",
-                            user_name=interaction.user.display_name,
-                            user_id=interaction.user.id,
-                            user_avatar=(
-                                interaction.user.display_avatar.url
-                                if interaction.user.display_avatar
-                                else None
-                            ),
-                            channel_name=(
-                                interaction.channel.name
-                                if hasattr(interaction.channel, "name")
-                                else "Direct Message"
-                            ),
-                            details="Bot information and credits displayed",
-                            success=True,
+                    enhanced_webhook = self.container.get("enhanced_webhook_router")
+                    if enhanced_webhook and hasattr(enhanced_webhook, "log_quran_command_usage"):
+                        await enhanced_webhook.log_quran_command_usage(
+                            admin_name=interaction.user.display_name,
+                            admin_id=interaction.user.id,
+                            command_name="/credits",
+                            command_details={
+                                "bot_version": __version__,
+                                "channel": (
+                                    f"#{interaction.channel.name}"
+                                    if hasattr(interaction.channel, "name")
+                                    else "Direct Message"
+                                ),
+                                "command_type": "Bot Information",
+                                "github_repo": GITHUB_REPO_URL
+                            },
+                            admin_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None
                         )
             except Exception as webhook_error:
                 await self.logger.warning(
