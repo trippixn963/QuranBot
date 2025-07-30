@@ -18,11 +18,11 @@ Features:
 
 import asyncio
 import os
-from pathlib import Path
 import signal
 import sys
 import time
 import traceback
+from pathlib import Path
 
 import psutil
 
@@ -38,7 +38,7 @@ from discord.ext import commands
 from src.commands import load_commands
 
 # Import configuration management
-from src.config import BotConfig, ConfigService
+from src.config import QuranBotConfig
 from src.core.cache_service import CacheService
 
 # Import core modernized services
@@ -48,16 +48,16 @@ from src.core.performance_monitor import PerformanceMonitor
 from src.core.resource_manager import ResourceManager
 from src.core.security import RateLimiter, SecurityService
 from src.core.webhook_factory import create_webhook_service
-from src.core.webhook_utils import ModernWebhookLogger
+from src.core.webhook_logger import ModernWebhookLogger
 
 # Import data models
 from src.data.models import PlaybackMode
 
 # Import modern services
 from src.services.audio_service import AudioService
-from src.services.metadata_cache import MetadataCache
-from src.services.state_service import StateService
 from src.services.data_manager import HybridDataManager
+from src.services.metadata_cache import MetadataCache
+from src.services.state_service import SQLiteStateService
 from src.utils.control_panel import setup_control_panel
 from src.utils.presence import RichPresenceManager
 from src.utils.surah_utils import get_surah_info
@@ -787,7 +787,7 @@ class ModernizedQuranBot:
             data_manager = HybridDataManager(
                 data_dir=project_root / "data",
                 logger=self.logger,
-                webhook_logger=webhook_logger
+                webhook_logger=webhook_logger,
             )
             self.container.register_singleton(HybridDataManager, data_manager)
             await data_manager.initialize()

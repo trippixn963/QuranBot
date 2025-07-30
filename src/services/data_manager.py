@@ -246,7 +246,9 @@ class HybridDataManager:
         self.json_manager = JSONContentManager(logger)
         self.backup_manager = DataBackupManager(logger)
         self.sync_interval = 300  # 5 minutes
+        self.backup_interval = 3600  # 1 hour - automatic backups
         self._sync_task = None
+        self._backup_task = None
 
     async def initialize(self) -> None:
         """Initialize the hybrid data manager."""
@@ -254,6 +256,9 @@ class HybridDataManager:
 
         # Start sync task
         self._sync_task = asyncio.create_task(self._sync_loop())
+
+        # Start automatic backup task
+        self._backup_task = asyncio.create_task(self._backup_loop())
 
         await self.logger.info("Hybrid data manager initialized")
 
@@ -263,6 +268,13 @@ class HybridDataManager:
             self._sync_task.cancel()
             try:
                 await self._sync_task
+            except asyncio.CancelledError:
+                pass
+
+        if self._backup_task:
+            self._backup_task.cancel()
+            try:
+                await self._backup_task
             except asyncio.CancelledError:
                 pass
 
@@ -292,6 +304,29 @@ class HybridDataManager:
             except Exception as e:
                 await self.logger.error("Sync loop error", {"error": str(e)})
                 await asyncio.sleep(60)  # Wait before retrying
+
+    async def _backup_loop(self) -> None:
+        """Automatic backup loop."""
+        while True:
+            try:
+                await asyncio.sleep(self.backup_interval)
+
+                await self.logger.info("Starting automatic backup")
+                backup_path = await self.create_backup()
+
+                if backup_path:
+                    await self.logger.info(
+                        "Automatic backup completed successfully",
+                        {"backup_path": str(backup_path)},
+                    )
+                else:
+                    await self.logger.error("Automatic backup failed")
+
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                await self.logger.error("Backup loop error", {"error": str(e)})
+                await asyncio.sleep(300)  # Wait 5 minutes before retrying
 
     async def _sync_json_to_sqlite(self, content_type: str) -> None:
         """Sync JSON content to SQLite for performance."""
