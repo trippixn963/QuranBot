@@ -273,9 +273,9 @@ class EnhancedWebhookRouter:
                     self._webhook_loggers[channel] = None
 
             # Initialize fallback logger if legacy webhook URL is available
-            if self.config.DISCORD_WEBHOOK_URL:
+            if self.config.discord_webhook_url:
                 fallback_config = WebhookConfig(
-                    webhook_url=self.config.DISCORD_WEBHOOK_URL,
+                    webhook_url=self.config.discord_webhook_url,
                     owner_user_id=self.config.developer_id,
                     timezone="US/Eastern",
                 )
