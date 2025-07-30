@@ -2,20 +2,20 @@
 
 <div align="center">
 
-[![CI/CD Pipeline](https://github.com/your-username/QuranBot/workflows/🕌%20QuranBot%20CI/CD%20Pipeline/badge.svg)](https://github.com/your-username/QuranBot/actions)
-[![codecov](https://codecov.io/gh/your-username/QuranBot/branch/main/graph/badge.svg)](https://codecov.io/gh/your-username/QuranBot)
-[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=your-username_QuranBot&metric=security_rating)](https://sonarcloud.io/dashboard?id=your-username_QuranBot)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=your-username_QuranBot&metric=alert_status)](https://sonarcloud.io/dashboard?id=your-username_QuranBot)
+[![CI/CD Pipeline](https://github.com/trippixn963/QuranBot/workflows/🕌%20QuranBot%20CI/CD%20Pipeline/badge.svg)](https://github.com/trippixn963/QuranBot/actions)
+[![codecov](https://codecov.io/gh/trippixn963/QuranBot/branch/main/graph/badge.svg)](https://codecov.io/gh/trippixn963/QuranBot)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=trippixn963_QuranBot&metric=security_rating)](https://sonarcloud.io/dashboard?id=trippixn963_QuranBot)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=trippixn963_QuranBot&metric=alert_status)](https://sonarcloud.io/dashboard?id=trippixn963_QuranBot)
 
 [![Python](https://img.shields.io/badge/Python-3.11+-3776ab.svg?style=flat&logo=python&logoColor=white)](https://python.org)
 [![Discord.py](https://img.shields.io/badge/Discord.py-2.4+-5865f2.svg?style=flat&logo=discord&logoColor=white)](https://discordpy.readthedocs.io/)
 [![License](https://img.shields.io/badge/License-MIT-00a2ed.svg?style=flat)](LICENSE)
 [![Discord](https://img.shields.io/discord/YOUR_SERVER_ID?color=7289da&label=Discord&logo=discord&logoColor=white)](https://discord.gg/syria)
 
-![GitHub Stars](https://img.shields.io/github/stars/your-username/QuranBot?style=social)
-![GitHub Forks](https://img.shields.io/github/forks/your-username/QuranBot?style=social)
-![GitHub Issues](https://img.shields.io/github/issues/your-username/QuranBot)
-![GitHub Pull Requests](https://img.shields.io/github/issues-pr/your-username/QuranBot)
+![GitHub Stars](https://img.shields.io/github/stars/trippixn963/QuranBot?style=social)
+![GitHub Forks](https://img.shields.io/github/forks/trippixn963/QuranBot?style=social)
+![GitHub Issues](https://img.shields.io/github/issues/trippixn963/QuranBot)
+![GitHub Pull Requests](https://img.shields.io/github/issues-pr/trippixn963/QuranBot)
 
 **🎯 A sophisticated 24/7 Islamic Discord bot with continuous Quran recitation, interactive learning, and comprehensive community features**
 
@@ -102,7 +102,7 @@
 ### **⚡ Option 1: Docker (Recommended)**
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-username/QuranBot.git
+git clone https://github.com/trippixn963/QuranBot.git
 cd QuranBot
 
 # 2. Configure your bot
@@ -157,10 +157,10 @@ poetry run python main.py
 | [📊 API Reference](docs/api/README.md) | Complete API documentation |
 
 ### **📋 Quick Links**
-- **🐛 Bug Reports**: [GitHub Issues](https://github.com/your-username/QuranBot/issues)
-- **💡 Feature Requests**: [GitHub Discussions](https://github.com/your-username/QuranBot/discussions)
+- **🐛 Bug Reports**: [GitHub Issues](https://github.com/trippixn963/QuranBot/issues)
+- **💡 Feature Requests**: [GitHub Discussions](https://github.com/trippixn963/QuranBot/discussions)
 - **❓ Get Help**: [Community Discord](https://discord.gg/syria)
-- **📖 Wiki**: [Project Wiki](https://github.com/your-username/QuranBot/wiki)
+- **📖 Wiki**: [Project Wiki](https://github.com/trippixn963/QuranBot/wiki)
 
 ## 🤝 **Community**
 
@@ -183,7 +183,7 @@ poetry run python main.py
 ### **🏆 Contributors**
 <div align="center">
 
-[![Contributors](https://contrib.rocks/image?repo=your-username/QuranBot)](https://github.com/your-username/QuranBot/graphs/contributors)
+[![Contributors](https://contrib.rocks/image?repo=trippixn963/QuranBot)](https://github.com/trippixn963/QuranBot/graphs/contributors)
 
 *Thank you to all our amazing contributors! 🙏*
 
@@ -212,7 +212,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### **⭐ Star this repository if QuranBot helps your community!**
 
-[![GitHub stars](https://img.shields.io/github/stars/your-username/QuranBot?style=social)](https://github.com/your-username/QuranBot/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/trippixn963/QuranBot?style=social)](https://github.com/trippixn963/QuranBot/stargazers)
 
 **Share with your community** • **Contribute code** • **Report issues** • **Join discussions**
 
@@ -228,7 +228,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **🕌 Serving the Islamic Community • 🤝 Bridging Communities • 💻 Built with Excellence**
 
-[![Made with ❤️](https://img.shields.io/badge/Made%20with-❤️-red.svg)](https://github.com/your-username/QuranBot)
+[![Made with ❤️](https://img.shields.io/badge/Made%20with-❤️-red.svg)](https://github.com/trippixn963/QuranBot)
 [![Built for 🕌](https://img.shields.io/badge/Built%20for-🕌%20Islamic%20Community-green.svg)](https://discord.gg/syria)
 
 </div>
