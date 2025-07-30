@@ -347,7 +347,7 @@ class WebhookFormatter:
             ),
             "timestamp": message.timestamp.isoformat(),
             "footer": {
-                "text": message.footer or f"QuranBot • {self._get_formatted_time()}"
+                "text": message.footer or self._get_formatted_time()
             },
         }
 
@@ -361,8 +361,11 @@ class WebhookFormatter:
             if message.author_url:
                 embed["author"]["url"] = message.author_url
 
-        # Add thumbnail (small image in top-right)
-        if message.thumbnail_url:
+        # Always add bot thumbnail if available
+        if self.bot and hasattr(self.bot, 'user') and self.bot.user and self.bot.user.avatar:
+            embed["thumbnail"] = {"url": self.bot.user.avatar.url}
+        elif message.thumbnail_url:
+            # Fallback to custom thumbnail if provided
             embed["thumbnail"] = {"url": message.thumbnail_url}
 
         # Add image (large image at bottom)

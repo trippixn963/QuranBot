@@ -2642,7 +2642,7 @@ async def quiz_scheduler_loop(bot, channel_id: int) -> None:
         "⏰",
     )
 
-    # Counter for statistics webhook (send every 10 cycles = ~5 minutes)
+    # Counter for statistics webhook (send every 120 cycles = ~1 hour)
     stats_counter = 0
 
     while True:
@@ -2650,9 +2650,9 @@ async def quiz_scheduler_loop(bot, channel_id: int) -> None:
             await asyncio.sleep(30)  # Check every 30 seconds
             await check_and_send_scheduled_question(bot, channel_id)
 
-            # Increment counter and send statistics webhook every 10 cycles
+            # Increment counter and send statistics webhook every 120 cycles
             stats_counter += 1
-            if stats_counter >= 10:
+            if stats_counter >= 120:
                 try:
                     # Set bot reference for username fetching
                     quiz_manager.bot = bot

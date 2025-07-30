@@ -34,8 +34,8 @@ class HeartbeatMonitor:
         self,
         logger: StructuredLogger,
         webhook_logger: ModernWebhookLogger,
-        heartbeat_interval_minutes: int = 30,
-        quick_check_interval_minutes: int = 5
+        heartbeat_interval_minutes: int = 60,
+        quick_check_interval_minutes: int = 60
     ):
         """
         Initialize heartbeat monitor.

@@ -57,7 +57,7 @@ class HealthMonitor:
         webhook_logger: ModernWebhookLogger = None,
         data_dir: Path = None,
         check_interval_minutes: int = 60,
-        alert_interval_minutes: int = 5,
+        alert_interval_minutes: int = 60,
     ):
         """
         Initialize health monitor.

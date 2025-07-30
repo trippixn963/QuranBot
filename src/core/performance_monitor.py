@@ -652,7 +652,7 @@ class PerformanceMonitor:
         """Background metrics collection loop"""
         while not self._shutdown_event.is_set():
             try:
-                await asyncio.sleep(self._collection_interval)
+                await asyncio.sleep(3600)  # 60 minutes
 
                 # Collect system metrics
                 await self._collect_system_metrics()
@@ -666,7 +666,7 @@ class PerformanceMonitor:
                 # Update metric series
                 await self._update_metric_series()
 
-                # Send performance metrics to webhook (every 5 minutes)
+                # Send performance metrics to webhook (every hour)
                 await self._send_performance_webhook()
 
             except asyncio.CancelledError:
@@ -678,7 +678,7 @@ class PerformanceMonitor:
         """Background performance analysis loop"""
         while not self._shutdown_event.is_set():
             try:
-                await asyncio.sleep(300)  # Run every 5 minutes
+                await asyncio.sleep(3600)  # Run every hour
 
                 # Analyze performance trends
                 await self._analyze_performance_trends()

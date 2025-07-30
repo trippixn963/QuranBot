@@ -545,7 +545,7 @@ class ModernizedQuranBot:
                 webhook_logger=webhook_logger,
                 data_dir=project_root / "data",
                 check_interval_minutes=60,  # Regular health reports every hour
-                alert_interval_minutes=5    # Critical alerts every 5 minutes
+                alert_interval_minutes=60    # Critical alerts every hour
             )
 
             await health_monitor.start_monitoring()
@@ -663,8 +663,8 @@ class ModernizedQuranBot:
                 heartbeat_monitor = HeartbeatMonitor(
                     logger=self.logger,
                     webhook_logger=webhook_logger,
-                    heartbeat_interval_minutes=30,  # Heartbeat every 30 minutes
-                    quick_check_interval_minutes=5  # Quick health checks every 5 minutes
+                    heartbeat_interval_minutes=60,  # Heartbeat every hour
+                    quick_check_interval_minutes=60  # Quick health checks every hour
                 )
 
                 await self.logger.info("DEBUG: Starting heartbeat monitor")

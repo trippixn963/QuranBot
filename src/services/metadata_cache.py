@@ -416,7 +416,7 @@ class MetadataCache:
         """Background task to clean up expired cache entries"""
         while True:
             try:
-                await asyncio.sleep(300)  # Run every 5 minutes
+                await asyncio.sleep(3600)  # Run every hour
 
                 async with self._access_lock:
                     # Find entries that haven't been accessed in a while
@@ -454,7 +454,7 @@ class MetadataCache:
         """Background task to persist cache to disk"""
         while True:
             try:
-                await asyncio.sleep(600)  # Save every 10 minutes
+                await asyncio.sleep(3600)  # Save every hour
                 await self._save_to_disk()
 
             except asyncio.CancelledError:

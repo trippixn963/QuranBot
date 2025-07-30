@@ -1252,8 +1252,8 @@ async def start_audio_monitoring_task(audio_manager):
                     else:
                         _audio_monitor._monitoring_cycles = 1
 
-                    # Log comprehensive status every 5 minutes (5 cycles)
-                    if _audio_monitor._monitoring_cycles % 5 == 0:
+                    # Log comprehensive status every hour (60 cycles)
+                    if _audio_monitor._monitoring_cycles % 60 == 0:
                         connection_status = (
                             "✅ Connected"
                             if (
