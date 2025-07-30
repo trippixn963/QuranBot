@@ -28,6 +28,9 @@ from src.core.health_monitor import HealthMonitor
 from src.core.logger import StructuredLogger
 from src.core.performance_monitor import PerformanceMonitor
 from src.core.resource_manager import ResourceManager
+from src.core.database import DatabaseManager
+from src.services.database_service import QuranBotDatabaseService
+from src.monitoring.bot_status_monitor import BotStatusMonitor
 from src.core.security import RateLimiter, SecurityService
 from src.core.webhook_factory import create_webhook_service
 from src.core.webhook_logger import LogLevel
@@ -210,6 +213,25 @@ class ModernizedQuranBot:
             rate_limiter=rate_limiter, logger=self.logger
         )
         self.container.register_singleton(SecurityService, security_factory)
+
+        # Database Services
+        log_status("Initializing database services", "🗄️")
+        data_dir = Path(self.config.data_directory or "data")
+        data_dir.mkdir(exist_ok=True)
+        
+        db_manager = DatabaseManager(
+            db_path=data_dir / "quranbot.db",
+            logger=self.logger,
+            max_pool_size=10
+        )
+        await db_manager.initialize()
+        self.container.register_singleton(DatabaseManager, db_manager)
+        
+        db_service = QuranBotDatabaseService(
+            db_manager=db_manager,
+            logger=self.logger
+        )
+        self.container.register_singleton(QuranBotDatabaseService, db_service)
 
         # Enhanced Webhook Service (if enabled)
         await self._initialize_webhook_service()

@@ -13,7 +13,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from src.config import get_config
-from src.core.webhook_logger import LogLevel
+
 from src.utils.quiz_manager import QuizView
 from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
 from src.monitoring.performance_decorators import track_command_performance
@@ -168,30 +168,7 @@ class QuestionCog(commands.Cog):
                 "🔓",
             )
             
-            # Log command usage to webhook
-            try:
-                from src.core.di_container import get_container
-                
-                container = get_container()
-                if container:
-                    webhook_router = container.get("webhook_router")
-                    if webhook_router:
-                        await webhook_router.log_command_event(
-                            event_type="question_command_used",
-                            title="❓ Question Command Used",
-                            description=f"**{interaction.user.display_name}** used the question command",
-                            level=LogLevel.USER,
-                            context={
-                                "user_id": interaction.user.id,
-                                "user_avatar_url": interaction.user.avatar.url if interaction.user.avatar else None,
-                                "channel_id": interaction.channel.id if interaction.channel else None,
-                                "guild_id": interaction.guild.id if interaction.guild else None,
-                                "command_name": "question",
-                                "permission_level": "admin",
-                            },
-                        )
-            except Exception as e:
-                log_error_with_traceback("Failed to log question command to webhook", e)
+
 
             # Get quiz manager
             quiz_manager = get_quiz_manager()
@@ -561,50 +538,7 @@ class QuestionCog(commands.Cog):
                     "🏆",
                 )
 
-                # Send success notification to enhanced webhook router first
-                try:
-                    from src.core.di_container import get_container
 
-                    container = get_container()
-                    if container:
-                        enhanced_webhook = container.get("webhook_router")
-                        if enhanced_webhook and hasattr(
-                            enhanced_webhook, "log_quiz_event"
-                        ):
-                            await enhanced_webhook.log_quiz_event(
-                                event_type="sent",
-                                user_name=interaction.user.display_name,
-                                user_id=interaction.user.id,
-                                question_text=question_data.get(
-                                    "question", "Unknown question"
-                                ),
-                                user_avatar_url=(
-                                    interaction.user.avatar.url
-                                    if interaction.user.avatar
-                                    else None
-                                ),
-                                quiz_details={
-                                    "question_category": question_data.get(
-                                        "category", "Unknown"
-                                    ),
-                                    "question_difficulty": question_data.get(
-                                        "difficulty", "Unknown"
-                                    ),
-                                    "question_id": str(
-                                        question_data.get("id", "Unknown")
-                                    ),
-                                    "channel": f"#{channel.name}",
-                                    "message_id": str(message.id),
-                                    "timer_duration": "60 seconds",
-                                    "quiz_type": "Manual Quiz",
-                                    "triggered_by": "admin_command",
-                                },
-                            )
-                except Exception as e:
-                    log_error_with_traceback(
-                        "Failed to log to enhanced webhook router", e
-                    )
-                    # No fallback - enhanced webhook router is the primary logging method
 
             except discord.Forbidden:
                 log_error_with_traceback(
