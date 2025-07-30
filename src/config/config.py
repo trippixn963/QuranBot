@@ -320,6 +320,12 @@ class QuranBotConfig(BaseSettings):
         alias="CACHE_ENABLE_PERSISTENCE",
     )
 
+    cache_enabled: bool = Field(
+        default=True,
+        description="Enable caching system",
+        alias="CACHE_ENABLED",
+    )
+
     # =============================================================================
     # LOGGING SETTINGS
     # =============================================================================
