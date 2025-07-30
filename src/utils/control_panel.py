@@ -18,6 +18,7 @@ from .tree_log import (
     log_perfect_tree_section,
     log_user_interaction,
 )
+from ..core.webhook_logger import LogLevel
 
 # =============================================================================
 # Configuration
@@ -135,6 +136,30 @@ class SurahSearchModal(Modal):
                 ],
                 "🔍",
             )
+            
+            # Log search to webhook
+            try:
+                from src.core.di_container import get_container
+                
+                container = get_container()
+                if container:
+                    webhook_router = container.get("webhook_router")
+                    if webhook_router:
+                        await webhook_router.log_user_event(
+                            event_type="control_panel_search",
+                            title="🔍 Control Panel Search",
+                            description=f"User {interaction.user.display_name} searched for '{query}'",
+                            level=LogLevel.INFO,
+                            context={
+                                "user_id": interaction.user.id,
+                                "user_name": interaction.user.display_name,
+                                "query": query,
+                                "results_count": len(results),
+                                "results": [f"{r.name_transliteration} (#{r.number})" for r in results[:5]],
+                            },
+                        )
+            except Exception as e:
+                log_error_with_traceback("Failed to log search to webhook", e)
 
             if not results:
                 log_perfect_tree_section(
