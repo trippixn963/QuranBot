@@ -310,10 +310,11 @@ class QuranBotMetrics:
             registry=self._registry
         )
         
-        await self._logger.info("Prometheus metrics initialized", context={
-            "total_metrics": len(self._metrics),
-            "registry": "custom"
-        })
+        if self._logger:
+            self._logger.info("Prometheus metrics initialized", context={
+                "total_metrics": len(self._metrics),
+                "registry": "custom"
+            })
     
     # === Metric Update Methods ===
     

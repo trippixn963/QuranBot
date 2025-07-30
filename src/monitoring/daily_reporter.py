@@ -16,11 +16,12 @@ class DailyHealthReporter:
     """Generate and send daily health reports for 24/7 VPS monitoring."""
 
     def __init__(
-        self, logger: StructuredLogger, webhook_router=None, system_monitor=None
+        self, logger: StructuredLogger, webhook_router=None, system_monitor=None, performance_monitor=None
     ):
         self.logger = logger
         self.webhook_router = webhook_router
         self.system_monitor = system_monitor
+        self.performance_monitor = performance_monitor
         self.reporting_active = False
         self.report_task = None
         self.last_report_time = 0

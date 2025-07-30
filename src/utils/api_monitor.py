@@ -170,6 +170,22 @@ class DiscordAPIMonitor:
                         rate_limit_limit = int(rate_limit_limit)
                     if rate_limit_reset_after:
                         rate_limit_reset_after = float(rate_limit_reset_after)
+                    
+                    # Record API rate limit in performance monitor
+                    try:
+                        from ..core.di_container import get_container
+                        container = get_container()
+                        if container:
+                            performance_monitor = container.get("performance_monitor")
+                            if performance_monitor and rate_limit_remaining is not None and rate_limit_limit is not None:
+                                await performance_monitor.record_api_rate_limit(
+                                    endpoint=route.path,
+                                    remaining=rate_limit_remaining,
+                                    limit=rate_limit_limit,
+                                    reset_after=rate_limit_reset_after or 0
+                                )
+                    except Exception:
+                        pass  # Don't let monitoring failures affect API calls
 
                 return response
 

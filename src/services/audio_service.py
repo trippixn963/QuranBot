@@ -42,6 +42,7 @@ from src.core.exceptions import (
     VoiceConnectionError,
 )
 from src.core.logger import StructuredLogger
+from src.core.webhook_logger import LogLevel
 from src.data.models import (
     AudioFileInfo,
     AudioServiceConfig,
@@ -359,6 +360,25 @@ class AudioService:
             self._current_state.voice_channel_id = channel_id
             self._current_state.guild_id = guild_id
             self._connection_attempts = 0
+            
+            # Log to webhook
+            try:
+                webhook_router = self._container.get("webhook_router")
+                if webhook_router:
+                    await webhook_router.log_audio_event(
+                        event_type="voice_connected",
+                        title="🎧 Voice Channel Connected",
+                        description=f"Successfully connected to voice channel",
+                        level=LogLevel.INFO,
+                        context={
+                            "channel_id": channel_id,
+                            "guild_id": guild_id,
+                            "connection_attempts": self._connection_attempts,
+                            "channel_name": channel.name if channel else "Unknown",
+                        },
+                    )
+            except Exception as e:
+                await self._logger.error("Failed to log voice connection to webhook", {"error": str(e)})
 
             await self._logger.info(
                 "Successfully connected to voice channel",
@@ -423,6 +443,25 @@ class AudioService:
             try:
                 await self._voice_client.disconnect(force=True)
                 await self._logger.info("Disconnected from voice channel")
+                
+                # Log to webhook
+                try:
+                    webhook_router = self._container.get("webhook_router")
+                    if webhook_router:
+                        await webhook_router.log_audio_event(
+                            event_type="voice_disconnected",
+                            title="🔌 Voice Channel Disconnected",
+                            description="Disconnected from voice channel",
+                            level=LogLevel.INFO,
+                            context={
+                                "channel_id": self._current_state.voice_channel_id,
+                                "guild_id": self._current_state.guild_id,
+                                "was_playing": self._current_state.is_playing,
+                            },
+                        )
+                except Exception as webhook_error:
+                    await self._logger.error("Failed to log voice disconnection to webhook", {"error": str(webhook_error)})
+                    
             except Exception as e:
                 await self._logger.warning(
                     "Error disconnecting from voice channel", {"error": str(e)}
@@ -483,6 +522,25 @@ class AudioService:
                 "resume_position": resume_position,
             },
         )
+        
+        # Log to webhook
+        try:
+            webhook_router = self._container.get("webhook_router")
+            if webhook_router:
+                await webhook_router.log_audio_event(
+                    event_type="playback_started",
+                    title="🎵 Audio Playback Started",
+                    description=f"Started playing Surah {self._current_state.current_position.surah_number} by {self._current_state.current_reciter}",
+                    level=LogLevel.INFO,
+                    context={
+                        "reciter": self._current_state.current_reciter,
+                        "surah_number": self._current_state.current_position.surah_number,
+                        "resume_position": resume_position,
+                        "playback_mode": self._current_state.playback_mode.value,
+                    },
+                )
+        except Exception as e:
+            await self._logger.error("Failed to log audio event to webhook", {"error": str(e)})
 
         return True
 
@@ -506,6 +564,24 @@ class AudioService:
         self._current_state.is_paused = False
 
         await self._logger.info("Stopped audio playback")
+        
+        # Log to webhook
+        try:
+            webhook_router = self._container.get("webhook_router")
+            if webhook_router:
+                await webhook_router.log_audio_event(
+                    event_type="playback_stopped",
+                    title="⏹️ Audio Playback Stopped",
+                    description="Audio playback has been stopped",
+                    level=LogLevel.INFO,
+                    context={
+                        "last_reciter": self._current_state.current_reciter,
+                        "last_surah": self._current_state.current_position.surah_number,
+                        "playback_duration": "N/A",  # Could be calculated if needed
+                    },
+                )
+        except Exception as e:
+            await self._logger.error("Failed to log audio stop event to webhook", {"error": str(e)})
 
     async def pause_playback(self) -> bool:
         """Disabled - 24/7 Quran bot should never be paused.

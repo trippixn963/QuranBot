@@ -1085,7 +1085,7 @@ class ModernizedQuranBot:
                         context={
                             "resource_check_interval": "2 minutes",
                             "daily_report_time": "9:00 AM UTC",
-                            "monitoring_features": "CPU, Memory, Disk, API Health",
+                            "monitoring_features": "CPU, Memory, Disk, Performance, API Health",
                         },
                     )
 

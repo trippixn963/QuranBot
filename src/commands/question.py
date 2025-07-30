@@ -13,8 +13,10 @@ from discord import app_commands
 from discord.ext import commands
 
 from src.config import get_config
+from src.core.webhook_logger import LogLevel
 from src.utils.quiz_manager import QuizView
 from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
+from src.monitoring.performance_decorators import track_command_performance
 
 # =============================================================================
 # Utility Functions
@@ -68,6 +70,7 @@ class QuestionCog(commands.Cog):
         name="question",
         description="Send an Islamic knowledge quiz manually and reset the timer (Admin only)",
     )
+    @track_command_performance("question_command")
     async def question(self, interaction: discord.Interaction):
         """
         Administrative command to manually trigger quiz delivery.
@@ -164,6 +167,31 @@ class QuestionCog(commands.Cog):
                 ],
                 "🔓",
             )
+            
+            # Log command usage to webhook
+            try:
+                from src.core.di_container import get_container
+                
+                container = get_container()
+                if container:
+                    webhook_router = container.get("webhook_router")
+                    if webhook_router:
+                        await webhook_router.log_command_event(
+                            event_type="question_command_used",
+                            title="❓ Question Command Used",
+                            description=f"**{interaction.user.display_name}** used the question command",
+                            level=LogLevel.USER,
+                            context={
+                                "user_id": interaction.user.id,
+                                "user_avatar_url": interaction.user.avatar.url if interaction.user.avatar else None,
+                                "channel_id": interaction.channel.id if interaction.channel else None,
+                                "guild_id": interaction.guild.id if interaction.guild else None,
+                                "command_name": "question",
+                                "permission_level": "admin",
+                            },
+                        )
+            except Exception as e:
+                log_error_with_traceback("Failed to log question command to webhook", e)
 
             # Get quiz manager
             quiz_manager = get_quiz_manager()

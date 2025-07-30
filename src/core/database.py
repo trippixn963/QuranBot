@@ -492,8 +492,19 @@ class DatabaseManager:
         Returns:
             Query results or None
         """
+        import hashlib
+        import time
+        
+        # Performance tracking
+        start_time = time.time()
+        query_hash = hashlib.md5(query.encode()).hexdigest()[:16]
+        query_type = query.strip().split()[0].upper() if query.strip() else "UNKNOWN"
+        success = True
+        error_message = None
+        rows_affected = 0
+        
         try:
-            return await asyncio.get_event_loop().run_in_executor(
+            result = await asyncio.get_event_loop().run_in_executor(
                 None,
                 self._execute_query_sync,
                 query,
@@ -501,11 +512,42 @@ class DatabaseManager:
                 fetch_one,
                 fetch_all,
             )
+            
+            # Count rows for performance metrics
+            if isinstance(result, list):
+                rows_affected = len(result)
+            elif result is not None:
+                rows_affected = 1
+                
+            return result
+            
         except Exception as e:
+            success = False
+            error_message = str(e)
             await self.logger.error(
                 "Database query failed", {"query": query, "error": str(e)}
             )
             raise DatabaseError(f"Query execution failed: {e}")
+            
+        finally:
+            # Record performance metrics
+            execution_time = time.time() - start_time
+            try:
+                from ..core.di_container import get_container
+                container = get_container()
+                if container:
+                    performance_monitor = container.get("performance_monitor")
+                    if performance_monitor:
+                        await performance_monitor.record_database_metric(
+                            query_type=query_type,
+                            query_hash=query_hash,
+                            execution_time=execution_time,
+                            success=success,
+                            error_message=error_message,
+                            rows_affected=rows_affected
+                        )
+            except Exception:
+                pass  # Don't let monitoring failures affect database operations
 
     def _execute_query_sync(
         self, query: str, params: tuple, fetch_one: bool, fetch_all: bool

@@ -201,6 +201,29 @@ async def main():
                 ("mode", "100% Automated + Interactive Commands"),
             ],
         )
+        
+        # Log startup to webhook
+        try:
+            from src.core.di_container import get_container
+            from src.core.webhook_logger import LogLevel
+            
+            container = get_container()
+            if container:
+                webhook_router = container.get("webhook_router")
+                if webhook_router:
+                    await webhook_router.log_bot_event(
+                        event_type="bot_startup",
+                        title="🚀 QuranBot Started",
+                        description="Bot has successfully started and is ready for operation",
+                        level=LogLevel.INFO,
+                        context={
+                            "run_id": run_id,
+                            "architecture": "Modular with Dependency Injection",
+                            "mode": "100% Automated + Interactive Commands",
+                        },
+                    )
+        except Exception as e:
+            log_error_with_traceback("Failed to log startup to webhook", e)
 
         # Check for existing instances and terminate them
         log_status("Checking for existing instances", "🔍")
@@ -234,6 +257,30 @@ async def main():
     except Exception as e:
         log_critical_error(f"Critical error in main: {e}")
         log_error_with_traceback("Main function error", e)
+        
+        # Log critical error to webhook
+        try:
+            from src.core.di_container import get_container
+            from src.core.webhook_logger import LogLevel
+            
+            container = get_container()
+            if container:
+                webhook_router = container.get("webhook_router")
+                if webhook_router:
+                    await webhook_router.log_bot_event(
+                        event_type="critical_error",
+                        title="💥 Critical Bot Error",
+                        description=f"Bot encountered a critical error: {str(e)}",
+                        level=LogLevel.CRITICAL,
+                        context={
+                            "error_type": type(e).__name__,
+                            "error_message": str(e),
+                            "run_id": run_id if 'run_id' in locals() else "unknown",
+                        },
+                    )
+        except Exception as webhook_error:
+            log_error_with_traceback("Failed to log critical error to webhook", webhook_error)
+            
         if bot_instance:
             await bot_instance.shutdown()
 

@@ -193,6 +193,31 @@ class VerseCog(commands.Cog):
                 ],
                 "🔓",
             )
+            
+            # Log command usage to webhook
+            try:
+                from src.core.di_container import get_container
+                
+                container = get_container()
+                if container:
+                    webhook_router = container.get("webhook_router")
+                    if webhook_router:
+                        await webhook_router.log_command_event(
+                            event_type="verse_command_used",
+                            title="📖 Verse Command Used",
+                            description=f"**{interaction.user.display_name}** used the verse command",
+                            level=LogLevel.USER,
+                            context={
+                                "user_id": interaction.user.id,
+                                "user_avatar_url": interaction.user.avatar.url if interaction.user.avatar else None,
+                                "channel_id": interaction.channel.id if interaction.channel else None,
+                                "guild_id": interaction.guild.id if interaction.guild else None,
+                                "command_name": "verse",
+                                "permission_level": "admin",
+                            },
+                        )
+            except Exception as e:
+                log_error_with_traceback("Failed to log verse command to webhook", e)
 
             # Send a quick acknowledgment to the user
             ack_embed = discord.Embed(
