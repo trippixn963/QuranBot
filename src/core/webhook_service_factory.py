@@ -37,19 +37,19 @@ class WebhookServiceFactory:
             EnhancedWebhookRouter if multi-channel webhooks are configured,
             ModernWebhookLogger for single-channel legacy mode, or None if disabled
         """
-        if not config.USE_WEBHOOK_LOGGING:
+        if not config.use_webhook_logging:
             await logger.info("Webhook logging is disabled")
             return None
         
         # Check if multi-channel webhooks are configured
         multi_channel_urls = [
-            config.WEBHOOK_BOT_STATUS,
-            config.WEBHOOK_QURAN_AUDIO,
-            config.WEBHOOK_COMMANDS_PANEL,
-            config.WEBHOOK_USER_ACTIVITY,
-            config.WEBHOOK_DATA_ANALYTICS,
-            config.WEBHOOK_ERRORS_ALERTS,
-            config.WEBHOOK_DAILY_REPORTS,
+            config.webhook_bot_status,
+            config.webhook_quran_audio,
+            config.webhook_commands_panel,
+            config.webhook_user_activity,
+            config.webhook_data_analytics,
+            config.webhook_errors_alerts,
+            config.webhook_daily_reports,
         ]
         
         has_multi_channel = any(url for url in multi_channel_urls)
@@ -72,13 +72,13 @@ class WebhookServiceFactory:
                 await logger.error("Failed to initialize enhanced webhook router")
                 return None
         
-        elif config.DISCORD_WEBHOOK_URL:
+        elif config.discord_webhook_url:
             # Create legacy single-channel logger
             await logger.info("Creating legacy single-channel webhook logger")
             
             webhook_config = WebhookConfig(
-                webhook_url=config.DISCORD_WEBHOOK_URL,
-                owner_user_id=config.DEVELOPER_ID,
+                webhook_url=config.discord_webhook_url,
+                owner_user_id=config.developer_id,
                 timezone="US/Eastern",
                 enable_pings=True,
             )
@@ -112,7 +112,7 @@ class WebhookServiceFactory:
         Returns:
             Dictionary with webhook service information
         """
-        if not config.USE_WEBHOOK_LOGGING:
+        if not config.use_webhook_logging:
             return {
                 "enabled": False,
                 "type": "disabled",
@@ -122,17 +122,17 @@ class WebhookServiceFactory:
         
         # Count configured webhook URLs
         multi_channel_urls = [
-            config.WEBHOOK_BOT_STATUS,
-            config.WEBHOOK_QURAN_AUDIO,
-            config.WEBHOOK_COMMANDS_PANEL,
-            config.WEBHOOK_USER_ACTIVITY,
-            config.WEBHOOK_DATA_ANALYTICS,
-            config.WEBHOOK_ERRORS_ALERTS,
-            config.WEBHOOK_DAILY_REPORTS,
+            config.webhook_bot_status,
+            config.webhook_quran_audio,
+            config.webhook_commands_panel,
+            config.webhook_user_activity,
+            config.webhook_data_analytics,
+            config.webhook_errors_alerts,
+            config.webhook_daily_reports,
         ]
         
         multi_channel_count = sum(1 for url in multi_channel_urls if url)
-        has_legacy_url = bool(config.DISCORD_WEBHOOK_URL)
+        has_legacy_url = bool(config.discord_webhook_url)
         
         if multi_channel_count > 0:
             service_type = "multi_channel"
@@ -152,13 +152,13 @@ class WebhookServiceFactory:
             "multi_channel_urls": multi_channel_count,
             "has_legacy_url": has_legacy_url,
             "channel_breakdown": {
-                "bot_status": bool(config.WEBHOOK_BOT_STATUS),
-                "quran_audio": bool(config.WEBHOOK_QURAN_AUDIO),
-                "commands_panel": bool(config.WEBHOOK_COMMANDS_PANEL),
-                "user_activity": bool(config.WEBHOOK_USER_ACTIVITY),
-                "data_analytics": bool(config.WEBHOOK_DATA_ANALYTICS),
-                "errors_alerts": bool(config.WEBHOOK_ERRORS_ALERTS),
-                "daily_reports": bool(config.WEBHOOK_DAILY_REPORTS),
+                            "bot_status": bool(config.webhook_bot_status),
+            "quran_audio": bool(config.webhook_quran_audio),
+            "commands_panel": bool(config.webhook_commands_panel),
+            "user_activity": bool(config.webhook_user_activity),
+            "data_analytics": bool(config.webhook_data_analytics),
+            "errors_alerts": bool(config.webhook_errors_alerts),
+            "daily_reports": bool(config.webhook_daily_reports),
                 "legacy": has_legacy_url,
             },
         }
