@@ -76,7 +76,7 @@ QuranBot 4.1.0 - Open Source Release
 
 📋 CONFIGURATION & SETUP IMPROVEMENTS:
 • Unified configuration system with environment variable support
-• Migration scripts for existing deployments  
+• Migration scripts for existing deployments
 • Example configurations for different deployment scenarios
 • Validation tools for configuration correctness
 • Hot-reload configuration updates without restart

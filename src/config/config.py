@@ -123,9 +123,7 @@ class QuranBotConfig(BaseSettings):
         ..., description="Discord bot token", min_length=50, alias="DISCORD_TOKEN"
     )
 
-    guild_id: int = Field(
-        description="Discord guild/server ID", alias="GUILD_ID"
-    )
+    guild_id: int = Field(description="Discord guild/server ID", alias="GUILD_ID")
 
     connection_timeout: int = Field(
         default=30,
