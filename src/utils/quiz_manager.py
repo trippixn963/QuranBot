@@ -635,14 +635,15 @@ class QuizView(discord.ui.View):
             english_text = correct_choice.get("english", "")
             arabic_text = correct_choice.get("arabic", "")
 
-            if english_text and arabic_text:
-                correct_display = f"**{self.correct_answer}: {english_text}**\n```\n{arabic_text}\n```"
-            elif english_text:
+            # Always show English first if available
+            if english_text:
                 correct_display = f"**{self.correct_answer}: {english_text}**"
-            elif arabic_text:
-                correct_display = f"**{self.correct_answer}:** ```\n{arabic_text}\n```"
             else:
                 correct_display = f"**{self.correct_answer}:** Answer not available"
+            
+            # Always show Arabic translation if available
+            if arabic_text:
+                correct_display += f"\n```\n{arabic_text}\n```"
         else:
             correct_display = f"**{self.correct_answer}: {correct_choice!s}**"
 
@@ -776,12 +777,18 @@ class QuizView(discord.ui.View):
                 english_explanation = explanation.get("english", "")
                 arabic_explanation = explanation.get("arabic", "")
 
-                if (english_explanation and arabic_explanation) or english_explanation:
+                # Always show English first if available
+                if english_explanation:
                     explanation_text = f"```\n{english_explanation}\n```"
-                elif arabic_explanation:
-                    explanation_text = f"```\n{arabic_explanation}\n```"
                 else:
                     explanation_text = None
+                
+                # Always show Arabic translation if available
+                if arabic_explanation:
+                    if explanation_text:
+                        explanation_text += f"\n\n```\n{arabic_explanation}\n```"
+                    else:
+                        explanation_text = f"```\n{arabic_explanation}\n```"
             else:
                 explanation_text = f"```\n{explanation!s}\n```"
 
@@ -2391,12 +2398,13 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                         inline=False,
                     )
 
-                    # Add the Arabic question first at the very top
+                    # Add the question text
                     question_text = question.get("question", "Unknown question")
                     if isinstance(question_text, dict):
                         arabic_text = question_text.get("arabic", "")
                         english_text = question_text.get("english", "")
 
+                        # Always show Arabic first if available
                         if arabic_text:
                             embed.add_field(
                                 name="🕌 **Question**",
@@ -2404,11 +2412,19 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                                 inline=False,
                             )
 
-                        # Add English translation right after Arabic (if both exist)
+                        # Always show English translation if available
                         if english_text:
                             embed.add_field(
                                 name="📖 **Translation**",
                                 value=f"```\n{english_text}\n```",
+                                inline=False,
+                            )
+                        
+                        # If neither Arabic nor English is available, show fallback
+                        if not arabic_text and not english_text:
+                            embed.add_field(
+                                name="❓ **Question**",
+                                value=f"```\nQuestion not available\n```",
                                 inline=False,
                             )
                     else:
@@ -2474,12 +2490,19 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                                 english_choice = choice_data.get("english", "")
                                 arabic_choice = choice_data.get("arabic", "")
 
-                                if english_choice and arabic_choice:
-                                    choice_text += f"**{letter}.** {english_choice}\n```\n{arabic_choice}\n```\n\n"
-                                elif english_choice:
-                                    choice_text += f"**{letter}.** {english_choice}\n\n"
-                                elif arabic_choice:
-                                    choice_text += f"**{letter}.** {arabic_choice}\n\n"
+                                # Always show English first if available
+                                if english_choice:
+                                    choice_text += f"**{letter}.** {english_choice}"
+                                
+                                # Always show Arabic translation if available
+                                if arabic_choice:
+                                    choice_text += f"\n```\n{arabic_choice}\n```"
+                                
+                                choice_text += "\n\n"
+                                
+                                # If neither English nor Arabic is available, show fallback
+                                if not english_choice and not arabic_choice:
+                                    choice_text += f"**{letter}.** Choice not available\n\n"
                             else:
                                 choice_text += f"**{letter}.** {choice_data}\n\n"
 

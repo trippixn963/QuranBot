@@ -283,34 +283,24 @@ class QuestionCog(commands.Cog):
                 arabic_text = question_text.get("arabic", "")
                 english_text = question_text.get("english", "")
 
-                if arabic_text and english_text:
-                    # Both Arabic and English available
+                # Always show Arabic first if available
+                if arabic_text:
                     embed.add_field(
                         name="🕌 **Question**",
                         value=f"```\n{arabic_text}\n```",
                         inline=False,
                     )
+                
+                # Always show English translation if available
+                if english_text:
                     embed.add_field(
                         name="📖 **Translation**",
                         value=f"```\n{english_text}\n```",
                         inline=False,
                     )
-                elif arabic_text:
-                    # Only Arabic available
-                    embed.add_field(
-                        name="🕌 **Question**",
-                        value=f"```\n{arabic_text}\n```",
-                        inline=False,
-                    )
-                elif english_text:
-                    # Only English available (current data format)
-                    embed.add_field(
-                        name="❓ **Question**",
-                        value=f"```\n{english_text}\n```",
-                        inline=False,
-                    )
-                else:
-                    # Fallback
+                
+                # If neither Arabic nor English is available, show fallback
+                if not arabic_text and not english_text:
                     embed.add_field(
                         name="❓ **Question**",
                         value=f"```\nQuestion not available\n```",
@@ -380,17 +370,18 @@ class QuestionCog(commands.Cog):
                         english_choice = choice_data.get("english", "")
                         arabic_choice = choice_data.get("arabic", "")
 
-                        if english_choice and arabic_choice:
-                            # Both English and Arabic available
-                            choice_text += f"**{letter}.** {english_choice}\n```\n{arabic_choice}\n```\n\n"
-                        elif english_choice:
-                            # Only English available (current data format)
-                            choice_text += f"**{letter}.** {english_choice}\n\n"
-                        elif arabic_choice:
-                            # Only Arabic available
-                            choice_text += f"**{letter}.** ```\n{arabic_choice}\n```\n\n"
-                        else:
-                            # Fallback
+                        # Always show English first if available
+                        if english_choice:
+                            choice_text += f"**{letter}.** {english_choice}"
+                        
+                        # Always show Arabic translation if available
+                        if arabic_choice:
+                            choice_text += f"\n```\n{arabic_choice}\n```"
+                        
+                        choice_text += "\n\n"
+                        
+                        # If neither English nor Arabic is available, show fallback
+                        if not english_choice and not arabic_choice:
                             choice_text += f"**{letter}.** Choice not available\n\n"
                     else:
                         # If it's just a string
