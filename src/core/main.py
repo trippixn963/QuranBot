@@ -1054,6 +1054,14 @@ class ModernizedQuranBot:
                 )  # Check every 2 minutes
                 self.container.register("system_monitor", system_monitor)
 
+                # Start performance monitoring
+                from src.monitoring.performance_monitor import PerformanceMonitor
+                performance_monitor = PerformanceMonitor(self.logger, webhook_router)
+                await performance_monitor.start_monitoring(
+                    interval_seconds=30
+                )  # Check every 30 seconds
+                self.container.register("performance_monitor", performance_monitor)
+
                 # Start daily health reporting
                 daily_reporter = DailyHealthReporter(
                     self.logger, webhook_router, system_monitor

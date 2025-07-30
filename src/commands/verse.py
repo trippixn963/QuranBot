@@ -41,6 +41,7 @@ from discord.ext import commands
 
 from src.core.exceptions import ConfigurationError
 from src.core.security import rate_limit, require_admin
+from src.core.webhook_logger import LogLevel
 from src.utils.tree_log import (
     log_error_with_traceback,
     log_perfect_tree_section,
@@ -407,6 +408,36 @@ class VerseCog(commands.Cog):
                             # Remove the unauthorized reaction
                             try:
                                 await reaction.remove(user)
+                                
+                                # Log unauthorized reaction removal to webhook
+                                try:
+                                    from src.core.di_container import get_container
+                                    
+                                    container = get_container()
+                                    if container:
+                                        webhook_router = container.get("webhook_router")
+                                        if webhook_router:
+                                            await webhook_router.log_user_event(
+                                                event_type="unauthorized_reaction_removed",
+                                                title="🚫 Unauthorized Reaction Removed",
+                                                description=f"**{user.display_name}** added unauthorized reaction '{reaction.emoji}' to daily verse, removed automatically",
+                                                level=LogLevel.WARNING,
+                                                context={
+                                                    "reaction_removed": str(reaction.emoji),
+                                                    "allowed_reaction": "🤲",
+                                                    "verse_id": str(verse_data.get("id", "Unknown")),
+                                                    "surah": str(verse_data.get("surah", "Unknown")),
+                                                    "verse_number": str(verse_data.get("ayah", verse_data.get("verse", "Unknown"))),
+                                                    "message_id": str(message.id),
+                                                    "channel_id": str(channel.id),
+                                                    "user_avatar_url": (
+                                                        user.avatar.url if user.avatar else None
+                                                    ),
+                                                },
+                                            )
+                                except Exception as webhook_error:
+                                    log_error_with_traceback("Failed to log unauthorized reaction removal to webhook", webhook_error)
+                                    
                             except discord.Forbidden:
                                 # Bot doesn't have permission to remove reactions
                                 pass
@@ -465,18 +496,14 @@ class VerseCog(commands.Cog):
 
                                 container = get_container()
                                 if container:
-                                    enhanced_webhook = container.get(
-                                        "enhanced_webhook_router"
-                                    )
-                                    if enhanced_webhook and hasattr(
-                                        enhanced_webhook, "log_user_interaction_event"
-                                    ):
-                                        await enhanced_webhook.log_user_interaction_event(
-                                            interaction_type="dua_reaction",
-                                            user_name=user.display_name,
-                                            user_id=user.id,
-                                            description="Made dua (🤲) on daily verse",
-                                            interaction_details={
+                                    webhook_router = container.get("webhook_router")
+                                    if webhook_router:
+                                        await webhook_router.log_user_event(
+                                            event_type="dua_reaction",
+                                            title="🤲 Dua Reaction",
+                                            description=f"**{user.display_name}** made dua on daily verse",
+                                            level=LogLevel.USER,
+                                            context={
                                                 "reaction": "🤲",
                                                 "verse_id": str(
                                                     verse_data.get("id", "Unknown")
@@ -495,14 +522,13 @@ class VerseCog(commands.Cog):
                                                 "message_id": str(message.id),
                                                 "channel_id": str(channel.id),
                                                 "spiritual_activity": "Dua Made",
+                                                "user_avatar_url": (
+                                                    user.avatar.url if user.avatar else None
+                                                ),
                                             },
-                                            user_avatar_url=(
-                                                user.avatar.url if user.avatar else None
-                                            ),
                                         )
-                            except Exception:
-                                # Silently ignore webhook logging failures
-                                pass
+                            except Exception as e:
+                                log_error_with_traceback("Failed to log dua reaction to webhook", e)
 
                     except TimeoutError:
                         # Timeout reached, stop monitoring

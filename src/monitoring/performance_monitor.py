@@ -361,4 +361,148 @@ rt sending methods
             )
             
         except Exception as e:
-            await self.logger.error("Failed to send API usage alert", {"error": str(e)})
+            await self.logger.error("Failed to send API usage alert", {"error": str(e)})   
+ # Public methods for recording metrics
+    async def record_command_metric(self, command_name: str, user_id: int, start_time: float, 
+                                   end_time: float, success: bool, error_message: str = None):
+        """Record a command execution metric."""
+        try:
+            memory_info = self.process.memory_info()
+            
+            metric = CommandMetric(
+                command_name=command_name,
+                user_id=user_id,
+                start_time=start_time,
+                end_time=end_time,
+                response_time=end_time - start_time,
+                success=success,
+                error_message=error_message,
+                memory_after=memory_info.rss / (1024 * 1024)
+            )
+            
+            self.command_metrics.append(metric)
+            
+            # Log slow commands immediately
+            if metric.response_time > self.slow_command_threshold:
+                await self.logger.warning(
+                    f"Slow command detected: {command_name}",
+                    {
+                        "response_time": f"{metric.response_time:.2f}s",
+                        "user_id": user_id,
+                        "threshold": f"{self.slow_command_threshold}s"
+                    }
+                )
+                
+        except Exception as e:
+            await self.logger.error("Failed to record command metric", {"error": str(e)})
+    
+    async def record_database_metric(self, query_type: str, query_hash: str, 
+                                   execution_time: float, success: bool, 
+                                   error_message: str = None, rows_affected: int = 0):
+        """Record a database query metric."""
+        try:
+            metric = DatabaseMetric(
+                query_type=query_type,
+                query_hash=query_hash,
+                execution_time=execution_time,
+                timestamp=time.time(),
+                success=success,
+                error_message=error_message,
+                rows_affected=rows_affected
+            )
+            
+            self.database_metrics.append(metric)
+            
+            # Log slow queries immediately
+            if execution_time > self.slow_query_threshold:
+                await self.logger.warning(
+                    f"Slow database query: {query_type}",
+                    {
+                        "execution_time": f"{execution_time:.3f}s",
+                        "query_hash": query_hash[:16],
+                        "threshold": f"{self.slow_query_threshold}s"
+                    }
+                )
+                
+        except Exception as e:
+            await self.logger.error("Failed to record database metric", {"error": str(e)})
+    
+    async def record_api_rate_limit(self, endpoint: str, remaining: int, limit: int, reset_after: float):
+        """Record Discord API rate limit information."""
+        try:
+            usage_percent = ((limit - remaining) / limit) * 100 if limit > 0 else 0
+            
+            rate_limit = APIRateLimit(
+                endpoint=endpoint,
+                remaining=remaining,
+                limit=limit,
+                reset_after=reset_after,
+                timestamp=time.time(),
+                usage_percent=usage_percent
+            )
+            
+            self.api_rate_limits.append(rate_limit)
+            
+            # Log high API usage immediately
+            if usage_percent > self.high_api_usage_threshold:
+                await self.logger.warning(
+                    f"High API usage: {endpoint}",
+                    {
+                        "usage_percent": f"{usage_percent:.1f}%",
+                        "remaining": remaining,
+                        "limit": limit,
+                        "threshold": f"{self.high_api_usage_threshold}%"
+                    }
+                )
+                
+        except Exception as e:
+            await self.logger.error("Failed to record API rate limit", {"error": str(e)})
+    
+    async def get_performance_summary(self) -> Dict[str, Any]:
+        """Get current performance summary."""
+        try:
+            current_time = time.time()
+            
+            # Command performance (last hour)
+            hour_ago = current_time - 3600
+            recent_commands = [cmd for cmd in self.command_metrics if cmd.start_time > hour_ago]
+            
+            # Database performance (last hour)
+            recent_queries = [q for q in self.database_metrics if q.timestamp > hour_ago]
+            
+            # Memory trend (last 30 minutes)
+            thirty_min_ago = current_time - 1800
+            recent_memory = [m for m in self.memory_snapshots if m.timestamp > thirty_min_ago]
+            
+            # API usage (last 10 minutes)
+            ten_min_ago = current_time - 600
+            recent_api = [api for api in self.api_rate_limits if api.timestamp > ten_min_ago]
+            
+            return {
+                "commands": {
+                    "total_count": len(recent_commands),
+                    "avg_response_time": sum(cmd.response_time for cmd in recent_commands) / len(recent_commands) if recent_commands else 0,
+                    "slow_commands": len([cmd for cmd in recent_commands if cmd.response_time > self.slow_command_threshold]),
+                    "success_rate": (len([cmd for cmd in recent_commands if cmd.success]) / len(recent_commands) * 100) if recent_commands else 100,
+                },
+                "database": {
+                    "total_queries": len(recent_queries),
+                    "avg_query_time": sum(q.execution_time for q in recent_queries) / len(recent_queries) if recent_queries else 0,
+                    "slow_queries": len([q for q in recent_queries if q.execution_time > self.slow_query_threshold]),
+                    "success_rate": (len([q for q in recent_queries if q.success]) / len(recent_queries) * 100) if recent_queries else 100,
+                },
+                "memory": {
+                    "current_mb": recent_memory[-1].rss_mb if recent_memory else 0,
+                    "trend_mb": (recent_memory[-1].rss_mb - recent_memory[0].rss_mb) if len(recent_memory) > 1 else 0,
+                    "percent_used": recent_memory[-1].percent if recent_memory else 0,
+                },
+                "api": {
+                    "max_usage_percent": max(api.usage_percent for api in recent_api) if recent_api else 0,
+                    "high_usage_endpoints": len([api for api in recent_api if api.usage_percent > self.high_api_usage_threshold]),
+                    "total_requests": len(recent_api),
+                }
+            }
+            
+        except Exception as e:
+            await self.logger.error("Failed to get performance summary", {"error": str(e)})
+            return {}
