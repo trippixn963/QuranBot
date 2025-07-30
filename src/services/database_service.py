@@ -33,6 +33,7 @@ from typing import Any, Dict, List, Optional
 from ..core.database import DatabaseManager
 from ..core.logger import StructuredLogger
 from ..core.exceptions import DatabaseError
+from ..core.webhook_logger import LogLevel
 
 
 class QuranBotDatabaseService:
@@ -647,7 +648,36 @@ class QuranBotDatabaseService:
         
     async def backup_database(self, backup_path: Path) -> bool:
         """Create database backup"""
-        return await self.db_manager.backup_database(backup_path)
+        try:
+            success = await self.db_manager.backup_database(backup_path)
+            
+            # Log backup event to webhook
+            if self.webhook_logger:
+                try:
+                    from src.core.di_container import get_container
+                    
+                    container = get_container()
+                    if container:
+                        webhook_router = container.get("webhook_router")
+                        if webhook_router:
+                            await webhook_router.log_data_event(
+                                event_type="database_backup",
+                                title="💾 Database Backup",
+                                description=f"Database backup {'completed successfully' if success else 'failed'}",
+                                level=LogLevel.INFO if success else LogLevel.ERROR,
+                                context={
+                                    "backup_path": str(backup_path),
+                                    "success": success,
+                                    "backup_size_mb": backup_path.stat().st_size / (1024 * 1024) if backup_path.exists() else 0,
+                                },
+                            )
+                except Exception as e:
+                    await self.logger.error("Failed to log backup event to webhook", {"error": str(e)})
+            
+            return success
+        except Exception as e:
+            await self.logger.error("Database backup failed", {"error": str(e), "backup_path": str(backup_path)})
+            return False
         
     async def cleanup_old_data(self, days_to_keep: int = 30) -> int:
         """Clean up old data"""

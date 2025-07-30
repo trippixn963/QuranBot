@@ -18,6 +18,7 @@ import discord
 
 from .exceptions import RateLimitError, SecurityError, ValidationError
 from .logger import StructuredLogger
+from .webhook_logger import LogLevel
 
 # =============================================================================
 # Rate Limiting System
@@ -158,6 +159,32 @@ class RateLimiter:
                         "current_requests": len(user_requests),
                     },
                 )
+            
+            # Log rate limit violation to webhook
+            try:
+                from src.core.di_container import get_container
+                
+                container = get_container()
+                if container:
+                    webhook_router = container.get("webhook_router")
+                    if webhook_router:
+                        await webhook_router.log_error_event(
+                            event_type="rate_limit_violation",
+                            title="🚫 Rate Limit Violation",
+                            description=f"User {user_id} exceeded rate limit for command {command_name}",
+                            level=LogLevel.WARNING,
+                            context={
+                                "user_id": user_id,
+                                "command_name": command_name,
+                                "limit": user_limit,
+                                "window": user_window,
+                                "current_requests": len(user_requests),
+                                "limit_type": "user",
+                            },
+                        )
+            except Exception as e:
+                if self.logger:
+                    await self.logger.error("Failed to log rate limit violation to webhook", {"error": str(e)})
             raise RateLimitError(
                 f"User rate limit exceeded: {user_limit} requests per {user_window} seconds",
                 limit_type="user",
@@ -780,6 +807,29 @@ class SecurityService:
                 "Blocked user/guild attempted command",
                 {"user_id": user_id, "guild_id": guild_id, "command": command_name},
             )
+            
+            # Log blocked access attempt to webhook
+            try:
+                from src.core.di_container import get_container
+                
+                container = get_container()
+                if container:
+                    webhook_router = container.get("webhook_router")
+                    if webhook_router:
+                        await webhook_router.log_error_event(
+                            event_type="blocked_access_attempt",
+                            title="🚫 Blocked Access Attempt",
+                            description=f"Blocked user {user_id} attempted command {command_name}",
+                            level=LogLevel.WARNING,
+                            context={
+                                "user_id": user_id,
+                                "guild_id": guild_id,
+                                "command_name": command_name,
+                                "reason": "blocked",
+                            },
+                        )
+            except Exception as e:
+                await self.logger.error("Failed to log blocked access to webhook", {"error": str(e)})
             raise SecurityError(
                 "Access denied: User or guild is blocked",
                 user_id=user_id,
@@ -793,6 +843,30 @@ class SecurityService:
                 "Non-admin user attempted admin command",
                 {"user_id": user_id, "guild_id": guild_id, "command": command_name},
             )
+            
+            # Log admin permission denial to webhook
+            try:
+                from src.core.di_container import get_container
+                
+                container = get_container()
+                if container:
+                    webhook_router = container.get("webhook_router")
+                    if webhook_router:
+                        await webhook_router.log_error_event(
+                            event_type="admin_permission_denied",
+                            title="🔒 Admin Permission Denied",
+                            description=f"Non-admin user {user_id} attempted admin command {command_name}",
+                            level=LogLevel.WARNING,
+                            context={
+                                "user_id": user_id,
+                                "guild_id": guild_id,
+                                "command_name": command_name,
+                                "reason": "admin_required",
+                            },
+                        )
+            except Exception as e:
+                await self.logger.error("Failed to log admin permission denial to webhook", {"error": str(e)})
+            
             return False
 
         return True

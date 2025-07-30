@@ -34,6 +34,7 @@ from pathlib import Path
 from typing import Any
 
 from ..core.logger import StructuredLogger
+from ..core.webhook_logger import LogLevel
 from .database_service import QuranBotDatabaseService
 
 
@@ -927,6 +928,30 @@ class SQLiteStateService:
                     "total_records": sum(table_counts.values()),
                 },
             )
+            
+            # Log integrity check to webhook
+            try:
+                from src.core.di_container import get_container
+                
+                container = get_container()
+                if container:
+                    webhook_router = container.get("webhook_router")
+                    if webhook_router:
+                        await webhook_router.log_data_event(
+                            event_type="data_integrity_check",
+                            title="🔍 Data Integrity Check",
+                            description=f"Database integrity check {'passed' if integrity_report['database_healthy'] else 'found issues'}",
+                            level=LogLevel.INFO if integrity_report["database_healthy"] else LogLevel.WARNING,
+                            context={
+                                "healthy": integrity_report["database_healthy"],
+                                "issues_count": len(integrity_report["issues"]),
+                                "issues": integrity_report["issues"][:3],  # First 3 issues
+                                "total_tables": len(stats.get("table_counts", {})),
+                                "total_records": stats.get("total_records", 0),
+                            },
+                        )
+            except Exception as e:
+                await self.logger.error("Failed to log integrity check to webhook", {"error": str(e)})
 
             return integrity_report
 

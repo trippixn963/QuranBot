@@ -14,6 +14,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 from ..core.logger import StructuredLogger
+from ..core.webhook_logger import LogLevel
 
 
 @dataclass
@@ -112,8 +113,9 @@ class PerformanceMonitor:
                 await self.monitor_task
             except asyncio.CancelledError:
                 pass
-        await self.logger.info("Performance monitoring stopped")    as
-ync def _monitor_loop(self, interval_seconds: int):
+        await self.logger.info("Performance monitoring stopped")
+    
+    async def _monitor_loop(self, interval_seconds: int):
         """Main performance monitoring loop."""
         while self.monitoring:
             try:

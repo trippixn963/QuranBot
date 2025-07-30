@@ -1,0 +1,206 @@
+# =============================================================================
+# GitHub Workflow - Community Management
+# =============================================================================
+# Automated community management, welcome messages, and discussion moderation
+# =============================================================================
+
+name: Community Management
+
+on:
+  issues:
+    types: [opened, labeled]
+  pull_request:
+    types: [opened]
+  discussion:
+    types: [created]
+  discussion_comment:
+    types: [created]
+
+jobs:
+  welcome-new-contributors:
+    if: github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Welcome new issues
+        if: github.event_name == 'issues'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const isFirstIssue = issue.author_association === 'FIRST_TIME_CONTRIBUTOR';
+            
+            if (isFirstIssue) {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `🕌 **Assalamu Alaikum and welcome to QuranBot!**
+
+Thank you for taking the time to contribute to our Islamic community project! 
+
+🌟 **For new contributors:**
+- Please read our [Contributing Guidelines](.github/CONTRIBUTING.md)
+- Check our [Code of Conduct](.github/CODE_OF_CONDUCT.md)
+- Join our [Community Discussions](https://github.com/${context.repo.owner}/${context.repo.repo}/discussions)
+
+📖 **For Islamic content issues:**
+- All Islamic content is carefully reviewed for authenticity
+- Please provide proper Islamic references for any suggestions
+- Our community scholars help verify Islamic accuracy
+
+🤲 **Barakallahu feek** for your contribution to serving the Islamic community!
+
+*May Allah reward your efforts in supporting this project.*`
+              });
+            }
+
+      - name: Welcome new pull requests
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const isFirstPR = pr.author_association === 'FIRST_TIME_CONTRIBUTOR';
+            
+            if (isFirstPR) {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `🕌 **Assalamu Alaikum and thank you for your first contribution!**
+
+Your pull request will be reviewed by our maintainers. Here's what happens next:
+
+✅ **Review Process:**
+- Automated tests will run on your code
+- Maintainers will review for code quality and Islamic content accuracy
+- Community feedback is welcome and encouraged
+
+📋 **Please ensure:**
+- [ ] All tests pass
+- [ ] Islamic content (if any) is authentic and properly referenced
+- [ ] Code follows project conventions
+- [ ] Documentation is updated if needed
+
+🤲 **Jazakallahu khairan** for contributing to QuranBot!
+
+*Your efforts in supporting the Islamic community through technology are appreciated.*`
+              });
+            }
+
+  islamic-content-review:
+    if: contains(github.event.issue.labels.*.name, 'islamic-content')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Islamic content review notification
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `📖 **Islamic Content Review Required**
+
+This issue has been labeled as Islamic content and will undergo special review:
+
+🔍 **Review Process:**
+- Islamic scholars and knowledgeable community members will verify the content
+- All references will be checked against authentic Islamic sources
+- Changes will be tested for accuracy and authenticity
+
+⏱️ **Timeline:**
+Islamic content reviews may take longer to ensure authenticity and accuracy. We appreciate your patience.
+
+📚 **Required for Review:**
+- Authentic Islamic sources and references
+- Scholarly verification where applicable
+- Community consensus on complex matters
+
+🤲 **Thank you for helping maintain the Islamic authenticity of QuranBot!**`
+            });
+
+  discussion-moderation:
+    if: github.event_name == 'discussion' || github.event_name == 'discussion_comment'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Monitor discussion content
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // This is a placeholder for discussion moderation
+            // In a real implementation, you might:
+            // 1. Check for inappropriate content
+            // 2. Verify Islamic content accuracy
+            // 3. Ensure community guidelines are followed
+            // 4. Auto-label discussions based on content
+            
+            console.log('Discussion moderation placeholder - implement as needed');
+
+  community-metrics:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues' || github.event_name == 'pull_request'
+    steps:
+      - name: Update community metrics
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Track community engagement metrics
+            const eventType = context.eventName;
+            const action = context.payload.action;
+            
+            console.log(`Community event: ${eventType} - ${action}`);
+            
+            // In a real implementation, you might:
+            // 1. Track contributor statistics
+            // 2. Monitor Islamic content contributions
+            // 3. Generate community health reports
+            // 4. Update project metrics
+
+  auto-labeling:
+    if: github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto-label issues
+        if: github.event_name == 'issues'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const title = issue.title.toLowerCase();
+            const body = issue.body.toLowerCase();
+            const labels = [];
+            
+            // Auto-label based on content
+            if (title.includes('quran') || title.includes('verse') || body.includes('islamic')) {
+              labels.push('islamic-content');
+            }
+            
+            if (title.includes('bug') || title.includes('error') || title.includes('broken')) {
+              labels.push('bug');
+            }
+            
+            if (title.includes('feature') || title.includes('enhancement') || title.includes('add')) {
+              labels.push('enhancement');
+            }
+            
+            if (title.includes('help') || title.includes('support') || title.includes('question')) {
+              labels.push('question');
+            }
+            
+            if (title.includes('audio') || title.includes('playback') || title.includes('voice')) {
+              labels.push('audio');
+            }
+            
+            if (title.includes('discord') || title.includes('command') || title.includes('bot')) {
+              labels.push('discord');
+            }
+            
+            if (labels.length > 0) {
+              github.rest.issues.addLabels({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                labels: labels
+              });
+            }

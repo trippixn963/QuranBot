@@ -124,11 +124,20 @@ class DailyHealthReporter:
         except Exception:
             pass
 
+        # Get performance metrics if available
+        performance_metrics = {}
+        if self.performance_monitor:
+            try:
+                performance_metrics = await self.performance_monitor.get_performance_summary()
+            except Exception:
+                pass
+
         return {
             "report_date": now.strftime("%Y-%m-%d"),
             "report_time": now.strftime("%H:%M:%S UTC"),
             "system_status": system_status,
             "api_health": api_health,
+            "performance_metrics": performance_metrics,
             "daily_stats": self.daily_stats.copy(),
             "uptime_hours": uptime_hours,
             "overall_health": self._calculate_overall_health(system_status, api_health),
@@ -162,6 +171,7 @@ class DailyHealthReporter:
 
             # Format daily stats
             stats = report_data.get("daily_stats", {})
+            performance = report_data.get("performance_metrics", {})
 
             # Create enhanced context with better field names and formatting
             context = {
@@ -178,25 +188,65 @@ class DailyHealthReporter:
                 "Warnings Today": f"{stats.get('warnings', 0)} warnings",
                 "System Status": overall_health.upper(),
             }
+            
+            # Add performance metrics if available
+            if performance:
+                commands = performance.get("commands", {})
+                database = performance.get("database", {})
+                memory = performance.get("memory", {})
+                api = performance.get("api", {})
+                
+                context.update({
+                    "Avg Command Time": f"{commands.get('avg_response_time', 0):.2f}s",
+                    "Slow Commands": f"{commands.get('slow_commands', 0)} commands",
+                    "Command Success Rate": f"{commands.get('success_rate', 100):.1f}%",
+                    "Avg Query Time": f"{database.get('avg_query_time', 0):.3f}s",
+                    "Slow Queries": f"{database.get('slow_queries', 0)} queries",
+                    "Memory Trend": f"{memory.get('trend_mb', 0):+.1f} MB",
+                    "Max API Usage": f"{api.get('max_usage_percent', 0):.1f}%",
+                })
 
-            description = f"""**24/7 VPS Health Report**
-
-System Status: **{overall_health.upper()}**
-Uptime: {report_data.get('uptime_hours', 0):.1f} hours
-
-**Resource Usage:**
-• CPU: {cpu_status.get('usage_percent', 0):.1f}%
-• Memory: {memory_status.get('usage_percent', 0):.1f}%
-• Disk: {disk_status.get('usage_percent', 0):.1f}%
-
-**Bot Activity:**
-• Audio Sessions: {stats.get('audio_sessions', 0)}
-• User Interactions: {stats.get('user_interactions', 0)}
-• Voice Channel Activity: {stats.get('voice_joins', 0)} joins, {stats.get('voice_leaves', 0)} leaves
-
-**Issues:**
-• Errors: {stats.get('errors', 0)}
-• Warnings: {stats.get('warnings', 0)}"""
+            # Build description with performance metrics
+            description_parts = [
+                f"**24/7 VPS Health Report**",
+                f"",
+                f"System Status: **{overall_health.upper()}**",
+                f"Uptime: {report_data.get('uptime_hours', 0):.1f} hours",
+                f"",
+                f"**Resource Usage:**",
+                f"• CPU: {cpu_status.get('usage_percent', 0):.1f}%",
+                f"• Memory: {memory_status.get('usage_percent', 0):.1f}%",
+                f"• Disk: {disk_status.get('usage_percent', 0):.1f}%",
+                f"",
+                f"**Bot Activity:**",
+                f"• Audio Sessions: {stats.get('audio_sessions', 0)}",
+                f"• User Interactions: {stats.get('user_interactions', 0)}",
+                f"• Voice Channel Activity: {stats.get('voice_joins', 0)} joins, {stats.get('voice_leaves', 0)} leaves",
+            ]
+            
+            # Add performance metrics if available
+            if performance:
+                commands = performance.get("commands", {})
+                database = performance.get("database", {})
+                api = performance.get("api", {})
+                
+                description_parts.extend([
+                    f"",
+                    f"**Performance Metrics:**",
+                    f"• Avg Command Response: {commands.get('avg_response_time', 0):.2f}s",
+                    f"• Slow Commands: {commands.get('slow_commands', 0)}",
+                    f"• Avg Database Query: {database.get('avg_query_time', 0):.3f}s",
+                    f"• Max API Usage: {api.get('max_usage_percent', 0):.1f}%",
+                ])
+            
+            description_parts.extend([
+                f"",
+                f"**Issues:**",
+                f"• Errors: {stats.get('errors', 0)}",
+                f"• Warnings: {stats.get('warnings', 0)}",
+            ])
+            
+            description = "\n".join(description_parts)
 
             await self.webhook_router.route_event(
                 event_type="daily_health_report",

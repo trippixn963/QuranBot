@@ -1064,7 +1064,7 @@ class ModernizedQuranBot:
 
                 # Start daily health reporting
                 daily_reporter = DailyHealthReporter(
-                    self.logger, webhook_router, system_monitor
+                    self.logger, webhook_router, system_monitor, performance_monitor
                 )
                 await daily_reporter.start_daily_reporting(
                     report_hour=9

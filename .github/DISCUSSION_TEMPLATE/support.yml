@@ -1,0 +1,92 @@
+# =============================================================================
+# GitHub Discussions - Support Template
+# =============================================================================
+# Template for technical support and help with QuranBot setup/usage
+# =============================================================================
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # 🆘 QuranBot Support
+        
+        Need help with QuranBot? You're in the right place! This template is for:
+        - Bot setup and configuration issues
+        - Discord server integration problems
+        - Command usage questions
+        - Audio playback issues
+        - General technical support
+        
+        **Before asking for help, please check:**
+        - The README.md file for setup instructions
+        - Existing discussions for similar issues
+        - The bot's error messages if any
+
+  - type: dropdown
+    id: support-category
+    attributes:
+      label: "Support Category"
+      description: "What type of help do you need?"
+      options:
+        - Bot Setup/Installation
+        - Discord Integration
+        - Commands Not Working
+        - Audio Issues
+        - Configuration Problems
+        - Permissions Issues
+        - Feature Usage
+        - Other Technical Issue
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem-description
+    attributes:
+      label: "Problem Description"
+      description: "Describe the issue you're experiencing"
+      placeholder: "Please describe what's not working or what you need help with..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-taken
+    attributes:
+      label: "Steps Already Taken"
+      description: "What have you already tried to solve this issue?"
+      placeholder: "e.g., checked logs, restarted bot, verified permissions, etc."
+
+  - type: textarea
+    id: error-messages
+    attributes:
+      label: "Error Messages"
+      description: "If you're seeing any error messages, please paste them here"
+      placeholder: "Paste any error messages or logs here..."
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: "Environment"
+      description: "Where are you running QuranBot?"
+      options:
+        - Local Development
+        - VPS/Cloud Server
+        - Docker Container
+        - Heroku
+        - Other Cloud Platform
+        - Raspberry Pi
+        - Other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: support-checklist
+    attributes:
+      label: "Support Checklist"
+      description: "Please confirm before asking for support"
+      options:
+        - label: "I have read the README.md and setup documentation"
+          required: true
+        - label: "I have searched existing discussions for similar issues"
+          required: true
+        - label: "I have provided enough information for others to help me"
+          required: true

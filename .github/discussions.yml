@@ -1,0 +1,60 @@
+# =============================================================================
+# GitHub Discussions Configuration for QuranBot
+# =============================================================================
+# Defines discussion categories and settings for the QuranBot community
+# =============================================================================
+
+# Discussion categories configuration
+categories:
+  - name: "🕌 General"
+    description: "General discussions about QuranBot"
+    emoji: "🕌"
+    
+  - name: "📖 Islamic Content"
+    description: "Discussions about Islamic content, accuracy, and knowledge"
+    emoji: "📖"
+    
+  - name: "🆘 Support"
+    description: "Get help with QuranBot setup, configuration, and usage"
+    emoji: "🆘"
+    
+  - name: "💡 Ideas & Suggestions"
+    description: "Share your ideas for new features and improvements"
+    emoji: "💡"
+    
+  - name: "🏗️ Development"
+    description: "Development discussions, code contributions, and technical topics"
+    emoji: "🏗️"
+    
+  - name: "📢 Announcements"
+    description: "Project announcements and updates"
+    emoji: "📢"
+    locked: true  # Only maintainers can create posts
+    
+  - name: "🤝 Community"
+    description: "Community introductions, off-topic discussions, and networking"
+    emoji: "🤝"
+
+# Discussion settings
+settings:
+  # Enable discussions
+  enabled: true
+  
+  # Allow community contributions
+  community_discussions: true
+  
+  # Discussion moderation
+  moderation:
+    enabled: true
+    auto_lock_resolved: true
+    require_approval: false
+    
+  # Labels for discussions
+  discussion_labels:
+    - "Islamic Content"
+    - "Technical Support"
+    - "Feature Request"
+    - "Community"
+    - "Question"
+    - "Resolved"
+    - "In Progress"

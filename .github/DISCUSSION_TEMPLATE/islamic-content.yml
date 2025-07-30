@@ -1,0 +1,65 @@
+# =============================================================================
+# GitHub Discussions - Islamic Content Template
+# =============================================================================
+# Template for discussions about Islamic content, accuracy, and knowledge
+# =============================================================================
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # 📖 Islamic Content Discussion
+        
+        This template is for discussions about:
+        - Islamic content accuracy in QuranBot
+        - Questions about Quranic verses, Hadith, or Islamic knowledge
+        - Suggestions for Islamic content improvements
+        - Educational discussions about Islam
+        
+        **Important:** All Islamic content is verified for accuracy, but community input is valuable for continuous improvement.
+
+  - type: dropdown
+    id: content-type
+    attributes:
+      label: "Content Type"
+      description: "What type of Islamic content are you discussing?"
+      options:
+        - Quranic Verses
+        - Quiz Questions
+        - Islamic Knowledge
+        - Hadith References
+        - Prayer Times
+        - Islamic Calendar
+        - General Islamic Content
+        - Content Accuracy Concern
+    validations:
+      required: true
+
+  - type: textarea
+    id: content-discussion
+    attributes:
+      label: "Content Discussion"
+      description: "Share your question, suggestion, or concern about Islamic content"
+      placeholder: "Please describe your question or suggestion about the Islamic content..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: references
+    attributes:
+      label: "Islamic References (Optional)"
+      description: "If applicable, please provide Islamic references (Quran, Sahih Hadith, scholarly sources)"
+      placeholder: "e.g., Quran 2:255, Sahih Bukhari 1:1, etc."
+
+  - type: checkboxes
+    id: content-guidelines
+    attributes:
+      label: "Content Guidelines"
+      description: "Please confirm your understanding"
+      options:
+        - label: "I understand this discussion should maintain Islamic principles and respect"
+          required: true
+        - label: "I will provide accurate references when suggesting content changes"
+          required: true
+        - label: "I understand that all Islamic content is reviewed for authenticity"
+          required: true
