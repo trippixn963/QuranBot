@@ -207,17 +207,17 @@ class VerseCog(commands.Cog):
 
                 config = get_config()
 
-                channel = interaction.client.get_channel(config.DAILY_VERSE_CHANNEL_ID)
+                channel = interaction.client.get_channel(config.daily_verse_channel_id)
                 if not channel:
                     channel = await interaction.client.fetch_channel(
-                        config.DAILY_VERSE_CHANNEL_ID
+                        config.daily_verse_channel_id
                     )
 
                 if not channel:
                     raise ConfigurationError(
-                        f"Channel {config.DAILY_VERSE_CHANNEL_ID} not found",
-                        config_field="DAILY_VERSE_CHANNEL_ID",
-                        config_value=config.DAILY_VERSE_CHANNEL_ID,
+                        f"Channel {config.daily_verse_channel_id} not found",
+                        config_field="daily_verse_channel_id",
+                        config_value=config.daily_verse_channel_id,
                     )
 
             except Exception as e:

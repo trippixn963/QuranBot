@@ -442,7 +442,7 @@ class ModernizedQuranBot:
         """Initialize additional systems like daily verses, quiz, etc."""
         # Initialize daily verses system
         try:
-            daily_verse_channel_id = self.config.DAILY_VERSE_CHANNEL_ID
+            daily_verse_channel_id = self.config.daily_verse_channel_id
             if daily_verse_channel_id:
                 await setup_daily_verses(self.bot, daily_verse_channel_id)
                 await self.logger.info(
@@ -456,7 +456,7 @@ class ModernizedQuranBot:
 
         # Initialize quiz system
         try:
-            daily_verse_channel_id = self.config.DAILY_VERSE_CHANNEL_ID
+            daily_verse_channel_id = self.config.daily_verse_channel_id
             if daily_verse_channel_id:
                 from src.utils.quiz_manager import setup_quiz_system
 

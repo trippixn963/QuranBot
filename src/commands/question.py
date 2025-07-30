@@ -202,9 +202,9 @@ class QuestionCog(commands.Cog):
 
             # Get the channel
             try:
-                channel_id = config.DAILY_VERSE_CHANNEL_ID
+                channel_id = config.daily_verse_channel_id
                 if not channel_id:
-                    raise ValueError("DAILY_VERSE_CHANNEL_ID not configured")
+                    raise ValueError("daily_verse_channel_id not configured")
 
                 channel = interaction.client.get_channel(channel_id)
                 if not channel:

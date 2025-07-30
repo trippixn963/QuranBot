@@ -441,7 +441,7 @@ class MeccaPrayerNotifier:
     async def send_prayer_notification(self, prayer_name: str, prayer_time: str):
         """Send prayer notification to the daily verse channel"""
         try:
-            channel_id = self.config.DAILY_VERSE_CHANNEL_ID
+            channel_id = self.config.daily_verse_channel_id
             if not channel_id:
                 log_perfect_tree_section(
                     "Mecca Prayer Notification - No Channel",

@@ -345,8 +345,7 @@ class WebhookFormatter:
             "color": self.LEVEL_COLORS.get(
                 message.level, self.LEVEL_COLORS[LogLevel.INFO]
             ),
-            "timestamp": message.timestamp.isoformat(),
-            "footer": {"text": message.footer or self._get_formatted_time()},
+            "footer": {"text": message.footer or self._get_formatted_time_est()},
         }
 
         # Add author info (user avatar and name)
@@ -423,6 +422,19 @@ class WebhookFormatter:
             return now_tz.strftime("%m/%d %I:%M %p %Z")
         except Exception:
             return datetime.now().strftime("%m/%d %I:%M %p UTC")
+    
+    def _get_formatted_time_est(self) -> str:
+        """Get formatted timestamp in EST timezone for webhook footers.
+
+        Returns:
+            str: Formatted timestamp string in EST
+        """
+        try:
+            est_tz = pytz.timezone("US/Eastern")
+            now_est = datetime.now(est_tz)
+            return now_est.strftime("%m/%d/%Y %I:%M %p EST")
+        except Exception:
+            return datetime.now().strftime("%m/%d/%Y %I:%M %p UTC")
 
     def _truncate_text(self, text: str, max_length: int) -> str:
         """Safely truncate text to fit Discord limits.
