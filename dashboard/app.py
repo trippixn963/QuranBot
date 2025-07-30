@@ -241,14 +241,23 @@ def api_overview():
         print("Getting bot statistics...")
         bot_stats = get_bot_statistics()
         print(f"Bot stats: {bot_stats}")
+        if bot_stats is None:
+            print("ERROR: bot_stats is None!")
+            bot_stats = {}
         
         print("Getting content stats...")
         content_stats = get_islamic_content_stats()
         print(f"Content stats: {content_stats}")
+        if content_stats is None:
+            print("ERROR: content_stats is None!")
+            content_stats = {}
         
         print("Getting performance metrics...")
         performance = get_performance_metrics()
         print(f"Performance: {performance}")
+        if performance is None:
+            print("ERROR: performance is None!")
+            performance = {}
         
         overview_data = {
             'timestamp': datetime.now(UTC).isoformat(),
