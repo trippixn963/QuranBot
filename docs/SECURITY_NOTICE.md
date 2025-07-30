@@ -4,14 +4,14 @@
 
 **NEVER commit real credentials to version control!**
 
-This repository contains example configuration files with placeholder values. 
+This repository contains example configuration files with placeholder values.
 You MUST replace these placeholders with your actual credentials locally.
 
 ## 🚨 What NOT to Commit
 
 ### ❌ Never commit these to Git:
 - Discord bot tokens
-- OpenAI API keys  
+- OpenAI API keys
 - Webhook URLs
 - Database passwords
 - Any secret keys or tokens
@@ -57,7 +57,7 @@ Our placeholders are designed to be obviously fake:
 
 ### Immediate Actions:
 1. **Revoke the compromised credentials immediately**
-2. **Generate new credentials**  
+2. **Generate new credentials**
 3. **Remove from Git history** (use `git filter-branch` or BFG)
 4. **Update all systems** with new credentials
 5. **Monitor for unauthorized usage**

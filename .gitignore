@@ -134,8 +134,8 @@ personal_notes.md
 .cache/
 .pytest_cache/
 
-# Performance and Testing Data
-performance_data/
+# Performance and Testing Data (moved to data/performance/)
+data/performance/
 *.performance.json
 test_results/
 coverage_reports/
@@ -230,6 +230,7 @@ README_ENHANCED.md
 coverage-report.html
 security-report.json
 bandit-report.json
+config/  # Removed duplicate config directory
 
 # Node.js (for any future web dashboard)
 node_modules/
