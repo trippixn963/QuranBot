@@ -32,8 +32,8 @@ from src.core.database import DatabaseManager
 from src.services.database_service import QuranBotDatabaseService
 from src.monitoring.bot_status_monitor import BotStatusMonitor
 from src.core.security import RateLimiter, SecurityService
-from src.core.webhook_factory import create_webhook_service
-from src.core.webhook_logger import LogLevel
+
+
 from src.services.audio_service import AudioService
 from src.services.metadata_cache import MetadataCache
 from src.services.state_service import SQLiteStateService
@@ -60,7 +60,7 @@ class ModernizedQuranBot:
     Architecture Features:
     - Dependency injection container for service management
     - Comprehensive error handling and recovery mechanisms
-    - Structured logging with webhook integration
+    - Structured logging with comprehensive monitoring
     - Health monitoring and automatic reconnection
     - Graceful shutdown with resource cleanup
 
@@ -164,7 +164,7 @@ class ModernizedQuranBot:
         log_status("Initializing health monitoring system", "💚")
         health_monitor = HealthMonitor(
             logger=self.logger,
-            webhook_logger=None,  # Will be updated later
+
             data_dir=self.project_root / "data",
             check_interval_minutes=60,
             alert_interval_minutes=5,
@@ -233,8 +233,7 @@ class ModernizedQuranBot:
         )
         self.container.register_singleton(QuranBotDatabaseService, db_service)
 
-        # Enhanced Webhook Service (if enabled)
-        await self._initialize_webhook_service()
+
 
         # Initialize all core services
         await self.container.get(CacheService).initialize()
@@ -243,47 +242,7 @@ class ModernizedQuranBot:
 
         log_status("Core services initialized", "✅")
 
-    async def _initialize_webhook_service(self):
-        """Initialize webhook service if enabled."""
-        try:
-            if self.config.use_webhook_logging:
-                webhook_service = await create_webhook_service(
-                    config=self.config,
-                    logger=self.logger,
-                    container=self.container,
-                    bot=self,
-                )
 
-                if webhook_service:
-                    self.container.register_singleton(
-                        "webhook_service", lambda: webhook_service
-                    )
-                    self.container.register_singleton(
-                        "webhook_router", lambda: webhook_service
-                    )
-                    log_status("Enhanced multi-channel webhook router configured", "🌐")
-
-                    # Update health monitor with webhook service
-                    try:
-                        health_monitor = self.container.get(HealthMonitor)
-                        health_monitor.webhook_logger = webhook_service
-                        await self.logger.info(
-                            "Health monitor updated with webhook service reference"
-                        )
-                    except Exception as e:
-                        await self.logger.warning(
-                            "Failed to update health monitor with webhook logger",
-                            {"error": str(e)},
-                        )
-                else:
-                    log_status("Failed to initialize webhook service", "⚠️")
-            else:
-                log_status("Webhook logging disabled", "ℹ️")
-        except Exception as e:
-            await self.logger.warning(
-                "Failed to setup webhook service",
-                {"error": str(e), "fallback": "Continuing without webhook logging"},
-            )
 
     async def _initialize_modern_services(self):
         """Initialize modern services like audio and state management."""
@@ -332,6 +291,16 @@ class ModernizedQuranBot:
         )
         self.container.register_singleton(RichPresenceManager, rich_presence_factory)
 
+        # Bot Status Monitor
+        log_status("Setting up Bot Status Monitor", "📊")
+        db_service = self.container.get(QuranBotDatabaseService)
+        self.status_monitor = BotStatusMonitor(
+            bot=self.bot,
+            db_service=db_service,
+            data_dir=self.project_root / "data"
+        )
+        self.container.register_singleton(BotStatusMonitor, self.status_monitor)
+
         log_status("Modern services initialized", "✅")
 
     async def _initialize_discord_bot(self):
@@ -374,28 +343,17 @@ class ModernizedQuranBot:
                 ],
             )
 
-            # Log bot ready to webhook
-            try:
-                webhook_router = self.container.get("webhook_router")
-                if webhook_router:
-                    await webhook_router.log_bot_event(
-                        event_type="bot_ready",
-                        title="🎯 Bot Ready",
-                        description="QuranBot successfully connected to Discord",
-                        level=LogLevel.INFO,
-                        context={
-                            "bot_name": self.bot.user.name,
-                            "bot_id": self.bot.user.id,
-                            "guild_count": len(self.bot.guilds),
-                            "startup_duration": startup_duration,
-                            "mode": "100% automated continuous recitation",
-                        },
-                    )
-            except Exception as e:
-                await self.logger.error("Failed to log bot ready to webhook", {"error": str(e)})
 
-            # Send startup webhook notification
-            await self._send_startup_webhook(startup_duration)
+
+
+
+            # Start bot status monitor
+            try:
+                status_monitor = self.container.get(BotStatusMonitor)
+                await status_monitor.start()
+                await self.logger.info("Bot status monitor started successfully")
+            except Exception as e:
+                await self.logger.error(f"Failed to start status monitor: {e}")
 
             # Start automated audio playback
             await self._start_automated_continuous_playback()
@@ -434,23 +392,7 @@ class ModernizedQuranBot:
                 {"event": event, "args": str(args)[:500], "kwargs": str(kwargs)[:500]},
             )
             
-            # Log Discord event error to webhook
-            try:
-                webhook_router = self.container.get("webhook_router")
-                if webhook_router:
-                    await webhook_router.log_error_event(
-                        event_type="discord_event_error",
-                        title="⚠️ Discord Event Error",
-                        description=f"Error in Discord event: {event}",
-                        level=LogLevel.ERROR,
-                        context={
-                            "event": event,
-                            "args": str(args)[:200],
-                            "kwargs": str(kwargs)[:200],
-                        },
-                    )
-            except Exception as e:
-                await self.logger.error("Failed to log Discord event error to webhook", {"error": str(e)})
+
 
         @self.bot.event
         async def on_command_error(ctx, error):
@@ -468,25 +410,7 @@ class ModernizedQuranBot:
                 },
             )
             
-            # Log command error to webhook
-            try:
-                webhook_router = self.container.get("webhook_router")
-                if webhook_router:
-                    await webhook_router.log_error_event(
-                        event_type="command_error",
-                        title="❌ Command Error",
-                        description=f"Error in command: {ctx.command.name if ctx.command else 'unknown'}",
-                        level=LogLevel.ERROR,
-                        context={
-                            "command": ctx.command.name if ctx.command else "unknown",
-                            "user_id": ctx.author.id,
-                            "guild_id": ctx.guild.id if ctx.guild else None,
-                            "error": str(error),
-                            "user_name": ctx.author.display_name,
-                        },
-                    )
-            except Exception as e:
-                await self.logger.error("Failed to log command error to webhook", {"error": str(e)})
+
 
             await ctx.send("❌ An error occurred while processing your command.")
 
@@ -495,29 +419,7 @@ class ModernizedQuranBot:
             """Handle voice state changes for role management."""
             await self._handle_voice_state_update(member, before, after)
 
-    async def _send_startup_webhook(self, startup_duration: float):
-        """Send startup notification via webhook."""
-        try:
-            webhook_service = self.container.get("webhook_service")
-            if webhook_service:
-                webhook_service.bot = self.bot
-                if hasattr(webhook_service, "formatter"):
-                    webhook_service.formatter.bot = self.bot
 
-                await webhook_service.log_bot_startup(
-                    version=BOT_VERSION,
-                    startup_duration=startup_duration,
-                    services_loaded=(
-                        len(self.container._singletons)
-                        if hasattr(self.container, "_singletons")
-                        else 0
-                    ),
-                    guild_count=len(self.bot.guilds),
-                )
-        except Exception as e:
-            await self.logger.warning(
-                "Failed to send startup webhook", {"error": str(e)}
-            )
 
     async def _initialize_additional_systems(self):
         """Initialize additional systems like daily verses, quiz, etc."""
@@ -593,26 +495,12 @@ class ModernizedQuranBot:
     async def _handle_voice_state_update(self, member, before, after):
         """Handle voice state changes for QuranBot voice channel activity and role management."""
         try:
-            enhanced_webhook = self.container.get("webhook_router")
-            if not enhanced_webhook:
-                return
-
             audio_service = self.container.get(AudioService)
             target_channel_id = get_target_channel_id()
 
             # Handle role management
             await self._handle_voice_channel_roles(
                 member, before, after, target_channel_id
-            )
-
-            # Handle voice activity logging
-            await self._log_voice_activity(
-                member,
-                before,
-                after,
-                target_channel_id,
-                enhanced_webhook,
-                audio_service,
             )
 
         except Exception as e:
@@ -702,7 +590,7 @@ class ModernizedQuranBot:
             )
 
     async def _log_voice_activity(
-        self, member, before, after, target_channel_id, enhanced_webhook, audio_service
+        self, member, before, after, target_channel_id, audio_service
     ):
         """Log voice channel activity."""
         joined_quran_vc = (
@@ -725,31 +613,18 @@ class ModernizedQuranBot:
                 if listening_manager:
                     listening_manager.user_joined_voice(member.id)
 
-                audio_state = await audio_service.get_playback_state()
-                current_surah = (
-                    getattr(audio_state.current_position, "surah_number", "Unknown")
-                    if audio_state.current_position
-                    else "Unknown"
-                )
-
-                await enhanced_webhook.log_voice_channel_activity(
-                    activity_type="join",
-                    user_name=member.display_name,
-                    user_id=member.id,
-                    channel_name=after.channel.name,
-                    user_avatar_url=member.display_avatar.url,
-                    additional_info={
+                await self.logger.info(
+                    "User joined QuranBot voice channel",
+                    {
+                        "user_name": member.display_name,
+                        "user_id": member.id,
+                        "channel_name": after.channel.name,
                         "current_listeners": len(after.channel.members),
-                        "current_surah": f"Surah {current_surah}",
-                        "current_reciter": (
-                            audio_state.current_reciter if audio_state else "Unknown"
-                        ),
-                        "is_playing": audio_state.is_playing if audio_state else False,
                     },
                 )
             except Exception as e:
                 await self.logger.warning(
-                    "Failed to send voice join webhook",
+                    "Failed to log voice join activity",
                     {"user_id": member.id, "error": str(e)},
                 )
 
@@ -763,20 +638,18 @@ class ModernizedQuranBot:
 
                 remaining_members = len(before.channel.members) - 1
 
-                await enhanced_webhook.log_voice_channel_activity(
-                    activity_type="leave",
-                    user_name=member.display_name,
-                    user_id=member.id,
-                    channel_name=before.channel.name,
-                    user_avatar_url=member.display_avatar.url,
-                    additional_info={
+                await self.logger.info(
+                    "User left QuranBot voice channel",
+                    {
+                        "user_name": member.display_name,
+                        "user_id": member.id,
+                        "channel_name": before.channel.name,
                         "remaining_listeners": remaining_members,
-                        "left_at": f"<t:{int(time.time())}:T>",
                     },
                 )
             except Exception as e:
                 await self.logger.warning(
-                    "Failed to send voice leave webhook",
+                    "Failed to log voice leave activity",
                     {"user_id": member.id, "error": str(e)},
                 )
 
@@ -1018,30 +891,11 @@ class ModernizedQuranBot:
             log_status("Received shutdown signal", "⏹️")
         except Exception as e:
             log_critical_error(f"Bot runtime error: {e}")
-            await self._send_crash_webhook(e)
+
         finally:
             await self.shutdown()
 
-    async def _send_crash_webhook(self, error: Exception):
-        """Send crash notification via webhook."""
-        try:
-            if hasattr(self, "container") and self.container:
-                enhanced_webhook = self.container.get("webhook_router")
-                if enhanced_webhook:
-                    await enhanced_webhook.log_bot_crash(
-                        error_message="Bot encountered a critical runtime error",
-                        exception=error,
-                        crash_context={
-                            "error_type": type(error).__name__,
-                            "module": getattr(error, "__module__", "unknown"),
-                            "uptime_seconds": int(
-                                time.time() - self._startup_start_time
-                            ),
-                        },
-                        ping_owner=True,
-                    )
-        except:
-            pass  # Don't fail if webhook fails during crash
+
 
     async def shutdown(self):
         """Gracefully shutdown all services."""
@@ -1063,26 +917,7 @@ class ModernizedQuranBot:
             if self.logger:
                 await self.logger.info("Starting graceful shutdown")
 
-            # Log shutdown to webhook
-            try:
-                webhook_router = self.container.get("webhook_router")
-                if webhook_router:
-                    await webhook_router.log_bot_event(
-                        event_type="bot_shutdown",
-                        title="🔄 Bot Shutdown",
-                        description="QuranBot is shutting down gracefully",
-                        level=LogLevel.INFO,
-                        context={
-                            "uptime_seconds": int(time.time() - self._startup_start_time),
-                            "shutdown_reason": "graceful",
-                        },
-                    )
-            except Exception as e:
-                if self.logger:
-                    await self.logger.error("Failed to log shutdown to webhook", {"error": str(e)})
 
-            # Send shutdown webhook
-            await self._send_shutdown_webhook()
 
             # Stop Discord bot
             if self.bot and not self.bot.is_closed():
@@ -1102,31 +937,7 @@ class ModernizedQuranBot:
         finally:
             self.is_running = False
 
-    async def _send_shutdown_webhook(self):
-        """Send shutdown notification via webhook."""
-        try:
-            webhook_service = self.container.get("webhook_service")
-            if webhook_service:
-                uptime_seconds = time.time() - self._startup_start_time
-                uptime_str = (
-                    f"{uptime_seconds/3600:.1f} hours"
-                    if uptime_seconds > 3600
-                    else f"{uptime_seconds/60:.1f} minutes"
-                )
 
-                await webhook_service.log_bot_shutdown(
-                    reason="Graceful shutdown requested",
-                    uptime=uptime_str,
-                    final_stats={
-                        "guilds_connected": len(self.bot.guilds) if self.bot else 0,
-                        "uptime_seconds": int(uptime_seconds),
-                    },
-                )
-        except Exception as e:
-            if self.logger:
-                await self.logger.warning(
-                    "Failed to send shutdown webhook", {"error": str(e)}
-                )
 
     async def _shutdown_services(self):
         """Shutdown all services in reverse order."""
@@ -1141,7 +952,6 @@ class ModernizedQuranBot:
             PerformanceMonitor,
             ResourceManager,
             CacheService,
-            "webhook_service",
         ]
 
         for service_type in services_to_shutdown:

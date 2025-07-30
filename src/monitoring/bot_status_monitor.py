@@ -10,8 +10,11 @@ import time
 from datetime import datetime, timezone, UTC
 from pathlib import Path
 from typing import Dict, Optional, Any
-import psutil
 import discord
+try:
+    import psutil
+except ImportError:
+    psutil = None
 
 from ..core.logger import StructuredLogger
 from ..services.database_service import QuranBotDatabaseService
@@ -122,20 +125,18 @@ class BotStatusMonitor:
             # Get current stats from database
             current_stats = await self.db_service.get_bot_statistics()
             
-            # Calculate new values
+            # Calculate new values - only use fields that exist in the table
             total_runtime = current_stats.get('total_runtime_hours', 0) + runtime_hours
-            total_commands = current_stats.get('total_commands', 0) + self.command_count
-            total_messages = current_stats.get('total_messages', 0) + self.message_count
-            total_errors = current_stats.get('total_errors', 0) + self.error_count
+            total_sessions = current_stats.get('total_sessions', 0)
+            total_completed = current_stats.get('total_completed_sessions', 0)
             
-            # Update database
+            # Update database with only valid fields
             await self.db_service.update_bot_statistics(
                 total_runtime_hours=total_runtime,
-                total_commands=total_commands,
-                total_messages=total_messages,
-                total_errors=total_errors,
-                current_status='online' if self.bot.is_ready() else 'offline',
-                last_update=datetime.now(UTC).isoformat()
+                total_sessions=total_sessions,  # Keep existing
+                total_completed_sessions=total_completed,  # Keep existing
+                last_startup=current_stats.get('last_startup'),  # Keep existing
+                favorite_reciter=current_stats.get('favorite_reciter', 'Saad Al Ghamdi')
             )
             
             # Reset counters
@@ -161,8 +162,8 @@ class BotStatusMonitor:
                 "gateway_latency": self.bot.latency if self.bot.is_ready() else 0,
                 "shard_count": len(self.bot.shards) if hasattr(self.bot, 'shards') else 1,
                 "guild_count": len(self.bot.guilds) if self.bot.is_ready() else 0,
-                "memory_usage_mb": psutil.Process().memory_info().rss / 1024 / 1024,
-                "cpu_percent": psutil.Process().cpu_percent(interval=0.1)
+                "memory_usage_mb": psutil.Process().memory_info().rss / 1024 / 1024 if psutil else 0.0,
+                "cpu_percent": psutil.Process().cpu_percent(interval=0.1) if psutil else 0.0
             }
             
             # Keep only last 100 health records
@@ -208,9 +209,12 @@ class BotStatusMonitor:
     async def record_quiz_sent(self, user_id: str, question_id: str):
         """Record quiz question sent"""
         try:
-            # Update quiz statistics
-            await self.db_service.increment_quiz_statistics(
-                questions_sent=1
+            # Get current quiz stats and update
+            current_stats = await self.db_service.get_quiz_statistics()
+            questions_sent = current_stats.get('questions_sent', 0) + 1
+            
+            await self.db_service.update_quiz_statistics(
+                questions_sent=questions_sent
             )
             
             # Log event
@@ -230,12 +234,18 @@ class BotStatusMonitor:
     async def record_quiz_answered(self, user_id: str, correct: bool):
         """Record quiz answer"""
         try:
-            # Update quiz statistics
-            updates = {"total_attempts": 1}
+            # Get current quiz stats and update
+            current_stats = await self.db_service.get_quiz_statistics()
+            total_attempts = current_stats.get('total_attempts', 0) + 1
+            correct_answers = current_stats.get('correct_answers', 0)
+            
             if correct:
-                updates["correct_answers"] = 1
+                correct_answers += 1
                 
-            await self.db_service.increment_quiz_statistics(**updates)
+            await self.db_service.update_quiz_statistics(
+                total_attempts=total_attempts,
+                correct_answers=correct_answers
+            )
             
             # Log event
             await self.db_service.log_system_event(
@@ -254,9 +264,8 @@ class BotStatusMonitor:
     async def shutdown(self):
         """Clean shutdown of monitor"""
         try:
-            # Record shutdown
+            # Record shutdown - only update valid fields
             await self.db_service.update_bot_statistics(
-                current_status='offline',
                 last_shutdown=datetime.now(UTC).isoformat()
             )
             

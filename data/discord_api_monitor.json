@@ -1,0 +1,167 @@
+{
+  "api_metrics": [],
+  "health_history": [
+    {
+      "timestamp": "2025-07-30T21:04:52.026556+00:00",
+      "status": "online",
+      "gateway_connected": true,
+      "gateway_latency": 0.045,
+      "shard_count": 1,
+      "guild_count": 0,
+      "memory_usage_mb": 60.96875,
+      "cpu_percent": 0.1
+    },
+    {
+      "timestamp": "2025-07-30T21:04:57.134603+00:00",
+      "status": "online",
+      "gateway_connected": true,
+      "gateway_latency": 0.045,
+      "shard_count": 1,
+      "guild_count": 0,
+      "memory_usage_mb": 18.453125,
+      "cpu_percent": 0.1
+    },
+    {
+      "timestamp": "2025-07-30T21:05:02.244603+00:00",
+      "status": "online",
+      "gateway_connected": true,
+      "gateway_latency": 0.045,
+      "shard_count": 1,
+      "guild_count": 0,
+      "memory_usage_mb": 18.21875,
+      "cpu_percent": 0.1
+    },
+    {
+      "timestamp": "2025-07-30T21:05:07.355084+00:00",
+      "status": "online",
+      "gateway_connected": true,
+      "gateway_latency": 0.045,
+      "shard_count": 1,
+      "guild_count": 0,
+      "memory_usage_mb": 18.109375,
+      "cpu_percent": 0.1
+    },
+    {
+      "timestamp": "2025-07-30T21:05:12.465119+00:00",
+      "status": "online",
+      "gateway_connected": true,
+      "gateway_latency": 0.045,
+      "shard_count": 1,
+      "guild_count": 0,
+      "memory_usage_mb": 19.3125,
+      "cpu_percent": 0.1
+    },
+    {
+      "timestamp": "2025-07-30T21:05:17.569883+00:00",
+      "status": "online",
+      "gateway_connected": true,
+      "gateway_latency": 0.045,
+      "shard_count": 1,
+      "guild_count": 0,
+      "memory_usage_mb": 18.140625,
+      "cpu_percent": 0.1
+    },
+    {
+      "timestamp": "2025-07-30T21:05:22.678605+00:00",
+      "status": "online",
+      "gateway_connected": true,
+      "gateway_latency": 0.045,
+      "shard_count": 1,
+      "guild_count": 0,
+      "memory_usage_mb": 21.640625,
+      "cpu_percent": 0.1
+    },
+    {
+      "timestamp": "2025-07-30T21:05:27.145347+00:00",
+      "status": "online",
+      "gateway_connected": true,
+      "gateway_latency": 0.045,
+      "shard_count": 1,
+      "guild_count": 0,
+      "memory_usage_mb": 21.78125,
+      "cpu_percent": 0.1
+    },
+    {
+      "timestamp": "2025-07-30T21:07:36.364393+00:00",
+      "status": "online",
+      "gateway_connected": true,
+      "gateway_latency": 0.045,
+      "shard_count": 1,
+      "guild_count": 0,
+      "memory_usage_mb": 61.921875,
+      "cpu_percent": 0.1
+    },
+    {
+      "timestamp": "2025-07-30T21:07:41.471715+00:00",
+      "status": "online",
+      "gateway_connected": true,
+      "gateway_latency": 0.045,
+      "shard_count": 1,
+      "guild_count": 0,
+      "memory_usage_mb": 42.265625,
+      "cpu_percent": 0.1
+    },
+    {
+      "timestamp": "2025-07-30T21:07:46.574748+00:00",
+      "status": "online",
+      "gateway_connected": true,
+      "gateway_latency": 0.045,
+      "shard_count": 1,
+      "guild_count": 0,
+      "memory_usage_mb": 42.59375,
+      "cpu_percent": 0.1
+    },
+    {
+      "timestamp": "2025-07-30T21:07:51.677173+00:00",
+      "status": "online",
+      "gateway_connected": true,
+      "gateway_latency": 0.045,
+      "shard_count": 1,
+      "guild_count": 0,
+      "memory_usage_mb": 42.640625,
+      "cpu_percent": 0.1
+    },
+    {
+      "timestamp": "2025-07-30T21:07:56.783137+00:00",
+      "status": "online",
+      "gateway_connected": true,
+      "gateway_latency": 0.045,
+      "shard_count": 1,
+      "guild_count": 0,
+      "memory_usage_mb": 18.859375,
+      "cpu_percent": 0.1
+    },
+    {
+      "timestamp": "2025-07-30T21:08:01.889588+00:00",
+      "status": "online",
+      "gateway_connected": true,
+      "gateway_latency": 0.045,
+      "shard_count": 1,
+      "guild_count": 0,
+      "memory_usage_mb": 18.125,
+      "cpu_percent": 0.1
+    },
+    {
+      "timestamp": "2025-07-30T21:08:07.017585+00:00",
+      "status": "online",
+      "gateway_connected": true,
+      "gateway_latency": 0.045,
+      "shard_count": 1,
+      "guild_count": 0,
+      "memory_usage_mb": 21.5625,
+      "cpu_percent": 0.1
+    },
+    {
+      "timestamp": "2025-07-30T21:08:11.473215+00:00",
+      "status": "online",
+      "gateway_connected": true,
+      "gateway_latency": 0.045,
+      "shard_count": 1,
+      "guild_count": 0,
+      "memory_usage_mb": 23.109375,
+      "cpu_percent": 0.1
+    }
+  ],
+  "rate_limits": {},
+  "last_update": "2025-07-30T21:08:11.578136+00:00"
+}

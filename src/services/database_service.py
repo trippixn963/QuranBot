@@ -610,4 +610,235 @@ class QuranBotDatabaseService:
         
     async def cleanup_old_data(self, days_to_keep: int = 30) -> int:
         """Clean up old data"""
-        return await self.db_manager.cleanup_old_data(days_to_keep) 
+        return await self.db_manager.cleanup_old_data(days_to_keep)
+    
+    # ==========================================================================
+    # HISTORICAL DATA OPERATIONS FOR CHARTS
+    # ==========================================================================
+    
+    async def record_bot_stats_snapshot(self, **stats) -> bool:
+        """Record a snapshot of bot statistics for historical charts"""
+        try:
+            query = """
+                INSERT INTO bot_stats_history 
+                (total_runtime_hours, active_sessions, total_commands, total_messages,
+                 memory_usage_mb, cpu_percent, gateway_latency, guild_count)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """
+            
+            params = (
+                stats.get('total_runtime_hours', 0.0),
+                stats.get('active_sessions', 0),
+                stats.get('total_commands', 0),
+                stats.get('total_messages', 0),
+                stats.get('memory_usage_mb', 0.0),
+                stats.get('cpu_percent', 0.0),
+                stats.get('gateway_latency', 0.0),
+                stats.get('guild_count', 0)
+            )
+            
+            await self.db_manager.execute_query(query, params)
+            return True
+            
+        except Exception as e:
+            await self.logger.error(f"Failed to record bot stats snapshot: {e}")
+            return False
+    
+    async def get_bot_stats_history(self, days: int = 7) -> List[Dict[str, Any]]:
+        """Get historical bot statistics for charts"""
+        try:
+            query = """
+                SELECT * FROM bot_stats_history 
+                WHERE timestamp > datetime('now', '-{} days')
+                ORDER BY timestamp ASC
+            """.format(days)
+            
+            results = await self.db_manager.execute_query(query, fetch_all=True)
+            return [dict(row) for row in results] if results else []
+            
+        except Exception as e:
+            await self.logger.error(f"Failed to get bot stats history: {e}")
+            return []
+    
+    async def get_quiz_history(self, days: int = 7) -> List[Dict[str, Any]]:
+        """Get historical quiz statistics for trends"""
+        try:
+            query = """
+                SELECT * FROM quiz_history 
+                WHERE timestamp > datetime('now', '-{} days')
+                ORDER BY timestamp ASC
+            """.format(days)
+            
+            results = await self.db_manager.execute_query(query, fetch_all=True)
+            return [dict(row) for row in results] if results else []
+            
+        except Exception as e:
+            await self.logger.error(f"Failed to get quiz history: {e}")
+            return []
+    
+    # ==========================================================================
+    # USER PROFILES AND ACHIEVEMENTS
+    # ==========================================================================
+    
+    async def record_user_activity(self, user_id: str, activity_type: str, activity_data: str = None, channel_id: str = None, guild_id: str = None) -> bool:
+        """Record user activity for profiles"""
+        try:
+            query = """
+                INSERT INTO user_activity (user_id, activity_type, activity_data, channel_id, guild_id)
+                VALUES (?, ?, ?, ?, ?)
+            """
+            
+            params = (user_id, activity_type, activity_data, channel_id, guild_id)
+            await self.db_manager.execute_query(query, params)
+            return True
+            
+        except Exception as e:
+            await self.logger.error(f"Failed to record user activity: {e}")
+            return False
+    
+    async def get_user_profile(self, user_id: str) -> Dict[str, Any]:
+        """Get comprehensive user profile with activity and achievements"""
+        try:
+            # Get basic quiz stats
+            quiz_stats = await self.get_user_quiz_stats(user_id)
+            
+            # Get recent activity
+            activity_query = """
+                SELECT activity_type, activity_data, timestamp, channel_id
+                FROM user_activity 
+                WHERE user_id = ?
+                ORDER BY timestamp DESC 
+                LIMIT 20
+            """
+            activity_results = await self.db_manager.execute_query(activity_query, (user_id,), fetch_all=True)
+            activities = [dict(row) for row in activity_results] if activity_results else []
+            
+            # Get achievements
+            achievements_query = """
+                SELECT achievement_type, achievement_name, description, earned_at, points_awarded
+                FROM user_achievements 
+                WHERE user_id = ?
+                ORDER BY earned_at DESC
+            """
+            achievement_results = await self.db_manager.execute_query(achievements_query, (user_id,), fetch_all=True)
+            achievements = [dict(row) for row in achievement_results] if achievement_results else []
+            
+            # Calculate profile stats
+            total_points = sum(a['points_awarded'] for a in achievements) + quiz_stats.get('points', 0)
+            activity_count = len(activities)
+            
+            return {
+                'user_id': user_id,
+                'quiz_stats': quiz_stats,
+                'recent_activity': activities,
+                'achievements': achievements,
+                'total_points': total_points,
+                'activity_count': activity_count,
+                'join_date': quiz_stats.get('first_answer'),
+                'last_seen': activities[0]['timestamp'] if activities else quiz_stats.get('last_answer')
+            }
+            
+        except Exception as e:
+            await self.logger.error(f"Failed to get user profile: {e}")
+            return {}
+    
+    async def award_achievement(self, user_id: str, achievement_type: str, achievement_name: str, description: str = None, points: int = 0) -> bool:
+        """Award an achievement to a user"""
+        try:
+            # Check if user already has this achievement
+            existing = await self.db_manager.execute_query(
+                "SELECT id FROM user_achievements WHERE user_id = ? AND achievement_type = ?",
+                (user_id, achievement_type),
+                fetch_one=True
+            )
+            
+            if existing:
+                return False  # Already has this achievement
+            
+            query = """
+                INSERT INTO user_achievements 
+                (user_id, achievement_type, achievement_name, description, points_awarded)
+                VALUES (?, ?, ?, ?, ?)
+            """
+            
+            params = (user_id, achievement_type, achievement_name, description, points)
+            await self.db_manager.execute_query(query, params)
+            
+            # Also record as user activity
+            import json
+            await self.record_user_activity(
+                user_id, 
+                'achievement_earned', 
+                json.dumps({'achievement': achievement_name, 'points': points})
+            )
+            
+            return True
+            
+        except Exception as e:
+            await self.logger.error(f"Failed to award achievement: {e}")
+            return False
+    
+    # ==========================================================================
+    # LIVE AUDIO STATUS
+    # ==========================================================================
+    
+    async def update_audio_status(self, **audio_data) -> bool:
+        """Update live audio status"""
+        try:
+            # Build dynamic update query
+            update_fields = []
+            values = []
+            
+            valid_fields = {
+                'current_surah', 'current_verse', 'reciter', 'is_playing',
+                'current_position_seconds', 'total_duration_seconds', 'listeners_count'
+            }
+            
+            for field, value in audio_data.items():
+                if field in valid_fields:
+                    update_fields.append(f"{field} = ?")
+                    values.append(value)
+            
+            if not update_fields:
+                return True
+            
+            # Add timestamp
+            update_fields.append("last_updated = ?")
+            values.append(datetime.now(timezone.utc).isoformat())
+            values.append(1)  # WHERE id = 1
+            
+            query = f"""
+                UPDATE audio_status 
+                SET {', '.join(update_fields)}
+                WHERE id = ?
+            """
+            
+            await self.db_manager.execute_query(query, tuple(values))
+            return True
+            
+        except Exception as e:
+            await self.logger.error(f"Failed to update audio status: {e}")
+            return False
+    
+    async def get_audio_status(self) -> Dict[str, Any]:
+        """Get current live audio status"""
+        try:
+            result = await self.db_manager.execute_query(
+                "SELECT * FROM audio_status WHERE id = 1",
+                fetch_one=True
+            )
+            
+            return dict(result) if result else {
+                'current_surah': 1,
+                'current_verse': 1,
+                'reciter': 'Saad Al Ghamdi',
+                'is_playing': False,
+                'current_position_seconds': 0.0,
+                'total_duration_seconds': 0.0,
+                'listeners_count': 0,
+                'last_updated': None
+            }
+            
+        except Exception as e:
+            await self.logger.error(f"Failed to get audio status: {e}")
+            return {} 
