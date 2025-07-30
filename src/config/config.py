@@ -226,6 +226,14 @@ class QuranBotConfig(BaseSettings):
         default=False, description="Enable loop by default", alias="DEFAULT_LOOP"
     )
 
+    default_volume: float = Field(
+        default=0.5,
+        description="Default audio volume (0.0 to 1.0)",
+        ge=0.0,
+        le=1.0,
+        alias="DEFAULT_VOLUME",
+    )
+
     # =============================================================================
     # CACHE SETTINGS
     # =============================================================================
@@ -776,6 +784,7 @@ def reload_config() -> QuranBotConfig:
 # =============================================================================
 # CONVENIENCE FUNCTIONS
 # =============================================================================
+
 
 def is_admin(user_id: int) -> bool:
     """Check if a user ID is an admin."""
