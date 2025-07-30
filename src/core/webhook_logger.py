@@ -1840,6 +1840,7 @@ class ModernWebhookLogger:
             author_name=user_name,
             author_icon_url=user_avatar_url,
             author_url=f"https://discord.com/users/{user_id}" if user_id else None,
+            thumbnail_url=user_avatar_url,  # Use user avatar as thumbnail
         )
 
         return await self._send_message(message)
