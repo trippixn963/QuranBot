@@ -15,7 +15,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 from ..core.logger import StructuredLogger
-from ..core.webhook_logger import LogLevel
+
 
 
 @dataclass
@@ -86,28 +86,7 @@ class UserAnalyticsService:
         
         await self.logger.info("User analytics service initialized")
         
-        # Log initialization to webhook
-        try:
-            from src.core.di_container import get_container
-            
-            container = get_container()
-            if container:
-                webhook_router = container.get("webhook_router")
-                if webhook_router:
-                    await webhook_router.log_data_event(
-                        event_type="user_analytics_initialized",
-                        title="📊 User Analytics Initialized",
-                        description="User analytics service started successfully",
-                        level=LogLevel.INFO,
-                        context={
-                            "active_sessions": len(self.active_sessions),
-                            "total_sessions": len(self.session_history),
-                            "feature_usage_count": len(self.feature_usage),
-                            "user_retention_count": len(self.user_retention),
-                        },
-                    )
-        except Exception as e:
-            await self.logger.error("Failed to log analytics initialization to webhook", {"error": str(e)})
+
     
     async def start_user_session(self, user_id: int, guild_id: Optional[int] = None):
         """Start tracking a user session"""
@@ -162,30 +141,7 @@ class UserAnalyticsService:
             }
         )
         
-        # Log session end to webhook for long sessions
-        if session.duration > 3600:  # 1 hour
-            try:
-                from src.core.di_container import get_container
-                
-                container = get_container()
-                if container:
-                    webhook_router = container.get("webhook_router")
-                    if webhook_router:
-                        await webhook_router.log_user_event(
-                            event_type="long_user_session",
-                            title="⏱️ Long User Session",
-                            description=f"User {user_id} had a long session",
-                            level=LogLevel.INFO,
-                            context={
-                                "user_id": user_id,
-                                "duration_hours": session.duration / 3600,
-                                "commands_used": session.commands_used,
-                                "features_accessed": session.features_accessed,
-                                "guild_id": session.guild_id,
-                            },
-                        )
-            except Exception as e:
-                await self.logger.error("Failed to log long session to webhook", {"error": str(e)})
+
     
     async def track_command_usage(self, user_id: int, command_name: str, context: Dict[str, Any] = None):
         """Track command usage for analytics"""
@@ -309,28 +265,7 @@ class UserAnalyticsService:
         )
         
         if recent_usage >= self.peak_usage_threshold:
-            # Log peak usage to webhook
-            try:
-                from src.core.di_container import get_container
-                
-                container = get_container()
-                if container:
-                    webhook_router = container.get("webhook_router")
-                    if webhook_router:
-                        await webhook_router.log_user_event(
-                            event_type="peak_command_usage",
-                            title="📈 Peak Command Usage",
-                            description=f"High usage detected for command {command_name}",
-                            level=LogLevel.INFO,
-                            context={
-                                "command_name": command_name,
-                                "usage_count": recent_usage,
-                                "threshold": self.peak_usage_threshold,
-                                "time_period": "1 hour",
-                            },
-                        )
-            except Exception as e:
-                await self.logger.error("Failed to log peak usage to webhook", {"error": str(e)})
+            pass  # Peak usage detected but webhook logging removed
     
     async def get_user_analytics(self, user_id: int) -> Dict[str, Any]:
         """Get analytics for a specific user"""

@@ -361,24 +361,7 @@ class AudioService:
             self._current_state.guild_id = guild_id
             self._connection_attempts = 0
             
-            # Log to webhook
-            try:
-                webhook_router = self._container.get("webhook_router")
-                if webhook_router:
-                    await webhook_router.log_audio_event(
-                        event_type="voice_connected",
-                        title="🎧 Voice Channel Connected",
-                        description=f"Successfully connected to voice channel",
-                        level=LogLevel.INFO,
-                        context={
-                            "channel_id": channel_id,
-                            "guild_id": guild_id,
-                            "connection_attempts": self._connection_attempts,
-                            "channel_name": channel.name if channel else "Unknown",
-                        },
-                    )
-            except Exception as e:
-                await self._logger.error("Failed to log voice connection to webhook", {"error": str(e)})
+
 
             await self._logger.info(
                 "Successfully connected to voice channel",
@@ -389,30 +372,7 @@ class AudioService:
                 },
             )
 
-            # Success webhook for voice connection
-            try:
-                from ..core.di_container import get_container
 
-                container = get_container()
-                if container:
-                    webhook_router = container.get("webhook_router")
-                    if webhook_router:
-                        from ..core.webhook_logger import LogLevel
-
-                        await webhook_router.route_event(
-                            event_type="voice_connection_success",
-                            title="✅ Voice Channel Connected",
-                            description=f"Successfully connected to voice channel: {channel.name}",
-                            level=LogLevel.SUCCESS,
-                            context={
-                                "channel_id": channel_id,
-                                "channel_name": channel.name,
-                                "guild_id": guild_id,
-                                "connection_attempts": self._connection_attempts,
-                            },
-                        )
-            except Exception:
-                pass
 
             return True
 
@@ -443,24 +403,6 @@ class AudioService:
             try:
                 await self._voice_client.disconnect(force=True)
                 await self._logger.info("Disconnected from voice channel")
-                
-                # Log to webhook
-                try:
-                    webhook_router = self._container.get("webhook_router")
-                    if webhook_router:
-                        await webhook_router.log_audio_event(
-                            event_type="voice_disconnected",
-                            title="🔌 Voice Channel Disconnected",
-                            description="Disconnected from voice channel",
-                            level=LogLevel.INFO,
-                            context={
-                                "channel_id": self._current_state.voice_channel_id,
-                                "guild_id": self._current_state.guild_id,
-                                "was_playing": self._current_state.is_playing,
-                            },
-                        )
-                except Exception as webhook_error:
-                    await self._logger.error("Failed to log voice disconnection to webhook", {"error": str(webhook_error)})
                     
             except Exception as e:
                 await self._logger.warning(
@@ -523,24 +465,7 @@ class AudioService:
             },
         )
         
-        # Log to webhook
-        try:
-            webhook_router = self._container.get("webhook_router")
-            if webhook_router:
-                await webhook_router.log_audio_event(
-                    event_type="playback_started",
-                    title="🎵 Audio Playback Started",
-                    description=f"Started playing Surah {self._current_state.current_position.surah_number} by {self._current_state.current_reciter}",
-                    level=LogLevel.INFO,
-                    context={
-                        "reciter": self._current_state.current_reciter,
-                        "surah_number": self._current_state.current_position.surah_number,
-                        "resume_position": resume_position,
-                        "playback_mode": self._current_state.playback_mode.value,
-                    },
-                )
-        except Exception as e:
-            await self._logger.error("Failed to log audio event to webhook", {"error": str(e)})
+
 
         return True
 
@@ -568,24 +493,7 @@ class AudioService:
 
         await self._logger.info("Stopped audio playback")
         
-        # Only log to webhook if this is an actual stop, not a transition
-        if not is_transition:
-            try:
-                webhook_router = self._container.get("webhook_router")
-                if webhook_router:
-                    await webhook_router.log_audio_event(
-                        event_type="playback_stopped",
-                        title="⏹️ Audio Playback Stopped",
-                        description="Audio playback has been stopped",
-                        level=LogLevel.INFO,
-                        context={
-                            "last_reciter": self._current_state.current_reciter,
-                            "last_surah": self._current_state.current_position.surah_number,
-                            "playback_duration": "N/A",  # Could be calculated if needed
-                        },
-                    )
-            except Exception as e:
-                await self._logger.error("Failed to log audio stop event to webhook", {"error": str(e)})
+
 
     async def pause_playback(self) -> bool:
         """Disabled - 24/7 Quran bot should never be paused.
@@ -1456,28 +1364,7 @@ class AudioService:
                                 )
 
                                 # Critical webhook for connection failures
-                                try:
-                                    from ..core.di_container import get_container
 
-                                    container = get_container()
-                                    if container:
-                                        webhook_router = container.get("webhook_router")
-                                        if webhook_router:
-                                            from ..core.webhook_logger import LogLevel
-
-                                            await webhook_router.route_event(
-                                                event_type="audio_connection_failure",
-                                                title="🚨 Audio Connection Failure",
-                                                description="Failed to reconnect to voice channel after multiple attempts",
-                                                level=LogLevel.ERROR,
-                                                context={
-                                                    "consecutive_failures": consecutive_failures,
-                                                    "voice_channel_id": self._target_channel_id,
-                                                    "impact": "Audio playback interrupted",
-                                                },
-                                            )
-                                except Exception:
-                                    pass
 
                                 # If we've failed too many times consecutively, take drastic action
                                 if consecutive_failures >= max_consecutive_failures:
@@ -1485,22 +1372,7 @@ class AudioService:
                                         "Too many consecutive connection failures - requesting bot restart",
                                         {"consecutive_failures": consecutive_failures},
                                     )
-                                    # Emergency webhook notification if available
-                                    try:
-                                        if (
-                                            hasattr(self, "_webhook_logger")
-                                            and self._webhook_logger
-                                        ):
-                                            await self._webhook_logger.log_audio_event(
-                                                "critical_connection_failure",
-                                                f"Bot needs restart after {consecutive_failures} consecutive connection failures",
-                                                ping_owner=True,
-                                            )
-                                    except Exception as webhook_error:
-                                        await self._logger.debug(
-                                            "Failed to send critical reconnection webhook",
-                                            {"error": str(webhook_error)},
-                                        )
+
 
                         except Exception as e:
                             await self._logger.error(
@@ -1520,29 +1392,7 @@ class AudioService:
                     )
                     consecutive_failures = 0
 
-                # Webhook notification for successful recovery
-                try:
-                    from ..core.di_container import get_container
 
-                    container = get_container()
-                    if container:
-                        webhook_router = container.get("webhook_router")
-                        if webhook_router:
-                            from ..core.webhook_logger import LogLevel
-
-                            await webhook_router.route_event(
-                                event_type="audio_system_recovery",
-                                title="✅ Audio System Recovered",
-                                description="Audio system has successfully recovered from connection issues",
-                                level=LogLevel.SUCCESS,
-                                context={
-                                    "recovery_time": time.time(),
-                                    "previous_failures": consecutive_failures,
-                                    "voice_channel_id": self._target_channel_id,
-                                },
-                            )
-                except Exception:
-                    pass
 
                 # Additional health checks for 24/7 stability
                 if self._voice_client and self._voice_client.is_connected():

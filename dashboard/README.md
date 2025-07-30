@@ -207,6 +207,20 @@ The dashboard supports multiple Islamic themes:
 
 ## 🚀 Deployment
 
+### 🏃 Quick 24/7 Deployment
+```bash
+# Use the automated deployment script
+cd dashboard/deploy
+./deploy.sh root@your-server.com /path/to/quranbot
+```
+
+The `deploy/` directory contains everything needed for 24/7 operation:
+- `quranbot-dashboard.service` - Systemd service configuration
+- `start_dashboard.sh` - Production startup script
+- `nginx.conf` - Optional HTTPS reverse proxy
+- `deploy.sh` - Automated deployment script
+- `README.md` - Detailed deployment guide
+
 ### Development
 ```bash
 # Simple development server

@@ -14,7 +14,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 from ..core.logger import StructuredLogger
-from ..core.webhook_logger import LogLevel
+
 
 
 @dataclass
@@ -65,11 +65,10 @@ class APIRateLimit:
 
 
 class PerformanceMonitor:
-    """Monitor bot performance metrics and send webhook alerts."""
+    """Monitor bot performance metrics and log alerts."""
     
     def __init__(self, logger: StructuredLogger, webhook_router=None):
         self.logger = logger
-        self.webhook_router = webhook_router
         self.monitoring = False
         self.monitor_task = None
         
@@ -232,138 +231,76 @@ class PerformanceMonitor:
         if max_usage > self.high_api_usage_threshold:
             high_usage_limits = [limit for limit in recent_limits if limit.usage_percent > self.high_api_usage_threshold]
             await self._send_api_usage_alert(high_usage_limits, max_usage)
-            self.last_api_usage_alert = current_time    # Ale
-rt sending methods
+            self.last_api_usage_alert = current_time
+    
+    # Alert sending methods
     async def _send_memory_leak_alert(self, increase_mb: float, old_mb: float, new_mb: float):
         """Send memory leak alert."""
-        if not self.webhook_router:
-            return
-        
-        try:
-            from ..core.webhook_logger import LogLevel
-            
-            context = {
-                "Memory Increase": f"{increase_mb:.1f} MB",
-                "Previous Memory": f"{old_mb:.1f} MB",
-                "Current Memory": f"{new_mb:.1f} MB",
-                "Time Period": "10 minutes",
-                "Severity": "HIGH" if increase_mb > 100 else "MEDIUM",
-                "Action Required": "Monitor for continued growth",
+        await self.logger.warning(
+            "Potential memory leak detected",
+            {
+                "memory_increase_mb": increase_mb,
+                "previous_memory_mb": old_mb,
+                "current_memory_mb": new_mb,
+                "time_period": "10 minutes"
             }
-            
-            await self.webhook_router.route_event(
-                event_type="memory_leak_detected",
-                title="⚠️ Potential Memory Leak Detected",
-                description=f"Memory usage increased by {increase_mb:.1f} MB in 10 minutes",
-                level=LogLevel.WARNING,
-                context=context
-            )
-            
-        except Exception as e:
-            await self.logger.error("Failed to send memory leak alert", {"error": str(e)})
+        )
     
     async def _send_slow_commands_alert(self, slow_commands: List[CommandMetric]):
         """Send slow commands alert."""
-        if not self.webhook_router:
-            return
+        avg_response_time = sum(cmd.response_time for cmd in slow_commands) / len(slow_commands)
+        slowest_command = max(slow_commands, key=lambda x: x.response_time)
         
-        try:
-            from ..core.webhook_logger import LogLevel
-            
-            avg_response_time = sum(cmd.response_time for cmd in slow_commands) / len(slow_commands)
-            slowest_command = max(slow_commands, key=lambda x: x.response_time)
-            
-            context = {
-                "Slow Commands Count": f"{len(slow_commands)} commands",
-                "Average Response Time": f"{avg_response_time:.2f}s",
-                "Slowest Command": slowest_command.command_name,
-                "Slowest Time": f"{slowest_command.response_time:.2f}s",
-                "Threshold": f"{self.slow_command_threshold}s",
-                "Impact": "User experience degraded",
+        await self.logger.warning(
+            "Slow commands detected",
+            {
+                "slow_commands_count": len(slow_commands),
+                "average_response_time": avg_response_time,
+                "slowest_command": slowest_command.command_name,
+                "slowest_time": slowest_command.response_time,
+                "threshold": self.slow_command_threshold
             }
-            
-            await self.webhook_router.route_event(
-                event_type="slow_commands_detected",
-                title="🐌 Slow Command Response Times",
-                description=f"Multiple commands responding slowly (avg: {avg_response_time:.2f}s)",
-                level=LogLevel.WARNING,
-                context=context
-            )
-            
-        except Exception as e:
-            await self.logger.error("Failed to send slow commands alert", {"error": str(e)})
+        )
     
     async def _send_slow_queries_alert(self, slow_queries: List[DatabaseMetric]):
         """Send slow database queries alert."""
-        if not self.webhook_router:
-            return
+        avg_query_time = sum(q.execution_time for q in slow_queries) / len(slow_queries)
+        slowest_query = max(slow_queries, key=lambda x: x.execution_time)
         
-        try:
-            from ..core.webhook_logger import LogLevel
-            
-            avg_query_time = sum(q.execution_time for q in slow_queries) / len(slow_queries)
-            slowest_query = max(slow_queries, key=lambda x: x.execution_time)
-            
-            context = {
-                "Slow Queries Count": f"{len(slow_queries)} queries",
-                "Average Query Time": f"{avg_query_time:.3f}s",
-                "Slowest Query Type": slowest_query.query_type,
-                "Slowest Time": f"{slowest_query.execution_time:.3f}s",
-                "Threshold": f"{self.slow_query_threshold}s",
-                "Impact": "Database performance degraded",
+        await self.logger.warning(
+            "Slow database queries detected",
+            {
+                "slow_queries_count": len(slow_queries),
+                "average_query_time": avg_query_time,
+                "slowest_query_type": slowest_query.query_type,
+                "slowest_time": slowest_query.execution_time,
+                "threshold": self.slow_query_threshold
             }
-            
-            await self.webhook_router.route_event(
-                event_type="slow_database_queries",
-                title="🗄️ Slow Database Queries Detected",
-                description=f"Multiple database queries executing slowly (avg: {avg_query_time:.3f}s)",
-                level=LogLevel.WARNING,
-                context=context
-            )
-            
-        except Exception as e:
-            await self.logger.error("Failed to send slow queries alert", {"error": str(e)})
+        )
     
     async def _send_api_usage_alert(self, high_usage_limits: List[APIRateLimit], max_usage: float):
         """Send Discord API high usage alert."""
-        if not self.webhook_router:
-            return
+        # Group by endpoint
+        endpoint_usage = {}
+        for limit in high_usage_limits:
+            if limit.endpoint not in endpoint_usage:
+                endpoint_usage[limit.endpoint] = []
+            endpoint_usage[limit.endpoint].append(limit)
         
-        try:
-            from ..core.webhook_logger import LogLevel
-            
-            # Group by endpoint
-            endpoint_usage = {}
-            for limit in high_usage_limits:
-                if limit.endpoint not in endpoint_usage:
-                    endpoint_usage[limit.endpoint] = []
-                endpoint_usage[limit.endpoint].append(limit)
-            
-            # Find most used endpoint
-            most_used_endpoint = max(endpoint_usage.keys(), 
-                                   key=lambda ep: max(l.usage_percent for l in endpoint_usage[ep]))
-            
-            context = {
-                "Max API Usage": f"{max_usage:.1f}%",
-                "High Usage Endpoints": f"{len(endpoint_usage)} endpoints",
-                "Most Used Endpoint": most_used_endpoint,
-                "Threshold": f"{self.high_api_usage_threshold}%",
-                "Risk Level": "HIGH" if max_usage > 90 else "MEDIUM",
-                "Action": "Monitor for rate limiting",
+        # Find most used endpoint
+        most_used_endpoint = max(endpoint_usage.keys(), 
+                               key=lambda ep: max(l.usage_percent for l in endpoint_usage[ep]))
+        
+        await self.logger.warning(
+            "High Discord API usage detected",
+            {
+                "max_api_usage_percent": max_usage,
+                "high_usage_endpoints": len(endpoint_usage),
+                "most_used_endpoint": most_used_endpoint,
+                "threshold": self.high_api_usage_threshold,
+                "risk_level": "HIGH" if max_usage > 90 else "MEDIUM"
             }
-            
-            level = LogLevel.WARNING if max_usage < 90 else LogLevel.ERROR
-            
-            await self.webhook_router.route_event(
-                event_type="high_api_usage",
-                title="📡 High Discord API Usage",
-                description=f"Discord API usage at {max_usage:.1f}% - approaching rate limits",
-                level=level,
-                context=context
-            )
-            
-        except Exception as e:
-            await self.logger.error("Failed to send API usage alert", {"error": str(e)})   
+        )   
  # Public methods for recording metrics
     async def record_command_metric(self, command_name: str, user_id: int, start_time: float, 
                                    end_time: float, success: bool, error_message: str = None):
