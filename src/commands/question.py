@@ -265,15 +265,7 @@ class QuestionCog(commands.Cog):
 
             # Create question embed
             embed = discord.Embed(
-                title="❓ Islamic Knowledge Quiz",
                 color=0x00D4AA,
-            )
-
-            # Add spacing before question
-            embed.add_field(
-                name="\u200b",  # Invisible character for spacing
-                value="",
-                inline=False,
             )
 
             # Add the question text

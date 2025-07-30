@@ -2391,15 +2391,7 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                 if channel:
                     # Create embed with EXACT same format as manual /question command
                     embed = discord.Embed(
-                        title="❓ Islamic Knowledge Quiz",
                         color=0x00D4AA,
-                    )
-
-                    # Add spacing before question
-                    embed.add_field(
-                        name="\u200b",  # Invisible character for spacing
-                        value="",
-                        inline=False,
                     )
 
                     # Add the question text
