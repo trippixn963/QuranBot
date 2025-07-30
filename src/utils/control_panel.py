@@ -18,7 +18,7 @@ from .tree_log import (
     log_perfect_tree_section,
     log_user_interaction,
 )
-from ..core.webhook_logger import LogLevel
+
 
 # =============================================================================
 # Configuration

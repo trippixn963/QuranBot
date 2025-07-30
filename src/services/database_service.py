@@ -33,7 +33,7 @@ from typing import Any, Dict, List, Optional
 from ..core.database import DatabaseManager
 from ..core.logger import StructuredLogger
 from ..core.exceptions import DatabaseError
-from ..core.webhook_logger import LogLevel
+
 
 
 class QuranBotDatabaseService:
@@ -52,17 +52,15 @@ class QuranBotDatabaseService:
     - Bot statistics and analytics
     """
 
-    def __init__(self, logger: StructuredLogger, db_path: Path = None, webhook_logger=None):
+    def __init__(self, logger: StructuredLogger, db_path: Path = None):
         """
         Initialize the database service.
         
         Args:
             logger: Structured logger instance
             db_path: Path to SQLite database file
-            webhook_logger: Optional webhook logger for critical events
         """
         self.logger = logger
-        self.webhook_logger = webhook_logger
         self.db_manager = DatabaseManager(logger=logger, db_path=db_path)
         self._is_initialized = False
         
@@ -77,24 +75,7 @@ class QuranBotDatabaseService:
                 {"db_path": str(self.db_manager.db_path)}
             )
             
-            # Send webhook notification for database initialization
-            if self.webhook_logger:
-                try:
-                    stats = await self.db_manager.get_database_stats()
-                    await self.webhook_logger.send_embed(
-                        title="🗄️ SQLite Database Initialized",
-                        description="QuranBot database service started successfully",
-                        fields=[
-                            ("📊 Database Size", f"{stats.get('database_size_mb', 0):.2f} MB", True),
-                            ("📝 Total Records", str(stats.get('total_records', 0)), True),
-                            ("📋 Tables", str(len(stats.get('table_counts', {}))), True),
-                            ("🔧 WAL Mode", "Enabled" if stats.get('wal_info', {}).get('journal_mode') == 'wal' else "Disabled", True)
-                        ],
-                        color=0x00ff00,  # Green
-                        thumbnail_url="https://cdn.discordapp.com/avatars/your-bot-id/avatar.png"
-                    )
-                except Exception as e:
-                    await self.logger.debug("Failed to send database init webhook", {"error": str(e)})
+
             
     # ==========================================================================
     # PLAYBACK STATE OPERATIONS
@@ -186,22 +167,7 @@ class QuranBotDatabaseService:
                 {"updated_fields": list(kwargs.keys())}
             )
             
-            # Send webhook for significant playback changes
-            if self.webhook_logger and ('surah_number' in kwargs or 'reciter' in kwargs):
-                try:
-                    await self.webhook_logger.send_embed(
-                        title="📀 Playback State Updated",
-                        description="SQLite database updated successfully",
-                        fields=[
-                            ("🎵 Surah", str(kwargs.get('surah_number', 'unchanged')), True),
-                            ("🎤 Reciter", str(kwargs.get('reciter', 'unchanged')), True),
-                            ("💾 Storage", "SQLite Database", True)
-                        ],
-                        color=0x0099ff,  # Blue
-                        thumbnail_url="https://cdn.discordapp.com/avatars/your-bot-id/avatar.png"
-                    )
-                except Exception:
-                    pass  # Don't fail on webhook errors
+
             
             return True
             
@@ -211,23 +177,7 @@ class QuranBotDatabaseService:
                 {"error": str(e), "fields": list(kwargs.keys())}
             )
             
-            # Send critical database error webhook
-            if self.webhook_logger:
-                try:
-                    await self.webhook_logger.send_embed(
-                        title="🚨 Database Error - Playback State",
-                        description="Critical SQLite operation failed!",
-                        fields=[
-                            ("❌ Error", str(e)[:100] + "..." if len(str(e)) > 100 else str(e), False),
-                            ("🔧 Operation", "Update Playback State", True),
-                            ("📝 Fields", str(list(kwargs.keys())), True),
-                            ("⚠️ Impact", "Data may not be saved", True)
-                        ],
-                        color=0xff0000,  # Red
-                        thumbnail_url="https://cdn.discordapp.com/avatars/your-bot-id/avatar.png"
-                    )
-                except Exception:
-                    pass  # Don't fail on webhook errors
+
                     
             return False
             
@@ -651,28 +601,7 @@ class QuranBotDatabaseService:
         try:
             success = await self.db_manager.backup_database(backup_path)
             
-            # Log backup event to webhook
-            if self.webhook_logger:
-                try:
-                    from src.core.di_container import get_container
-                    
-                    container = get_container()
-                    if container:
-                        webhook_router = container.get("webhook_router")
-                        if webhook_router:
-                            await webhook_router.log_data_event(
-                                event_type="database_backup",
-                                title="💾 Database Backup",
-                                description=f"Database backup {'completed successfully' if success else 'failed'}",
-                                level=LogLevel.INFO if success else LogLevel.ERROR,
-                                context={
-                                    "backup_path": str(backup_path),
-                                    "success": success,
-                                    "backup_size_mb": backup_path.stat().st_size / (1024 * 1024) if backup_path.exists() else 0,
-                                },
-                            )
-                except Exception as e:
-                    await self.logger.error("Failed to log backup event to webhook", {"error": str(e)})
+
             
             return success
         except Exception as e:

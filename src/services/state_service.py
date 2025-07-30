@@ -34,7 +34,7 @@ from pathlib import Path
 from typing import Any
 
 from ..core.logger import StructuredLogger
-from ..core.webhook_logger import LogLevel
+
 from .database_service import QuranBotDatabaseService
 
 
@@ -176,20 +176,7 @@ class SQLiteStateService:
                 container = get_container()
                 if container:
                     webhook_router = container.get("webhook_router")
-                    if webhook_router:
-                        from ..core.webhook_logger import LogLevel
 
-                        await webhook_router.route_event(
-                            event_type="database_error",
-                            title="⚠️ Database Load Error",
-                            description="Failed to load playback state from database",
-                            level=LogLevel.WARNING,
-                            context={
-                                "operation": "load_playback_state",
-                                "error_type": type(e).__name__,
-                                "error_message": str(e),
-                            },
-                        )
             except Exception:
                 pass  # Don't let webhook failures cascade
 
@@ -300,21 +287,7 @@ class SQLiteStateService:
                 container = get_container()
                 if container:
                     webhook_router = container.get("webhook_router")
-                    if webhook_router:
-                        from ..core.webhook_logger import LogLevel
 
-                        await webhook_router.route_event(
-                            event_type="database_save_failure",
-                            title="🚨 Critical: Database Save Failed",
-                            description="Failed to save playback state - data persistence compromised",
-                            level=LogLevel.CRITICAL,
-                            context={
-                                "operation": "save_playback_state",
-                                "error_type": type(e).__name__,
-                                "error_message": str(e),
-                                "data_loss_risk": "High",
-                            },
-                        )
             except Exception:
                 pass
 
