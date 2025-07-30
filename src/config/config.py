@@ -586,6 +586,11 @@ class QuranBotConfig(BaseSettings):
         """Get the audio folder for the default reciter."""
         return self.audio_folder / self.default_reciter
 
+    @property
+    def audio_base_folder(self) -> Path:
+        """Get the audio base folder (alias for audio_folder)."""
+        return self.audio_folder
+
     def is_admin_user(self, user_id: int) -> bool:
         """Check if a user ID is in the admin list."""
         return user_id in self.admin_user_id_list or user_id == self.developer_id
