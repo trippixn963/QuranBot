@@ -12,11 +12,8 @@ from discord import app_commands
 from discord.ext import commands
 
 # Import configuration service
-from src.config import get_config_service
-from src.core.exceptions import (
-    ValidationError,
-)
-from src.core.security import rate_limit, require_admin, validate_input
+from src.config import get_config
+from src.core.exceptions import ValidationError
 from src.utils import daily_verses
 from src.utils import quiz_manager as quiz_mgr
 from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
@@ -309,7 +306,7 @@ class IntervalCog(commands.Cog):
 
         try:
             # Simple admin check
-            config = get_config_service().config
+            config = get_config()
             if interaction.user.id != config.DEVELOPER_ID:
                 embed = discord.Embed(
                     title="❌ Permission Denied",
@@ -723,24 +720,41 @@ class IntervalCog(commands.Cog):
             # Send success notification to enhanced webhook router first
             try:
                 from src.core.di_container import get_container
+
                 container = get_container()
                 if container:
                     enhanced_webhook = container.get("enhanced_webhook_router")
-                    if enhanced_webhook and hasattr(enhanced_webhook, "log_control_panel_interaction"):
-                        changes_text = "\n".join([f"• {change}" for change in changes_made])
+                    if enhanced_webhook and hasattr(
+                        enhanced_webhook, "log_control_panel_interaction"
+                    ):
+                        changes_text = "\n".join(
+                            [f"• {change}" for change in changes_made]
+                        )
                         await enhanced_webhook.log_control_panel_interaction(
                             interaction_type="interval_command",
                             user_name=interaction.user.display_name,
                             user_id=interaction.user.id,
                             action_performed="Interval settings updated",
-                            user_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None,
+                            user_avatar_url=(
+                                interaction.user.avatar.url
+                                if interaction.user.avatar
+                                else None
+                            ),
                             panel_details={
                                 "changes_made": changes_text,
-                                "quiz_time": f"{quiz_time} ({format_time_display(quiz_hours)})" if quiz_hours else "unchanged",
-                                "verse_time": f"{verse_time} ({format_time_display(verse_hours)})" if verse_hours else "unchanged",
+                                "quiz_time": (
+                                    f"{quiz_time} ({format_time_display(quiz_hours)})"
+                                    if quiz_hours
+                                    else "unchanged"
+                                ),
+                                "verse_time": (
+                                    f"{verse_time} ({format_time_display(verse_hours)})"
+                                    if verse_hours
+                                    else "unchanged"
+                                ),
                                 "changes_count": len(changes_made),
-                                "timers_reset": "All timers reset to new intervals"
-                            }
+                                "timers_reset": "All timers reset to new intervals",
+                            },
                         )
             except Exception as e:
                 log_error_with_traceback("Failed to log to enhanced webhook router", e)

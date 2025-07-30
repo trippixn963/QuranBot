@@ -8,7 +8,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config import get_config_service
+from src.config import get_config
 from src.core.exceptions import DiscordAPIError, ServiceError, handle_errors
 from src.core.security import rate_limit
 from src.core.structured_logger import StructuredLogger
@@ -34,8 +34,7 @@ class CreditsCog(commands.Cog):
     def __init__(self, bot, container=None):
         self.bot = bot
         self.container = container
-        self.config_service = get_config_service()
-        self.config = self.config_service.config
+        self.config = get_config()
         self.logger = StructuredLogger("credits", "INFO")
 
     @app_commands.command(
@@ -117,7 +116,9 @@ class CreditsCog(commands.Cog):
             try:
                 if self.container:
                     enhanced_webhook = self.container.get("enhanced_webhook_router")
-                    if enhanced_webhook and hasattr(enhanced_webhook, "log_quran_command_usage"):
+                    if enhanced_webhook and hasattr(
+                        enhanced_webhook, "log_quran_command_usage"
+                    ):
                         await enhanced_webhook.log_quran_command_usage(
                             admin_name=interaction.user.display_name,
                             admin_id=interaction.user.id,
@@ -130,9 +131,13 @@ class CreditsCog(commands.Cog):
                                     else "Direct Message"
                                 ),
                                 "command_type": "Bot Information",
-                                "github_repo": GITHUB_REPO_URL
+                                "github_repo": GITHUB_REPO_URL,
                             },
-                            admin_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None
+                            admin_avatar_url=(
+                                interaction.user.avatar.url
+                                if interaction.user.avatar
+                                else None
+                            ),
                         )
             except Exception as webhook_error:
                 await self.logger.warning(

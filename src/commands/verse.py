@@ -198,9 +198,9 @@ class VerseCog(commands.Cog):
 
             # Get the daily verse channel
             try:
-                from src.config import get_config_service
+                from src.config import get_config
 
-                config = get_config_service().config
+                config = get_config()
 
                 channel = interaction.client.get_channel(config.DAILY_VERSE_CHANNEL_ID)
                 if not channel:
@@ -323,8 +323,9 @@ class VerseCog(commands.Cog):
 
             # Set footer with admin profile picture
             try:
-                from src.config import get_config_service
-                config = get_config_service().config
+                from src.config import get_config
+
+                config = get_config()
                 DEVELOPER_ID = config.DEVELOPER_ID
                 admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
                 if admin_user and admin_user.avatar:
@@ -455,10 +456,15 @@ class VerseCog(commands.Cog):
                             # Log to enhanced webhook router
                             try:
                                 from src.core.di_container import get_container
+
                                 container = get_container()
                                 if container:
-                                    enhanced_webhook = container.get("enhanced_webhook_router")
-                                    if enhanced_webhook and hasattr(enhanced_webhook, "log_user_interaction_event"):
+                                    enhanced_webhook = container.get(
+                                        "enhanced_webhook_router"
+                                    )
+                                    if enhanced_webhook and hasattr(
+                                        enhanced_webhook, "log_user_interaction_event"
+                                    ):
                                         await enhanced_webhook.log_user_interaction_event(
                                             interaction_type="dua_reaction",
                                             user_name=user.display_name,
@@ -466,14 +472,27 @@ class VerseCog(commands.Cog):
                                             description="Made dua (🤲) on daily verse",
                                             interaction_details={
                                                 "reaction": "🤲",
-                                                "verse_id": str(verse_data.get("id", "Unknown")),
-                                                "surah": str(verse_data.get("surah", "Unknown")),
-                                                "verse_number": str(verse_data.get("ayah", verse_data.get("verse", "Unknown"))),
+                                                "verse_id": str(
+                                                    verse_data.get("id", "Unknown")
+                                                ),
+                                                "surah": str(
+                                                    verse_data.get("surah", "Unknown")
+                                                ),
+                                                "verse_number": str(
+                                                    verse_data.get(
+                                                        "ayah",
+                                                        verse_data.get(
+                                                            "verse", "Unknown"
+                                                        ),
+                                                    )
+                                                ),
                                                 "message_id": str(message.id),
                                                 "channel_id": str(channel.id),
-                                                "spiritual_activity": "Dua Made"
+                                                "spiritual_activity": "Dua Made",
                                             },
-                                            user_avatar_url=user.avatar.url if user.avatar else None
+                                            user_avatar_url=(
+                                                user.avatar.url if user.avatar else None
+                                            ),
                                         )
                             except Exception:
                                 # Silently ignore webhook logging failures
@@ -534,27 +553,36 @@ class VerseCog(commands.Cog):
                 # Send success notification to enhanced webhook router first
                 try:
                     from src.core.di_container import get_container
+
                     container = get_container()
                     if container:
                         enhanced_webhook = container.get("enhanced_webhook_router")
-                        if enhanced_webhook and hasattr(enhanced_webhook, "log_control_panel_interaction"):
+                        if enhanced_webhook and hasattr(
+                            enhanced_webhook, "log_control_panel_interaction"
+                        ):
                             await enhanced_webhook.log_control_panel_interaction(
                                 interaction_type="verse_command",
                                 user_name=interaction.user.display_name,
                                 user_id=interaction.user.id,
                                 action_performed="/verse command used",
-                                user_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None,
+                                user_avatar_url=(
+                                    interaction.user.avatar.url
+                                    if interaction.user.avatar
+                                    else None
+                                ),
                                 panel_details={
                                     "verse_details": f"Surah {verse_data.get('surah', 'Unknown')}, Verse {verse_data.get('ayah', verse_data.get('verse', 'Unknown'))}",
                                     "channel": f"#{channel.name}",
                                     "verse_id": str(verse_data.get("id", "Unknown")),
                                     "message_id": str(message.id),
                                     "reaction_added": "🤲 (dua emoji)",
-                                    "timer_reset": "Daily verse timer reset to 3 hours"
-                                }
+                                    "timer_reset": "Daily verse timer reset to 3 hours",
+                                },
                             )
                 except Exception as e:
-                    log_error_with_traceback("Failed to log to enhanced webhook router", e)
+                    log_error_with_traceback(
+                        "Failed to log to enhanced webhook router", e
+                    )
 
             except discord.Forbidden:
                 log_error_with_traceback(

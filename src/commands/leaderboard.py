@@ -5,7 +5,6 @@
 # =============================================================================
 
 import json
-import os
 from pathlib import Path
 
 import discord
@@ -106,8 +105,9 @@ class LeaderboardView(discord.ui.View):
 
         # Set footer with admin profile picture and page info (preserve across all pages)
         try:
-            from src.config import get_config_service
-            config = get_config_service().config
+            from src.config import get_config
+
+            config = get_config()
             developer_id = config.DEVELOPER_ID or 0
             if developer_id:
                 admin_user = await self.bot_client.fetch_user(developer_id)
@@ -122,22 +122,18 @@ class LeaderboardView(discord.ui.View):
                         text=footer_text,
                         icon_url=admin_user.avatar.url,
                     )
-                else:
-                    # No admin avatar, just text footer
-                    if self.max_pages > 1:
-                        embed.set_footer(
-                            text=f"Page {self.current_page + 1} of {self.max_pages} • created by حَـــــنَّـــــا"
-                        )
-                    else:
-                        embed.set_footer(text="created by حَـــــنَّـــــا")
-            else:
-                # No developer ID, just text footer
-                if self.max_pages > 1:
+                elif self.max_pages > 1:
                     embed.set_footer(
                         text=f"Page {self.current_page + 1} of {self.max_pages} • created by حَـــــنَّـــــا"
                     )
                 else:
                     embed.set_footer(text="created by حَـــــنَّـــــا")
+            elif self.max_pages > 1:
+                embed.set_footer(
+                    text=f"Page {self.current_page + 1} of {self.max_pages} • created by حَـــــنَّـــــا"
+                )
+            else:
+                embed.set_footer(text="created by حَـــــنَّـــــا")
         except Exception:
             # Fallback to text-only footer
             if self.max_pages > 1:
@@ -245,8 +241,9 @@ class LeaderboardCog(commands.Cog):
 
                 # Set footer with admin profile picture
                 try:
-                    from src.config import get_config_service
-                    config = get_config_service().config
+                    from src.config import get_config
+
+                    config = get_config()
                     developer_id = config.DEVELOPER_ID or 0
                     if developer_id:
                         admin_user = await interaction.client.fetch_user(developer_id)
@@ -289,10 +286,13 @@ class LeaderboardCog(commands.Cog):
             # Log to enhanced webhook router
             try:
                 from src.core.di_container import get_container
+
                 container = get_container()
                 if container:
                     enhanced_webhook = container.get("enhanced_webhook_router")
-                    if enhanced_webhook and hasattr(enhanced_webhook, "log_quran_command_usage"):
+                    if enhanced_webhook and hasattr(
+                        enhanced_webhook, "log_quran_command_usage"
+                    ):
                         await enhanced_webhook.log_quran_command_usage(
                             admin_name=interaction.user.display_name,
                             admin_id=interaction.user.id,
@@ -300,11 +300,23 @@ class LeaderboardCog(commands.Cog):
                             command_details={
                                 "total_users_on_board": str(len(sorted_users)),
                                 "total_pages": str(view.max_pages),
-                                "top_scorer": sorted_users[0][1].get("username", "Unknown") if sorted_users else "None",
-                                "top_score": str(sorted_users[0][1].get("points", 0)) if sorted_users else "0",
-                                "command_type": "Leaderboard View"
+                                "top_scorer": (
+                                    sorted_users[0][1].get("username", "Unknown")
+                                    if sorted_users
+                                    else "None"
+                                ),
+                                "top_score": (
+                                    str(sorted_users[0][1].get("points", 0))
+                                    if sorted_users
+                                    else "0"
+                                ),
+                                "command_type": "Leaderboard View",
                             },
-                            admin_avatar_url=interaction.user.avatar.url if interaction.user.avatar else None
+                            admin_avatar_url=(
+                                interaction.user.avatar.url
+                                if interaction.user.avatar
+                                else None
+                            ),
                         )
             except Exception as e:
                 log_error_with_traceback("Failed to log to enhanced webhook router", e)
