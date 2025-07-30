@@ -640,7 +640,7 @@ class QuizView(discord.ui.View):
                 correct_display = f"**{self.correct_answer}: {english_text}**"
             else:
                 correct_display = f"**{self.correct_answer}:** Answer not available"
-            
+
             # Always show Arabic translation if available
             if arabic_text:
                 correct_display += f"\n```\n{arabic_text}\n```"
@@ -782,7 +782,7 @@ class QuizView(discord.ui.View):
                     explanation_text = f"```\n{english_explanation}\n```"
                 else:
                     explanation_text = None
-                
+
                 # Always show Arabic translation if available
                 if arabic_explanation:
                     if explanation_text:
@@ -2311,7 +2311,9 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                             question_text = f"🕌 **Arabic Question**\n```\n{arabic_text}\n```\n\n🇺🇸 **English Question**\n```\n{english_text}\n```"
                         elif arabic_text:
                             # Only Arabic available
-                            question_text = f"🕌 **Arabic Question**\n```\n{arabic_text}\n```"
+                            question_text = (
+                                f"🕌 **Arabic Question**\n```\n{arabic_text}\n```"
+                            )
                         elif english_text:
                             # Only English available (current data format)
                             question_text = f"❓ **Question**\n```\n{english_text}\n```"
@@ -2333,7 +2335,9 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                             # Format based on available languages
                             if english_option and arabic_option:
                                 # Both English and Arabic available
-                                option_text = f"{english_option}\n```\n{arabic_option}\n```"
+                                option_text = (
+                                    f"{english_option}\n```\n{arabic_option}\n```"
+                                )
                             elif english_option:
                                 # Only English available (current data format)
                                 option_text = english_option
@@ -2419,12 +2423,12 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                                 value=f"```\n{english_text}\n```",
                                 inline=False,
                             )
-                        
+
                         # If neither Arabic nor English is available, show fallback
                         if not arabic_text and not english_text:
                             embed.add_field(
                                 name="❓ **Question**",
-                                value=f"```\nQuestion not available\n```",
+                                value="```\nQuestion not available\n```",
                                 inline=False,
                             )
                     else:
@@ -2493,16 +2497,18 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                                 # Always show English first if available
                                 if english_choice:
                                     choice_text += f"**{letter}.** {english_choice}"
-                                
+
                                 # Always show Arabic translation if available
                                 if arabic_choice:
                                     choice_text += f"\n```\n{arabic_choice}\n```"
-                                
+
                                 choice_text += "\n\n"
-                                
+
                                 # If neither English nor Arabic is available, show fallback
                                 if not english_choice and not arabic_choice:
-                                    choice_text += f"**{letter}.** Choice not available\n\n"
+                                    choice_text += (
+                                        f"**{letter}.** Choice not available\n\n"
+                                    )
                             else:
                                 choice_text += f"**{letter}.** {choice_data}\n\n"
 

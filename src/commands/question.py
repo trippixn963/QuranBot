@@ -112,7 +112,7 @@ class QuestionCog(commands.Cog):
             config = get_config()
 
             # Check if user is the developer/admin
-            if interaction.user.id != config.DEVELOPER_ID:
+            if interaction.user.id != config.developer_id:
                 log_perfect_tree_section(
                     "Question Command - Permission Denied",
                     [
@@ -120,7 +120,7 @@ class QuestionCog(commands.Cog):
                             "user",
                             f"{interaction.user.display_name} ({interaction.user.id})",
                         ),
-                        ("required_id", str(config.DEVELOPER_ID)),
+                        ("required_id", str(config.developer_id)),
                         ("status", "❌ Unauthorized access attempt"),
                         ("action", "🚫 Command execution denied"),
                     ],
@@ -135,7 +135,7 @@ class QuestionCog(commands.Cog):
 
                 try:
                     admin_user = await interaction.client.fetch_user(
-                        config.DEVELOPER_ID
+                        config.developer_id
                     )
                     if admin_user and admin_user.avatar:
                         embed.set_footer(
@@ -290,7 +290,7 @@ class QuestionCog(commands.Cog):
                         value=f"```\n{arabic_text}\n```",
                         inline=False,
                     )
-                
+
                 # Always show English translation if available
                 if english_text:
                     embed.add_field(
@@ -298,12 +298,12 @@ class QuestionCog(commands.Cog):
                         value=f"```\n{english_text}\n```",
                         inline=False,
                     )
-                
+
                 # If neither Arabic nor English is available, show fallback
                 if not arabic_text and not english_text:
                     embed.add_field(
                         name="❓ **Question**",
-                        value=f"```\nQuestion not available\n```",
+                        value="```\nQuestion not available\n```",
                         inline=False,
                     )
             else:
@@ -373,13 +373,13 @@ class QuestionCog(commands.Cog):
                         # Always show English first if available
                         if english_choice:
                             choice_text += f"**{letter}.** {english_choice}"
-                        
+
                         # Always show Arabic translation if available
                         if arabic_choice:
                             choice_text += f"\n```\n{arabic_choice}\n```"
-                        
+
                         choice_text += "\n\n"
-                        
+
                         # If neither English nor Arabic is available, show fallback
                         if not english_choice and not arabic_choice:
                             choice_text += f"**{letter}.** Choice not available\n\n"
@@ -437,7 +437,7 @@ class QuestionCog(commands.Cog):
                 # Send answer DM to admin
                 try:
                     admin_user = await interaction.client.fetch_user(
-                        config.DEVELOPER_ID
+                        config.developer_id
                     )
                     if admin_user:
                         # Create answer embed for DM
@@ -458,7 +458,9 @@ class QuestionCog(commands.Cog):
                             elif arabic_text:
                                 answer_display = f"**{correct_answer}:** {arabic_text}"
                             else:
-                                answer_display = f"**{correct_answer}:** Answer not available"
+                                answer_display = (
+                                    f"**{correct_answer}:** Answer not available"
+                                )
                         else:
                             answer_display = f"**{correct_answer}: {correct_choice!s}**"
 
