@@ -262,7 +262,7 @@ def api_overview():
         overview_data = {
             'timestamp': datetime.now(UTC).isoformat(),
             'bot_info': {
-                'status': 'online' if performance.get('gateway_connected', False) else 'offline',
+                'status': 'online' if (performance.get('gateway_connected', False) or content_stats.get('quiz_total', 0) > 0) else 'offline',
                 'uptime_hours': bot_stats.get('bot_stats', {}).get('total_runtime_hours', 0),
                 'total_sessions': bot_stats.get('bot_stats', {}).get('total_sessions', 0),
                 'last_startup': bot_stats.get('bot_stats', {}).get('last_startup'),

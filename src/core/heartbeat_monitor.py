@@ -15,7 +15,7 @@ from typing import Any
 import psutil
 
 from .logger import StructuredLogger
-from .webhook_logger import ModernWebhookLogger
+
 
 
 class HeartbeatMonitor:
@@ -34,7 +34,6 @@ class HeartbeatMonitor:
     def __init__(
         self,
         logger: StructuredLogger,
-        webhook_logger: ModernWebhookLogger,
         heartbeat_interval_minutes: int = 60,
         quick_check_interval_minutes: int = 60,
     ):
@@ -43,12 +42,10 @@ class HeartbeatMonitor:
 
         Args:
             logger: Structured logger instance
-            webhook_logger: Webhook logger for Discord notifications
             heartbeat_interval_minutes: Regular heartbeat interval (default: 30 min)
             quick_check_interval_minutes: Quick health check interval (default: 5 min)
         """
         self.logger = logger
-        self.webhook_logger = webhook_logger
         self.heartbeat_interval = heartbeat_interval_minutes * 60  # Convert to seconds
         self.quick_check_interval = quick_check_interval_minutes * 60
 
@@ -159,62 +156,24 @@ class HeartbeatMonitor:
                 await asyncio.sleep(30)  # Wait 30 seconds before retrying
 
     async def _send_startup_heartbeat(self) -> None:
-        """Send initial startup heartbeat"""
-        if not self.webhook_logger:
-            return
-
+        """Log initial startup heartbeat"""
         uptime = self._format_uptime(time.time() - self.bot_start_time)
         system_info = self._get_system_info()
 
-        await self.webhook_logger.send_embed(
-            title="🚀 QuranBot Started - Initial Heartbeat",
-            description="Bot has successfully started and is now online! 🎉",
-            fields=[
-                (
-                    "📊 System Info",
-                    f"🖥️ {system_info['os']}\n💾 {system_info['memory_total']:.1f}GB Total RAM",
-                    True,
-                ),
-                (
-                    "⚡ Performance",
-                    f"🚀 {system_info['cpu_count']} CPU Cores\n💽 {system_info['disk_free']:.1f}GB Free Space",
-                    True,
-                ),
-                (
-                    "🕐 Bot Status",
-                    f"⏰ Started: {datetime.now().strftime('%H:%M:%S %Z')}\n🆙 Uptime: {uptime}",
-                    True,
-                ),
-                (
-                    "🎵 Audio Ready",
-                    "🔊 Audio system initialized\n🎶 Ready for playback",
-                    True,
-                ),
-                (
-                    "🗄️ Database",
-                    "💾 SQLite database connected\n✅ All systems operational",
-                    True,
-                ),
-                (
-                    "🔄 Next Heartbeat",
-                    f"⏱️ In {self.heartbeat_interval // 60} minutes\n💓 Monitoring active",
-                    True,
-                ),
-            ],
-            color=0x00FF00,  # Green
-            thumbnail_url="https://cdn.discordapp.com/avatars/your-bot-id/avatar.png",
+        await self.logger.info(
+            "Bot startup heartbeat",
+            {
+                "uptime": uptime,
+                "system_info": system_info,
+                "heartbeat_count": self.heartbeat_count
+            }
         )
 
         self.last_heartbeat = time.time()
         self.heartbeat_count += 1
 
-        await self.logger.info("Startup heartbeat sent")
-
     async def _send_regular_heartbeat(self) -> None:
-        """Send regular heartbeat with comprehensive status"""
-        if not self.webhook_logger:
-            return
-
+        """Log regular heartbeat with comprehensive status"""
         # Gather comprehensive status
         status = await self._gather_comprehensive_status()
 
@@ -226,56 +185,13 @@ class HeartbeatMonitor:
         # Format uptime
         uptime = self._format_uptime(time.time() - self.bot_start_time)
 
-        await self.webhook_logger.send_embed(
-            title=f"{health_emoji} QuranBot Heartbeat #{self.heartbeat_count}",
-            description=f"**Status**: {health_status}\n**Uptime**: {uptime}",
-            fields=[
-                (
-                    "🎵 Audio Status",
-                    f"{'🟢 Active' if status['audio']['is_playing'] else '🟡 Idle'}\n"
-                    f"📻 Surah: {status['audio']['current_surah']}\n"
-                    f"🔊 Connected: {'✅' if status['audio']['voice_connected'] else '❌'}",
-                    True,
-                ),
-                (
-                    "💾 System Resources",
-                    f"🧠 Memory: {status['system']['memory_usage']:.1f}MB ({status['system']['memory_percent']:.1f}%)\n"
-                    f"⚡ CPU: {status['system']['cpu_percent']:.1f}%\n"
-                    f"💽 Disk: {status['system']['disk_free']:.1f}GB free",
-                    True,
-                ),
-                (
-                    "🗄️ Database Health",
-                    f"📊 Size: {status['database']['size_mb']:.2f}MB\n"
-                    f"📝 Records: {status['database']['record_count']:,}\n"
-                    f"✅ Status: {status['database']['status']}",
-                    True,
-                ),
-                (
-                    "📈 Performance",
-                    f"🚀 Optimization: {status['performance']['optimization_level']}\n"
-                    f"📊 Cache Hit Rate: {status['performance']['cache_hit_rate']:.1f}%\n"
-                    f"⚡ Avg Response: {status['performance']['avg_response_time']:.0f}ms",
-                    True,
-                ),
-                (
-                    "🔔 Recent Activity",
-                    f"✅ Healthy Checks: {self.consecutive_healthy_checks}\n"
-                    f"⚠️ Warnings: {self.warning_count}\n"
-                    f"❌ Errors: {self.error_count}",
-                    True,
-                ),
-                (
-                    "⏰ Next Check",
-                    f"💓 Heartbeat: {self.heartbeat_interval // 60}min\n"
-                    f"🔍 Quick Check: {self.quick_check_interval // 60}min\n"
-                    f"📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-                    True,
-                ),
-            ],
-            color=health_color,
-            thumbnail_url="https://cdn.discordapp.com/avatars/your-bot-id/avatar.png",
-            footer=f"QuranBot v4.0.1 • Heartbeat #{self.heartbeat_count} • Uptime: {uptime}",
+        await self.logger.info(
+            f"Regular heartbeat #{self.heartbeat_count}",
+            {
+                "health_status": health_status,
+                "uptime": uptime,
+                "status": status
+            }
         )
 
         self.last_heartbeat = time.time()
@@ -284,43 +200,17 @@ class HeartbeatMonitor:
         # Store performance history
         self._store_performance_data(status)
 
-        await self.logger.info(
-            "Regular heartbeat sent",
-            {
-                "heartbeat_number": self.heartbeat_count,
-                "health_status": health_status,
-                "uptime_seconds": time.time() - self.bot_start_time,
-            },
-        )
-
     async def _send_shutdown_heartbeat(self) -> None:
-        """Send shutdown heartbeat"""
-        if not self.webhook_logger:
-            return
-
+        """Log shutdown heartbeat"""
         uptime = self._format_uptime(time.time() - self.bot_start_time)
 
-        await self.webhook_logger.send_embed(
-            title="🛑 QuranBot Shutdown - Final Heartbeat",
-            description="Bot is shutting down gracefully. See you soon! 👋",
-            fields=[
-                (
-                    "📊 Session Summary",
-                    f"⏰ Total Uptime: {uptime}\n💓 Heartbeats Sent: {self.heartbeat_count}",
-                    True,
-                ),
-                (
-                    "🔄 Status",
-                    "✅ Graceful Shutdown\n📝 All data saved\n🔒 Connections closed",
-                    True,
-                ),
-                ("📅 Timestamp", datetime.now().strftime("%Y-%m-%d %H:%M:%S %Z"), True),
-            ],
-            color=0xFF9900,  # Orange
-            thumbnail_url="https://cdn.discordapp.com/avatars/your-bot-id/avatar.png",
+        await self.logger.info(
+            "Bot shutdown heartbeat",
+            {
+                "uptime": uptime,
+                "heartbeats_sent": self.heartbeat_count
+            }
         )
-
-        await self.logger.info("Shutdown heartbeat sent")
 
     async def _perform_quick_health_check(self) -> None:
         """Perform quick health check and send alerts if needed"""
@@ -360,30 +250,15 @@ class HeartbeatMonitor:
             await self.logger.error("Quick health check failed", {"error": str(e)})
 
     async def _send_critical_alert(self, issues: list) -> None:
-        """Send critical alert webhook"""
-        if not self.webhook_logger:
-            return
-
+        """Log critical alert"""
         issue_text = "\n".join(f"• {issue}" for issue in issues)
 
-        await self.webhook_logger.send_embed(
-            title="🚨 CRITICAL ALERT - QuranBot Health Issue",
-            description=f"**Immediate attention required!**\n\n{issue_text}",
-            fields=[
-                (
-                    "⏰ Alert Time",
-                    datetime.now().strftime("%Y-%m-%d %H:%M:%S %Z"),
-                    True,
-                ),
-                ("🔍 Action Required", "Please check the VPS immediately", True),
-                (
-                    "📊 Uptime",
-                    self._format_uptime(time.time() - self.bot_start_time),
-                    True,
-                ),
-            ],
-            color=0xFF0000,  # Red
-            thumbnail_url="https://cdn.discordapp.com/avatars/your-bot-id/avatar.png",
+        await self.logger.critical(
+            "Critical health alert",
+            {
+                "issues": issues,
+                "uptime": self._format_uptime(time.time() - self.bot_start_time)
+            }
         )
 
         await self.logger.critical("Critical health alert sent", {"issues": issues})
