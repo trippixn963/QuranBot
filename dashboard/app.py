@@ -238,14 +238,22 @@ def dashboard():
 def api_overview():
     """Get dashboard overview data"""
     try:
+        print("Getting bot statistics...")
         bot_stats = get_bot_statistics()
+        print(f"Bot stats: {bot_stats}")
+        
+        print("Getting content stats...")
         content_stats = get_islamic_content_stats()
+        print(f"Content stats: {content_stats}")
+        
+        print("Getting performance metrics...")
         performance = get_performance_metrics()
+        print(f"Performance: {performance}")
         
         overview_data = {
             'timestamp': datetime.now(UTC).isoformat(),
             'bot_info': {
-                'status': 'online' if performance['gateway_connected'] else 'offline',
+                'status': 'online' if performance.get('gateway_connected', False) else 'offline',
                 'uptime_hours': bot_stats.get('bot_stats', {}).get('total_runtime_hours', 0),
                 'total_sessions': bot_stats.get('bot_stats', {}).get('total_sessions', 0),
                 'last_startup': bot_stats.get('bot_stats', {}).get('last_startup'),
@@ -266,8 +274,12 @@ def api_overview():
             'recent_activity': bot_stats.get('recent_events', [])[:5]
         }
         
+        print(f"Overview data: {overview_data}")
         return jsonify(overview_data)
     except Exception as e:
+        print(f"Error in api_overview: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/leaderboard')
