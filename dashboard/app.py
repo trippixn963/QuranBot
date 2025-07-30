@@ -478,6 +478,246 @@ def api_leaderboard():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/historical/bot-stats')
+def api_historical_bot_stats():
+    """Get historical bot statistics for charts"""
+    try:
+        days = request.args.get('days', 7, type=int)
+        
+        with get_db_connection() as conn:
+            # Get historical bot stats
+            bot_history = conn.execute("""
+                SELECT * FROM bot_stats_history 
+                WHERE timestamp > datetime('now', '-{} days')
+                ORDER BY timestamp ASC
+            """.format(days)).fetchall()
+            
+            # Convert to chart data format
+            chart_data = {
+                'labels': [],
+                'datasets': {
+                    'runtime_hours': [],
+                    'active_sessions': [],
+                    'memory_usage': [],
+                    'cpu_percent': [],
+                    'gateway_latency': []
+                }
+            }
+            
+            for row in bot_history:
+                chart_data['labels'].append(row['timestamp'])
+                chart_data['datasets']['runtime_hours'].append(row['total_runtime_hours'])
+                chart_data['datasets']['active_sessions'].append(row['active_sessions'])
+                chart_data['datasets']['memory_usage'].append(row['memory_usage_mb'])
+                chart_data['datasets']['cpu_percent'].append(row['cpu_percent'])
+                chart_data['datasets']['gateway_latency'].append(row['gateway_latency'])
+            
+            return jsonify({
+                'chart_data': chart_data,
+                'total_points': len(chart_data['labels']),
+                'timestamp': datetime.now(UTC).isoformat()
+            })
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/historical/quiz-stats')
+def api_historical_quiz_stats():
+    """Get historical quiz statistics for trend charts"""
+    try:
+        days = request.args.get('days', 7, type=int)
+        
+        with get_db_connection() as conn:
+            # Get quiz history
+            quiz_history = conn.execute("""
+                SELECT * FROM quiz_history 
+                WHERE timestamp > datetime('now', '-{} days')
+                ORDER BY timestamp ASC
+            """.format(days)).fetchall()
+            
+            # Convert to chart data format
+            chart_data = {
+                'labels': [],
+                'datasets': {
+                    'questions_sent': [],
+                    'attempts': [],
+                    'correct_answers': [],
+                    'accuracy_rate': [],
+                    'active_users': []
+                }
+            }
+            
+            for row in quiz_history:
+                chart_data['labels'].append(row['timestamp'])
+                chart_data['datasets']['questions_sent'].append(row['questions_sent_today'])
+                chart_data['datasets']['attempts'].append(row['attempts_today'])
+                chart_data['datasets']['correct_answers'].append(row['correct_today'])
+                chart_data['datasets']['accuracy_rate'].append(row['accuracy_rate'])
+                chart_data['datasets']['active_users'].append(row['active_users'])
+            
+            return jsonify({
+                'chart_data': chart_data,
+                'total_points': len(chart_data['labels']),
+                'timestamp': datetime.now(UTC).isoformat()
+            })
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/user/<user_id>/profile')
+def api_user_profile(user_id):
+    """Get detailed user profile with achievements and activity"""
+    try:
+        with get_db_connection() as conn:
+            # Get basic quiz stats
+            quiz_stats = conn.execute(
+                "SELECT * FROM user_quiz_stats WHERE user_id = ?", (user_id,)
+            ).fetchone()
+            
+            # Get recent activity
+            activities = conn.execute("""
+                SELECT activity_type, activity_data, timestamp, channel_id
+                FROM user_activity 
+                WHERE user_id = ?
+                ORDER BY timestamp DESC 
+                LIMIT 20
+            """, (user_id,)).fetchall()
+            
+            # Get achievements
+            achievements = conn.execute("""
+                SELECT achievement_type, achievement_name, description, earned_at, points_awarded
+                FROM user_achievements 
+                WHERE user_id = ?
+                ORDER BY earned_at DESC
+            """, (user_id,)).fetchall()
+            
+            # Calculate profile stats
+            total_points = sum(a['points_awarded'] for a in achievements)
+            if quiz_stats:
+                total_points += quiz_stats['points']
+            
+            profile_data = {
+                'user_id': user_id,
+                'basic_stats': dict(quiz_stats) if quiz_stats else {},
+                'recent_activity': [dict(row) for row in activities],
+                'achievements': [dict(row) for row in achievements],
+                'summary': {
+                    'total_points': total_points,
+                    'activity_count': len(activities),
+                    'achievement_count': len(achievements),
+                    'join_date': quiz_stats['first_answer'] if quiz_stats else None,
+                    'last_seen': activities[0]['timestamp'] if activities else (quiz_stats['last_answer'] if quiz_stats else None)
+                }
+            }
+            
+            return jsonify(profile_data)
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/audio/status')
+def api_audio_status():
+    """Get live audio status with current Surah"""
+    try:
+        with get_db_connection() as conn:
+            # Get audio status
+            audio_status = conn.execute(
+                "SELECT * FROM audio_status WHERE id = 1"
+            ).fetchone()
+            
+            if audio_status:
+                status_data = dict(audio_status)
+                
+                # Add Surah information
+                try:
+                    # Load Surah metadata
+                    surah_file = DATA_DIR / "surahs.json"
+                    if surah_file.exists():
+                        with open(surah_file, 'r', encoding='utf-8') as f:
+                            surahs_data = json.load(f)
+                        
+                        current_surah_num = status_data.get('current_surah', 1)
+                        surah_info = None
+                        
+                        for surah in surahs_data.get('surahs', []):
+                            if surah.get('number') == current_surah_num:
+                                surah_info = surah
+                                break
+                        
+                        if surah_info:
+                            status_data['surah_info'] = {
+                                'name_arabic': surah_info.get('arabicName', ''),
+                                'name_english': surah_info.get('englishName', ''),
+                                'name_transliteration': surah_info.get('englishNameTranslation', ''),
+                                'total_verses': surah_info.get('numberOfAyahs', 0),
+                                'revelation_type': surah_info.get('revelationType', ''),
+                                'emoji': surah_info.get('emoji', '📖')
+                            }
+                except Exception as e:
+                    print(f"Error loading Surah info: {e}")
+                
+                return jsonify({
+                    'audio_status': status_data,
+                    'timestamp': datetime.now(UTC).isoformat()
+                })
+            else:
+                # Return default status when no audio data
+                return jsonify({
+                    'audio_status': {
+                        'current_surah': 1,
+                        'current_verse': 1,
+                        'reciter': 'Saad Al Ghamdi',
+                        'is_playing': False,
+                        'current_position_seconds': 0.0,
+                        'total_duration_seconds': 0.0,
+                        'listeners_count': 0,
+                        'last_updated': None,
+                        'surah_info': {
+                            'name_arabic': 'الفاتحة',
+                            'name_english': 'The Opening',
+                            'name_transliteration': 'Al-Fatihah',
+                            'total_verses': 7,
+                            'revelation_type': 'Meccan',
+                            'emoji': '🕌'
+                        }
+                    },
+                    'timestamp': datetime.now(UTC).isoformat()
+                })
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/users/activity')
+def api_users_activity():
+    """Get recent user activity across the bot"""
+    try:
+        limit = request.args.get('limit', 50, type=int)
+        
+        with get_db_connection() as conn:
+            # Get recent user activities
+            activities = conn.execute("""
+                SELECT ua.*, uqs.display_name, uqs.username
+                FROM user_activity ua
+                LEFT JOIN user_quiz_stats uqs ON ua.user_id = uqs.user_id
+                ORDER BY ua.timestamp DESC 
+                LIMIT ?
+            """, (limit,)).fetchall()
+            
+            activity_data = []
+            for row in activities:
+                activity = dict(row)
+                activity['display_name'] = row['display_name'] or row['username'] or f"User {row['user_id'][:8]}"
+                activity_data.append(activity)
+            
+            return jsonify({
+                'activities': activity_data,
+                'total_count': len(activity_data),
+                'timestamp': datetime.now(UTC).isoformat()
+            })
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/content')
 def api_content():
     """Get Islamic content statistics"""
