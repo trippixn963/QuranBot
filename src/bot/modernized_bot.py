@@ -162,7 +162,20 @@ class ModernizedQuranBot:
         self.container.register_singleton(HealthMonitor, health_monitor)
 
         # Cache Service
-        cache_config = self.config
+        from src.core.cache_service import CacheConfig
+        cache_config = CacheConfig(
+            max_memory_mb=self.config.cache_max_memory_mb,
+            max_entries=self.config.cache_max_entries,
+            default_ttl_seconds=self.config.cache_default_ttl_seconds,
+            strategy=self.config.cache_strategy,
+            level=self.config.cache_level,
+            enable_compression=self.config.cache_enable_compression,
+            compression_threshold_bytes=self.config.cache_compression_threshold_bytes,
+            disk_cache_directory=self.config.cache_disk_directory,
+            cleanup_interval_seconds=self.config.cache_cleanup_interval_seconds,
+            enable_statistics=self.config.cache_enable_statistics,
+            enable_persistence=self.config.cache_enable_persistence,
+        )
         cache_factory = lambda: CacheService(
             container=self.container, config=cache_config, logger=self.logger
         )

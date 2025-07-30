@@ -52,6 +52,23 @@ class LogLevel(str, Enum):
     CRITICAL = "CRITICAL"
 
 
+class CacheStrategy(str, Enum):
+    """Cache eviction strategies"""
+
+    LRU = "lru"  # Least Recently Used
+    LFU = "lfu"  # Least Frequently Used
+    FIFO = "fifo"  # First In, First Out
+    TTL_ONLY = "ttl_only"  # Time-based only
+
+
+class CacheLevel(str, Enum):
+    """Cache storage levels"""
+
+    MEMORY = "memory"  # In-memory cache
+    DISK = "disk"  # Persistent disk cache
+    HYBRID = "hybrid"  # Memory + disk
+
+
 class ReciterName(str, Enum):
     """Available Quran reciters."""
 
@@ -207,6 +224,86 @@ class QuranBotConfig(BaseSettings):
 
     default_loop: bool = Field(
         default=False, description="Enable loop by default", alias="DEFAULT_LOOP"
+    )
+
+    # =============================================================================
+    # CACHE SETTINGS
+    # =============================================================================
+
+    cache_strategy: CacheStrategy = Field(
+        default=CacheStrategy.LRU,
+        description="Cache eviction strategy",
+        alias="CACHE_STRATEGY",
+    )
+
+    cache_level: CacheLevel = Field(
+        default=CacheLevel.HYBRID,
+        description="Cache storage level",
+        alias="CACHE_LEVEL",
+    )
+
+    cache_max_memory_mb: int = Field(
+        default=100,
+        description="Maximum cache memory usage in MB",
+        ge=10,
+        le=1000,
+        alias="CACHE_MAX_MEMORY_MB",
+    )
+
+    cache_max_entries: int = Field(
+        default=1000,
+        description="Maximum number of cache entries",
+        ge=100,
+        le=10000,
+        alias="CACHE_MAX_ENTRIES",
+    )
+
+    cache_default_ttl_seconds: int = Field(
+        default=3600,
+        description="Default cache TTL in seconds",
+        ge=60,
+        le=86400,
+        alias="CACHE_DEFAULT_TTL_SECONDS",
+    )
+
+    cache_enable_compression: bool = Field(
+        default=True,
+        description="Enable cache compression",
+        alias="CACHE_ENABLE_COMPRESSION",
+    )
+
+    cache_compression_threshold_bytes: int = Field(
+        default=1024,
+        description="Cache compression threshold in bytes",
+        ge=512,
+        le=10240,
+        alias="CACHE_COMPRESSION_THRESHOLD_BYTES",
+    )
+
+    cache_disk_directory: Path = Field(
+        default=Path("cache"),
+        description="Cache disk storage directory",
+        alias="CACHE_DISK_DIRECTORY",
+    )
+
+    cache_cleanup_interval_seconds: int = Field(
+        default=300,
+        description="Cache cleanup interval in seconds",
+        ge=60,
+        le=3600,
+        alias="CACHE_CLEANUP_INTERVAL_SECONDS",
+    )
+
+    cache_enable_statistics: bool = Field(
+        default=True,
+        description="Enable cache statistics",
+        alias="CACHE_ENABLE_STATISTICS",
+    )
+
+    cache_enable_persistence: bool = Field(
+        default=True,
+        description="Enable cache persistence",
+        alias="CACHE_ENABLE_PERSISTENCE",
     )
 
     # =============================================================================
@@ -650,40 +747,35 @@ class QuranBotConfig(BaseSettings):
         env_file="config/.env",
         env_file_encoding="utf-8",
         case_sensitive=False,
-        use_enum_values=True,
-        validate_assignment=True,
-        extra="ignore",  # Allow extra fields from .env file
-        # Map environment variable names to field names
-        alias_generator=lambda x: x.upper().replace("_", "_"),
+        extra="ignore",
     )
 
 
 # =============================================================================
-# GLOBAL CONFIGURATION INSTANCE
+# CONFIGURATION INSTANCE
 # =============================================================================
 
-_config: QuranBotConfig | None = None
+_config_instance: QuranBotConfig | None = None
 
 
 def get_config() -> QuranBotConfig:
-    """Get the global configuration instance (singleton)."""
-    global _config
-    if _config is None:
-        _config = QuranBotConfig()
-    return _config
+    """Get the global configuration instance."""
+    global _config_instance
+    if _config_instance is None:
+        _config_instance = QuranBotConfig()
+    return _config_instance
 
 
 def reload_config() -> QuranBotConfig:
-    """Reload configuration from environment variables."""
-    global _config
-    _config = QuranBotConfig()
-    return _config
+    """Reload the configuration from environment variables."""
+    global _config_instance
+    _config_instance = QuranBotConfig()
+    return _config_instance
 
 
 # =============================================================================
 # CONVENIENCE FUNCTIONS
 # =============================================================================
-
 
 def is_admin(user_id: int) -> bool:
     """Check if a user ID is an admin."""
@@ -721,84 +813,25 @@ def is_webhook_logging_enabled() -> bool:
 
 
 def get_webhook_url(event_type: str = None) -> str | None:
-    """Get webhook URL for specific event type or legacy URL."""
-    config = get_config()
-    if event_type:
-        return config.get_webhook_url(event_type)
-    return config.discord_webhook_url
+    """Get webhook URL for specific event type."""
+    return get_config().get_webhook_url(event_type)
 
 
 def validate_config() -> dict[str, Any]:
     """Validate configuration and return summary."""
-    try:
-        config = get_config()
-        summary = config.get_validation_summary()
-        summary["valid"] = True
-        summary["errors"] = []
-        return summary
-    except Exception as e:
-        return {
-            "valid": False,
-            "errors": [str(e)],
-            "discord_configured": False,
-            "audio_configured": False,
-            "ffmpeg_available": False,
-            "logging_configured": False,
-            "admin_users_count": 0,
-            "reciter_folder_exists": False,
-            "multi_channel_webhooks": False,
-        }
+    config = get_config()
+    return {
+        "validation_summary": config.get_validation_summary(),
+        "audio_setup": config.validate_audio_setup(),
+        "discord_setup": config.validate_discord_setup(),
+        "webhook_setup": config.validate_webhook_setup(),
+    }
 
 
 def print_config_summary():
-    """Print configuration validation summary."""
+    """Print configuration summary to console."""
+    import json
+
     summary = validate_config()
-
-    print("=" * 60)
-    print("QuranBot Configuration Summary")
-    print("=" * 60)
-
-    if summary["valid"]:
-        print("✅ Configuration is valid")
-    else:
-        print("❌ Configuration has errors:")
-        for error in summary["errors"]:
-            print(f"   - {error}")
-        print()
-
-    print("\nComponent Status:")
-    print(f"   Discord: {'✅' if summary['discord_configured'] else '❌'}")
-    print(f"   Audio: {'✅' if summary['audio_configured'] else '❌'}")
-    print(f"   FFmpeg: {'✅' if summary['ffmpeg_available'] else '❌'}")
-    print(f"   Logging: {'✅' if summary['logging_configured'] else '❌'}")
-    print(f"   Admin Users: {summary['admin_users_count']}")
-    print(f"   Reciter Folder: {'✅' if summary['reciter_folder_exists'] else '❌'}")
-    print(
-        f"   Multi-Channel Webhooks: {'✅' if summary['multi_channel_webhooks'] else '❌'}"
-    )
-
-    print("=" * 60)
-
-
-# =============================================================================
-# EXPORTS
-# =============================================================================
-
-__all__ = [
-    "QuranBotConfig",
-    "Environment",
-    "LogLevel",
-    "ReciterName",
-    "get_config",
-    "reload_config",
-    "validate_config",
-    "print_config_summary",
-    "is_admin",
-    "get_discord_token",
-    "get_guild_id",
-    "get_target_channel_id",
-    "get_audio_folder",
-    "get_ffmpeg_path",
-    "is_webhook_logging_enabled",
-    "get_webhook_url",
-]
+    print("Configuration Summary:")
+    print(json.dumps(summary, indent=2, default=str))
