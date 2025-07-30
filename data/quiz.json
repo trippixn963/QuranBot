@@ -26,7 +26,7 @@
       "4": "Hard",
       "5": "Very Hard"
     },
-    "total_questions": 200,
+    "total_questions": 150,
     "created_date": "2024-07-30",
     "author": "QuranBot Development Team",
     "language": "Bilingual (Arabic-English)"
@@ -4031,6 +4031,1006 @@
         "arabic": "يسأل الملائكة: 'من ربك؟ ما دينك؟ من هذا الرجل (النبي)؟'"
       },
       "reference": "Islamic Eschatology"
+    },
+    {
+      "id": "q101",
+      "category": "Quran",
+      "difficulty": 1,
+      "themes": [
+        "Basic Verses"
+      ],
+      "context": {
+        "english": "Famous Quranic Verses",
+        "arabic": "الآيات القرآنية المشهورة"
+      },
+      "question": {
+        "english": "Which verse is recited at the beginning of every surah except one?",
+        "arabic": "أي آية تُتلى في بداية كل سورة عدا واحدة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Ayat al-Kursi",
+          "arabic": "آية الكرسي"
+        },
+        "B": {
+          "english": "Bismillah",
+          "arabic": "البسملة"
+        },
+        "C": {
+          "english": "Al-Fatihah",
+          "arabic": "الفاتحة"
+        },
+        "D": {
+          "english": "Shahada",
+          "arabic": "الشهادة"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Bismillah (In the name of Allah, the Most Gracious, the Most Merciful) begins every surah except At-Tawbah.",
+        "arabic": "البسملة (بسم الله الرحمن الرحيم) تبدأ كل سورة عدا سورة التوبة."
+      },
+      "reference": "Quranic Structure"
+    },
+    {
+      "id": "q102",
+      "category": "Prophets",
+      "difficulty": 2,
+      "themes": [
+        "Prophet's Mission"
+      ],
+      "context": {
+        "english": "Prophetic Calling",
+        "arabic": "الدعوة النبوية"
+      },
+      "question": {
+        "english": "How long did Prophet Muhammad preach in Mecca before the Hijra?",
+        "arabic": "كم سنة دعا النبي محمد في مكة قبل الهجرة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "10 years",
+          "arabic": "١٠ سنوات"
+        },
+        "B": {
+          "english": "13 years",
+          "arabic": "١٣ سنة"
+        },
+        "C": {
+          "english": "15 years",
+          "arabic": "١٥ سنة"
+        },
+        "D": {
+          "english": "20 years",
+          "arabic": "٢٠ سنة"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Prophet Muhammad preached in Mecca for 13 years before migrating to Medina.",
+        "arabic": "دعا النبي محمد في مكة لمدة ١٣ سنة قبل الهجرة إلى المدينة."
+      },
+      "reference": "Seerah"
+    },
+    {
+      "id": "q103",
+      "category": "Islamic Ethics",
+      "difficulty": 3,
+      "themes": [
+        "Honesty"
+      ],
+      "context": {
+        "english": "Moral Values",
+        "arabic": "القيم الأخلاقية"
+      },
+      "question": {
+        "english": "What was Prophet Muhammad known as before his prophethood?",
+        "arabic": "بماذا كان يُعرف النبي محمد قبل النبوة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "As-Sadiq al-Amin",
+          "arabic": "الصادق الأمين"
+        },
+        "B": {
+          "english": "Al-Hakeem",
+          "arabic": "الحكيم"
+        },
+        "C": {
+          "english": "As-Sabur",
+          "arabic": "الصبور"
+        },
+        "D": {
+          "english": "Al-Karim",
+          "arabic": "الكريم"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Prophet Muhammad was known as 'As-Sadiq al-Amin' (The Truthful and Trustworthy) before his prophethood.",
+        "arabic": "كان النبي محمد يُعرف بـ 'الصادق الأمين' قبل النبوة."
+      },
+      "reference": "Seerah"
+    },
+    {
+      "id": "q104",
+      "category": "Fiqh",
+      "difficulty": 4,
+      "themes": [
+        "Ritual Purity"
+      ],
+      "context": {
+        "english": "Purification Laws",
+        "arabic": "أحكام الطهارة"
+      },
+      "question": {
+        "english": "What is the major ritual purification called in Islam?",
+        "arabic": "ماذا تُسمى الطهارة الكبرى في الإسلام؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Wudu",
+          "arabic": "وضوء"
+        },
+        "B": {
+          "english": "Ghusl",
+          "arabic": "غسل"
+        },
+        "C": {
+          "english": "Tayammum",
+          "arabic": "تيمم"
+        },
+        "D": {
+          "english": "Istinja",
+          "arabic": "استنجاء"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Ghusl is the major ritual purification that involves washing the entire body.",
+        "arabic": "الغسل هو الطهارة الكبرى التي تشمل غسل الجسم كاملاً."
+      },
+      "reference": "Islamic Jurisprudence"
+    },
+    {
+      "id": "q105",
+      "category": "Companions",
+      "difficulty": 3,
+      "themes": [
+        "Early Converts"
+      ],
+      "context": {
+        "english": "First Muslims",
+        "arabic": "المسلمون الأوائل"
+      },
+      "question": {
+        "english": "Who was the first freed slave to accept Islam?",
+        "arabic": "من كان أول عبد محرر يقبل الإسلام؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Bilal ibn Rabah",
+          "arabic": "بلال بن رباح"
+        },
+        "B": {
+          "english": "Zaid ibn Harithah",
+          "arabic": "زيد بن حارثة"
+        },
+        "C": {
+          "english": "Salman al-Farisi",
+          "arabic": "سلمان الفارسي"
+        },
+        "D": {
+          "english": "Suhaib ar-Rumi",
+          "arabic": "صهيب الرومي"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Zaid ibn Harithah, the Prophet's freed slave and adopted son, was among the first to accept Islam.",
+        "arabic": "زيد بن حارثة، عبد النبي المحرر وابنه بالتبني، كان من أوائل من أسلم."
+      },
+      "reference": "Seerah"
+    },
+    {
+      "id": "q106",
+      "category": "Islamic History",
+      "difficulty": 5,
+      "themes": [
+        "Battles"
+      ],
+      "context": {
+        "english": "Military Campaigns",
+        "arabic": "الحملات العسكرية"
+      },
+      "question": {
+        "english": "In which battle did Khalid ibn al-Walid earn the title 'Sayf Allah al-Maslul'?",
+        "arabic": "في أي معركة حصل خالد بن الوليد على لقب 'سيف الله المسلول'؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Battle of Uhud",
+          "arabic": "معركة أحد"
+        },
+        "B": {
+          "english": "Battle of Mu'tah",
+          "arabic": "معركة مؤتة"
+        },
+        "C": {
+          "english": "Battle of Hunayn",
+          "arabic": "معركة حنين"
+        },
+        "D": {
+          "english": "Ridda Wars",
+          "arabic": "حروب الردة"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Khalid ibn al-Walid earned the title 'Sayf Allah al-Maslul' (The Drawn Sword of Allah) after his strategic leadership at Mu'tah.",
+        "arabic": "حصل خالد بن الوليد على لقب 'سيف الله المسلول' بعد قيادته الاستراتيجية في معركة مؤتة."
+      },
+      "reference": "Islamic History"
+    },
+    {
+      "id": "q107",
+      "category": "Arabic Language",
+      "difficulty": 3,
+      "themes": [
+        "Islamic Terms"
+      ],
+      "context": {
+        "english": "Religious Vocabulary",
+        "arabic": "المفردات الدينية"
+      },
+      "question": {
+        "english": "What does 'Barakallahu feeki' mean?",
+        "arabic": "ماذا تعني 'بارك الله فيك'؟"
+      },
+      "choices": {
+        "A": {
+          "english": "May Allah bless you",
+          "arabic": "بارك الله فيك"
+        },
+        "B": {
+          "english": "May Allah protect you",
+          "arabic": "حفظك الله"
+        },
+        "C": {
+          "english": "May Allah guide you",
+          "arabic": "هداك الله"
+        },
+        "D": {
+          "english": "May Allah forgive you",
+          "arabic": "غفر الله لك"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "'Barakallahu feeki' means 'May Allah bless you' and is commonly used to express good wishes.",
+        "arabic": "'بارك الله فيك' تعني طلب البركة من الله وتُستخدم للتعبير عن الأمنيات الطيبة."
+      },
+      "reference": "Islamic Etiquette"
+    },
+    {
+      "id": "q108",
+      "category": "Pillars of Islam",
+      "difficulty": 2,
+      "themes": [
+        "Zakat Recipients"
+      ],
+      "context": {
+        "english": "Charity Distribution",
+        "arabic": "توزيع الزكاة"
+      },
+      "question": {
+        "english": "How many categories of people are eligible to receive Zakat?",
+        "arabic": "كم عدد فئات الناس المستحقين للزكاة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "6",
+          "arabic": "٦"
+        },
+        "B": {
+          "english": "7",
+          "arabic": "٧"
+        },
+        "C": {
+          "english": "8",
+          "arabic": "٨"
+        },
+        "D": {
+          "english": "9",
+          "arabic": "٩"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "There are 8 categories of Zakat recipients mentioned in the Quran: the poor, needy, collectors, those whose hearts are inclined, slaves, debtors, in Allah's cause, and travelers.",
+        "arabic": "هناك ٨ فئات من مستحقي الزكاة مذكورة في القرآن: الفقراء، المساكين، العاملين عليها، المؤلفة قلوبهم، الرقاب، الغارمين، في سبيل الله، وابن السبيل."
+      },
+      "reference": "Quran 9:60"
+    },
+    {
+      "id": "q109",
+      "category": "Aqidah",
+      "difficulty": 4,
+      "themes": [
+        "Angels Names"
+      ],
+      "context": {
+        "english": "Angelic Beings",
+        "arabic": "الكائنات الملائكية"
+      },
+      "question": {
+        "english": "Which angel will blow the trumpet on the Day of Judgment?",
+        "arabic": "أي ملك سينفخ في الصور يوم القيامة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Jibril",
+          "arabic": "جبريل"
+        },
+        "B": {
+          "english": "Mikail",
+          "arabic": "ميكائيل"
+        },
+        "C": {
+          "english": "Israfil",
+          "arabic": "إسرافيل"
+        },
+        "D": {
+          "english": "Ridwan",
+          "arabic": "رضوان"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "Angel Israfil is responsible for blowing the trumpet (Sur) on the Day of Judgment.",
+        "arabic": "الملك إسرافيل مسؤول عن النفخ في الصور يوم القيامة."
+      },
+      "reference": "Islamic Eschatology"
+    },
+    {
+      "id": "q110",
+      "category": "Quran",
+      "difficulty": 5,
+      "themes": [
+        "Verse Count"
+      ],
+      "context": {
+        "english": "Quranic Statistics",
+        "arabic": "إحصائيات القرآن"
+      },
+      "question": {
+        "english": "Approximately how many verses are in the Quran?",
+        "arabic": "كم عدد الآيات في القرآن الكريم تقريباً؟"
+      },
+      "choices": {
+        "A": {
+          "english": "6000",
+          "arabic": "٦٠٠٠"
+        },
+        "B": {
+          "english": "6236",
+          "arabic": "٦٢٣٦"
+        },
+        "C": {
+          "english": "6500",
+          "arabic": "٦٥٠٠"
+        },
+        "D": {
+          "english": "7000",
+          "arabic": "٧٠٠٠"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The Quran contains approximately 6,236 verses, though the exact count varies slightly between different counting systems.",
+        "arabic": "يحتوي القرآن على حوالي ٦٢٣٦ آية، رغم أن العدد الدقيق يختلف قليلاً بين أنظمة العد المختلفة."
+      },
+      "reference": "Quranic Sciences"
+    },
+    {
+      "id": "q111",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Golden Rule"
+      ],
+      "context": {
+        "english": "Prophetic Wisdom",
+        "arabic": "الحكمة النبوية"
+      },
+      "question": {
+        "english": "Complete the hadith: 'None of you believes until he loves for his brother...'",
+        "arabic": "أكمل الحديث: 'لا يؤمن أحدكم حتى يحب لأخيه...'؟"
+      },
+      "choices": {
+        "A": {
+          "english": "what he loves for himself",
+          "arabic": "ما يحب لنفسه"
+        },
+        "B": {
+          "english": "more than himself",
+          "arabic": "أكثر من نفسه"
+        },
+        "C": {
+          "english": "success and happiness",
+          "arabic": "النجاح والسعادة"
+        },
+        "D": {
+          "english": "goodness and prosperity",
+          "arabic": "الخير والازدهار"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The complete hadith is: 'None of you believes until he loves for his brother what he loves for himself.'",
+        "arabic": "الحديث الكامل: 'لا يؤمن أحدكم حتى يحب لأخيه ما يحب لنفسه'."
+      },
+      "reference": "Hadith - Sahih Bukhari"
+    },
+    {
+      "id": "q112",
+      "category": "Islamic Culture",
+      "difficulty": 1,
+      "themes": [
+        "Prayer Call"
+      ],
+      "context": {
+        "english": "Call to Prayer",
+        "arabic": "الأذان"
+      },
+      "question": {
+        "english": "What is the call to prayer called in Islam?",
+        "arabic": "ماذا يُسمى النداء للصلاة في الإسلام؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Iqamah",
+          "arabic": "إقامة"
+        },
+        "B": {
+          "english": "Adhan",
+          "arabic": "أذان"
+        },
+        "C": {
+          "english": "Takbir",
+          "arabic": "تكبير"
+        },
+        "D": {
+          "english": "Tasbih",
+          "arabic": "تسبيح"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Adhan is the Islamic call to prayer announced from mosques five times a day.",
+        "arabic": "الأذان هو النداء الإسلامي للصلاة الذي يُعلن من المساجد خمس مرات في اليوم."
+      },
+      "reference": "Islamic Practice"
+    },
+    {
+      "id": "q113",
+      "category": "Seerah",
+      "difficulty": 4,
+      "themes": [
+        "Wives of Prophet"
+      ],
+      "context": {
+        "english": "Mothers of Believers",
+        "arabic": "أمهات المؤمنين"
+      },
+      "question": {
+        "english": "How many wives did Prophet Muhammad have in total?",
+        "arabic": "كم عدد زوجات النبي محمد إجمالياً؟"
+      },
+      "choices": {
+        "A": {
+          "english": "9",
+          "arabic": "٩"
+        },
+        "B": {
+          "english": "11",
+          "arabic": "١١"
+        },
+        "C": {
+          "english": "13",
+          "arabic": "١٣"
+        },
+        "D": {
+          "english": "15",
+          "arabic": "١٥"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Prophet Muhammad had 11 wives in total, known as the 'Mothers of the Believers'.",
+        "arabic": "كان للنبي محمد ١١ زوجة إجمالياً، يُعرفن بـ 'أمهات المؤمنين'."
+      },
+      "reference": "Seerah"
+    },
+    {
+      "id": "q114",
+      "category": "Fiqh",
+      "difficulty": 5,
+      "themes": [
+        "Prayer Direction"
+      ],
+      "context": {
+        "english": "Qiblah Change",
+        "arabic": "تحويل القبلة"
+      },
+      "question": {
+        "english": "What was the first Qiblah (prayer direction) before it was changed to Mecca?",
+        "arabic": "ما كانت القبلة الأولى قبل تحويلها إلى مكة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Jerusalem",
+          "arabic": "القدس"
+        },
+        "B": {
+          "english": "Damascus",
+          "arabic": "دمشق"
+        },
+        "C": {
+          "english": "Medina",
+          "arabic": "المدينة"
+        },
+        "D": {
+          "english": "Yemen",
+          "arabic": "اليمن"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The first Qiblah was towards Jerusalem (Bayt al-Maqdis) before Allah commanded the change to Mecca.",
+        "arabic": "كانت القبلة الأولى نحو القدس (بيت المقدس) قبل أن يأمر الله بتحويلها إلى مكة."
+      },
+      "reference": "Quran 2:142-144"
+    },
+    {
+      "id": "q115",
+      "category": "Prophets",
+      "difficulty": 2,
+      "themes": [
+        "Prophet's Miracles"
+      ],
+      "context": {
+        "english": "Divine Signs",
+        "arabic": "المعجزات الإلهية"
+      },
+      "question": {
+        "english": "What was the greatest miracle given to Prophet Muhammad?",
+        "arabic": "ما كانت أعظم معجزة أُعطيت للنبي محمد؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Splitting of the moon",
+          "arabic": "انشقاق القمر"
+        },
+        "B": {
+          "english": "The Quran",
+          "arabic": "القرآن"
+        },
+        "C": {
+          "english": "Night journey",
+          "arabic": "الإسراء والمعراج"
+        },
+        "D": {
+          "english": "Water from fingers",
+          "arabic": "تفجر الماء من الأصابع"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The Quran is considered the greatest and eternal miracle of Prophet Muhammad, as it remains unchanged.",
+        "arabic": "القرآن يُعتبر أعظم معجزة خالدة للنبي محمد، لأنه باقٍ بدون تغيير."
+      },
+      "reference": "Islamic Theology"
+    },
+    {
+      "id": "q116",
+      "category": "Islamic Architecture",
+      "difficulty": 3,
+      "themes": [
+        "Holy Sites"
+      ],
+      "context": {
+        "english": "Sacred Places",
+        "arabic": "الأماكن المقدسة"
+      },
+      "question": {
+        "english": "What are the three holiest cities in Islam?",
+        "arabic": "ما هي المدن الثلاث الأقدس في الإسلام؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Mecca, Medina, Damascus",
+          "arabic": "مكة، المدينة، دمشق"
+        },
+        "B": {
+          "english": "Mecca, Medina, Jerusalem",
+          "arabic": "مكة، المدينة، القدس"
+        },
+        "C": {
+          "english": "Mecca, Jerusalem, Baghdad",
+          "arabic": "مكة، القدس، بغداد"
+        },
+        "D": {
+          "english": "Medina, Jerusalem, Cairo",
+          "arabic": "المدينة، القدس، القاهرة"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The three holiest cities in Islam are Mecca (Masjid al-Haram), Medina (Masjid an-Nabawi), and Jerusalem (Masjid al-Aqsa).",
+        "arabic": "المدن الثلاث الأقدس في الإسلام هي مكة (المسجد الحرام)، المدينة (المسجد النبوي)، والقدس (المسجد الأقصى)."
+      },
+      "reference": "Islamic Geography"
+    },
+    {
+      "id": "q117",
+      "category": "Islamic Ethics",
+      "difficulty": 4,
+      "themes": [
+        "Forgiveness"
+      ],
+      "context": {
+        "english": "Moral Excellence",
+        "arabic": "التميز الأخلاقي"
+      },
+      "question": {
+        "english": "What does the Quran say is better than retaliation?",
+        "arabic": "ماذا يقول القرآن أنه أفضل من القصاص؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Patience",
+          "arabic": "الصبر"
+        },
+        "B": {
+          "english": "Forgiveness",
+          "arabic": "العفو"
+        },
+        "C": {
+          "english": "Justice",
+          "arabic": "العدل"
+        },
+        "D": {
+          "english": "Wisdom",
+          "arabic": "الحكمة"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The Quran encourages forgiveness as superior to retaliation: 'But whoever forgives and makes reconciliation, his reward is with Allah.'",
+        "arabic": "القرآن يشجع على العفو كونه أفضل من القصاص: 'فمن عفا وأصلح فأجره على الله'."
+      },
+      "reference": "Quran 42:40"
+    },
+    {
+      "id": "q118",
+      "category": "Companions",
+      "difficulty": 5,
+      "themes": [
+        "Caliphate Period"
+      ],
+      "context": {
+        "english": "Rashidun Period",
+        "arabic": "عهد الخلفاء الراشدين"
+      },
+      "question": {
+        "english": "Which Caliph established the first Islamic navy?",
+        "arabic": "أي خليفة أسس أول أسطول إسلامي؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Abu Bakr",
+          "arabic": "أبو بكر"
+        },
+        "B": {
+          "english": "Umar",
+          "arabic": "عمر"
+        },
+        "C": {
+          "english": "Uthman",
+          "arabic": "عثمان"
+        },
+        "D": {
+          "english": "Ali",
+          "arabic": "علي"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "Caliph Uthman ibn Affan established the first Islamic naval force to protect Muslim territories and expand Islamic influence.",
+        "arabic": "الخليفة عثمان بن عفان أسس أول قوة بحرية إسلامية لحماية الأراضي الإسلامية وتوسيع النفوذ الإسلامي."
+      },
+      "reference": "Islamic History"
+    },
+    {
+      "id": "q119",
+      "category": "Islamic Sciences",
+      "difficulty": 4,
+      "themes": [
+        "Islamic Calendar"
+      ],
+      "context": {
+        "english": "Time Keeping",
+        "arabic": "التوقيت"
+      },
+      "question": {
+        "english": "How many months are in the Islamic lunar year?",
+        "arabic": "كم عدد الأشهر في السنة القمرية الإسلامية؟"
+      },
+      "choices": {
+        "A": {
+          "english": "10",
+          "arabic": "١٠"
+        },
+        "B": {
+          "english": "11",
+          "arabic": "١١"
+        },
+        "C": {
+          "english": "12",
+          "arabic": "١٢"
+        },
+        "D": {
+          "english": "13",
+          "arabic": "١٣"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "The Islamic lunar year has 12 months, but it's about 11 days shorter than the solar year.",
+        "arabic": "السنة القمرية الإسلامية تحتوي على ١٢ شهراً، لكنها أقصر بحوالي ١١ يوماً من السنة الشمسية."
+      },
+      "reference": "Quran 9:36"
+    },
+    {
+      "id": "q120",
+      "category": "Arabic Language",
+      "difficulty": 2,
+      "themes": [
+        "Prayer Phrases"
+      ],
+      "context": {
+        "english": "Worship Language",
+        "arabic": "لغة العبادة"
+      },
+      "question": {
+        "english": "What do Muslims say when they hear the Adhan?",
+        "arabic": "ماذا يقول المسلمون عندما يسمعون الأذان؟"
+      },
+      "choices": {
+        "A": {
+          "english": "They repeat after the Muezzin",
+          "arabic": "يكررون وراء المؤذن"
+        },
+        "B": {
+          "english": "They say Ameen",
+          "arabic": "يقولون آمين"
+        },
+        "C": {
+          "english": "They remain silent",
+          "arabic": "يبقون صامتين"
+        },
+        "D": {
+          "english": "They say Allahu Akbar",
+          "arabic": "يقولون الله أكبر"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Muslims are encouraged to repeat the words of the Adhan after the Muezzin, except for 'Hayya ala...' phrases.",
+        "arabic": "يُستحب للمسلمين أن يكرروا كلمات الأذان وراء المؤذن، عدا عبارات 'حي على...'."
+      },
+      "reference": "Hadith - Sahih Muslim"
+    },
+    {
+      "id": "q121",
+      "category": "Pillars of Iman",
+      "difficulty": 3,
+      "themes": [
+        "Day of Judgment"
+      ],
+      "context": {
+        "english": "Afterlife Beliefs",
+        "arabic": "معتقدات الآخرة"
+      },
+      "question": {
+        "english": "What is the intermediate realm between death and resurrection called?",
+        "arabic": "ماذا تُسمى المرحلة الوسطى بين الموت والبعث؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Jannah",
+          "arabic": "الجنة"
+        },
+        "B": {
+          "english": "Jahannam",
+          "arabic": "جهنم"
+        },
+        "C": {
+          "english": "Barzakh",
+          "arabic": "البرزخ"
+        },
+        "D": {
+          "english": "Araf",
+          "arabic": "الأعراف"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "Barzakh is the intermediate realm where souls remain after death until the Day of Resurrection.",
+        "arabic": "البرزخ هو المرحلة الوسطى حيث تبقى الأرواح بعد الموت حتى يوم البعث."
+      },
+      "reference": "Quran 23:100"
+    },
+    {
+      "id": "q122",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Meccan Surahs"
+      ],
+      "context": {
+        "english": "Early Revelation",
+        "arabic": "الوحي المبكر"
+      },
+      "question": {
+        "english": "Which surah is considered the first complete surah revealed?",
+        "arabic": "أي سورة تُعتبر أول سورة كاملة نزلت؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Al-Alaq",
+          "arabic": "العلق"
+        },
+        "B": {
+          "english": "Al-Fatihah",
+          "arabic": "الفاتحة"
+        },
+        "C": {
+          "english": "Al-Muddathir",
+          "arabic": "المدثر"
+        },
+        "D": {
+          "english": "Al-Masad",
+          "arabic": "المسد"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Al-Fatihah is considered by many scholars to be the first complete surah revealed, though individual verses of Al-Alaq came first.",
+        "arabic": "الفاتحة تُعتبر من قبل كثير من العلماء أول سورة كاملة نزلت، رغم أن آيات من العلق نزلت أولاً."
+      },
+      "reference": "Quranic Sciences"
+    },
+    {
+      "id": "q123",
+      "category": "Islamic Culture",
+      "difficulty": 4,
+      "themes": [
+        "Pilgrimage Garments"
+      ],
+      "context": {
+        "english": "Hajj Rituals",
+        "arabic": "شعائر الحج"
+      },
+      "question": {
+        "english": "What is the special garment worn during Hajj called?",
+        "arabic": "ماذا يُسمى اللباس الخاص الذي يُلبس أثناء الحج؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Ihram",
+          "arabic": "إحرام"
+        },
+        "B": {
+          "english": "Thobe",
+          "arabic": "ثوب"
+        },
+        "C": {
+          "english": "Qamis",
+          "arabic": "قميص"
+        },
+        "D": {
+          "english": "Jubba",
+          "arabic": "جبة"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Ihram is the sacred state and the simple white garments worn by pilgrims during Hajj and Umrah.",
+        "arabic": "الإحرام هو الحالة المقدسة والملابس البيضاء البسيطة التي يرتديها الحجاج أثناء الحج والعمرة."
+      },
+      "reference": "Hajj Rituals"
+    },
+    {
+      "id": "q124",
+      "category": "Fiqh",
+      "difficulty": 5,
+      "themes": [
+        "Business Law"
+      ],
+      "context": {
+        "english": "Commercial Ethics",
+        "arabic": "أخلاقيات التجارة"
+      },
+      "question": {
+        "english": "What type of sale is prohibited due to excessive uncertainty (gharar)?",
+        "arabic": "أي نوع من البيع محرم بسبب الغرر المفرط؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Selling fruits before they ripen",
+          "arabic": "بيع الثمار قبل نضجها"
+        },
+        "B": {
+          "english": "Selling with fixed price",
+          "arabic": "البيع بسعر ثابت"
+        },
+        "C": {
+          "english": "Selling in marketplace",
+          "arabic": "البيع في السوق"
+        },
+        "D": {
+          "english": "Selling with witnesses",
+          "arabic": "البيع بالشهود"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Selling fruits before they ripen involves excessive uncertainty (gharar) about the quality and quantity, making it prohibited.",
+        "arabic": "بيع الثمار قبل نضجها ينطوي على غرر مفرط حول الجودة والكمية، مما يجعله محرماً."
+      },
+      "reference": "Islamic Commercial Law"
+    },
+    {
+      "id": "q125",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Prophet's Character"
+      ],
+      "context": {
+        "english": "Noble Traits",
+        "arabic": "الصفات النبيلة"
+      },
+      "question": {
+        "english": "What did Aisha (RA) say when asked about the Prophet's character?",
+        "arabic": "ماذا قالت عائشة رضي الله عنها عندما سُئلت عن خُلق النبي؟"
+      },
+      "choices": {
+        "A": {
+          "english": "He was the most generous",
+          "arabic": "كان أكرم الناس"
+        },
+        "B": {
+          "english": "His character was the Quran",
+          "arabic": "كان خُلقه القرآن"
+        },
+        "C": {
+          "english": "He never got angry",
+          "arabic": "لم يغضب قط"
+        },
+        "D": {
+          "english": "He was always smiling",
+          "arabic": "كان يبتسم دائماً"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "When asked about the Prophet's character, Aisha (RA) said: 'His character was the Quran' - meaning he embodied Quranic teachings.",
+        "arabic": "عندما سُئلت عائشة عن خُلق النبي، قالت: 'كان خُلقه القرآن' - أي أنه جسد تعاليم القرآن."
+      },
+      "reference": "Hadith - Sahih Muslim"
     }
   ]
 }

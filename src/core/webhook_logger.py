@@ -371,13 +371,9 @@ class WebhookFormatter:
         if message.image_url:
             embed["image"] = {"url": message.image_url}
 
-        # Add fields (limited to prevent embed size issues)
+        # Add enhanced fields with visual elements
         if message.fields:
-            embed["fields"] = []
-            for field in message.fields[: self.config.max_embed_fields]:
-                embed["fields"].append(
-                    {"name": field.name, "value": field.value, "inline": field.inline}
-                )
+            embed["fields"] = self._enhance_fields(message.fields)
 
         # Prepare payload
         # Don't override username/avatar - let Discord use the webhook's configured settings
@@ -530,6 +526,81 @@ class WebhookFormatter:
         
         # Fallback to level-based color
         return self.LEVEL_COLORS.get(message.level, self.LEVEL_COLORS[LogLevel.INFO])
+    
+    def _enhance_description(self, message: WebhookMessage) -> str:
+        """Enhance description with visual elements and formatting.
+        
+        Args:
+            message: WebhookMessage to enhance
+            
+        Returns:
+            str: Enhanced description with visual elements
+        """
+        description = self._truncate_text(
+            message.description, self.config.max_description_length
+        )
+        
+        # Add visual separators for better readability
+        if len(description) > 100:
+            # Add subtle visual break for long descriptions
+            if "\n\n" not in description:
+                # Find a good place to add a break
+                sentences = description.split(". ")
+                if len(sentences) > 1:
+                    mid_point = len(sentences) // 2
+                    description = ". ".join(sentences[:mid_point]) + ".\n\n" + ". ".join(sentences[mid_point:])
+        
+        return description
+    
+    def _enhance_fields(self, fields: list) -> list:
+        """Enhance embed fields with visual elements and progress bars.
+        
+        Args:
+            fields: List of EmbedField objects
+            
+        Returns:
+            list: Enhanced field data for Discord embed
+        """
+        enhanced_fields = []
+        
+        for field in fields[: self.config.max_embed_fields]:
+            field_name = field.name
+            field_value = field.value
+            
+            # Enhance resource usage fields with progress bars
+            if any(keyword in field_name.lower() for keyword in ["cpu", "memory", "disk", "usage"]):
+                # Try to extract percentage from field value
+                import re
+                percentage_match = re.search(r'(\d+(?:\.\d+)?)%', field_value)
+                if percentage_match:
+                    percentage = float(percentage_match.group(1))
+                    progress_bar = self._create_progress_bar(percentage)
+                    field_value = f"{progress_bar}\n{field_value}"
+            
+            # Add status emojis to certain fields
+            elif any(keyword in field_name.lower() for keyword in ["status", "health", "state"]):
+                if any(word in field_value.lower() for word in ["healthy", "success", "connected", "active"]):
+                    field_value = f"✅ {field_value}"
+                elif any(word in field_value.lower() for word in ["warning", "high", "disconnected"]):
+                    field_value = f"⚠️ {field_value}"
+                elif any(word in field_value.lower() for word in ["critical", "failed", "error"]):
+                    field_value = f"🚨 {field_value}"
+            
+            # Add timing emojis
+            elif any(keyword in field_name.lower() for keyword in ["time", "duration", "uptime"]):
+                field_value = f"⏱️ {field_value}"
+            
+            # Add count emojis
+            elif any(keyword in field_name.lower() for keyword in ["count", "sessions", "users", "errors"]):
+                field_value = f"📊 {field_value}"
+            
+            enhanced_fields.append({
+                "name": field_name,
+                "value": field_value,
+                "inline": field.inline
+            })
+        
+        return enhanced_fields
 
     def _truncate_text(self, text: str, max_length: int) -> str:
         """Safely truncate text to fit Discord limits.

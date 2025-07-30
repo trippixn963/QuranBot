@@ -33,6 +33,7 @@
 
 import asyncio
 from datetime import datetime
+from pathlib import Path
 
 import discord
 from discord import app_commands
@@ -56,7 +57,7 @@ def get_daily_verses_manager():
     prevent circular imports and provides graceful fallback.
 
     Returns:
-        Optional[DailyVerseManager]: The manager instance or None if error
+        Optional[DailyVersesManager]: The manager instance or None if error
 
     Implementation Notes:
     - Uses lazy imports to prevent circular dependencies
@@ -64,16 +65,16 @@ def get_daily_verses_manager():
     - Returns None instead of raising exceptions
     """
     try:
-        # Access the global manager from the daily_verses module
-        if daily_verses.daily_verse_manager is None:
-            # Initialize the manager if it hasn't been initialized yet
-            daily_verses.daily_verse_manager = daily_verses.DailyVerseManager(Path("data"))
-            daily_verses.daily_verse_manager.load_verses()
-            daily_verses.daily_verse_manager.load_state()
+        from src.utils.verses import DailyVerseManager
         
-        return daily_verses.daily_verse_manager
+        # Create a new instance if needed
+        manager = DailyVerseManager(Path("data"))
+        return manager
+    except ImportError:
+        log_error_with_traceback("DailyVersesManager not available", None)
+        return None
     except Exception as e:
-        log_error_with_traceback("Failed to access daily_verse_manager", e)
+        log_error_with_traceback("Failed to create daily verses manager", e)
         return None
 
 
