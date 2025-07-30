@@ -17,7 +17,7 @@ from typing import Dict, Optional
 import discord
 import pytz
 
-from src.config import get_config_service
+from src.config import get_config
 from src.utils.tree_log import log_perfect_tree_section, log_error_with_traceback
 
 
@@ -72,7 +72,7 @@ class MeccaPrayerNotifier:
     
     def __init__(self, bot):
         self.bot = bot
-        self.config = get_config_service().config
+        self.config = get_config()
         self.prayer_cache_file = Path("data/mecca_prayer_cache.json")
         self.last_notification_file = Path("data/last_mecca_notification.json")
         self.time_based_duas_file = Path("data/time_based_duas.json")
