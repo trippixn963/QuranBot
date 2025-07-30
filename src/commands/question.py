@@ -410,15 +410,19 @@ class QuestionCog(commands.Cog):
 
             # Set footer with admin profile picture
             try:
-                admin_user = await interaction.client.fetch_user(config.DEVELOPER_ID)
-                if admin_user and admin_user.avatar:
-                    embed.set_footer(
-                        text="Created by حَـــــنَّـــــا",
-                        icon_url=admin_user.avatar.url,
-                    )
+                if config.developer_id:
+                    admin_user = await interaction.client.fetch_user(config.developer_id)
+                    if admin_user and admin_user.avatar:
+                        embed.set_footer(
+                            text="Created by حَـــــنَّـــــا",
+                            icon_url=admin_user.avatar.url,
+                        )
+                    else:
+                        embed.set_footer(text="Created by حَـــــنَّـــــا")
                 else:
                     embed.set_footer(text="Created by حَـــــنَّـــــا")
-            except Exception:
+            except Exception as e:
+                log_error_with_traceback("Failed to set admin footer", e)
                 embed.set_footer(text="Created by حَـــــنَّـــــا")
 
             # Create quiz view with quiz manager instance for score tracking

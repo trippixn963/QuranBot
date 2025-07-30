@@ -108,7 +108,7 @@ class LeaderboardView(discord.ui.View):
             from src.config import get_config
 
             config = get_config()
-            developer_id = config.DEVELOPER_ID or 0
+            developer_id = config.developer_id or 0
             if developer_id:
                 admin_user = await self.bot_client.fetch_user(developer_id)
                 if admin_user and admin_user.avatar:
@@ -244,7 +244,7 @@ class LeaderboardCog(commands.Cog):
                     from src.config import get_config
 
                     config = get_config()
-                    developer_id = config.DEVELOPER_ID or 0
+                    developer_id = config.developer_id or 0
                     if developer_id:
                         admin_user = await interaction.client.fetch_user(developer_id)
                         if admin_user and admin_user.avatar:

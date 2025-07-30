@@ -813,7 +813,7 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
                         from src.config import get_config_service
 
                         config = get_config_service().config
-                        admin_user = await bot.fetch_user(config.DEVELOPER_ID)
+                        admin_user = await bot.fetch_user(config.developer_id)
                         if admin_user and admin_user.avatar:
                             embed.set_footer(
                                 text="created by حَـــــنَّـــــا",
@@ -1048,7 +1048,7 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
                         from src.config import get_config_service
 
                         config = get_config_service().config
-                        admin_user = await bot.fetch_user(config.DEVELOPER_ID)
+                        admin_user = await bot.fetch_user(config.developer_id)
                         if admin_user and admin_user.avatar:
                             embed.set_footer(
                                 text="created by حَـــــنَّـــــا",

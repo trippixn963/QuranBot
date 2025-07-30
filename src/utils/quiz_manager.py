@@ -806,7 +806,7 @@ class QuizView(discord.ui.View):
         # Set footer with admin info
         try:
             config = get_config()
-            developer_id = config.DEVELOPER_ID
+            developer_id = config.developer_id
 
             # Get bot client from message (more reliable approach)
             bot_client = self.message._state._get_client()
@@ -887,7 +887,7 @@ class QuizButton(discord.ui.Button):
             # Set footer with admin info and profile picture
             try:
                 config = get_config()
-                developer_id = config.DEVELOPER_ID
+                developer_id = config.developer_id
 
                 # Try to get admin user from guild first
                 admin_user = interaction.guild.get_member(developer_id)
@@ -2536,15 +2536,19 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                     # Set footer with admin profile picture
                     try:
                         config = get_config()
-                        admin_user = await bot.fetch_user(config.DEVELOPER_ID)
-                        if admin_user and admin_user.avatar:
-                            embed.set_footer(
-                                text="Created by حَـــــنَّـــــا",
-                                icon_url=admin_user.avatar.url,
-                            )
+                        if config.developer_id:
+                            admin_user = await bot.fetch_user(config.developer_id)
+                            if admin_user and admin_user.avatar:
+                                embed.set_footer(
+                                    text="Created by حَـــــنَّـــــا",
+                                    icon_url=admin_user.avatar.url,
+                                )
+                            else:
+                                embed.set_footer(text="Created by حَـــــنَّـــــا")
                         else:
                             embed.set_footer(text="Created by حَـــــنَّـــــا")
-                    except Exception:
+                    except Exception as e:
+                        log_error_with_traceback("Failed to set admin footer in automated quiz", e)
                         embed.set_footer(text="Created by حَـــــنَّـــــا")
 
                     # Create the interactive quiz view with buttons and timer
@@ -2629,7 +2633,7 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                     # Send admin DM with the correct answer (same format as manual /question)
                     try:
                         config = get_config()
-                        admin_user = await bot.fetch_user(config.DEVELOPER_ID)
+                        admin_user = await bot.fetch_user(config.developer_id)
                         if admin_user:
                             # Use EXACT same DM format as manual /question command
                             choices = question.get("choices", {})

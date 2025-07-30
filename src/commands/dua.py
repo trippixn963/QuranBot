@@ -201,7 +201,7 @@ class DuaCog(commands.Cog):
             # Set footer with admin profile picture
             try:
                 config = get_config()
-                admin_user = await self.bot.fetch_user(config.DEVELOPER_ID)
+                admin_user = await self.bot.fetch_user(config.developer_id)
                 if admin_user and admin_user.avatar:
                     embed.set_footer(
                         text="Created by حَـــــنَـــــا", icon_url=admin_user.avatar.url

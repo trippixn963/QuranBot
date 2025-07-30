@@ -1078,7 +1078,7 @@ Remember: You're a caring member of the Muslim community with your own personali
         """Get current rate limit status for user."""
         try:
             # Admin users have unlimited access
-            if user_id == self.config.DEVELOPER_ID:
+            if user_id == self.config.developer_id:
                 return {
                     "requests_used": 0,
                     "requests_remaining": "∞",
@@ -1137,7 +1137,7 @@ Remember: You're a caring member of the Muslim community with your own personali
         """Main entry point for asking questions with rate limiting."""
         try:
             # Check rate limit for non-admin users
-            if user_id == self.config.DEVELOPER_ID:
+            if user_id == self.config.developer_id:
                 pass  # Admin can always ask questions
             elif not self._check_rate_limit(user_id):
                 return (

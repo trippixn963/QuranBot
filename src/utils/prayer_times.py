@@ -363,7 +363,7 @@ class MeccaPrayerNotifier:
 
         # Set footer with admin profile picture
         try:
-            admin_user = await self.bot.fetch_user(self.config.DEVELOPER_ID)
+            admin_user = await self.bot.fetch_user(self.config.developer_id)
             if admin_user and admin_user.avatar:
                 embed.set_footer(
                     text="Created by حَـــــنَـــــا", icon_url=admin_user.avatar.url

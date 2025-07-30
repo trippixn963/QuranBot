@@ -306,7 +306,7 @@ class IntervalCog(commands.Cog):
         try:
             # Simple admin check
             config = get_config()
-            if interaction.user.id != config.DEVELOPER_ID:
+            if interaction.user.id != config.developer_id:
                 embed = discord.Embed(
                     title="❌ Permission Denied",
                     description="This command is only available to the bot administrator.",

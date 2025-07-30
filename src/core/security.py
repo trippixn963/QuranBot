@@ -708,7 +708,7 @@ class SecurityService:
             config = get_config_service().config
 
             # Load admin users
-            self.admin_users.add(config.DEVELOPER_ID)
+            self.admin_users.add(config.developer_id)
             for admin_id in config.admin_user_ids:
                 self.admin_users.add(admin_id)
 

@@ -331,7 +331,7 @@ class VerseCog(commands.Cog):
                 from src.config import get_config
 
                 config = get_config()
-                DEVELOPER_ID = config.DEVELOPER_ID
+                DEVELOPER_ID = config.developer_id
                 admin_user = await interaction.client.fetch_user(DEVELOPER_ID)
                 if admin_user and admin_user.avatar:
                     embed.set_footer(
