@@ -124,7 +124,15 @@ class QuranBotConfig(BaseSettings):
     )
 
     guild_id: int = Field(
-        ..., description="Discord server (guild) ID", gt=0, alias="GUILD_ID"
+        description="Discord guild/server ID", alias="GUILD_ID"
+    )
+
+    connection_timeout: int = Field(
+        default=30,
+        description="Voice connection timeout in seconds",
+        ge=5,
+        le=120,
+        alias="CONNECTION_TIMEOUT",
     )
 
     target_channel_id: int = Field(
