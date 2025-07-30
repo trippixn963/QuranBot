@@ -56,7 +56,7 @@ class SystemResourceMonitor:
             except asyncio.CancelledError:
                 pass
         await self.logger.info("System resource monitoring stopped")
-    
+
     async def _monitor_loop(self, interval_seconds: int):
         """Main monitoring loop."""
         while self.monitoring:

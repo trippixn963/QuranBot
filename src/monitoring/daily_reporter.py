@@ -5,9 +5,9 @@
 # =============================================================================
 
 import asyncio
-import time
 from datetime import datetime, timedelta
-from typing import Any, Dict
+import time
+from typing import Any
 
 from ..core.logger import StructuredLogger
 
@@ -15,7 +15,9 @@ from ..core.logger import StructuredLogger
 class DailyHealthReporter:
     """Generate and send daily health reports for 24/7 VPS monitoring."""
 
-    def __init__(self, logger: StructuredLogger, webhook_router=None, system_monitor=None):
+    def __init__(
+        self, logger: StructuredLogger, webhook_router=None, system_monitor=None
+    ):
         self.logger = logger
         self.webhook_router = webhook_router
         self.system_monitor = system_monitor
@@ -42,7 +44,9 @@ class DailyHealthReporter:
 
         self.reporting_active = True
         self.report_task = asyncio.create_task(self._daily_report_loop(report_hour))
-        await self.logger.info(f"Daily health reporting started - reports at {report_hour}:00")
+        await self.logger.info(
+            f"Daily health reporting started - reports at {report_hour}:00"
+        )
 
     async def stop_daily_reporting(self):
         """Stop daily health reporting."""
@@ -62,7 +66,9 @@ class DailyHealthReporter:
                 now = datetime.now()
 
                 # Calculate next report time
-                next_report = now.replace(hour=report_hour, minute=0, second=0, microsecond=0)
+                next_report = now.replace(
+                    hour=report_hour, minute=0, second=0, microsecond=0
+                )
                 if now >= next_report:
                     next_report += timedelta(days=1)
 
@@ -78,7 +84,7 @@ class DailyHealthReporter:
             except Exception as e:
                 await self.logger.error("Error in daily report loop", {"error": str(e)})
                 await asyncio.sleep(3600)  # Wait 1 hour before retry
-    
+
     async def _generate_and_send_daily_report(self):
         """Generate and send the daily health report."""
         try:
@@ -90,9 +96,11 @@ class DailyHealthReporter:
             self.daily_stats = {key: 0 for key in self.daily_stats}
 
         except Exception as e:
-            await self.logger.error("Failed to generate daily report", {"error": str(e)})
+            await self.logger.error(
+                "Failed to generate daily report", {"error": str(e)}
+            )
 
-    async def _collect_daily_metrics(self) -> Dict[str, Any]:
+    async def _collect_daily_metrics(self) -> dict[str, Any]:
         """Collect metrics for the daily report."""
         now = datetime.now()
 
@@ -108,6 +116,7 @@ class DailyHealthReporter:
         api_health = {}
         try:
             from ..utils.api_monitor import get_discord_monitor
+
             monitor = get_discord_monitor()
             if monitor:
                 api_health = monitor.get_current_health()
@@ -124,7 +133,7 @@ class DailyHealthReporter:
             "overall_health": self._calculate_overall_health(system_status, api_health),
         }
 
-    async def _send_daily_report(self, report_data: Dict[str, Any]):
+    async def _send_daily_report(self, report_data: dict[str, Any]):
         """Send the daily health report via webhook."""
         if not self.webhook_router:
             return
@@ -192,13 +201,13 @@ Uptime: {report_data.get('uptime_hours', 0):.1f} hours
                 description=description,
                 level=level,
                 context=context,
-                force_channel=None  # Let router decide channel
+                force_channel=None,  # Let router decide channel
             )
 
         except Exception as e:
             await self.logger.error("Failed to send daily report", {"error": str(e)})
 
-    def _calculate_overall_health(self, system_status: Dict, api_health: Dict) -> str:
+    def _calculate_overall_health(self, system_status: dict, api_health: dict) -> str:
         """Calculate overall system health."""
         # Check system resources
         if system_status:
@@ -206,9 +215,15 @@ Uptime: {report_data.get('uptime_hours', 0):.1f} hours
             memory_status = system_status.get("memory", {}).get("status", "healthy")
             disk_status = system_status.get("disk", {}).get("status", "healthy")
 
-            if any(status == "critical" for status in [cpu_status, memory_status, disk_status]):
+            if any(
+                status == "critical"
+                for status in [cpu_status, memory_status, disk_status]
+            ):
                 return "critical"
-            elif any(status == "warning" for status in [cpu_status, memory_status, disk_status]):
+            elif any(
+                status == "warning"
+                for status in [cpu_status, memory_status, disk_status]
+            ):
                 return "warning"
 
         # Check API health
