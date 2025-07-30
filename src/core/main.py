@@ -785,9 +785,8 @@ class ModernizedQuranBot:
             # Hybrid Data Manager - Unified JSON/SQLite data management
             log_status("Initializing hybrid data manager", "🗄️")
             data_manager = HybridDataManager(
-                data_dir=project_root / "data",
                 logger=self.logger,
-                webhook_logger=webhook_logger,
+                state_service=self.container.get(SQLiteStateService),
             )
             self.container.register_singleton(HybridDataManager, data_manager)
             await data_manager.initialize()
