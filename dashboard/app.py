@@ -53,51 +53,81 @@ def get_bot_statistics():
     """Get comprehensive bot statistics"""
     try:
         with get_db_connection() as conn:
+            # Check if tables exist first
+            tables = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+            table_names = [table[0] for table in tables]
+            
+            bot_stats = {}
+            quiz_stats = {}
+            user_count = 0
+            top_users = []
+            recent_events = []
+            
             # Bot runtime stats
-            bot_stats = conn.execute(
-                "SELECT * FROM bot_statistics WHERE id = 1"
-            ).fetchone()
+            if 'bot_statistics' in table_names:
+                bot_stats_row = conn.execute(
+                    "SELECT * FROM bot_statistics WHERE id = 1"
+                ).fetchone()
+                if bot_stats_row:
+                    bot_stats = dict(bot_stats_row)
             
             # Quiz statistics
-            quiz_stats = conn.execute(
-                "SELECT * FROM quiz_statistics WHERE id = 1"
-            ).fetchone()
+            if 'quiz_statistics' in table_names:
+                quiz_stats_row = conn.execute(
+                    "SELECT * FROM quiz_statistics WHERE id = 1"
+                ).fetchone()
+                if quiz_stats_row:
+                    quiz_stats = dict(quiz_stats_row)
             
             # User quiz stats count
-            user_count = conn.execute(
-                "SELECT COUNT(*) as count FROM user_quiz_stats"
-            ).fetchone()
-            
-            # Top users
-            top_users = conn.execute(
-                """
-                SELECT username, display_name, points, best_streak, total_attempts, correct_answers
-                FROM user_quiz_stats 
-                ORDER BY points DESC, best_streak DESC
-                LIMIT 10
-                """
-            ).fetchall()
+            if 'user_quiz_stats' in table_names:
+                user_count_row = conn.execute(
+                    "SELECT COUNT(*) as count FROM user_quiz_stats"
+                ).fetchone()
+                if user_count_row:
+                    user_count = user_count_row['count']
+                
+                # Top users
+                top_users_rows = conn.execute(
+                    """
+                    SELECT username, display_name, points, best_streak, total_attempts, correct_answers
+                    FROM user_quiz_stats 
+                    ORDER BY points DESC, best_streak DESC
+                    LIMIT 10
+                    """
+                ).fetchall()
+                top_users = [dict(user) for user in top_users_rows]
             
             # Recent system events
-            recent_events = conn.execute(
-                """
-                SELECT event_type, event_data, severity, timestamp
-                FROM system_events 
-                ORDER BY timestamp DESC
-                LIMIT 20
-                """
-            ).fetchall()
+            if 'system_events' in table_names:
+                recent_events_rows = conn.execute(
+                    """
+                    SELECT event_type, event_data, severity, timestamp
+                    FROM system_events 
+                    ORDER BY timestamp DESC
+                    LIMIT 20
+                    """
+                ).fetchall()
+                recent_events = [dict(event) for event in recent_events_rows]
             
             return {
-                'bot_stats': dict(bot_stats) if bot_stats else {},
-                'quiz_stats': dict(quiz_stats) if quiz_stats else {},
-                'user_count': user_count['count'] if user_count else 0,
-                'top_users': [dict(user) for user in top_users],
-                'recent_events': [dict(event) for event in recent_events]
+                'bot_stats': bot_stats,
+                'quiz_stats': quiz_stats,
+                'user_count': user_count,
+                'top_users': top_users,
+                'recent_events': recent_events
             }
     except Exception as e:
         print(f"Error getting bot statistics: {e}")
-        return {}
+        return {
+            'bot_stats': {},
+            'quiz_stats': {},
+            'user_count': 0,
+            'top_users': [],
+            'recent_events': []
+        }
 
 def get_islamic_content_stats():
     """Get Islamic content statistics"""
