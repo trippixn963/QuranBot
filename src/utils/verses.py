@@ -28,7 +28,7 @@
 # File Structure:
 # /data/
 #   daily_verse_state.json    - Current state
-#   daily_verses_pool.json    - Content pool
+#   verses.json               - Content pool
 #   daily_verses_state.json   - Schedule config
 #
 # Required Dependencies:
@@ -126,7 +126,7 @@ class DailyVerseManager:
         """
         self.data_dir = Path(data_dir)
         self.state_file = self.data_dir / "daily_verse_state.json"
-        self.verses_file = self.data_dir / "daily_verses_pool.json"
+        self.verses_file = self.data_dir / "verses.json"
         self.verses_state_file = self.data_dir / "daily_verses_state.json"
 
         # Current state tracking

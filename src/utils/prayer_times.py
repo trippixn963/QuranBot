@@ -71,7 +71,7 @@ class MeccaPrayerNotifier:
     def __init__(self, bot):
         self.bot = bot
         self.config = get_config()
-        self.prayer_cache_file = Path("data/mecca_prayer_cache.json")
+        self.prayer_cache_file = Path("data/prayer_cache.json")
         self.last_notification_file = Path("data/last_mecca_notification.json")
         self.time_based_duas_file = Path("data/time_based_duas.json")
         self.daily_prayers: dict[str, str] = {}

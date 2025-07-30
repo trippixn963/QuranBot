@@ -27,7 +27,7 @@
 #
 # File Structure:
 # /data/
-#   rich_presence_state.json - Persistent state storage
+#   presence.json            - Persistent state storage
 #
 # Required Dependencies:
 # - discord.py: Discord API wrapper
@@ -173,7 +173,7 @@ class RichPresenceManager:
         """Initialize the rich presence manager"""
         self.client = client
         self.data_dir = Path(data_dir)
-        self.state_file = self.data_dir / "rich_presence_state.json"
+        self.state_file = self.data_dir / "presence.json"
         self.is_enabled = True
         self.current_status = ""
         self.current_details = ""

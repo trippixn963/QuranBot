@@ -225,9 +225,11 @@ class AudioServiceAdapter:
                                 # Using fallback duration estimate
                         else:
                             # Audio file not found
+                            pass
 
                 except Exception as e:
                     # Error getting duration
+                    pass
 
             # Convert AudioService state to control panel format
             result = {
@@ -394,6 +396,7 @@ class AudioServiceAdapter:
         """
         try:
             # Pause attempt blocked - 24/7 continuous playback only
+            pass
         except Exception as e:
             # Error logging pause attempt
             traceback.print_exc()
@@ -406,6 +409,7 @@ class AudioServiceAdapter:
         """
         try:
             # Resume attempt ignored - bot should never be paused
+            pass
         except Exception as e:
             # Error logging resume attempt
             traceback.print_exc()
@@ -425,6 +429,7 @@ class AudioServiceAdapter:
                 # Successfully started playback
             else:
                 # Toggle ignored - 24/7 continuous playback only
+                pass
         except Exception as e:
             # Error in toggle playback
             traceback.print_exc()
@@ -821,10 +826,94 @@ class ModernizedQuranBot:
         except Exception as e:
             log_critical_error(f"Initialization failed: {e}")
             log_error_with_traceback("Detailed error", e)
+
+            # Critical webhook notification for initialization failure
+            try:
+                webhook_router = self.container.get("webhook_router")
+                if webhook_router:
+                    from src.core.webhook_logger import LogLevel
+                    await webhook_router.route_event(
+                        event_type="bot_initialization_failure",
+                        title="🚨 CRITICAL: Bot Initialization Failed",
+                        description=f"QuranBot failed to initialize and cannot start",
+                        level=LogLevel.CRITICAL,
+                        context={
+                            "error_type": type(e).__name__,
+                            "error_message": str(e),
+                            "initialization_stage": "service_setup",
+                        }
+                    )
+            except Exception:
+                pass  # Don't let webhook failures prevent error logging
+
             return False
 
     async def _setup_bot_events(self):
         """Set up Discord bot events with modern service integration."""
+
+        @self.bot.event
+        async def on_disconnect():
+            """Handle Discord disconnection events."""
+            try:
+                webhook_router = self.container.get("webhook_router")
+                if webhook_router:
+                    from src.core.webhook_logger import LogLevel
+                    await webhook_router.route_event(
+                        event_type="discord_disconnect",
+                        title="⚠️ Discord Connection Lost",
+                        description="Bot has disconnected from Discord",
+                        level=LogLevel.WARNING,
+                        context={
+                            "timestamp": time.time(),
+                            "bot_name": self.bot.user.name if self.bot.user else "Unknown",
+                        }
+                    )
+            except Exception as e:
+                await self.logger.error("Failed to log disconnect event", {"error": str(e)})
+
+        @self.bot.event
+        async def on_resumed():
+            """Handle Discord reconnection events."""
+            try:
+                webhook_router = self.container.get("webhook_router")
+                if webhook_router:
+                    from src.core.webhook_logger import LogLevel
+                    await webhook_router.route_event(
+                        event_type="discord_reconnect",
+                        title="✅ Discord Connection Restored",
+                        description="Bot has successfully reconnected to Discord",
+                        level=LogLevel.SUCCESS,
+                        context={
+                            "timestamp": time.time(),
+                            "latency": f"{self.bot.latency * 1000:.0f}ms",
+                        }
+                    )
+            except Exception as e:
+                await self.logger.error("Failed to log reconnect event", {"error": str(e)})
+
+        @self.bot.event
+        async def on_error(event, *args, **kwargs):
+            """Handle Discord.py errors."""
+            try:
+                import traceback
+                error_traceback = traceback.format_exc()
+
+                webhook_router = self.container.get("webhook_router")
+                if webhook_router:
+                    from src.core.webhook_logger import LogLevel
+                    await webhook_router.route_event(
+                        event_type="discord_error",
+                        title="❌ Discord Event Error",
+                        description=f"Error occurred in Discord event: {event}",
+                        level=LogLevel.ERROR,
+                        context={
+                            "event_name": event,
+                            "error_traceback": error_traceback[:1000],  # Truncate for Discord
+                            "args_count": len(args),
+                        }
+                    )
+            except Exception as e:
+                await self.logger.error("Failed to log Discord error", {"error": str(e)})
 
         @self.bot.event
         async def on_ready():
@@ -843,6 +932,27 @@ class ModernizedQuranBot:
                 },
             )
 
+            # Enhanced webhook logging for bot startup
+            try:
+                webhook_router = self.container.get("webhook_router")
+                if webhook_router:
+                    from src.core.webhook_logger import LogLevel
+                    await webhook_router.route_event(
+                        event_type="bot_startup",
+                        title="🤖 QuranBot Started Successfully",
+                        description=f"Bot has connected to Discord and is initializing services",
+                        level=LogLevel.SUCCESS,
+                        context={
+                            "bot_name": self.bot.user.name,
+                            "bot_id": self.bot.user.id,
+                            "guild_count": len(self.bot.guilds),
+                            "startup_duration": f"{startup_duration:.2f}s",
+                            "services_loaded": len(self.container._singletons) if hasattr(self.container, "_singletons") else 0,
+                        }
+                    )
+            except Exception as e:
+                await self.logger.warning("Failed to send startup webhook", {"error": str(e)})
+
             log_perfect_tree_section(
                 "🎯 🎵 QuranBot Online",
                 [
@@ -853,24 +963,7 @@ class ModernizedQuranBot:
                 ],
             )
 
-            # Send startup webhook notification
-            try:
-                webhook_logger = self.container.get(ModernWebhookLogger)
-                if webhook_logger and webhook_logger.initialized:
-                    await webhook_logger.log_bot_startup(
-                        version=BOT_VERSION,
-                        startup_duration=startup_duration,
-                        services_loaded=(
-                            len(self.container._singletons)
-                            if hasattr(self.container, "_singletons")
-                            else 0
-                        ),
-                        guild_count=len(self.bot.guilds),
-                    )
-            except Exception as e:
-                await self.logger.warning(
-                    "Failed to send startup webhook", {"error": str(e)}
-                )
+
 
             # **START AUTOMATED AUDIO PLAYBACK IMMEDIATELY**
             await self._start_automated_continuous_playback()
@@ -892,6 +985,43 @@ class ModernizedQuranBot:
                 await self.logger.error(
                     "Failed to initialize daily verses system", {"error": str(e)}
                 )
+
+            # Initialize system monitoring for 24/7 VPS operation
+            try:
+                from src.monitoring.daily_reporter import DailyHealthReporter
+                from src.monitoring.system_monitor import SystemResourceMonitor
+
+                webhook_router = self.container.get("webhook_router")
+
+                # Start system resource monitoring
+                system_monitor = SystemResourceMonitor(self.logger, webhook_router)
+                await system_monitor.start_monitoring(interval_seconds=120)  # Check every 2 minutes
+                self.container.register("system_monitor", system_monitor)
+
+                # Start daily health reporting
+                daily_reporter = DailyHealthReporter(self.logger, webhook_router, system_monitor)
+                await daily_reporter.start_daily_reporting(report_hour=9)  # 9 AM daily reports
+                self.container.register("daily_reporter", daily_reporter)
+
+                await self.logger.info("VPS monitoring systems initialized")
+
+                # Send monitoring startup notification
+                if webhook_router:
+                    from src.core.webhook_logger import LogLevel
+                    await webhook_router.route_event(
+                        event_type="monitoring_system_started",
+                        title="🔍 VPS Monitoring Active",
+                        description="System resource monitoring and daily health reports are now active",
+                        level=LogLevel.INFO,
+                        context={
+                            "resource_check_interval": "2 minutes",
+                            "daily_report_time": "9:00 AM UTC",
+                            "monitoring_features": "CPU, Memory, Disk, API Health",
+                        }
+                    )
+
+            except Exception as e:
+                await self.logger.error("Failed to initialize monitoring systems", {"error": str(e)})
 
             # Initialize quiz system
             try:

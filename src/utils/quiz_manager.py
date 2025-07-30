@@ -28,8 +28,8 @@
 #
 # File Structure:
 # /data/
-#   ├── quiz_data.json      # Question pool and metadata
-#   ├── quiz_state.json     # Current quiz state and scheduling
+#   ├── quiz.json           # Question pool and metadata
+#   ├── state.json          # Current quiz state and scheduling
 #   ├── quiz_stats.json     # User statistics and leaderboard
 #   └── recent_questions.json # Anti-duplicate tracking
 #
@@ -1009,10 +1009,10 @@ class QuizButton(discord.ui.Button):
 
 # Data file paths with Path objects for cross-platform compatibility
 DATA_DIR = Path("data")
-QUIZ_DATA_FILE = DATA_DIR / "quiz_data.json"
+QUIZ_DATA_FILE = DATA_DIR / "quiz.json"
 QUIZ_STATS_FILE = DATA_DIR / "quiz_stats.json"
 RECENT_QUESTIONS_FILE = DATA_DIR / "recent_questions.json"
-QUIZ_STATE_FILE = DATA_DIR / "quiz_state.json"
+QUIZ_STATE_FILE = DATA_DIR / "state.json"
 
 # Quiz timing and frequency configuration
 QUIZ_DELAY_MINUTES = 1  # Delay after verse before quiz
@@ -1146,9 +1146,9 @@ class QuizManager:
             data_dir (str | Path): Directory path for persistent data storage
 
         **File Organization**:
-        - quiz_state.json: System state and scheduling information
+        - state.json: System state and scheduling information
         - quiz_scores.json: User performance data and leaderboards
-        - quiz_data.json: Question pool with metadata and validation
+        - quiz.json: Question pool with metadata and validation
         - recent_questions.json: Anti-duplicate tracking data
 
         **Performance Considerations**:
@@ -1160,7 +1160,7 @@ class QuizManager:
         self.data_dir = Path(data_dir)
         self.questions: list[dict] = []
         self.user_scores: dict[int, dict] = {}
-        self.state_file = self.data_dir / "quiz_state.json"
+        self.state_file = self.data_dir / "state.json"
         self.scores_file = self.data_dir / "quiz_scores.json"
         self.last_sent_time = None
 
@@ -1877,7 +1877,7 @@ class QuizManager:
     def load_state(self) -> bool:
         """Load state from file"""
         try:
-            # First try to load from quiz_data.json (the main quiz database)
+            # First try to load from quiz.json (the main quiz database)
             if QUIZ_DATA_FILE.exists():
                 with open(QUIZ_DATA_FILE, encoding="utf-8") as f:
                     quiz_data = json.load(f)
@@ -2172,14 +2172,14 @@ class QuizManager:
                     "Questions Already Loaded",
                     [
                         ("questions_count", str(len(self.questions))),
-                        ("source", "quiz_data.json (complex format)"),
-                        ("status", "✅ Using existing questions from quiz_data.json"),
+                        ("source", "quiz.json (complex format)"),
+                        ("status", "✅ Using existing questions from quiz.json"),
                     ],
                     "📚",
                 )
-                return  # Already have questions from quiz_data.json
+                return  # Already have questions from quiz.json
 
-            # Only load simple default questions if quiz_data.json is empty/missing
+            # Only load simple default questions if quiz.json is empty/missing
             # Sample Islamic quiz questions
             default_questions = [
                 {
@@ -2291,7 +2291,7 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                 options_list = []
                 correct_answer_index = 0
 
-                # Complex format (from quiz_data.json)
+                # Complex format (from quiz.json)
                 if "choices" in question and isinstance(question["choices"], dict):
                     # Extract question text - show Arabic first, then English translation
                     if isinstance(question["question"], dict):

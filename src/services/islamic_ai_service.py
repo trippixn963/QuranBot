@@ -128,7 +128,7 @@ class EnhancedIslamicAIService:
     async def _load_syrian_knowledge(self):
         """Load Syrian knowledge database."""
         try:
-            syrian_file = Path("data/syrian_knowledge.json")
+            syrian_file = Path("data/knowledge.json")
             if syrian_file.exists():
                 with open(syrian_file, encoding="utf-8") as f:
                     self.syrian_knowledge = json.load(f)
