@@ -1,0 +1,25 @@
+# =============================================================================
+# QuranBot Dashboard Requirements
+# =============================================================================
+# Python dependencies for the QuranBot web dashboard
+# =============================================================================
+
+# Flask Web Framework
+Flask==3.0.0
+Flask-CORS==4.0.0
+Flask-SocketIO==5.3.6
+
+# WebSocket Support
+python-socketio==5.10.0
+eventlet==0.33.3
+
+# Database (sqlite3 is built into Python)
+
+# Utility Libraries
+python-dateutil==2.8.2
+pytz==2023.3
+
+# Development Dependencies (optional)
+# Uncomment for development
+# Flask-Debug==0.4.3
+# watchdog==3.0.0

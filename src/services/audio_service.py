@@ -506,8 +506,8 @@ class AudioService:
         if surah_number:
             await self.set_surah(surah_number)
 
-        # Stop any existing playback
-        await self.stop_playback()
+        # Stop any existing playback (this is a transition, not a real stop)
+        await self.stop_playback(is_transition=True)
 
         # Start new playback task
         self._playback_task = asyncio.create_task(
@@ -544,11 +544,14 @@ class AudioService:
 
         return True
 
-    async def stop_playback(self) -> None:
+    async def stop_playback(self, is_transition: bool = False) -> None:
         """Stop audio playback immediately.
 
         Cancels the playback task, stops the voice client, and updates
         playback state to reflect the stopped status.
+
+        Args:
+            is_transition: If True, this is part of a transition (skip/change) and shouldn't log as a stop
         """
         if self._playback_task and not self._playback_task.done():
             self._playback_task.cancel()
@@ -565,23 +568,24 @@ class AudioService:
 
         await self._logger.info("Stopped audio playback")
         
-        # Log to webhook
-        try:
-            webhook_router = self._container.get("webhook_router")
-            if webhook_router:
-                await webhook_router.log_audio_event(
-                    event_type="playback_stopped",
-                    title="⏹️ Audio Playback Stopped",
-                    description="Audio playback has been stopped",
-                    level=LogLevel.INFO,
-                    context={
-                        "last_reciter": self._current_state.current_reciter,
-                        "last_surah": self._current_state.current_position.surah_number,
-                        "playback_duration": "N/A",  # Could be calculated if needed
-                    },
-                )
-        except Exception as e:
-            await self._logger.error("Failed to log audio stop event to webhook", {"error": str(e)})
+        # Only log to webhook if this is an actual stop, not a transition
+        if not is_transition:
+            try:
+                webhook_router = self._container.get("webhook_router")
+                if webhook_router:
+                    await webhook_router.log_audio_event(
+                        event_type="playback_stopped",
+                        title="⏹️ Audio Playback Stopped",
+                        description="Audio playback has been stopped",
+                        level=LogLevel.INFO,
+                        context={
+                            "last_reciter": self._current_state.current_reciter,
+                            "last_surah": self._current_state.current_position.surah_number,
+                            "playback_duration": "N/A",  # Could be calculated if needed
+                        },
+                    )
+            except Exception as e:
+                await self._logger.error("Failed to log audio stop event to webhook", {"error": str(e)})
 
     async def pause_playback(self) -> bool:
         """Disabled - 24/7 Quran bot should never be paused.
@@ -662,8 +666,8 @@ class AudioService:
         # If we were playing, restart playback with the new reciter
         if was_playing and self._voice_client and self._voice_client.is_connected():
             try:
-                # Stop current playback and restart with new reciter
-                await self.stop_playback()
+                # Stop current playback and restart with new reciter (this is a transition)
+                await self.stop_playback(is_transition=True)
                 await self.start_playback(resume_position=False)
                 await self._logger.info(
                     "Restarted playback for new reciter", {"reciter": reciter}
@@ -722,8 +726,8 @@ class AudioService:
         # If we were playing, restart playback with the new surah
         if was_playing and self._voice_client and self._voice_client.is_connected():
             try:
-                # Stop current playback and restart with new surah
-                await self.stop_playback()
+                # Stop current playback and restart with new surah (this is a transition)
+                await self.stop_playback(is_transition=True)
                 await self.start_playback(resume_position=False)
                 await self._logger.info(
                     "Restarted playback for new surah", {"surah": surah_number}
