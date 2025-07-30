@@ -11,7 +11,7 @@ from typing import Any, Optional
 from .enhanced_webhook_router import EnhancedWebhookRouter
 from .webhook_logger import ModernWebhookLogger, WebhookConfig
 from .structured_logger import StructuredLogger
-from src.config.bot_config import BotConfig
+from src.config import QuranBotConfig
 
 
 class WebhookServiceFactory:
@@ -19,7 +19,7 @@ class WebhookServiceFactory:
     
     @staticmethod
     async def create_webhook_service(
-        config: BotConfig,
+        config: QuranBotConfig,
         logger: StructuredLogger,
         container: Any = None,
         bot: Any = None,
@@ -102,7 +102,7 @@ class WebhookServiceFactory:
             return None
     
     @staticmethod
-    def get_webhook_service_info(config: BotConfig) -> dict[str, Any]:
+    def get_webhook_service_info(config: QuranBotConfig) -> dict[str, Any]:
         """
         Get information about the webhook service configuration.
         
@@ -166,7 +166,7 @@ class WebhookServiceFactory:
 
 # Convenience function for easy integration
 async def create_webhook_service(
-    config: BotConfig,
+            config: QuranBotConfig,
     logger: StructuredLogger,
     container: Any = None,
     bot: Any = None,
