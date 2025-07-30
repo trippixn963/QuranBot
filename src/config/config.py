@@ -133,6 +133,12 @@ class QuranBotConfig(BaseSettings):
         alias="CONNECTION_TIMEOUT",
     )
 
+    enable_reconnection: bool = Field(
+        default=True,
+        description="Enable automatic voice reconnection",
+        alias="ENABLE_RECONNECTION",
+    )
+
     target_channel_id: int = Field(
         ...,
         description="Voice channel ID for audio playback",
