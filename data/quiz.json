@@ -1031,6 +1031,406 @@
         "arabic": "وفقاً للتقليد الإسلامي، أرسل الله ١٢٤،٠٠٠ نبي لهداية البشرية، مع ذكر ٢٥ منهم بالاسم في القرآن."
       },
       "reference": "Islamic Tradition"
+    },
+    {
+      "id": "q026",
+      "category": "Quran",
+      "difficulty": 1,
+      "themes": [
+        "Quran Basics"
+      ],
+      "context": {
+        "english": "Basic Quran Knowledge",
+        "arabic": "المعرفة الأساسية للقرآن"
+      },
+      "question": {
+        "english": "Which surah is known as the 'Heart of the Quran'?",
+        "arabic": "أي سورة تُعرف بـ 'قلب القرآن'؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Al-Fatihah",
+          "arabic": "الفاتحة"
+        },
+        "B": {
+          "english": "Ya-Sin",
+          "arabic": "يس"
+        },
+        "C": {
+          "english": "Al-Rahman",
+          "arabic": "الرحمن"
+        },
+        "D": {
+          "english": "Al-Mulk",
+          "arabic": "الملك"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Surah Ya-Sin is known as the 'Heart of the Quran' according to hadith.",
+        "arabic": "سورة يس تُعرف بـ 'قلب القرآن' وفقاً للحديث."
+      },
+      "reference": "Hadith - Tirmidhi"
+    },
+    {
+      "id": "q027",
+      "category": "Pillars of Islam",
+      "difficulty": 1,
+      "themes": [
+        "Zakat"
+      ],
+      "context": {
+        "english": "Islamic Charity",
+        "arabic": "الزكاة الإسلامية"
+      },
+      "question": {
+        "english": "What percentage of wealth is given as Zakat on savings?",
+        "arabic": "ما هي نسبة الزكاة على المدخرات؟"
+      },
+      "choices": {
+        "A": {
+          "english": "1%",
+          "arabic": "١٪"
+        },
+        "B": {
+          "english": "2.5%",
+          "arabic": "٢.٥٪"
+        },
+        "C": {
+          "english": "5%",
+          "arabic": "٥٪"
+        },
+        "D": {
+          "english": "10%",
+          "arabic": "١٠٪"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Zakat on savings is 2.5% of wealth that has been held for one lunar year.",
+        "arabic": "الزكاة على المدخرات هي ٢.٥٪ من الثروة التي حُفظت لمدة سنة قمرية."
+      },
+      "reference": "Islamic Jurisprudence"
+    },
+    {
+      "id": "q028",
+      "category": "Prophets",
+      "difficulty": 2,
+      "themes": [
+        "Stories of Prophets"
+      ],
+      "context": {
+        "english": "Prophetic Stories",
+        "arabic": "قصص الأنبياء"
+      },
+      "question": {
+        "english": "Which prophet was swallowed by a whale?",
+        "arabic": "أي نبي ابتلعه الحوت؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Prophet Nuh (Noah)",
+          "arabic": "النبي نوح"
+        },
+        "B": {
+          "english": "Prophet Yunus (Jonah)",
+          "arabic": "النبي يونس"
+        },
+        "C": {
+          "english": "Prophet Musa (Moses)",
+          "arabic": "النبي موسى"
+        },
+        "D": {
+          "english": "Prophet Ibrahim (Abraham)",
+          "arabic": "النبي إبراهيم"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Prophet Yunus (Jonah) was swallowed by a whale and prayed to Allah from its belly.",
+        "arabic": "النبي يونس ابتلعه الحوت ودعا الله من بطنه."
+      },
+      "reference": "Quran 37:139-144"
+    },
+    {
+      "id": "q029",
+      "category": "Islamic Ethics",
+      "difficulty": 2,
+      "themes": [
+        "Family Relations"
+      ],
+      "context": {
+        "english": "Islamic Family Values",
+        "arabic": "القيم الأسرية الإسلامية"
+      },
+      "question": {
+        "english": "According to a hadith, paradise lies under the feet of whom?",
+        "arabic": "وفقاً للحديث، الجنة تحت أقدام من؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Fathers",
+          "arabic": "الآباء"
+        },
+        "B": {
+          "english": "Mothers",
+          "arabic": "الأمهات"
+        },
+        "C": {
+          "english": "Teachers",
+          "arabic": "المعلمين"
+        },
+        "D": {
+          "english": "Scholars",
+          "arabic": "العلماء"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The hadith states that 'Paradise lies under the feet of mothers', emphasizing respect for mothers.",
+        "arabic": "الحديث يقول 'الجنة تحت أقدام الأمهات'، مؤكداً على احترام الأمهات."
+      },
+      "reference": "Hadith - Sunan An-Nasa'i"
+    },
+    {
+      "id": "q030",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Quranic Sciences"
+      ],
+      "context": {
+        "english": "Revelation Period",
+        "arabic": "فترة الوحي"
+      },
+      "question": {
+        "english": "How many years did it take for the complete Quran to be revealed?",
+        "arabic": "كم سنة استغرق نزول القرآن الكريم كاملاً؟"
+      },
+      "choices": {
+        "A": {
+          "english": "10 years",
+          "arabic": "١٠ سنوات"
+        },
+        "B": {
+          "english": "15 years",
+          "arabic": "١٥ سنة"
+        },
+        "C": {
+          "english": "23 years",
+          "arabic": "٢٣ سنة"
+        },
+        "D": {
+          "english": "30 years",
+          "arabic": "٣٠ سنة"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "The Quran was revealed over a period of 23 years, in Mecca and Medina.",
+        "arabic": "نزل القرآن الكريم على مدى ٢٣ سنة، في مكة والمدينة."
+      },
+      "reference": "Quranic Sciences"
+    },
+    {
+      "id": "q031",
+      "category": "Islamic History",
+      "difficulty": 3,
+      "themes": [
+        "Battles"
+      ],
+      "context": {
+        "english": "Early Islamic Battles",
+        "arabic": "المعارك الإسلامية المبكرة"
+      },
+      "question": {
+        "english": "What was the first major battle in Islamic history?",
+        "arabic": "ما هي أول معركة كبرى في التاريخ الإسلامي؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Battle of Uhud",
+          "arabic": "معركة أحد"
+        },
+        "B": {
+          "english": "Battle of Badr",
+          "arabic": "معركة بدر"
+        },
+        "C": {
+          "english": "Battle of Khandaq",
+          "arabic": "معركة الخندق"
+        },
+        "D": {
+          "english": "Battle of Khaybar",
+          "arabic": "معركة خيبر"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The Battle of Badr in 2 AH (624 CE) was the first major battle between Muslims and Quraysh.",
+        "arabic": "معركة بدر في السنة ٢ هجرية (٦٢٤ م) كانت أول معركة كبرى بين المسلمين وقريش."
+      },
+      "reference": "Islamic History"
+    },
+    {
+      "id": "q032",
+      "category": "Fiqh",
+      "difficulty": 4,
+      "themes": [
+        "Wudu"
+      ],
+      "context": {
+        "english": "Ablution Requirements",
+        "arabic": "شروط الوضوء"
+      },
+      "question": {
+        "english": "How many obligatory acts (fard) are there in wudu?",
+        "arabic": "كم عدد الفرائض في الوضوء؟"
+      },
+      "choices": {
+        "A": {
+          "english": "3",
+          "arabic": "٣"
+        },
+        "B": {
+          "english": "4",
+          "arabic": "٤"
+        },
+        "C": {
+          "english": "5",
+          "arabic": "٥"
+        },
+        "D": {
+          "english": "6",
+          "arabic": "٦"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "There are 4 obligatory acts in wudu: washing face, arms to elbows, wiping head, and washing feet to ankles.",
+        "arabic": "هناك ٤ فرائض في الوضوء: غسل الوجه، واليدين إلى المرفقين، ومسح الرأس، وغسل الرجلين إلى الكعبين."
+      },
+      "reference": "Quran 5:6"
+    },
+    {
+      "id": "q033",
+      "category": "Companions",
+      "difficulty": 4,
+      "themes": [
+        "Female Companions"
+      ],
+      "context": {
+        "english": "Women in Early Islam",
+        "arabic": "النساء في الإسلام المبكر"
+      },
+      "question": {
+        "english": "Who was known as 'Mother of the Believers' and a great scholar of hadith?",
+        "arabic": "من كانت تُعرف بـ 'أم المؤمنين' وعالمة حديث عظيمة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Khadijah (RA)",
+          "arabic": "خديجة رضي الله عنها"
+        },
+        "B": {
+          "english": "Aisha (RA)",
+          "arabic": "عائشة رضي الله عنها"
+        },
+        "C": {
+          "english": "Fatimah (RA)",
+          "arabic": "فاطمة رضي الله عنها"
+        },
+        "D": {
+          "english": "Hafsa (RA)",
+          "arabic": "حفصة رضي الله عنها"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Aisha (RA) was known for her vast knowledge and narrated over 2,000 hadiths.",
+        "arabic": "عائشة رضي الله عنها كانت معروفة بعلمها الواسع وروت أكثر من ٢٠٠٠ حديث."
+      },
+      "reference": "Islamic History"
+    },
+    {
+      "id": "q034",
+      "category": "Arabic Language",
+      "difficulty": 5,
+      "themes": [
+        "Quranic Terms"
+      ],
+      "context": {
+        "english": "Technical Terminology",
+        "arabic": "المصطلحات الفنية"
+      },
+      "question": {
+        "english": "What does the term 'Tajweed' refer to?",
+        "arabic": "إلى ماذا يشير مصطلح 'التجويد'؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Quran interpretation",
+          "arabic": "تفسير القرآن"
+        },
+        "B": {
+          "english": "Quran memorization",
+          "arabic": "حفظ القرآن"
+        },
+        "C": {
+          "english": "Rules of Quran recitation",
+          "arabic": "أحكام تلاوة القرآن"
+        },
+        "D": {
+          "english": "Quran translation",
+          "arabic": "ترجمة القرآن"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "Tajweed refers to the rules governing proper pronunciation during Quran recitation.",
+        "arabic": "التجويد يشير إلى القواعد التي تحكم النطق الصحيح أثناء تلاوة القرآن."
+      },
+      "reference": "Quranic Sciences"
+    },
+    {
+      "id": "q035",
+      "category": "Aqidah",
+      "difficulty": 5,
+      "themes": [
+        "Divine Decree"
+      ],
+      "context": {
+        "english": "Islamic Belief System",
+        "arabic": "نظام العقيدة الإسلامية"
+      },
+      "question": {
+        "english": "What is the Arabic term for Divine Decree or Predestination?",
+        "arabic": "ما هو المصطلح العربي للقضاء والقدر؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Tawakkul",
+          "arabic": "توكل"
+        },
+        "B": {
+          "english": "Qadar",
+          "arabic": "قدر"
+        },
+        "C": {
+          "english": "Rizq",
+          "arabic": "رزق"
+        },
+        "D": {
+          "english": "Ajal",
+          "arabic": "أجل"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Qadar refers to Divine Decree, one of the six pillars of Iman.",
+        "arabic": "القدر يشير إلى القضاء والقدر، وهو أحد أركان الإيمان الستة."
+      },
+      "reference": "Islamic Theology"
     }
   ]
 }

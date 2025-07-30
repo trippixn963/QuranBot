@@ -1050,6 +1050,34 @@ class EnhancedWebhookRouter:
             )
         return False
 
+    async def log_quiz_event(
+        self,
+        event_type: str,
+        user_name: str = None,
+        user_id: int = None,
+        question_text: str = None,
+        user_answer: str = None,
+        correct_answer: str = None,
+        is_correct: bool = None,
+        user_avatar_url: str = None,
+        quiz_details: dict[str, Any] = None,
+    ) -> bool:
+        """Log comprehensive quiz events (sent, answered, timed out, deleted)."""
+        webhook_logger = self._get_webhook_logger(WebhookChannel.USER_ACTIVITY)
+        if webhook_logger:
+            return await webhook_logger.log_quiz_event(
+                event_type=event_type,
+                user_name=user_name,
+                user_id=user_id,
+                question_text=question_text,
+                user_answer=user_answer,
+                correct_answer=correct_answer,
+                is_correct=is_correct,
+                user_avatar_url=user_avatar_url,
+                quiz_details=quiz_details,
+            )
+        return False
+
     async def log_audio_playback_event(
         self,
         event_type: str,
