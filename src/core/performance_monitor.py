@@ -23,7 +23,7 @@ from typing import Any
 import psutil
 
 from .di_container import DIContainer
-from .structured_logger import StructuredLogger
+from .logger import StructuredLogger
 
 # Try to import optional performance libraries
 try:
@@ -1001,7 +1001,7 @@ class PerformanceMonitor:
         """Send performance metrics to webhook system"""
         try:
             # Get webhook router from container
-            webhook_router = self._container.get("enhanced_webhook_router")
+            webhook_router = self._container.get("webhook_router")
             if not webhook_router or not hasattr(
                 webhook_router, "log_performance_visual"
             ):

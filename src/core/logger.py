@@ -9,7 +9,7 @@ modern async applications with proper context tracking and structured output.
 Classes:
     StructuredFormatter: JSON formatter for structured logging output
     StructuredLogger: Main async logger with context management
-    
+
 Features:
     - JSON-formatted structured logging with consistent fields
     - Correlation ID context management using contextvars
@@ -18,7 +18,7 @@ Features:
     - Type-safe logging with context data validation
     - Integration with existing Discord logging systems
     - Performance-optimized for high-throughput logging
-    
+
 Context Management:
     - Automatic correlation ID tracking across async contexts
     - Request/operation correlation for debugging
@@ -51,7 +51,7 @@ class StructuredFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         """
         Format a log record as structured JSON.
-        
+
         Converts a Python logging record into a structured JSON format with
         consistent fields including timestamp, level, message, correlation ID,
         source location, and optional context data.
@@ -142,7 +142,7 @@ class StructuredLogger:
     ):
         """
         Initialize the structured logger with handlers and formatting.
-        
+
         Sets up a structured logger with JSON formatting, correlation ID support,
         and configurable output destinations. Clears any existing handlers to
         prevent duplicate logging.
@@ -178,7 +178,7 @@ class StructuredLogger:
     def set_correlation_id(self, corr_id: str | None = None) -> str:
         """
         Set correlation ID for request/operation tracking.
-        
+
         Establishes a correlation ID in the context variable for tracking
         related log entries across async operations. Automatically generates
         a new UUID if no correlation ID is provided.
@@ -198,7 +198,7 @@ class StructuredLogger:
     def get_correlation_id(self) -> str:
         """
         Get current correlation ID from context.
-        
+
         Retrieves the correlation ID from the current async context,
         or returns empty string if no correlation ID is set.
 
@@ -210,7 +210,7 @@ class StructuredLogger:
     async def debug(self, message: str, context: dict[str, Any] | None = None) -> None:
         """
         Log debug message with optional context data.
-        
+
         Logs detailed diagnostic information for debugging purposes.
         Debug messages are typically filtered out in production environments.
 
@@ -223,7 +223,7 @@ class StructuredLogger:
     async def info(self, message: str, context: dict[str, Any] | None = None) -> None:
         """
         Log informational message with optional context data.
-        
+
         Logs general informational messages about normal application
         operation and significant events.
 
@@ -238,7 +238,7 @@ class StructuredLogger:
     ) -> None:
         """
         Log warning message with optional context data.
-        
+
         Logs warning messages for potentially harmful but recoverable
         situations that don't prevent normal operation.
 
@@ -256,7 +256,7 @@ class StructuredLogger:
     ) -> None:
         """
         Log error message with optional context and exception information.
-        
+
         Logs error messages for significant problems that affect normal
         operation but don't necessarily stop the application.
 
@@ -275,7 +275,7 @@ class StructuredLogger:
     ) -> None:
         """
         Log critical message with optional context and exception information.
-        
+
         Logs critical error messages for severe problems that may cause
         the application to stop functioning or require immediate attention.
 
@@ -295,7 +295,7 @@ class StructuredLogger:
     ) -> None:
         """
         Internal async logging method for thread-safe log processing.
-        
+
         Handles the actual logging operation by capturing context, correlation
         IDs, and exception information, then executing the logging in a thread
         pool to avoid blocking the event loop.
@@ -338,7 +338,7 @@ class StructuredLogger:
     ) -> None:
         """
         Synchronous logging implementation executed in thread pool.
-        
+
         Performs the actual logging operation in a thread-safe manner,
         setting correlation context and handling exception information
         before passing to the Python logging system.
@@ -538,11 +538,11 @@ def set_logging_service(service: LoggingService) -> None:
 def get_logger(name: str = "quranbot", level: str = "INFO") -> StructuredLogger:
     """
     Create a StructuredLogger instance.
-    
+
     Args:
         name: Logger name (default: "quranbot")
         level: Logging level (default: "INFO")
-        
+
     Returns:
         StructuredLogger instance
     """
@@ -550,5 +550,5 @@ def get_logger(name: str = "quranbot", level: str = "INFO") -> StructuredLogger:
         name=name,
         level=level,
         log_file=Path("logs") / "quranbot.log",
-        console_output=True
+        console_output=True,
     )

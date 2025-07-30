@@ -13,7 +13,7 @@ import time
 from typing import Any
 import weakref
 
-from src.core.structured_logger import StructuredLogger
+from src.core.logger import StructuredLogger
 
 
 class TaskPriority(Enum):

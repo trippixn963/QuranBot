@@ -22,7 +22,7 @@ from typing import Any, Generic, TypeVar
 import weakref
 
 from .di_container import DIContainer
-from .structured_logger import StructuredLogger
+from .logger import StructuredLogger
 
 T = TypeVar("T")
 

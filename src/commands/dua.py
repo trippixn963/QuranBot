@@ -227,7 +227,7 @@ class DuaCog(commands.Cog):
 
                 container = get_container()
                 if container:
-                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    enhanced_webhook = container.get("webhook_router")
                     if enhanced_webhook and hasattr(
                         enhanced_webhook, "log_control_panel_interaction"
                     ):

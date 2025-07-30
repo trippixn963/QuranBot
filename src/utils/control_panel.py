@@ -12,7 +12,7 @@ import os
 import discord
 from discord.ui import Button, Modal, Select, TextInput, View
 
-from .surah_mapper import get_surah_info, search_surahs
+from .surah_utils import get_surah_info, search_surahs
 from .tree_log import (
     log_error_with_traceback,
     log_perfect_tree_section,
@@ -447,7 +447,7 @@ class SearchResultsSelect(Select):
 
                 container = get_container()
                 if container:
-                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    enhanced_webhook = container.get("webhook_router")
                     if enhanced_webhook and hasattr(
                         enhanced_webhook, "log_control_panel_interaction"
                     ):
@@ -606,7 +606,7 @@ class SurahConfirmationView(View):
 
                 container = get_container()
                 if container:
-                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    enhanced_webhook = container.get("webhook_router")
                     if enhanced_webhook and hasattr(
                         enhanced_webhook, "log_control_panel_interaction"
                     ):
@@ -922,7 +922,7 @@ class SurahSelect(Select):
 
                 container = get_container()
                 if container:
-                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    enhanced_webhook = container.get("webhook_router")
                     if enhanced_webhook and hasattr(
                         enhanced_webhook, "log_control_panel_interaction"
                     ):
@@ -1144,7 +1144,7 @@ class ReciterSelect(Select):
 
                 container = get_container()
                 if container:
-                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    enhanced_webhook = container.get("webhook_router")
                     if enhanced_webhook and hasattr(
                         enhanced_webhook, "log_control_panel_interaction"
                     ):
@@ -1715,7 +1715,7 @@ class SimpleControlPanelView(View):
 
                         container = get_container()
                         if container:
-                            enhanced_webhook = container.get("enhanced_webhook_router")
+                            enhanced_webhook = container.get("webhook_router")
                             if enhanced_webhook and hasattr(
                                 enhanced_webhook, "log_bot_event"
                             ):
@@ -1911,7 +1911,7 @@ class SimpleControlPanelView(View):
 
                     container = get_container()
                     if container:
-                        enhanced_webhook = container.get("enhanced_webhook_router")
+                        enhanced_webhook = container.get("webhook_router")
                         if enhanced_webhook and hasattr(
                             enhanced_webhook, "log_control_panel_interaction"
                         ):
@@ -1995,7 +1995,7 @@ class SimpleControlPanelView(View):
 
                     container = get_container()
                     if container:
-                        enhanced_webhook = container.get("enhanced_webhook_router")
+                        enhanced_webhook = container.get("webhook_router")
                         if enhanced_webhook and hasattr(
                             enhanced_webhook, "log_control_panel_interaction"
                         ):
@@ -2069,7 +2069,7 @@ class SimpleControlPanelView(View):
 
                 container = get_container()
                 if container:
-                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    enhanced_webhook = container.get("webhook_router")
                     if enhanced_webhook and hasattr(
                         enhanced_webhook, "log_control_panel_interaction"
                     ):
@@ -2144,7 +2144,7 @@ class SimpleControlPanelView(View):
 
                 container = get_container()
                 if container:
-                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    enhanced_webhook = container.get("webhook_router")
                     if enhanced_webhook and hasattr(
                         enhanced_webhook, "log_control_panel_interaction"
                     ):
@@ -2239,7 +2239,7 @@ class SimpleControlPanelView(View):
 
                 container = get_container()
                 if container:
-                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    enhanced_webhook = container.get("webhook_router")
                     if enhanced_webhook and hasattr(
                         enhanced_webhook, "log_control_panel_interaction"
                     ):
@@ -2342,7 +2342,7 @@ class SimpleControlPanelView(View):
 
                 container = get_container()
                 if container:
-                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    enhanced_webhook = container.get("webhook_router")
                     if enhanced_webhook and hasattr(
                         enhanced_webhook, "log_control_panel_interaction"
                     ):
@@ -2432,7 +2432,7 @@ class SimpleControlPanelView(View):
 
                 container = get_container()
                 if container:
-                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    enhanced_webhook = container.get("webhook_router")
                     if enhanced_webhook and hasattr(
                         enhanced_webhook, "log_control_panel_interaction"
                     ):
@@ -2711,7 +2711,7 @@ class ControlPanelMonitor:
 
             container = get_container()
             if container:
-                enhanced_webhook = container.get("enhanced_webhook_router")
+                enhanced_webhook = container.get("webhook_router")
                 if enhanced_webhook and hasattr(enhanced_webhook, "log_bot_event"):
                     self.last_alert_sent = datetime.now(UTC)
 
@@ -2767,7 +2767,7 @@ class ControlPanelMonitor:
 
             container = get_container()
             if container:
-                enhanced_webhook = container.get("enhanced_webhook_router")
+                enhanced_webhook = container.get("webhook_router")
                 if enhanced_webhook and hasattr(enhanced_webhook, "log_bot_event"):
                     await enhanced_webhook.log_bot_event(
                         event_type="control_panel_recovery",
@@ -3045,7 +3045,7 @@ async def create_control_panel(
 
                     container = get_container()
                     if container:
-                        enhanced_webhook = container.get("enhanced_webhook_router")
+                        enhanced_webhook = container.get("webhook_router")
                         if enhanced_webhook and hasattr(
                             enhanced_webhook, "log_bot_event"
                         ):

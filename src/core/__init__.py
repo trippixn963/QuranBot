@@ -7,17 +7,16 @@
 # and service management.
 # =============================================================================
 
+from .database import DatabaseManager
 from .di_container import DIContainer
+from .discord_optimizer import ConnectionPool, DiscordOptimizer, SmartRateLimiter
 from .exceptions import *
-from .security import (
-    InputValidator,
-    RateLimiter,
-    SecurityService,
-    rate_limit,
-    require_admin,
-    validate_input,
-)
-from .structured_logger import (
+from .health_monitor import HealthMonitor
+from .heartbeat_monitor import HeartbeatMonitor
+
+# New optimization modules
+from .log_optimizer import BatchedLogWriter, LogCompressor, OptimizedLogManager
+from .logger import (
     LoggingService,
     StructuredFormatter,
     StructuredLogger,
@@ -27,16 +26,17 @@ from .structured_logger import (
     log_with_correlation,
     set_logging_service,
 )
-from .health_monitor import HealthMonitor
-from .heartbeat_monitor import HeartbeatMonitor
-from .database import DatabaseManager
-
-# New optimization modules
-from .log_optimizer import OptimizedLogManager, BatchedLogWriter, LogCompressor
-from .unified_scheduler import UnifiedTaskScheduler, TaskPriority, LegacyTaskMigrator
 from .memory_optimizer import AdvancedMemoryOptimizer, ObjectPool, SmartGarbageCollector
-from .smart_imports import SmartImportManager, LazyModule, ImportAnalyzer
-from .discord_optimizer import DiscordOptimizer, SmartRateLimiter, ConnectionPool
+from .scheduler import LegacyTaskMigrator, TaskPriority, UnifiedTaskScheduler
+from .security import (
+    InputValidator,
+    RateLimiter,
+    SecurityService,
+    rate_limit,
+    require_admin,
+    validate_input,
+)
+from .smart_imports import ImportAnalyzer, LazyModule, SmartImportManager
 
 __all__ = [
     "DIContainer",
@@ -71,10 +71,9 @@ __all__ = [
     "HealthMonitor",
     "HeartbeatMonitor",
     "DatabaseManager",
-    
     # New optimization exports
     "OptimizedLogManager",
-    "BatchedLogWriter", 
+    "BatchedLogWriter",
     "LogCompressor",
     "UnifiedTaskScheduler",
     "TaskPriority",

@@ -23,7 +23,7 @@ import aiohttp
 
 from .di_container import DIContainer
 from .exceptions import ConfigurationError, ServiceError, handle_errors
-from .structured_logger import StructuredLogger
+from .logger import StructuredLogger
 
 T = TypeVar("T")
 

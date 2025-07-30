@@ -7,14 +7,11 @@
 # preserving the original embed structure.
 # =============================================================================
 
-import asyncio
-import json
-from typing import Dict, Optional, Tuple
 
 import openai
 
 from src.config.bot_config import BotConfig
-from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
+from src.utils.tree_log import log_error_with_traceback
 
 
 class TranslationService:
@@ -25,10 +22,10 @@ class TranslationService:
         self.openai_client = openai.AsyncOpenAI(api_key=self.config.OPENAI_API_KEY)
 
         self.supported_languages = {
-            'en': {'name': 'English', 'flag': '🇺🇸', 'code': 'en'},
-            'ar': {'name': 'العربية', 'flag': '🇸🇦', 'code': 'ar'},
-            'de': {'name': 'Deutsch', 'flag': '🇩🇪', 'code': 'de'},
-            'es': {'name': 'Español', 'flag': '🇪🇸', 'code': 'es'}
+            "en": {"name": "English", "flag": "🇺🇸", "code": "en"},
+            "ar": {"name": "العربية", "flag": "🇸🇦", "code": "ar"},
+            "de": {"name": "Deutsch", "flag": "🇩🇪", "code": "de"},
+            "es": {"name": "Español", "flag": "🇪🇸", "code": "es"},
         }
 
         # Translation cache for performance
@@ -47,7 +44,7 @@ class TranslationService:
         """
         try:
             # Special case: English returns original text (no translation needed)
-            if target_language == 'en':
+            if target_language == "en":
                 return True, text
 
             # Check cache first
@@ -60,7 +57,7 @@ class TranslationService:
 
             # Get language display name for ChatGPT
             language_info = self.supported_languages[target_language]
-            language_name = language_info['name']
+            language_name = language_info["name"]
 
             # Create system prompt for high-quality Islamic translation
             system_prompt = f"""You are a professional translator specializing in Islamic content.
@@ -92,11 +89,14 @@ Translate naturally while preserving the Islamic authenticity."""
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"Translate this Islamic response to {language_name}:\n\n{text}"}
+                    {
+                        "role": "user",
+                        "content": f"Translate this Islamic response to {language_name}:\n\n{text}",
+                    },
                 ],
                 max_tokens=1500,
                 temperature=0.1,  # Low temperature for consistent translations
-                top_p=0.9
+                top_p=0.9,
             )
 
             translated_text = response.choices[0].message.content.strip()
@@ -115,13 +115,15 @@ Translate naturally while preserving the Islamic authenticity."""
 
         except Exception as e:
             log_error_with_traceback("ChatGPT translation error", e)
-            
+
             # Log translation service failure to webhook
             try:
                 from src.core.di_container import get_container
+
                 container = get_container()
                 if container:
-                    from src.core.webhook_logger import ModernWebhookLogger
+                    from src.core.webhook_utils import ModernWebhookLogger
+
                     webhook_logger = container.get(ModernWebhookLogger)
                     if webhook_logger and webhook_logger.initialized:
                         await webhook_logger.log_error(
@@ -133,16 +135,20 @@ Translate naturally while preserving the Islamic authenticity."""
                                 "error_type": type(e).__name__,
                                 "error_message": str(e)[:500],
                                 "component": "Translation Service",
-                                "impact": "User translation request failed"
+                                "impact": "User translation request failed",
                             },
-                            ping_owner=isinstance(e, (openai.AuthenticationError, openai.RateLimitError))  # Ping for API errors
+                            ping_owner=isinstance(
+                                e, (openai.AuthenticationError, openai.RateLimitError)
+                            ),  # Ping for API errors
                         )
             except:
                 pass  # Don't let webhook logging prevent error response
-                
-            return False, f"Translation failed: {str(e)}"
 
-    async def translate_ai_response(self, ai_response: str, target_language: str) -> tuple[bool, str]:
+            return False, f"Translation failed: {e!s}"
+
+    async def translate_ai_response(
+        self, ai_response: str, target_language: str
+    ) -> tuple[bool, str]:
         """
         Translate AI response using ChatGPT for high-quality, context-aware translation.
 

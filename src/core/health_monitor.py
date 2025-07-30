@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from ..utils.tree_log import log_error_with_traceback, log_perfect_tree_section
-from .structured_logger import StructuredLogger
+from .logger import StructuredLogger
 from .webhook_logger import ModernWebhookLogger
 
 

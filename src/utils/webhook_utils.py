@@ -27,7 +27,7 @@ import aiohttp
 import pytz
 
 from .exceptions import QuranBotError
-from .structured_logger import StructuredLogger
+from .logger import StructuredLogger
 
 
 class LogLevel(Enum):
@@ -229,12 +229,20 @@ class WebhookFormatter:
         payload = {
             "embeds": [embed],
         }
-        
+
         # Only add username/avatar if explicitly requested (for backward compatibility)
         # This allows each webhook to use its own configured name and avatar
-        if hasattr(self, '_override_webhook_identity') and self._override_webhook_identity:
+        if (
+            hasattr(self, "_override_webhook_identity")
+            and self._override_webhook_identity
+        ):
             bot_avatar_url = "https://cdn.discordapp.com/attachments/1044035927281262673/1044036084692160512/PFP_Cropped_-_Animated.gif"
-            if self.bot and hasattr(self.bot, 'user') and self.bot.user and self.bot.user.avatar:
+            if (
+                self.bot
+                and hasattr(self.bot, "user")
+                and self.bot.user
+                and self.bot.user.avatar
+            ):
                 bot_avatar_url = self.bot.user.avatar.url
             payload["username"] = "QuranBot"
             payload["avatar_url"] = bot_avatar_url
@@ -893,7 +901,7 @@ class ModernWebhookLogger:
         """
         # Use error_message if provided, otherwise fall back to event_description
         description = error_message or event_description or f"Audio event: {event_type}"
-        
+
         # Audio event emojis
         audio_emojis = {
             "surah_start": "▶️",
@@ -921,9 +929,16 @@ class ModernWebhookLogger:
         }
 
         emoji = audio_emojis.get(event_type, audio_emojis["default"])
-        
+
         # Determine log level based on event type
-        if event_type in ["playback_failure", "playback_timeout", "connection_failure", "critical_failure_escalation", "emergency_failure_escalation", "extended_silence_emergency"]:
+        if event_type in [
+            "playback_failure",
+            "playback_timeout",
+            "connection_failure",
+            "critical_failure_escalation",
+            "emergency_failure_escalation",
+            "extended_silence_emergency",
+        ]:
             level = LogLevel.CRITICAL
         elif event_type in ["playback_recovery", "connection_recovery"]:
             level = LogLevel.SUCCESS
@@ -944,10 +959,19 @@ class ModernWebhookLogger:
         # Add owner ping for critical events
         content = None
         if ping_owner and self.config.enable_pings and self.config.owner_user_id:
-            if event_type in ["playback_failure", "playback_timeout", "connection_failure"]:
+            if event_type in [
+                "playback_failure",
+                "playback_timeout",
+                "connection_failure",
+            ]:
                 content = f"🚨 <@{self.config.owner_user_id}> **AUDIO SYSTEM ALERT** 🚨"
-            elif event_type in ["critical_failure_escalation", "emergency_failure_escalation"]:
-                content = f"🆘 <@{self.config.owner_user_id}> **CRITICAL SYSTEM FAILURE** 🆘"
+            elif event_type in [
+                "critical_failure_escalation",
+                "emergency_failure_escalation",
+            ]:
+                content = (
+                    f"🆘 <@{self.config.owner_user_id}> **CRITICAL SYSTEM FAILURE** 🆘"
+                )
             elif event_type == "extended_silence_emergency":
                 content = f"🔇 <@{self.config.owner_user_id}> **EXTENDED SILENCE EMERGENCY** 🔇"
 
@@ -1187,7 +1211,7 @@ class ModernWebhookLogger:
         }
 
         emoji = issue_emojis.get(issue_type, issue_emojis["default"])
-        
+
         # Determine log level and title based on issue type
         if issue_type in ["connection_recovery", "recovery_success"]:
             level = LogLevel.SUCCESS
@@ -1208,7 +1232,7 @@ class ModernWebhookLogger:
 
         if recovery_action:
             fields.append(EmbedField("Recovery Action", recovery_action, False))
-            
+
         if additional_info:
             for key, value in additional_info.items():
                 fields.append(
@@ -1219,7 +1243,9 @@ class ModernWebhookLogger:
         content = None
         if ping_owner and self.config.enable_pings and self.config.owner_user_id:
             if issue_type in ["connection_failed", "disconnected", "timeout"]:
-                content = f"🔌 <@{self.config.owner_user_id}> **VOICE CONNECTION ALERT** 🔌"
+                content = (
+                    f"🔌 <@{self.config.owner_user_id}> **VOICE CONNECTION ALERT** 🔌"
+                )
 
         message = WebhookMessage(
             title=f"{emoji} {title}",

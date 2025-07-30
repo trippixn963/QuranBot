@@ -6,16 +6,15 @@
 # =============================================================================
 
 from .audio_service import AudioService
-from .metadata_cache import MetadataCache
-from .state_service import StateService
 from .database_service import QuranBotDatabaseService
-from .sqlite_state_service import SQLiteStateService
+from .metadata_cache import MetadataCache
 from .quiz_service import ModernQuizService, QuizQuestion
+from .state_service import SQLiteStateService
 
 __all__ = [
     "AudioService",
     "MetadataCache",
-    "StateService",
+
     "QuranBotDatabaseService",
     "SQLiteStateService",
     "ModernQuizService",

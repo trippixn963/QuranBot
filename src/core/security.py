@@ -17,7 +17,7 @@ from typing import Any
 import discord
 
 from .exceptions import RateLimitError, SecurityError, ValidationError
-from .structured_logger import StructuredLogger
+from .logger import StructuredLogger
 
 # =============================================================================
 # Rate Limiting System

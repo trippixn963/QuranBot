@@ -25,24 +25,24 @@ from src.config import (
 from src.core.cache_service import CacheService
 from src.core.di_container import DIContainer, set_global_container
 from src.core.health_monitor import HealthMonitor
+from src.core.logger import StructuredLogger
 from src.core.performance_monitor import PerformanceMonitor
 from src.core.resource_manager import ResourceManager
 from src.core.security import RateLimiter, SecurityService
-from src.core.structured_logger import StructuredLogger
-from src.core.webhook_service_factory import create_webhook_service
+from src.core.webhook_factory import create_webhook_service
 from src.services.audio_service import AudioService
 from src.services.metadata_cache import MetadataCache
-from src.services.sqlite_state_service import SQLiteStateService
+from src.services.state_service import SQLiteStateService
 from src.utils.control_panel import setup_control_panel
-from src.utils.daily_verses import setup_daily_verses
-from src.utils.rich_presence import RichPresenceManager
-from src.utils.surah_mapper import get_surah_info
+from src.utils.presence import RichPresenceManager
+from src.utils.surah_utils import get_surah_info
 from src.utils.tree_log import (
     log_critical_error,
     log_error_with_traceback,
     log_perfect_tree_section,
     log_status,
 )
+from src.utils.verses import setup_daily_verses
 from src.version import BOT_NAME, BOT_VERSION
 
 
@@ -236,7 +236,7 @@ class ModernizedQuranBot:
                         "webhook_service", lambda: webhook_service
                     )
                     self.container.register_singleton(
-                        "enhanced_webhook_router", lambda: webhook_service
+                        "webhook_router", lambda: webhook_service
                     )
                     log_status("Enhanced multi-channel webhook router configured", "🌐")
 
@@ -477,7 +477,7 @@ class ModernizedQuranBot:
     async def _initialize_prayer_notifications(self):
         """Initialize Mecca prayer notifications."""
         try:
-            from src.utils.mecca_prayer_times import setup_mecca_prayer_notifications
+            from src.utils.prayer_times import setup_mecca_prayer_notifications
 
             await setup_mecca_prayer_notifications(self.bot)
             await self.logger.info(
@@ -512,7 +512,7 @@ class ModernizedQuranBot:
     async def _handle_voice_state_update(self, member, before, after):
         """Handle voice state changes for QuranBot voice channel activity and role management."""
         try:
-            enhanced_webhook = self.container.get("enhanced_webhook_router")
+            enhanced_webhook = self.container.get("webhook_router")
             if not enhanced_webhook:
                 return
 
@@ -638,7 +638,7 @@ class ModernizedQuranBot:
 
         if joined_quran_vc:
             try:
-                from src.utils.listening_stats import get_listening_stats_manager
+                from src.utils.stats import get_listening_stats_manager
 
                 listening_manager = get_listening_stats_manager()
                 if listening_manager:
@@ -674,7 +674,7 @@ class ModernizedQuranBot:
 
         elif left_quran_vc:
             try:
-                from src.utils.listening_stats import get_listening_stats_manager
+                from src.utils.stats import get_listening_stats_manager
 
                 listening_manager = get_listening_stats_manager()
                 if listening_manager:
@@ -945,7 +945,7 @@ class ModernizedQuranBot:
         """Send crash notification via webhook."""
         try:
             if hasattr(self, "container") and self.container:
-                enhanced_webhook = self.container.get("enhanced_webhook_router")
+                enhanced_webhook = self.container.get("webhook_router")
                 if enhanced_webhook:
                     await enhanced_webhook.log_bot_crash(
                         error_message="Bot encountered a critical runtime error",

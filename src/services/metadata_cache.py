@@ -14,7 +14,7 @@ from pathlib import Path
 from mutagen.mp3 import MP3
 
 from src.core.exceptions import AudioError
-from src.core.structured_logger import StructuredLogger
+from src.core.logger import StructuredLogger
 from src.data.models import AudioCache, AudioFileInfo, ReciterInfo
 
 
@@ -47,7 +47,7 @@ class MetadataCache:
         self._max_size = max_size
         self._enable_persistence = enable_persistence
         self._cache_file = cache_file or Path("data/metadata_cache.json")
-        
+
         # Health monitor (will be set if available)
         self._health_monitor = None
 
@@ -83,7 +83,7 @@ class MetadataCache:
                 "cached_items": len(self._cache),
             },
         )
-        
+
     def set_health_monitor(self, health_monitor):
         """Set health monitor for reporting JSON operations"""
         self._health_monitor = health_monitor
@@ -481,17 +481,17 @@ class MetadataCache:
                 for key, entry in self._cache.items():
                     # Convert to dict and handle datetime serialization
                     entry_dict = entry.dict()
-                    
+
                     # Convert datetime objects to ISO format strings
-                    datetime_fields = ['created_at', 'last_modified', 'last_accessed']
+                    datetime_fields = ["created_at", "last_modified", "last_accessed"]
                     for field in datetime_fields:
-                        if field in entry_dict and entry_dict[field]:
+                        if entry_dict.get(field):
                             entry_dict[field] = entry_dict[field].isoformat()
-                    
+
                     # Convert Path objects to strings
-                    if 'file_path' in entry_dict:
-                        entry_dict['file_path'] = str(entry_dict['file_path'])
-                    
+                    if "file_path" in entry_dict:
+                        entry_dict["file_path"] = str(entry_dict["file_path"])
+
                     cache_data["entries"][key] = entry_dict
 
             # Write to disk
@@ -506,26 +506,21 @@ class MetadataCache:
                 "Cache saved to disk",
                 {"entries": len(cache_data["entries"]), "file": str(self._cache_file)},
             )
-            
+
             # Report successful save to health monitor
             if self._health_monitor:
-                await self._health_monitor.report_json_save(
-                    self._cache_file.name, 
-                    True
-                )
+                await self._health_monitor.report_json_save(self._cache_file.name, True)
 
         except Exception as e:
             await self._logger.error(
                 "Failed to save cache to disk",
                 {"error": str(e), "file": str(self._cache_file)},
             )
-            
+
             # Report failed save to health monitor
             if self._health_monitor:
                 await self._health_monitor.report_json_save(
-                    self._cache_file.name, 
-                    False, 
-                    str(e)
+                    self._cache_file.name, False, str(e)
                 )
 
     async def _load_from_disk(self) -> None:
@@ -546,22 +541,27 @@ class MetadataCache:
             for key, entry_data in cache_data.get("entries", {}).items():
                 try:
                     # Handle datetime deserialization
-                    if 'last_accessed' in entry_data and entry_data['last_accessed']:
+                    if entry_data.get("last_accessed"):
                         try:
                             from datetime import datetime
-                            entry_data['last_accessed'] = datetime.fromisoformat(entry_data['last_accessed'])
+
+                            entry_data["last_accessed"] = datetime.fromisoformat(
+                                entry_data["last_accessed"]
+                            )
                         except (ValueError, TypeError):
                             # If datetime parsing fails, use current time
-                            entry_data['last_accessed'] = datetime.now(UTC)
-                    
+                            entry_data["last_accessed"] = datetime.now(UTC)
+
                     # Handle other datetime fields if they exist
-                    for datetime_field in ['created_at', 'last_modified']:
-                        if datetime_field in entry_data and entry_data[datetime_field]:
+                    for datetime_field in ["created_at", "last_modified"]:
+                        if entry_data.get(datetime_field):
                             try:
-                                entry_data[datetime_field] = datetime.fromisoformat(entry_data[datetime_field])
+                                entry_data[datetime_field] = datetime.fromisoformat(
+                                    entry_data[datetime_field]
+                                )
                             except (ValueError, TypeError):
                                 entry_data[datetime_field] = None
-                    
+
                     cache_entry = AudioCache(**entry_data)
                     self._cache[key] = cache_entry
                     loaded_count += 1

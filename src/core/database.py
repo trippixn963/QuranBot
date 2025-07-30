@@ -37,7 +37,7 @@ from typing import Any
 
 from ..utils.tree_log import log_perfect_tree_section
 from .exceptions import DatabaseError
-from .structured_logger import StructuredLogger
+from .logger import StructuredLogger
 
 
 class DatabaseManager:

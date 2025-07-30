@@ -46,7 +46,7 @@ import aiohttp
 import pytz
 
 from .exceptions import QuranBotError
-from .structured_logger import StructuredLogger
+from .logger import StructuredLogger
 
 
 class LogLevel(Enum):
@@ -346,9 +346,7 @@ class WebhookFormatter:
                 message.level, self.LEVEL_COLORS[LogLevel.INFO]
             ),
             "timestamp": message.timestamp.isoformat(),
-            "footer": {
-                "text": message.footer or self._get_formatted_time()
-            },
+            "footer": {"text": message.footer or self._get_formatted_time()},
         }
 
         # Add author info (user avatar and name)
@@ -362,7 +360,12 @@ class WebhookFormatter:
                 embed["author"]["url"] = message.author_url
 
         # Always add bot thumbnail if available
-        if self.bot and hasattr(self.bot, 'user') and self.bot.user and self.bot.user.avatar:
+        if (
+            self.bot
+            and hasattr(self.bot, "user")
+            and self.bot.user
+            and self.bot.user.avatar
+        ):
             embed["thumbnail"] = {"url": self.bot.user.avatar.url}
         elif message.thumbnail_url:
             # Fallback to custom thumbnail if provided
@@ -1777,10 +1780,12 @@ class ModernWebhookLogger:
         ]
 
         if user_name and user_id:
-            fields.extend([
-                EmbedField("User", user_name, True),
-                EmbedField("User ID", str(user_id), True),
-            ])
+            fields.extend(
+                [
+                    EmbedField("User", user_name, True),
+                    EmbedField("User ID", str(user_id), True),
+                ]
+            )
 
         if question_text:
             fields.append(EmbedField("Question", question_text[:1000], False))
@@ -1945,10 +1950,12 @@ class ModernWebhookLogger:
         ]
 
         if user_name and user_id:
-            fields.extend([
-                EmbedField("Triggered By", user_name, True),
-                EmbedField("User ID", str(user_id), True),
-            ])
+            fields.extend(
+                [
+                    EmbedField("Triggered By", user_name, True),
+                    EmbedField("User ID", str(user_id), True),
+                ]
+            )
 
         if additional_info:
             for key, value in additional_info.items():
@@ -2006,7 +2013,9 @@ class ModernWebhookLogger:
         emoji = interaction_emojis.get(interaction_type, interaction_emojis["default"])
 
         fields = [
-            EmbedField("Interaction Type", interaction_type.replace("_", " ").title(), True),
+            EmbedField(
+                "Interaction Type", interaction_type.replace("_", " ").title(), True
+            ),
             EmbedField("User", user_name, True),
             EmbedField("User ID", str(user_id), True),
             EmbedField("Action", action_description, False),

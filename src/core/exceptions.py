@@ -19,7 +19,7 @@ import functools
 import traceback
 from typing import Any, TypeVar
 
-from .structured_logger import StructuredLogger
+from .logger import StructuredLogger
 
 # Type variable for decorated functions
 F = TypeVar("F", bound=Callable[..., Any])

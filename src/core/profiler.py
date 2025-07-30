@@ -51,7 +51,7 @@ try:
 except ImportError:
     HAS_MEMORY_PROFILER = False
 
-from .structured_logger import StructuredLogger
+from .logger import StructuredLogger
 
 
 class ProfilerMode(str, Enum):

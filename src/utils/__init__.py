@@ -33,7 +33,7 @@ from .control_panel import (
 )
 
 # Discord logging for VPS monitoring
-from .discord_logger import (
+from .discord_utils import (
     discord_log_critical,
     discord_log_error,
     discord_log_success,
@@ -44,8 +44,8 @@ from .discord_logger import (
     get_discord_logger,
     setup_discord_logger,
 )
-from .rich_presence import RichPresenceManager, validate_rich_presence_dependencies
-from .surah_mapper import (
+from .presence import RichPresenceManager, validate_rich_presence_dependencies
+from .surah_utils import (
     format_now_playing,
     get_surah_display,
     get_surah_info,
@@ -69,7 +69,7 @@ from .tree_log import (
 
 # Import listening stats utilities
 try:
-    from .listening_stats import (
+    from .stats import (
         ListeningStatsManager,
         UserStats,
         format_listening_time,

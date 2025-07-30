@@ -41,12 +41,7 @@ from typing import Any
 import discord
 from mutagen.mp3 import MP3  # For MP3 duration detection
 
-from .state_manager import state_manager
-from .surah_mapper import (
-    get_surah_display,
-    get_surah_name,
-    validate_surah_number,
-)
+from .surah_utils import get_surah_display, get_surah_name, validate_surah_number
 from .tree_log import (
     log_async_error,
     log_error_with_traceback,
@@ -532,7 +527,7 @@ class AudioPlaybackMonitor:
 
                     container = get_container()
                     if container:
-                        enhanced_webhook = container.get("enhanced_webhook_router")
+                        enhanced_webhook = container.get("webhook_router")
                         if enhanced_webhook and hasattr(
                             enhanced_webhook, "log_audio_event"
                         ):
@@ -561,7 +556,7 @@ class AudioPlaybackMonitor:
 
                         container = get_container()
                         if container:
-                            enhanced_webhook = container.get("enhanced_webhook_router")
+                            enhanced_webhook = container.get("webhook_router")
                             if enhanced_webhook and hasattr(
                                 enhanced_webhook, "log_audio_event"
                             ):
@@ -707,7 +702,7 @@ class AudioPlaybackMonitor:
 
                 container = get_container()
                 if container:
-                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    enhanced_webhook = container.get("webhook_router")
                     if enhanced_webhook and hasattr(
                         enhanced_webhook, "log_audio_event"
                     ):
@@ -784,7 +779,7 @@ class AudioPlaybackMonitor:
 
             container = get_container()
             if container:
-                from src.core.webhook_logger import ModernWebhookLogger
+                from src.core.webhook_utils import ModernWebhookLogger
 
                 webhook_logger = container.get(ModernWebhookLogger)
                 if webhook_logger and webhook_logger.initialized:
@@ -834,7 +829,7 @@ class AudioPlaybackMonitor:
 
             container = get_container()
             if container:
-                from src.core.webhook_logger import ModernWebhookLogger
+                from src.core.webhook_utils import ModernWebhookLogger
 
                 webhook_logger = container.get(ModernWebhookLogger)
                 if webhook_logger and webhook_logger.initialized:
@@ -881,7 +876,7 @@ class AudioPlaybackMonitor:
 
             container = get_container()
             if container:
-                from src.core.webhook_logger import ModernWebhookLogger
+                from src.core.webhook_utils import ModernWebhookLogger
 
                 webhook_logger = container.get(ModernWebhookLogger)
                 if webhook_logger and webhook_logger.initialized:
@@ -922,7 +917,7 @@ class AudioPlaybackMonitor:
 
             container = get_container()
             if container:
-                from src.core.webhook_logger import ModernWebhookLogger
+                from src.core.webhook_utils import ModernWebhookLogger
 
                 webhook_logger = container.get(ModernWebhookLogger)
                 if webhook_logger and webhook_logger.initialized:
@@ -961,7 +956,7 @@ class AudioPlaybackMonitor:
 
             container = get_container()
             if container:
-                from src.core.webhook_logger import ModernWebhookLogger
+                from src.core.webhook_utils import ModernWebhookLogger
 
                 webhook_logger = container.get(ModernWebhookLogger)
                 if webhook_logger and webhook_logger.initialized:
@@ -1010,7 +1005,7 @@ class AudioPlaybackMonitor:
 
             container = get_container()
             if container:
-                from src.core.webhook_logger import ModernWebhookLogger
+                from src.core.webhook_utils import ModernWebhookLogger
 
                 webhook_logger = container.get(ModernWebhookLogger)
                 if webhook_logger and webhook_logger.initialized:
@@ -1062,7 +1057,7 @@ class AudioPlaybackMonitor:
 
             container = get_container()
             if container:
-                from src.core.webhook_logger import ModernWebhookLogger
+                from src.core.webhook_utils import ModernWebhookLogger
 
                 webhook_logger = container.get(ModernWebhookLogger)
                 if webhook_logger and webhook_logger.initialized:
@@ -1112,7 +1107,7 @@ class AudioPlaybackMonitor:
 
             container = get_container()
             if container:
-                from src.core.webhook_logger import ModernWebhookLogger
+                from src.core.webhook_utils import ModernWebhookLogger
 
                 webhook_logger = container.get(ModernWebhookLogger)
                 if webhook_logger and webhook_logger.initialized:
@@ -2592,7 +2587,7 @@ class AudioManager:
 
                     container = get_container()
                     if container:
-                        enhanced_webhook = container.get("enhanced_webhook_router")
+                        enhanced_webhook = container.get("webhook_router")
                         if enhanced_webhook and hasattr(
                             enhanced_webhook, "log_audio_event"
                         ):
@@ -2896,7 +2891,7 @@ class AudioManager:
 
                         container = get_container()
                         if container:
-                            enhanced_webhook = container.get("enhanced_webhook_router")
+                            enhanced_webhook = container.get("webhook_router")
                             if enhanced_webhook and hasattr(
                                 enhanced_webhook, "log_audio_event"
                             ):
@@ -2933,7 +2928,7 @@ class AudioManager:
                         if self.rich_presence:
                             try:
                                 # Use update_presence_with_template instead of start_track
-                                from src.utils.surah_mapper import (
+                                from src.utils.surah_utils import (
                                     get_surah_info,
                                     get_surah_name,
                                 )
@@ -3512,7 +3507,7 @@ class AudioManager:
     def _get_surah_name(self, surah_number: int) -> str:
         """Get the name of a surah by its number"""
         try:
-            from .surah_mapper import get_surah_info
+            from .surah_utils import get_surah_info
 
             surah_info = get_surah_info(surah_number)
             return (

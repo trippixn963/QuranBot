@@ -388,18 +388,22 @@ class QuizView(discord.ui.View):
 
             container = get_container()
             if container:
-                enhanced_webhook = container.get("enhanced_webhook_router")
-                if enhanced_webhook and hasattr(
-                    enhanced_webhook, "log_quiz_event"
-                ):
+                enhanced_webhook = container.get("webhook_router")
+                if enhanced_webhook and hasattr(enhanced_webhook, "log_quiz_event"):
                     await enhanced_webhook.log_quiz_event(
                         event_type="timeout",
-                        question_text=self.question_data.get("question", "Unknown question"),
+                        question_text=self.question_data.get(
+                            "question", "Unknown question"
+                        ),
                         quiz_details={
                             "total_responses": len(self.responses),
                             "elapsed_time": f"{elapsed:.1f} seconds",
                             "question_id": str(self.question_data.get("id", "Unknown")),
-                            "channel_id": str(self.message.channel.id) if self.message else "Unknown",
+                            "channel_id": (
+                                str(self.message.channel.id)
+                                if self.message
+                                else "Unknown"
+                            ),
                         },
                     )
         except Exception as e:
@@ -476,7 +480,7 @@ class QuizView(discord.ui.View):
 
                         container = get_container()
                         if container:
-                            enhanced_webhook = container.get("enhanced_webhook_router")
+                            enhanced_webhook = container.get("webhook_router")
                             if enhanced_webhook and hasattr(
                                 enhanced_webhook, "log_embed_deletion"
                             ):
@@ -487,13 +491,17 @@ class QuizView(discord.ui.View):
                                     channel_name=self.message.channel.name,
                                     deletion_reason="Automatic cleanup after timeout",
                                     additional_info={
-                                        "question_id": str(self.question_data.get("id", "Unknown")),
+                                        "question_id": str(
+                                            self.question_data.get("id", "Unknown")
+                                        ),
                                         "total_responses": len(self.responses),
                                         "timeout_duration": "120 seconds",
                                     },
                                 )
                     except Exception as e:
-                        log_error_with_traceback("Failed to log quiz deletion to webhook", e)
+                        log_error_with_traceback(
+                            "Failed to log quiz deletion to webhook", e
+                        )
 
                 except discord.NotFound:
                     # Message was already deleted
@@ -521,7 +529,7 @@ class QuizView(discord.ui.View):
 
                         container = get_container()
                         if container:
-                            enhanced_webhook = container.get("enhanced_webhook_router")
+                            enhanced_webhook = container.get("webhook_router")
                             if enhanced_webhook and hasattr(
                                 enhanced_webhook, "log_embed_deletion"
                             ):
@@ -532,13 +540,17 @@ class QuizView(discord.ui.View):
                                     channel_name=self.results_message.channel.name,
                                     deletion_reason="Automatic cleanup after timeout",
                                     additional_info={
-                                        "question_id": str(self.question_data.get("id", "Unknown")),
+                                        "question_id": str(
+                                            self.question_data.get("id", "Unknown")
+                                        ),
                                         "total_responses": len(self.responses),
                                         "timeout_duration": "120 seconds",
                                     },
                                 )
                     except Exception as e:
-                        log_error_with_traceback("Failed to log results deletion to webhook", e)
+                        log_error_with_traceback(
+                            "Failed to log results deletion to webhook", e
+                        )
 
                 except discord.NotFound:
                     # Message was already deleted
@@ -815,7 +827,7 @@ class QuizView(discord.ui.View):
 
                 container = get_container()
                 if container:
-                    from src.core.webhook_logger import ModernWebhookLogger
+                    from src.core.webhook_utils import ModernWebhookLogger
 
                     webhook_logger = container.get(ModernWebhookLogger)
                     if webhook_logger and webhook_logger.initialized:
@@ -929,10 +941,8 @@ class QuizButton(discord.ui.Button):
 
             container = get_container()
             if container:
-                enhanced_webhook = container.get("enhanced_webhook_router")
-                if enhanced_webhook and hasattr(
-                    enhanced_webhook, "log_quiz_event"
-                ):
+                enhanced_webhook = container.get("webhook_router")
+                if enhanced_webhook and hasattr(enhanced_webhook, "log_quiz_event"):
                     await enhanced_webhook.log_quiz_event(
                         event_type="answered",
                         user_name=interaction.user.display_name,
@@ -1743,7 +1753,7 @@ class QuizManager:
 
                 container = get_container()
                 if container:
-                    webhook_router = container.get("enhanced_webhook_router")
+                    webhook_router = container.get("webhook_router")
             except Exception as e:
                 log_error_with_traceback("Error getting webhook router", e)
                 return False
@@ -2034,8 +2044,8 @@ class QuizManager:
             # SQLite integration for quiz config
             import asyncio
 
-            from src.core.structured_logger import get_logger
-            from src.services.sqlite_state_service import SQLiteStateService
+            from src.core.logger import get_logger
+            from src.services.state_service import SQLiteStateService
 
             logger = get_logger()
 
@@ -2073,8 +2083,8 @@ class QuizManager:
             import asyncio
             from datetime import datetime
 
-            from src.core.structured_logger import get_logger
-            from src.services.sqlite_state_service import SQLiteStateService
+            from src.core.logger import get_logger
+            from src.services.state_service import SQLiteStateService
 
             logger = get_logger()
 
@@ -2552,7 +2562,7 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
 
                         container = get_container()
                         if container:
-                            enhanced_webhook = container.get("enhanced_webhook_router")
+                            enhanced_webhook = container.get("webhook_router")
                             if enhanced_webhook and hasattr(
                                 enhanced_webhook, "log_user_event"
                             ):

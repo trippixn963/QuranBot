@@ -10,8 +10,8 @@ from discord.ext import commands
 
 from src.config import get_config
 from src.core.exceptions import DiscordAPIError, ServiceError, handle_errors
+from src.core.logger import StructuredLogger
 from src.core.security import rate_limit
-from src.core.structured_logger import StructuredLogger
 
 # Import tree logging functions
 from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
@@ -115,7 +115,7 @@ class CreditsCog(commands.Cog):
             # Log credits command usage via enhanced webhook router first
             try:
                 if self.container:
-                    enhanced_webhook = self.container.get("enhanced_webhook_router")
+                    enhanced_webhook = self.container.get("webhook_router")
                     if enhanced_webhook and hasattr(
                         enhanced_webhook, "log_quran_command_usage"
                     ):

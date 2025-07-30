@@ -11,7 +11,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.utils.listening_stats import format_listening_time, get_user_listening_stats
+from src.utils.stats import format_listening_time, get_user_listening_stats
 from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
 
 # Path to quiz stats file
@@ -289,7 +289,7 @@ class LeaderboardCog(commands.Cog):
 
                 container = get_container()
                 if container:
-                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    enhanced_webhook = container.get("webhook_router")
                     if enhanced_webhook and hasattr(
                         enhanced_webhook, "log_quran_command_usage"
                     ):

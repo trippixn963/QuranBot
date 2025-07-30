@@ -14,7 +14,6 @@ from discord.ext import commands
 # Import configuration service
 from src.config import get_config
 from src.core.exceptions import ValidationError
-from src.utils import daily_verses
 from src.utils import quiz_manager as quiz_mgr
 from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_section
 
@@ -723,7 +722,7 @@ class IntervalCog(commands.Cog):
 
                 container = get_container()
                 if container:
-                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    enhanced_webhook = container.get("webhook_router")
                     if enhanced_webhook and hasattr(
                         enhanced_webhook, "log_control_panel_interaction"
                     ):

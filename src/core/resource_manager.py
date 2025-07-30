@@ -21,7 +21,7 @@ import psutil
 
 from .di_container import DIContainer
 from .exceptions import ServiceError
-from .structured_logger import StructuredLogger
+from .logger import StructuredLogger
 
 T = TypeVar("T")
 

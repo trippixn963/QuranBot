@@ -16,7 +16,7 @@ from collections import defaultdict, Counter
 import statistics
 from pathlib import Path
 
-from ..core.structured_logger import StructuredLogger
+from ..core.logger import StructuredLogger
 from ..core.database import DatabaseManager
 from ..services.database_service import QuranBotDatabaseService
 

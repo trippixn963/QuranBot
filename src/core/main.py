@@ -44,12 +44,12 @@ from src.core.cache_service import CacheService
 
 # Import core modernized services
 from src.core.di_container import DIContainer
+from src.core.logger import StructuredLogger
 from src.core.performance_monitor import PerformanceMonitor
 from src.core.resource_manager import ResourceManager
 from src.core.security import RateLimiter, SecurityService
-from src.core.structured_logger import StructuredLogger
-from src.core.webhook_logger import ModernWebhookLogger
-from src.core.webhook_service_factory import create_webhook_service
+from src.core.webhook_factory import create_webhook_service
+from src.core.webhook_utils import ModernWebhookLogger
 
 # Import data models
 from src.data.models import PlaybackMode
@@ -59,9 +59,8 @@ from src.services.audio_service import AudioService
 from src.services.metadata_cache import MetadataCache
 from src.services.state_service import StateService
 from src.utils.control_panel import setup_control_panel
-from src.utils.daily_verses import setup_daily_verses
-from src.utils.rich_presence import RichPresenceManager
-from src.utils.surah_mapper import get_surah_info
+from src.utils.presence import RichPresenceManager
+from src.utils.surah_utils import get_surah_info
 
 # Import tree logging for compatibility
 from src.utils.tree_log import (
@@ -74,6 +73,7 @@ from src.utils.tree_log import (
     log_spacing,
     log_status,
 )
+from src.utils.verses import setup_daily_verses
 
 # Import version information
 from src.version import BOT_NAME, BOT_VERSION
@@ -610,7 +610,7 @@ class ModernizedQuranBot:
                         else:
                             # Enhanced router - register as both types for compatibility
                             self.container.register_singleton(ModernWebhookLogger, lambda: webhook_service)
-                            self.container.register_singleton("enhanced_webhook_router", lambda: webhook_service)
+                            self.container.register_singleton("webhook_router", lambda: webhook_service)
                             log_status("Enhanced multi-channel webhook router configured", "🌐")
                     else:
                         log_status("Failed to initialize webhook service", "⚠️")
@@ -726,7 +726,7 @@ class ModernizedQuranBot:
             self.container.register_singleton(AudioService, audio_factory)
 
             # SQLite State Service - Modern SQLite-based state management
-            from ..services.sqlite_state_service import SQLiteStateService
+            from ..services.state_service import SQLiteStateService
 
             # Get webhook logger if available
             webhook_logger = None
@@ -914,9 +914,7 @@ class ModernizedQuranBot:
 
             # Initialize Mecca prayer notifications
             try:
-                from src.utils.mecca_prayer_times import (
-                    setup_mecca_prayer_notifications,
-                )
+                from src.utils.prayer_times import setup_mecca_prayer_notifications
                 await setup_mecca_prayer_notifications(self.bot)
                 await self.logger.info(
                     "Mecca prayer notification system initialized",
@@ -1202,7 +1200,7 @@ class ModernizedQuranBot:
 
                 container = get_container()
                 if container:
-                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    enhanced_webhook = container.get("webhook_router")
                     if enhanced_webhook and hasattr(
                         enhanced_webhook, "log_role_management"
                     ):
@@ -1285,7 +1283,7 @@ class ModernizedQuranBot:
 
                 container = get_container()
                 if container:
-                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    enhanced_webhook = container.get("webhook_router")
                     if enhanced_webhook and hasattr(
                         enhanced_webhook, "log_role_management"
                     ):

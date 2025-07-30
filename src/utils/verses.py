@@ -948,7 +948,7 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
 
                         container = get_container()
                         if container:
-                            enhanced_webhook = container.get("enhanced_webhook_router")
+                            enhanced_webhook = container.get("webhook_router")
                             if enhanced_webhook and hasattr(
                                 enhanced_webhook, "log_bot_event"
                             ):
@@ -1187,7 +1187,7 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
 
                         container = get_container()
                         if container:
-                            enhanced_webhook = container.get("enhanced_webhook_router")
+                            enhanced_webhook = container.get("webhook_router")
                             if enhanced_webhook and hasattr(
                                 enhanced_webhook, "log_bot_event"
                             ):

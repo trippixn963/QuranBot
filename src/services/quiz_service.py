@@ -12,8 +12,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
 import sqlite3
 
-from ..core.structured_logger import StructuredLogger
-from ..services.sqlite_state_service import SQLiteStateService
+from ..core.logger import StructuredLogger
+from ..services.state_service import SQLiteStateService
 
 
 class QuizQuestion:

@@ -37,16 +37,14 @@ from typing import Any
 
 from src.config import QuranBotConfig
 
-from .structured_logger import StructuredLogger
+from .logger import StructuredLogger
+from .webhook_charts import VisualizationBuilder
 from .webhook_logger import (
     EmbedField,
     LogLevel,
     ModernWebhookLogger,
     WebhookConfig,
     WebhookMessage,
-)
-from .webhook_visualizations import (
-    VisualizationBuilder,
 )
 
 

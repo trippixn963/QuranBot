@@ -24,7 +24,7 @@ try:
 except ImportError:
     REDIS_AVAILABLE = False
 
-from ..core.structured_logger import StructuredLogger
+from ..core.logger import StructuredLogger
 
 
 class CacheSerializer(Enum):

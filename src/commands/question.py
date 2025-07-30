@@ -24,7 +24,7 @@ from src.utils.tree_log import log_error_with_traceback, log_perfect_tree_sectio
 def get_daily_verses_manager():
     """Get daily verses manager instance"""
     try:
-        from src.utils.daily_verses import DailyVersesManager
+        from src.utils.verses import DailyVersesManager
 
         return DailyVersesManager()
     except ImportError:
@@ -524,7 +524,7 @@ class QuestionCog(commands.Cog):
 
                     container = get_container()
                     if container:
-                        enhanced_webhook = container.get("enhanced_webhook_router")
+                        enhanced_webhook = container.get("webhook_router")
                         if enhanced_webhook and hasattr(
                             enhanced_webhook, "log_quiz_event"
                         ):
@@ -532,7 +532,9 @@ class QuestionCog(commands.Cog):
                                 event_type="sent",
                                 user_name=interaction.user.display_name,
                                 user_id=interaction.user.id,
-                                question_text=question_data.get("question", "Unknown question"),
+                                question_text=question_data.get(
+                                    "question", "Unknown question"
+                                ),
                                 user_avatar_url=(
                                     interaction.user.avatar.url
                                     if interaction.user.avatar

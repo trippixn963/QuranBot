@@ -39,7 +39,7 @@ from src.core.exceptions import (
     ValidationError,
     VoiceConnectionError,
 )
-from src.core.structured_logger import StructuredLogger
+from src.core.logger import StructuredLogger
 from src.data.models import (
     AudioFileInfo,
     AudioServiceConfig,
@@ -50,7 +50,7 @@ from src.data.models import (
 )
 
 from .metadata_cache import MetadataCache
-from .sqlite_state_service import SQLiteStateService
+from .state_service import SQLiteStateService
 
 
 class AudioService:

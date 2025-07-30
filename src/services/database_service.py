@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from ..core.database import DatabaseManager
-from ..core.structured_logger import StructuredLogger
+from ..core.logger import StructuredLogger
 from ..core.exceptions import DatabaseError
 
 

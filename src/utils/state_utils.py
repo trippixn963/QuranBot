@@ -37,16 +37,14 @@
 # - python-dotenv: Environment configuration
 # =============================================================================
 
+from datetime import UTC, datetime
 import json
 import os
-import shutil
-import time
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
-import pytz
 from dotenv import load_dotenv
+import pytz
 
 from .tree_log import log_error_with_traceback, log_perfect_tree_section
 
@@ -159,7 +157,7 @@ class StateManager:
                 "shuffle_enabled": default_shuffle,
                 "metadata": {
                     "version": "2.2.0",
-                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "created_at": datetime.now(UTC).isoformat(),
                     "save_type": "playback_state",
                 },
             }
@@ -230,7 +228,7 @@ class StateManager:
             log_error_with_traceback("Error saving playback state", e)
             return False
 
-    def load_playback_state(self) -> Dict[str, Any]:
+    def load_playback_state(self) -> dict[str, Any]:
         """
         Load playback state from persistent storage with corruption recovery.
 
@@ -254,7 +252,7 @@ class StateManager:
 
             # Try to load main file
             try:
-                with open(self.playback_state_file, "r", encoding="utf-8") as f:
+                with open(self.playback_state_file, encoding="utf-8") as f:
                     state = json.load(f)
 
                 # Validate critical fields
@@ -321,7 +319,7 @@ class StateManager:
                 )
                 if backup_file.exists():
                     try:
-                        with open(backup_file, "r", encoding="utf-8") as f:
+                        with open(backup_file, encoding="utf-8") as f:
                             backup_state = json.load(f)
 
                         # Validate backup data
@@ -381,7 +379,7 @@ class StateManager:
                     latest_emergency = emergency_files[0]
 
                     try:
-                        with open(latest_emergency, "r", encoding="utf-8") as f:
+                        with open(latest_emergency, encoding="utf-8") as f:
                             emergency_data = json.load(f)
 
                         if "playback_state" in emergency_data:
@@ -528,7 +526,7 @@ class StateManager:
             # Add metadata
             current_stats["metadata"] = {
                 "version": "2.2.0",
-                "last_updated": datetime.now(timezone.utc).isoformat(),
+                "last_updated": datetime.now(UTC).isoformat(),
                 "save_type": "bot_stats",
             }
 
@@ -602,7 +600,7 @@ class StateManager:
                 )
                 emergency_data = {
                     "emergency_save": True,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "bot_stats": current_stats,
                     "error": str(e),
                 }
@@ -642,7 +640,7 @@ class StateManager:
 
             return False
 
-    def load_bot_stats(self) -> Dict[str, Any]:
+    def load_bot_stats(self) -> dict[str, Any]:
         """
         Load bot statistics from persistent storage with corruption recovery.
 
@@ -659,7 +657,7 @@ class StateManager:
 
             # Try to load main file
             try:
-                with open(self.bot_stats_file, "r", encoding="utf-8") as f:
+                with open(self.bot_stats_file, encoding="utf-8") as f:
                     stats = json.load(f)
 
                 # Validate data structure
@@ -707,7 +705,7 @@ class StateManager:
                 )
                 if backup_file.exists():
                     try:
-                        with open(backup_file, "r", encoding="utf-8") as f:
+                        with open(backup_file, encoding="utf-8") as f:
                             backup_stats = json.load(f)
 
                         # Validate backup data
@@ -759,7 +757,7 @@ class StateManager:
                     latest_emergency = emergency_files[0]
 
                     try:
-                        with open(latest_emergency, "r", encoding="utf-8") as f:
+                        with open(latest_emergency, encoding="utf-8") as f:
                             emergency_data = json.load(f)
 
                         if "bot_stats" in emergency_data:
@@ -830,7 +828,7 @@ class StateManager:
             bool: True if startup was recorded successfully, False otherwise
         """
         try:
-            startup_time = datetime.now(timezone.utc).isoformat()
+            startup_time = datetime.now(UTC).isoformat()
             return self.save_bot_stats(
                 increment_sessions=True, last_startup=startup_time
             )
@@ -849,7 +847,7 @@ class StateManager:
             bool: True if shutdown was recorded successfully, False otherwise
         """
         try:
-            shutdown_time = datetime.now(timezone.utc).isoformat()
+            shutdown_time = datetime.now(UTC).isoformat()
             return self.save_bot_stats(last_shutdown=shutdown_time)
         except Exception as e:
             log_error_with_traceback("Error marking shutdown time", e)
@@ -881,7 +879,7 @@ class StateManager:
         try:
             # Save current state before disconnect
             stats = self.load_bot_stats()
-            stats["last_disconnect"] = datetime.now(timezone.utc).isoformat()
+            stats["last_disconnect"] = datetime.now(UTC).isoformat()
 
             # Create emergency backup
             backup_name = f"emergency_disconnect_{datetime.now().strftime('%Y-%m-%d_%I-%M-%S_%p')}"
@@ -894,7 +892,7 @@ class StateManager:
             log_perfect_tree_section(
                 "Bot Disconnect Marked",
                 [
-                    ("timestamp", datetime.now(timezone.utc).isoformat()),
+                    ("timestamp", datetime.now(UTC).isoformat()),
                     ("backup_created", backup_name),
                     ("status", "✅ Disconnect event recorded"),
                 ],
@@ -906,7 +904,7 @@ class StateManager:
             log_error_with_traceback("Error marking disconnect", e)
             return False
 
-    def get_resume_info(self) -> Dict[str, Any]:
+    def get_resume_info(self) -> dict[str, Any]:
         """
         Get formatted resume information for bot startup logging.
 
@@ -1057,7 +1055,7 @@ class StateManager:
                             "timestamp",
                             f"🕒 Created: {datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')}",
                         ),
-                        ("integrity_check", f"✅ All backups verified"),
+                        ("integrity_check", "✅ All backups verified"),
                     ],
                     "💾",
                 )
@@ -1072,7 +1070,7 @@ class StateManager:
                 )
                 return False
 
-        except (IOError, OSError) as e:
+        except OSError as e:
             log_error_with_traceback("File system error creating backup", e)
             return False
         except ValueError as e:
@@ -1095,7 +1093,7 @@ class StateManager:
             # Check playback state file
             if self.playback_state_file.exists():
                 try:
-                    with open(self.playback_state_file, "r", encoding="utf-8") as f:
+                    with open(self.playback_state_file, encoding="utf-8") as f:
                         state = json.load(f)
                     if isinstance(state, dict) and "current_surah" in state:
                         integrity_items.append(("playback_state", "✅ Valid"))
@@ -1113,7 +1111,7 @@ class StateManager:
             # Check bot stats file
             if self.bot_stats_file.exists():
                 try:
-                    with open(self.bot_stats_file, "r", encoding="utf-8") as f:
+                    with open(self.bot_stats_file, encoding="utf-8") as f:
                         stats = json.load(f)
                     if isinstance(stats, dict) and "total_sessions" in stats:
                         integrity_items.append(("bot_stats", "✅ Valid"))
@@ -1157,7 +1155,7 @@ class StateManager:
             log_error_with_traceback("Failed to verify state data integrity", e)
             return False
 
-    def get_data_protection_status(self) -> Dict:
+    def get_data_protection_status(self) -> dict:
         """Get comprehensive data protection status for state files"""
         try:
             playback_backup = (

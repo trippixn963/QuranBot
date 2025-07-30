@@ -21,7 +21,7 @@ import weakref
 from .cache_service import CacheService
 from .di_container import DIContainer
 from .exceptions import ServiceError, handle_errors
-from .structured_logger import StructuredLogger
+from .logger import StructuredLogger
 
 T = TypeVar("T")
 
