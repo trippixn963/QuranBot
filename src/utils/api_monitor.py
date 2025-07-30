@@ -18,6 +18,7 @@ import discord
 from discord.ext import commands
 
 from .tree_log import log_error_with_traceback, log_perfect_tree_section
+from ..core.webhook_logger import LogLevel
 
 # =============================================================================
 # Configuration
@@ -227,15 +228,78 @@ class DiscordAPIMonitor:
         @self.bot.event
         async def on_connect():
             self._record_gateway_event("connect", self.bot.latency, True)
+            
+            # Log connection to webhook
+            try:
+                from src.core.di_container import get_container
+                
+                container = get_container()
+                if container:
+                    webhook_router = container.get("webhook_router")
+                    if webhook_router:
+                        await webhook_router.log_bot_event(
+                            event_type="discord_gateway_connected",
+                            title="🔗 Discord Gateway Connected",
+                            description="Bot successfully connected to Discord gateway",
+                            level=LogLevel.INFO,
+                            context={
+                                "latency": self.bot.latency,
+                                "reconnect_count": self.reconnect_count,
+                            },
+                        )
+            except Exception as e:
+                log_error_with_traceback("Failed to log gateway connection to webhook", e)
 
         @self.bot.event
         async def on_disconnect():
             self._record_gateway_event("disconnect", None, False)
+            
+            # Log disconnection to webhook
+            try:
+                from src.core.di_container import get_container
+                
+                container = get_container()
+                if container:
+                    webhook_router = container.get("webhook_router")
+                    if webhook_router:
+                        await webhook_router.log_error_event(
+                            event_type="discord_gateway_disconnected",
+                            title="🔌 Discord Gateway Disconnected",
+                            description="Bot disconnected from Discord gateway",
+                            level=LogLevel.WARNING,
+                            context={
+                                "reconnect_count": self.reconnect_count,
+                                "last_heartbeat": self.last_heartbeat,
+                            },
+                        )
+            except Exception as e:
+                log_error_with_traceback("Failed to log gateway disconnection to webhook", e)
 
         @self.bot.event
         async def on_resumed():
             self.reconnect_count += 1
             self._record_gateway_event("reconnect", self.bot.latency, True)
+            
+            # Log reconnection to webhook
+            try:
+                from src.core.di_container import get_container
+                
+                container = get_container()
+                if container:
+                    webhook_router = container.get("webhook_router")
+                    if webhook_router:
+                        await webhook_router.log_bot_event(
+                            event_type="discord_gateway_reconnected",
+                            title="🔄 Discord Gateway Reconnected",
+                            description="Bot reconnected to Discord gateway after disconnection",
+                            level=LogLevel.INFO,
+                            context={
+                                "latency": self.bot.latency,
+                                "reconnect_count": self.reconnect_count,
+                            },
+                        )
+            except Exception as e:
+                log_error_with_traceback("Failed to log gateway reconnection to webhook", e)
 
     def _record_gateway_event(
         self, event_type: str, latency: float | None, connected: bool
@@ -261,7 +325,7 @@ class DiscordAPIMonitor:
         """Record a heartbeat event (call this from bot's heartbeat monitoring)"""
         self._record_gateway_event("heartbeat", latency, True)
 
-    def _check_rate_limits(self, metric: APICallMetric):
+    async def _check_rate_limits(self, metric: APICallMetric):
         """Check for rate limit warnings"""
         if (
             metric.rate_limit_remaining is not None
@@ -298,6 +362,32 @@ class DiscordAPIMonitor:
                     ],
                     "🚨",
                 )
+                
+                # Log critical rate limit to webhook
+                try:
+                    from src.core.di_container import get_container
+                    
+                    container = get_container()
+                    if container:
+                        webhook_router = container.get("webhook_router")
+                        if webhook_router:
+                            await webhook_router.log_error_event(
+                                event_type="discord_api_critical_rate_limit",
+                                title="🚨 Discord API Critical Rate Limit",
+                                description=f"Critical rate limit reached for {bucket_key}",
+                                level=LogLevel.CRITICAL,
+                                context={
+                                    "endpoint": bucket_key,
+                                    "usage_percent": f"{usage:.1%}",
+                                    "remaining": metric.rate_limit_remaining,
+                                    "limit": metric.rate_limit_limit,
+                                    "reset_after": metric.rate_limit_reset_after,
+                                    "threshold": f"{RATE_LIMIT_CRITICAL_THRESHOLD:.1%}",
+                                },
+                            )
+                except Exception as e:
+                    log_error_with_traceback("Failed to log critical rate limit to webhook", e)
+                
                 self.last_rate_limit_warning[bucket_key] = current_time
 
             elif (

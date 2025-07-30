@@ -30,6 +30,7 @@ from src.core.performance_monitor import PerformanceMonitor
 from src.core.resource_manager import ResourceManager
 from src.core.security import RateLimiter, SecurityService
 from src.core.webhook_factory import create_webhook_service
+from src.core.webhook_logger import LogLevel
 from src.services.audio_service import AudioService
 from src.services.metadata_cache import MetadataCache
 from src.services.state_service import SQLiteStateService
@@ -351,6 +352,26 @@ class ModernizedQuranBot:
                 ],
             )
 
+            # Log bot ready to webhook
+            try:
+                webhook_router = self.container.get("webhook_router")
+                if webhook_router:
+                    await webhook_router.log_bot_event(
+                        event_type="bot_ready",
+                        title="🎯 Bot Ready",
+                        description="QuranBot successfully connected to Discord",
+                        level=LogLevel.INFO,
+                        context={
+                            "bot_name": self.bot.user.name,
+                            "bot_id": self.bot.user.id,
+                            "guild_count": len(self.bot.guilds),
+                            "startup_duration": startup_duration,
+                            "mode": "100% automated continuous recitation",
+                        },
+                    )
+            except Exception as e:
+                await self.logger.error("Failed to log bot ready to webhook", {"error": str(e)})
+
             # Send startup webhook notification
             await self._send_startup_webhook(startup_duration)
 
@@ -390,6 +411,24 @@ class ModernizedQuranBot:
                 "Discord event error",
                 {"event": event, "args": str(args)[:500], "kwargs": str(kwargs)[:500]},
             )
+            
+            # Log Discord event error to webhook
+            try:
+                webhook_router = self.container.get("webhook_router")
+                if webhook_router:
+                    await webhook_router.log_error_event(
+                        event_type="discord_event_error",
+                        title="⚠️ Discord Event Error",
+                        description=f"Error in Discord event: {event}",
+                        level=LogLevel.ERROR,
+                        context={
+                            "event": event,
+                            "args": str(args)[:200],
+                            "kwargs": str(kwargs)[:200],
+                        },
+                    )
+            except Exception as e:
+                await self.logger.error("Failed to log Discord event error to webhook", {"error": str(e)})
 
         @self.bot.event
         async def on_command_error(ctx, error):
@@ -406,6 +445,26 @@ class ModernizedQuranBot:
                     "error": str(error),
                 },
             )
+            
+            # Log command error to webhook
+            try:
+                webhook_router = self.container.get("webhook_router")
+                if webhook_router:
+                    await webhook_router.log_error_event(
+                        event_type="command_error",
+                        title="❌ Command Error",
+                        description=f"Error in command: {ctx.command.name if ctx.command else 'unknown'}",
+                        level=LogLevel.ERROR,
+                        context={
+                            "command": ctx.command.name if ctx.command else "unknown",
+                            "user_id": ctx.author.id,
+                            "guild_id": ctx.guild.id if ctx.guild else None,
+                            "error": str(error),
+                            "user_name": ctx.author.display_name,
+                        },
+                    )
+            except Exception as e:
+                await self.logger.error("Failed to log command error to webhook", {"error": str(e)})
 
             await ctx.send("❌ An error occurred while processing your command.")
 
@@ -981,6 +1040,24 @@ class ModernizedQuranBot:
         try:
             if self.logger:
                 await self.logger.info("Starting graceful shutdown")
+
+            # Log shutdown to webhook
+            try:
+                webhook_router = self.container.get("webhook_router")
+                if webhook_router:
+                    await webhook_router.log_bot_event(
+                        event_type="bot_shutdown",
+                        title="🔄 Bot Shutdown",
+                        description="QuranBot is shutting down gracefully",
+                        level=LogLevel.INFO,
+                        context={
+                            "uptime_seconds": int(time.time() - self._startup_start_time),
+                            "shutdown_reason": "graceful",
+                        },
+                    )
+            except Exception as e:
+                if self.logger:
+                    await self.logger.error("Failed to log shutdown to webhook", {"error": str(e)})
 
             # Send shutdown webhook
             await self._send_shutdown_webhook()

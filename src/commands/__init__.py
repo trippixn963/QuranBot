@@ -24,12 +24,56 @@ from .verse import setup as setup_verse
 
 async def load_commands(bot, container):
     """Load all command cogs with dependency injection"""
-    await setup_credits(bot, container)
-    await setup_interval(bot, container)
-    await setup_leaderboard(bot, container)
-    await setup_question(bot, container)
-
-    await setup_verse(bot, container)
+    try:
+        from src.core.webhook_logger import LogLevel
+        
+        # Log command loading start
+        webhook_router = container.get("webhook_router")
+        if webhook_router:
+            await webhook_router.log_bot_event(
+                event_type="commands_loading",
+                title="🔧 Loading Commands",
+                description="Loading Discord slash commands",
+                level=LogLevel.INFO,
+                context={
+                    "commands_to_load": ["credits", "interval", "leaderboard", "question", "verse"],
+                },
+            )
+        
+        # Load commands
+        await setup_credits(bot, container)
+        await setup_interval(bot, container)
+        await setup_leaderboard(bot, container)
+        await setup_question(bot, container)
+        await setup_verse(bot, container)
+        
+        # Log successful command loading
+        if webhook_router:
+            await webhook_router.log_bot_event(
+                event_type="commands_loaded",
+                title="✅ Commands Loaded",
+                description="All Discord slash commands loaded successfully",
+                level=LogLevel.INFO,
+                context={
+                    "commands_loaded": ["credits", "interval", "leaderboard", "question", "verse"],
+                    "total_commands": 5,
+                },
+            )
+            
+    except Exception as e:
+        # Log command loading error
+        if webhook_router:
+            await webhook_router.log_error_event(
+                event_type="command_loading_error",
+                title="❌ Command Loading Error",
+                description="Failed to load Discord commands",
+                level=LogLevel.ERROR,
+                context={
+                    "error": str(e),
+                    "commands_attempted": ["credits", "interval", "leaderboard", "question", "verse"],
+                },
+            )
+        raise
 
 
 # Export all cogs and setup functions
