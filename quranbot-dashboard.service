@@ -8,7 +8,7 @@ Type=simple
 User=root
 WorkingDirectory=/root/QuranBot/dashboard
 Environment=PATH=/root/QuranBot/dashboard/.venv/bin
-ExecStart=/root/QuranBot/dashboard/.venv/bin/python run_dashboard.py
+ExecStart=/root/QuranBot/dashboard/.venv/bin/python run_dashboard.py --no-checks --host 0.0.0.0 --port 8080 --env production
 Restart=always
 RestartSec=10
 StandardOutput=journal
