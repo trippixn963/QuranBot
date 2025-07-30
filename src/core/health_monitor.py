@@ -1,7 +1,7 @@
 # =============================================================================
 # QuranBot - Health Monitor System
 # =============================================================================
-# Comprehensive health monitoring with Discord webhook notifications
+# Comprehensive health monitoring with structured logging
 # Monitors audio, JSON files, performance, and sends regular status updates
 # =============================================================================
 
@@ -12,7 +12,7 @@ from typing import Any
 
 from ..utils.tree_log import log_error_with_traceback, log_perfect_tree_section
 from .logger import StructuredLogger
-from .webhook_logger import ModernWebhookLogger
+
 
 
 class HealthStatus:
@@ -42,7 +42,7 @@ class HealthMonitor:
     Comprehensive health monitoring system for QuranBot.
 
     Features:
-    - Regular health status webhooks (hourly)
+    - Regular health status logging (hourly)
     - Audio playback monitoring with alerts
     - JSON file integrity monitoring
     - Performance and memory monitoring
@@ -54,7 +54,6 @@ class HealthMonitor:
     def __init__(
         self,
         logger: StructuredLogger,
-        webhook_logger: ModernWebhookLogger = None,
         data_dir: Path = None,
         check_interval_minutes: int = 60,
         alert_interval_minutes: int = 60,
@@ -64,13 +63,11 @@ class HealthMonitor:
 
         Args:
             logger: Structured logger instance
-            webhook_logger: Webhook logger for notifications
             data_dir: Data directory to monitor
             check_interval_minutes: Regular health check interval (default: 60 min)
             alert_interval_minutes: Critical alert check interval (default: 5 min)
         """
         self.logger = logger
-        self.webhook_logger = webhook_logger
         self.data_dir = data_dir or Path("data")
         self.check_interval_minutes = check_interval_minutes
         self.alert_interval_minutes = alert_interval_minutes
@@ -116,7 +113,7 @@ class HealthMonitor:
             {
                 "check_interval": f"{self.check_interval_minutes} minutes",
                 "alert_interval": f"{self.alert_interval_minutes} minutes",
-                "webhook_enabled": self.webhook_logger is not None,
+                "logging_enabled": True,
             },
         )
 
@@ -127,16 +124,14 @@ class HealthMonitor:
                 ("health_checks", f"⏰ Every {self.check_interval_minutes} minutes"),
                 ("critical_alerts", f"🚨 Every {self.alert_interval_minutes} minutes"),
                 (
-                    "webhook_logging",
-                    "✅ Enabled" if self.webhook_logger else "❌ Disabled",
+                    "logging",
+                    "✅ Enabled",
                 ),
             ],
             "💚",
         )
 
-        # Send startup notification
-        if self.webhook_logger:
-            await self._send_startup_notification()
+
 
     async def stop_monitoring(self) -> None:
         """Stop the health monitoring system"""
@@ -239,9 +234,7 @@ class HealthMonitor:
             # Overall health assessment
             overall_status = self._assess_overall_health(health_checks)
 
-            # Send webhook report
-            if self.webhook_logger:
-                await self._send_health_report(overall_status, health_checks)
+            
 
             self.last_health_report = datetime.now(UTC)
 
@@ -250,7 +243,7 @@ class HealthMonitor:
                 {
                     "overall_status": overall_status,
                     "checks_performed": len(health_checks),
-                    "webhook_sent": self.webhook_logger is not None,
+                    "logging_enabled": True,
                 },
             )
 
@@ -649,179 +642,32 @@ class HealthMonitor:
     async def _send_health_report(
         self, overall_status: str, health_checks: list[HealthCheck]
     ) -> None:
-        """Send comprehensive health report via webhook"""
-        try:
-            # Choose emoji and color based on status
-            if overall_status == HealthStatus.HEALTHY:
-                emoji = "💚"
-                color = 0x00FF00  # Green
-                title = "🟢 Bot Health Report - All Systems Operational"
-            elif overall_status == HealthStatus.WARNING:
-                emoji = "⚠️"
-                color = 0xFFAA00  # Orange
-                title = "🟠 Bot Health Report - Warnings Detected"
-            else:  # CRITICAL
-                emoji = "🚨"
-                color = 0xFF0000  # Red
-                title = "🔴 Bot Health Report - Critical Issues"
-
-            # Build description
-            description = f"{emoji} **Overall Status: {overall_status.title()}**\n\n"
-
-            # Add summary of each check
-            for check in health_checks:
-                status_emoji = {
-                    HealthStatus.HEALTHY: "✅",
-                    HealthStatus.WARNING: "⚠️",
-                    HealthStatus.CRITICAL: "❌",
-                }.get(check.status, "❓")
-
-                description += f"{status_emoji} **{check.name}**: {check.message}\n"
-
-            # Add timestamp
-            description += f"\n🕒 **Report Time**: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}"
-
-            # Create embed
-            embed = {
-                "title": title,
-                "description": description,
-                "color": color,
-                "timestamp": datetime.now(UTC).isoformat(),
-                "thumbnail": {
-                    "url": "https://cdn.discordapp.com/icons/1120508636436373667/a_9421c0e06a4c1b90fe4527ad2095e7de.gif"
-                },
-                "footer": {
-                    "text": "QuranBot Health Monitor • Automated System Status",
-                    "icon_url": "https://cdn.discordapp.com/icons/1120508636436373667/a_9421c0e06a4c1b90fe4527ad2095e7de.gif",
-                },
-                "fields": [],
+        """Log comprehensive health report"""
+        await self.logger.info(
+            f"Health report - {overall_status}",
+            {
+                "overall_status": overall_status,
+                "checks_count": len(health_checks),
+                "checks": [{"name": check.name, "status": check.status, "message": check.message} for check in health_checks]
             }
-
-            # Add detailed fields for critical/warning items
-            for check in health_checks:
-                if (
-                    check.status in [HealthStatus.CRITICAL, HealthStatus.WARNING]
-                    and check.details
-                ):
-                    details_text = []
-                    for key, value in check.details.items():
-                        if key != "error":  # Skip error details in public report
-                            details_text.append(
-                                f"**{key.replace('_', ' ').title()}**: {value}"
-                            )
-
-                    if details_text:
-                        embed["fields"].append(
-                            {
-                                "name": f"{check.name} Details",
-                                "value": "\n".join(
-                                    details_text[:5]
-                                ),  # Limit to 5 details
-                                "inline": True,
-                            }
-                        )
-
-            # Use the appropriate webhook method instead of send_embed
-            if hasattr(self.webhook_logger, "log_bot_event"):
-                await self.webhook_logger.log_bot_event(
-                    event_type="health_report",
-                    title=embed["title"],
-                    description=embed["description"],
-                    context={
-                        "overall_status": overall_status,
-                        "checks_count": len(health_checks),
-                    },
-                )
-            else:
-                # Fallback to direct webhook if available
-                await self.logger.warning(
-                    "Webhook logger doesn't support log_bot_event method"
-                )
-
-        except Exception as e:
-            await self.logger.error(
-                "Failed to send health report webhook", {"error": str(e)}
-            )
+        )
 
     async def _send_startup_notification(self) -> None:
-        """Send bot startup notification"""
-        try:
-            embed = {
-                "title": "🚀 QuranBot Health Monitor Started",
-                "description": "✅ **Health monitoring system is now active**\n\n"
-                f"🔍 **Regular health checks**: Every {self.check_interval_minutes} minutes\n"
-                f"🚨 **Critical alerts**: Every {self.alert_interval_minutes} minutes\n"
-                f"📊 **Monitoring**: Audio, JSON integrity, performance, backups\n\n"
-                f"🕒 **Started**: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}",
-                "color": 0x00FF00,  # Green
-                "timestamp": datetime.now(UTC).isoformat(),
-                "thumbnail": {
-                    "url": "https://cdn.discordapp.com/icons/1120508636436373667/a_9421c0e06a4c1b90fe4527ad2095e7de.gif"
-                },
-                "footer": {
-                    "text": "QuranBot Health Monitor • System Online",
-                    "icon_url": "https://cdn.discordapp.com/icons/1120508636436373667/a_9421c0e06a4c1b90fe4527ad2095e7de.gif",
-                },
+        """Log startup notification"""
+        await self.logger.info(
+            "Health monitor started",
+            {
+                "check_interval": self.check_interval_minutes,
+                "alert_interval": self.alert_interval_minutes,
             }
-
-            # Use the appropriate webhook method instead of send_embed
-            if hasattr(self.webhook_logger, "log_bot_event"):
-                await self.webhook_logger.log_bot_event(
-                    event_type="health_monitor_startup",
-                    title=embed["title"],
-                    description=embed["description"],
-                    context={
-                        "check_interval": self.check_interval_minutes,
-                        "alert_interval": self.alert_interval_minutes,
-                    },
-                )
-            else:
-                # Fallback to direct webhook if available
-                await self.logger.warning(
-                    "Webhook logger doesn't support log_bot_event method"
-                )
-
-        except Exception as e:
-            await self.logger.error(
-                "Failed to send startup notification", {"error": str(e)}
-            )
+        )
 
     async def _send_shutdown_notification(self) -> None:
-        """Send bot shutdown notification"""
-        try:
-            embed = {
-                "title": "🛑 QuranBot Health Monitor Stopped",
-                "description": "⚠️ **Health monitoring system has been stopped**\n\n"
-                f"🕒 **Stopped**: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}",
-                "color": 0xFFAA00,  # Orange
-                "timestamp": datetime.now(UTC).isoformat(),
-                "thumbnail": {
-                    "url": "https://cdn.discordapp.com/icons/1120508636436373667/a_9421c0e06a4c1b90fe4527ad2095e7de.gif"
-                },
-                "footer": {
-                    "text": "QuranBot Health Monitor • System Offline",
-                    "icon_url": "https://cdn.discordapp.com/icons/1120508636436373667/a_9421c0e06a4c1b90fe4527ad2095e7de.gif",
-                },
-            }
-
-            # Use the appropriate webhook method instead of send_embed
-            if hasattr(self.webhook_logger, "log_bot_event"):
-                await self.webhook_logger.log_bot_event(
-                    event_type="health_monitor_shutdown",
-                    title=embed["title"],
-                    description=embed["description"],
-                    context={"shutdown_time": datetime.now(UTC).isoformat()},
-                )
-            else:
-                # Fallback to direct webhook if available
-                await self.logger.warning(
-                    "Webhook logger doesn't support log_bot_event method"
-                )
-
-        except Exception as e:
-            await self.logger.error(
-                "Failed to send shutdown notification", {"error": str(e)}
-            )
+        """Log shutdown notification"""
+        await self.logger.info(
+            "Health monitor stopped",
+            {"shutdown_time": datetime.now(UTC).isoformat()}
+        )
 
     async def _check_audio_stuck(self) -> HealthCheck | None:
         """Check if audio has been stuck for too long"""
@@ -858,66 +704,27 @@ class HealthMonitor:
         return None
 
     async def _send_critical_alert(self, alert: HealthCheck) -> None:
-        """Send critical alert webhook"""
-        try:
-            embed = {
-                "title": f"🚨 CRITICAL ALERT: {alert.name}",
-                "description": f"**{alert.message}**\n\n"
-                f"🕒 **Alert Time**: {alert.timestamp.strftime('%Y-%m-%d %H:%M:%S UTC')}\n"
-                f"⚠️ **Immediate attention required**",
-                "color": 0xFF0000,  # Red
-                "timestamp": alert.timestamp.isoformat(),
-                "thumbnail": {
-                    "url": "https://cdn.discordapp.com/icons/1120508636436373667/a_9421c0e06a4c1b90fe4527ad2095e7de.gif"
-                },
-                "footer": {
-                    "text": "QuranBot Critical Alert System • Urgent Action Required",
-                    "icon_url": "https://cdn.discordapp.com/icons/1120508636436373667/a_9421c0e06a4c1b90fe4527ad2095e7de.gif",
-                },
+        """Log critical alert"""
+        await self.logger.critical(
+            f"Critical alert: {alert.name}",
+            {
+                "status": alert.status,
+                "message": alert.message,
+                "details": alert.details
             }
-
-            await self.webhook_logger.send_embed(embed)
-
-        except Exception as e:
-            await self.logger.error("Failed to send critical alert", {"error": str(e)})
+        )
 
     async def _send_audio_stuck_alert(self, details: dict[str, Any]) -> None:
-        """Send immediate audio stuck alert webhook"""
-        try:
-            minutes_stuck = details.get("minutes_since_playback", 0)
-            current_surah = details.get("current_surah", "Unknown")
-            is_connected = details.get("is_connected", False)
-            is_playing = details.get("is_playing", False)
-
-            # Create status indicators
-            connection_status = "🟢 Connected" if is_connected else "🔴 Disconnected"
-            playback_status = "🎵 Playing" if is_playing else "⏸️ Stopped"
-
-            embed = {
-                "title": "🚨 AUDIO ALERT: Playback Stuck",
-                "description": f"**Audio playback has been stuck for {minutes_stuck:.1f} minutes**\n\n"
-                f"📖 **Current Surah**: {current_surah}\n"
-                f"🔗 **Voice Connection**: {connection_status}\n"
-                f"🎶 **Playback Status**: {playback_status}\n\n"
-                f"🕒 **Alert Time**: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}\n"
-                f"⚠️ **Bot may need restart**",
-                "color": 0xFF6600,  # Orange-red
-                "timestamp": datetime.now(UTC).isoformat(),
-                "thumbnail": {
-                    "url": "https://cdn.discordapp.com/icons/1120508636436373667/a_9421c0e06a4c1b90fe4527ad2095e7de.gif"
-                },
-                "footer": {
-                    "text": "QuranBot Audio Monitor • Immediate Attention Required",
-                    "icon_url": "https://cdn.discordapp.com/icons/1120508636436373667/a_9421c0e06a4c1b90fe4527ad2095e7de.gif",
-                },
+        """Log audio stuck alert"""
+        await self.logger.warning(
+            "Audio playback stuck",
+            {
+                "minutes_stuck": details.get("minutes_since_playback", 0),
+                "current_surah": details.get("current_surah", "Unknown"),
+                "is_connected": details.get("is_connected", False),
+                "is_playing": details.get("is_playing", False)
             }
-
-            await self.webhook_logger.send_embed(embed)
-
-        except Exception as e:
-            await self.logger.error(
-                "Failed to send audio stuck alert", {"error": str(e)}
-            )
+        )
 
     # Public methods for external integrations
     async def report_audio_activity(
@@ -930,9 +737,7 @@ class HealthMonitor:
             "details": details or {},
         }
 
-        # Send immediate webhook alert for critical audio events
-        if activity_type == "audio_stuck" and self.webhook_logger:
-            await self._send_audio_stuck_alert(details or {})
+
 
     async def report_json_save(
         self, filename: str, success: bool, error: str = None
@@ -952,7 +757,7 @@ class HealthMonitor:
                 self.last_health_report.isoformat() if self.last_health_report else None
             ),
             "last_audio_activity": self.last_audio_activity,
-            "webhook_enabled": self.webhook_logger is not None,
+            "logging_enabled": True,
             "check_interval_minutes": self.check_interval_minutes,
             "alert_interval_minutes": self.alert_interval_minutes,
         }
