@@ -276,24 +276,44 @@ class QuestionCog(commands.Cog):
                 inline=False,
             )
 
-            # Add the Arabic question first at the very top
+            # Add the question text
             question_text = question_data.get("question", "Unknown question")
             if isinstance(question_text, dict):
+                # Handle bilingual format (if available)
                 arabic_text = question_text.get("arabic", "")
                 english_text = question_text.get("english", "")
 
-                if arabic_text:
+                if arabic_text and english_text:
+                    # Both Arabic and English available
                     embed.add_field(
                         name="🕌 **Question**",
                         value=f"```\n{arabic_text}\n```",
                         inline=False,
                     )
-
-                # Add English translation right after Arabic (if both exist)
-                if english_text:
                     embed.add_field(
                         name="📖 **Translation**",
                         value=f"```\n{english_text}\n```",
+                        inline=False,
+                    )
+                elif arabic_text:
+                    # Only Arabic available
+                    embed.add_field(
+                        name="🕌 **Question**",
+                        value=f"```\n{arabic_text}\n```",
+                        inline=False,
+                    )
+                elif english_text:
+                    # Only English available (current data format)
+                    embed.add_field(
+                        name="❓ **Question**",
+                        value=f"```\n{english_text}\n```",
+                        inline=False,
+                    )
+                else:
+                    # Fallback
+                    embed.add_field(
+                        name="❓ **Question**",
+                        value=f"```\nQuestion not available\n```",
                         inline=False,
                     )
             else:
@@ -349,25 +369,31 @@ class QuestionCog(commands.Cog):
                 inline=False,
             )
 
-            # Add choices with English first, then Arabic in code blocks
+            # Add choices
             choices = question_data.get("choices", {})
             choice_text = ""
             for letter in ["A", "B", "C", "D", "E", "F"]:
                 if letter in choices:
                     choice_data = choices[letter]
                     if isinstance(choice_data, dict):
+                        # Handle bilingual format (if available)
                         english_choice = choice_data.get("english", "")
                         arabic_choice = choice_data.get("arabic", "")
 
                         if english_choice and arabic_choice:
+                            # Both English and Arabic available
                             choice_text += f"**{letter}.** {english_choice}\n```\n{arabic_choice}\n```\n\n"
                         elif english_choice:
+                            # Only English available (current data format)
                             choice_text += f"**{letter}.** {english_choice}\n\n"
                         elif arabic_choice:
-                            choice_text += (
-                                f"**{letter}.** ```\n{arabic_choice}\n```\n\n"
-                            )
+                            # Only Arabic available
+                            choice_text += f"**{letter}.** ```\n{arabic_choice}\n```\n\n"
+                        else:
+                            # Fallback
+                            choice_text += f"**{letter}.** Choice not available\n\n"
                     else:
+                        # If it's just a string
                         choice_text += f"**{letter}.** {choice_data}\n\n"
 
             if choice_text:
@@ -429,19 +455,19 @@ class QuestionCog(commands.Cog):
 
                         # Format the correct answer
                         if isinstance(correct_choice, dict):
+                            # Handle bilingual format (if available)
                             english_text = correct_choice.get("english", "")
                             arabic_text = correct_choice.get("arabic", "")
 
                             if english_text and arabic_text:
                                 answer_display = f"**{correct_answer}: {english_text}**\n{arabic_text}"
                             elif english_text:
+                                # Only English available (current data format)
                                 answer_display = f"**{correct_answer}: {english_text}**"
                             elif arabic_text:
                                 answer_display = f"**{correct_answer}:** {arabic_text}"
                             else:
-                                answer_display = (
-                                    f"**{correct_answer}:** Answer not available"
-                                )
+                                answer_display = f"**{correct_answer}:** Answer not available"
                         else:
                             answer_display = f"**{correct_answer}: {correct_choice!s}**"
 

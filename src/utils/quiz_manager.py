@@ -2293,28 +2293,27 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
 
                 # Complex format (from quiz.json)
                 if "choices" in question and isinstance(question["choices"], dict):
-                    # Extract question text - show Arabic first, then English translation
+                    # Extract question text - handle bilingual format (if available)
                     if isinstance(question["question"], dict):
                         arabic_text = question["question"].get("arabic", "")
                         english_text = question["question"].get("english", "")
 
-                        # Format: Arabic Question first, then English Question
+                        # Format based on available languages
                         if arabic_text and english_text:
+                            # Both Arabic and English available
                             question_text = f"🕌 **Arabic Question**\n```\n{arabic_text}\n```\n\n🇺🇸 **English Question**\n```\n{english_text}\n```"
                         elif arabic_text:
-                            question_text = (
-                                f"🕌 **Arabic Question**\n```\n{arabic_text}\n```"
-                            )
+                            # Only Arabic available
+                            question_text = f"🕌 **Arabic Question**\n```\n{arabic_text}\n```"
                         elif english_text:
-                            question_text = (
-                                f"🇺🇸 **English Question**\n```\n{english_text}\n```"
-                            )
+                            # Only English available (current data format)
+                            question_text = f"❓ **Question**\n```\n{english_text}\n```"
                         else:
                             question_text = "Question text not available"
                     else:
                         question_text = str(question["question"])
 
-                    # Extract options from choices - show English first, then Arabic in code blocks
+                    # Extract options from choices - handle bilingual format (if available)
                     choices = question["choices"]
                     choice_letters = sorted(choices.keys())  # A, B, C, D, etc.
 
@@ -2324,14 +2323,15 @@ async def check_and_send_scheduled_question(bot, channel_id: int) -> None:
                             arabic_option = choice.get("arabic", "")
                             english_option = choice.get("english", "")
 
-                            # Format: English first, then Arabic in code block
+                            # Format based on available languages
                             if english_option and arabic_option:
-                                option_text = (
-                                    f"{english_option}\n```\n{arabic_option}\n```"
-                                )
+                                # Both English and Arabic available
+                                option_text = f"{english_option}\n```\n{arabic_option}\n```"
                             elif english_option:
+                                # Only English available (current data format)
                                 option_text = english_option
                             elif arabic_option:
+                                # Only Arabic available
                                 option_text = f"```\n{arabic_option}\n```"
                             else:
                                 option_text = "Option not available"
