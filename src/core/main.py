@@ -1009,6 +1009,44 @@ class ModernizedQuranBot:
                     and (after.channel is None or after.channel.id != target_channel_id)
                 )
 
+                # Log comprehensive user interaction
+                try:
+                    if enhanced_webhook and hasattr(
+                        enhanced_webhook, "log_user_interaction_comprehensive"
+                    ):
+                        # Determine interaction type
+                        if not before.channel and after.channel:
+                            interaction_type = "voice_join"
+                            action_description = f"joined voice channel **{after.channel.name}**"
+                        elif before.channel and not after.channel:
+                            interaction_type = "voice_leave"
+                            action_description = f"left voice channel **{before.channel.name}**"
+                        elif before.channel and after.channel and before.channel != after.channel:
+                            interaction_type = "voice_move"
+                            action_description = f"moved from **{before.channel.name}** to **{after.channel.name}**"
+                        else:
+                            interaction_type = "voice_state_change"
+                            action_description = "voice state changed"
+
+                        await enhanced_webhook.log_user_interaction_comprehensive(
+                            interaction_type=interaction_type,
+                            user_name=member.display_name,
+                            user_id=member.id,
+                            action_description=action_description,
+                            user_avatar_url=member.display_avatar.url,
+                            interaction_details={
+                                "before_channel": before.channel.name if before.channel else "None",
+                                "after_channel": after.channel.name if after.channel else "None",
+                                "guild_id": str(member.guild.id),
+                                "is_quran_channel": str(after.channel.id == target_channel_id if after.channel else False),
+                            },
+                        )
+                except Exception as e:
+                    await self.logger.warning(
+                        "Failed to log comprehensive voice activity",
+                        {"error": str(e)}
+                    )
+
                 # Handle role management for Quran voice channel
                 await self._handle_voice_channel_roles(member, before, after, target_channel_id)
 
