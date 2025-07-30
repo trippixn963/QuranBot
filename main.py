@@ -42,20 +42,20 @@ def check_existing_instances():
     """Check for existing bot instances and handle conflicts."""
     try:
         import psutil
-        
+
         # Check for existing Python processes running main.py
         current_pid = os.getpid()
         bot_processes = []
-        
-        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+
+        for proc in psutil.process_iter(["pid", "name", "cmdline"]):
             try:
-                if proc.info['name'] == 'python' and proc.info['cmdline']:
-                    cmdline = ' '.join(proc.info['cmdline'])
-                    if 'main.py' in cmdline and proc.info['pid'] != current_pid:
+                if proc.info["name"] == "python" and proc.info["cmdline"]:
+                    cmdline = " ".join(proc.info["cmdline"])
+                    if "main.py" in cmdline and proc.info["pid"] != current_pid:
                         bot_processes.append(proc)
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 continue
-        
+
         if bot_processes:
             log_perfect_tree_section(
                 "⚠️ Existing Bot Instances Detected",
@@ -65,7 +65,7 @@ def check_existing_instances():
                 ],
                 "⚠️",
             )
-            
+
             # Try to stop existing instances
             for proc in bot_processes:
                 try:
@@ -73,10 +73,10 @@ def check_existing_instances():
                     log_status(f"Terminated process {proc.info['pid']}", "🛑")
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
-            
+
             # Wait a moment for processes to terminate
             time.sleep(2)
-            
+
             # Check if any are still running
             still_running = []
             for proc in bot_processes:
@@ -85,7 +85,7 @@ def check_existing_instances():
                         still_running.append(proc)
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
-            
+
             if still_running:
                 log_perfect_tree_section(
                     "⚠️ Force Stopping Remaining Instances",
@@ -95,18 +95,18 @@ def check_existing_instances():
                     ],
                     "⚠️",
                 )
-                
+
                 for proc in still_running:
                     try:
                         proc.kill()
                         log_status(f"Force killed process {proc.info['pid']}", "💀")
                     except (psutil.NoSuchProcess, psutil.AccessDenied):
                         continue
-                
+
                 time.sleep(1)
-        
+
         return True
-        
+
     except Exception as e:
         log_error_with_traceback("Error checking existing instances", e)
         return False
@@ -115,28 +115,28 @@ def check_existing_instances():
 async def main():
     """
     Main entry point for the modernized bot.
-    
+
     This function orchestrates the complete bot lifecycle from startup to shutdown:
-    
+
     Startup Sequence:
     1. Signal handler registration for graceful shutdown
     2. Instance conflict detection and resolution
     3. Bot initialization with dependency injection
     4. Automated service activation
     5. Discord connection and event loop management
-    
+
     Signal Handling:
     - SIGINT (Ctrl+C): User-initiated shutdown
     - SIGTERM: System shutdown or service management
     - Graceful cleanup with resource deallocation
     - Final state persistence before termination
-    
+
     Error Management:
     - Comprehensive exception handling at the top level
     - Crash reporting with webhook notifications
     - Clean exit codes for system integration
     - Detailed logging for troubleshooting
-    
+
     The function ensures reliable operation in various deployment scenarios
     including development, production, and containerized environments.
     """

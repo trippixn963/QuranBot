@@ -27,7 +27,7 @@
 
 ## 🌟 **What Makes QuranBot Special**
 
-> **🤲 Interfaith Collaboration**  
+> **🤲 Interfaith Collaboration**
 > Created by an Orthodox Christian developer who grew up in Syria, this project represents the beauty of interfaith friendship and collaboration. Originally built to serve a Syrian Discord community of 2,500+ members, QuranBot demonstrates how technology can bridge communities regardless of religious differences.
 
 ### **🎯 Built for Excellence (Ihsan)**
@@ -92,7 +92,7 @@
 
 ### **🏗️ Modern Architecture**
 - 🏛️ **Dependency Injection** - Clean, testable, and maintainable code
-- 🚀 **Microservices Design** - Scalable and resilient architecture  
+- 🚀 **Microservices Design** - Scalable and resilient architecture
 - 💾 **Redis Caching** - High-performance distributed caching
 - 📈 **Prometheus Metrics** - Professional monitoring and observability
 - 🧪 **Comprehensive Testing** - 90%+ test coverage with automated CI/CD
@@ -196,7 +196,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### **🙏 Acknowledgments**
 - **Islamic Scholars** - For guidance on religious content accuracy
-- **Discord Community** - For continuous feedback and support  
+- **Discord Community** - For continuous feedback and support
 - **Open Source Contributors** - For making this project possible
 - **Syrian Friends** - For inspiring this interfaith collaboration
 

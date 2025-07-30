@@ -141,45 +141,45 @@ python -m pytest tests/test_integration.py -v
 ```python
 class ExampleService:
     """Brief description of the service.
-    
+
     Detailed explanation of the service's purpose, key features,
     and how it integrates with the rest of the system.
-    
+
     Attributes:
         attribute_name: Description of the attribute
-        
+
     Example:
         Basic usage example:
-        
+
         ```python
         service = ExampleService()
         result = await service.do_something()
         ```
     """
-    
+
     async def example_method(
-        self, 
-        param1: str, 
+        self,
+        param1: str,
         param2: int = 10
     ) -> Dict[str, Any]:
         """Brief description of what the method does.
-        
+
         Longer explanation if needed, including algorithm details,
         performance considerations, or integration points.
-        
+
         Args:
             param1: Description of param1
             param2: Description of param2 with default value
-            
+
         Returns:
             Dictionary containing the results with keys:
             - key1: Description of key1
             - key2: Description of key2
-            
+
         Raises:
             ValueError: When param1 is invalid
             ConnectionError: When unable to connect to Discord
-            
+
         Note:
             Any important notes about usage, performance, or side effects.
         """
@@ -300,7 +300,7 @@ Brief description of what this PR does.
 ### **Contributors**
 All contributors will be recognized in:
 - **README.md**: Contributors section
-- **Release Notes**: Feature contribution acknowledgments  
+- **Release Notes**: Feature contribution acknowledgments
 - **GitHub**: Contributor graphs and statistics
 
 ### **Types of Contributions Recognized**

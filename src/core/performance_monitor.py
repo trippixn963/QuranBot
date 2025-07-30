@@ -1002,7 +1002,9 @@ class PerformanceMonitor:
         try:
             # Get webhook router from container
             webhook_router = self._container.get("enhanced_webhook_router")
-            if not webhook_router or not hasattr(webhook_router, "log_performance_visual"):
+            if not webhook_router or not hasattr(
+                webhook_router, "log_performance_visual"
+            ):
                 return
 
             # Get current metrics
@@ -1014,10 +1016,10 @@ class PerformanceMonitor:
             # Get historical data for trends
             cpu_series = self._metrics.get("cpu_percent")
             memory_series = self._metrics.get("memory_percent")
-            
+
             cpu_history = None
             memory_history = None
-            
+
             if cpu_series:
                 cpu_history = [mv.value for mv in list(cpu_series.values)[-20:]]
             if memory_series:
@@ -1051,7 +1053,7 @@ class PerformanceMonitor:
                     "latency": f"{latency_ms:.1f}ms",
                     "cache_hits": f"{cache_hit_rate:.1f}%",
                     "bot_avatar": bot_avatar_url is not None,
-                }
+                },
             )
 
         except Exception as e:

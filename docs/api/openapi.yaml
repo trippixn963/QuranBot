@@ -3,7 +3,7 @@ info:
   title: QuranBot API
   description: |
     Professional Discord bot for 24/7 Quranic recitation with interactive features.
-    
+
     ## Features
     - **24/7 Continuous Audio**: Automated Quran recitation with multiple reciters
     - **Interactive Commands**: Slash commands for user interaction
@@ -11,15 +11,15 @@ info:
     - **Daily Verses**: Automated daily Quranic verse delivery
     - **AI Assistant**: Islamic Q&A powered by OpenAI
     - **Rich Analytics**: User listening statistics and engagement tracking
-    
+
     ## Authentication
     All API endpoints require proper Discord bot authentication and appropriate permissions.
-    
+
     ## Rate Limiting
     - Commands: 10 requests per minute per user
     - Audio operations: 1 concurrent stream per guild
     - AI queries: 1 request per hour per user
-    
+
     ## Error Handling
     All endpoints return structured error responses with appropriate HTTP status codes.
     See the Error Codes section for detailed information.

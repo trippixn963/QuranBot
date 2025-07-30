@@ -276,4 +276,4 @@ The following legacy files have been removed to simplify the system:
 - `config_service.py` - Replaced by direct access functions
 - `unified_config.py` - Replaced by `config.py`
 
-This ensures a clean, single-source-of-truth configuration system. 
+This ensures a clean, single-source-of-truth configuration system.

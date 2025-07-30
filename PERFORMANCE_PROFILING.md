@@ -428,4 +428,4 @@ profiler = PerformanceProfiler(
 
 The QuranBot performance profiling system provides comprehensive tools for identifying and resolving performance bottlenecks. By regularly monitoring system performance and addressing critical issues, you can ensure optimal bot performance and user experience.
 
-For questions or issues, refer to the performance data exports and system logs for detailed analysis. 
+For questions or issues, refer to the performance data exports and system logs for detailed analysis.

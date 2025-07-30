@@ -19,7 +19,7 @@ T = TypeVar("T")
 class DIError(Exception):
     """
     Base exception class for all dependency injection container errors.
-    
+
     Provides a common error hierarchy for all DI-related exceptions, enabling
     comprehensive error handling and debugging throughout the application.
     All specific DI errors inherit from this base class for consistent
@@ -32,12 +32,12 @@ class DIError(Exception):
 class ServiceNotRegisteredError(DIError):
     """
     Exception raised when attempting to resolve a service that hasn't been registered.
-    
+
     This error occurs during service resolution when the requested service type
     is not found in either the singleton or transient service registries.
     It typically indicates a configuration error or missing service registration
     during application startup.
-    
+
     The error message includes the service type name to help identify which
     service registration is missing and needs to be added to the container.
     """
@@ -48,16 +48,16 @@ class ServiceNotRegisteredError(DIError):
 class CircularDependencyError(DIError):
     """
     Exception raised when a circular dependency is detected during service resolution.
-    
+
     This error occurs when the dependency resolution algorithm detects that
     services form a circular dependency chain (e.g., Service A depends on
     Service B, which depends on Service A). Such circular dependencies would
     cause infinite recursion and stack overflow if not detected.
-    
+
     The error message includes the complete dependency chain showing the
     circular path, making it easier to identify and resolve the architectural
     issue causing the circular dependency.
-    
+
     Example circular dependency:
         AudioService -> ConfigService -> DatabaseService -> AudioService
     """
@@ -68,13 +68,13 @@ class CircularDependencyError(DIError):
 class ServiceRegistrationError(DIError):
     """
     Exception raised when service registration operations fail.
-    
+
     This error can occur during service registration for various reasons:
     - Attempting to register the same service type multiple times
     - Providing invalid factory functions for transient services
     - General registration validation failures
     - Thread synchronization issues during registration
-    
+
     The error includes detailed context about what went wrong during
     registration, helping developers identify and fix configuration issues.
     """
@@ -110,26 +110,26 @@ class DIContainer:
     def __init__(self):
         """
         Initialize the dependency injection container with empty registries.
-        
+
         Sets up the internal data structures for service management:
         - Singleton registry for single-instance services
-        - Transient factory registry for per-request services  
+        - Transient factory registry for per-request services
         - Resolution stack for circular dependency detection
         - Thread-safe lock for concurrent access protection
-        
+
         The container starts empty and services must be explicitly registered
         before they can be resolved. Thread safety is ensured through a
         reentrant lock that allows the same thread to acquire it multiple times.
         """
         # Registry for singleton services - maps service type to instance/factory
         self._singletons: dict[type, Any] = {}
-        
+
         # Registry for transient services - maps service type to factory function
         self._transient_factories: dict[type, Callable] = {}
-        
+
         # Stack tracking current resolution chain for circular dependency detection
         self._resolution_stack: set = set()
-        
+
         # Reentrant lock for thread-safe operations (allows recursive acquisition)
         self._lock = threading.RLock()
 
@@ -272,7 +272,7 @@ class DIContainer:
 
                 # SERVICE RESOLUTION ALGORITHM
                 # Priority: Singleton services are checked first, then transient services
-                
+
                 # 1. SINGLETON RESOLUTION
                 if interface in self._singletons:
                     service = self._singletons[interface]
@@ -377,7 +377,7 @@ class DIContainer:
             # Clear all service registries
             self._singletons.clear()
             self._transient_factories.clear()
-            
+
             # Clear resolution stack for safety (should normally be empty)
             self._resolution_stack.clear()
 
@@ -422,7 +422,7 @@ class DIContainer:
         - Lambda functions (most common factory pattern)
         - Regular functions and methods (explicit factory functions)
         - Callable objects with minimal state (custom factory classes)
-        
+
         This distinction is crucial for singleton services where we need to know
         whether to call the registered object as a factory or return it directly.
 
@@ -507,7 +507,7 @@ def inject(interface: type[T]) -> Callable:
         def process_data(data: str, config: ConfigService):
             # config is automatically injected from the container
             return config.process(data)
-            
+
         # Usage:
         result = process_data("sample data")  # config injected automatically
     """
@@ -521,7 +521,7 @@ def inject(interface: type[T]) -> Callable:
             # 2. Global container access for service resolution
             # 3. Parameter mapping and injection logic
             # 4. Error handling for missing services or container
-            
+
             # Currently not implemented to avoid complexity until needed
             raise NotImplementedError(
                 "Automatic dependency injection decorator not implemented yet. "
@@ -540,56 +540,58 @@ def inject(interface: type[T]) -> Callable:
 # Global container instance
 _container: DIContainer | None = None
 
+
 def set_global_container(container: DIContainer) -> None:
     """
     Establish a global container instance for application-wide dependency injection.
-    
+
     This function enables the Singleton pattern for dependency injection by
     providing a global access point to the DI container. This pattern is useful
     for scenarios where:
     - Multiple modules need access to the same services
     - Service resolution is needed in contexts without direct container access
     - Simplified dependency management across the entire application
-    
+
     **Design Considerations:**
     - Global state should be used judiciously to avoid tight coupling
     - Container should be set once during application initialization
     - Thread safety is maintained through the container's internal locking
-    
+
     **Usage Pattern:**
     Typically called once during application startup after all services
     have been registered with the container.
-    
+
     Args:
         container: The fully configured DIContainer instance to make globally accessible
     """
     global _container
     _container = container
 
+
 def get_container() -> DIContainer | None:
     """
     Retrieve the global container instance for dependency resolution.
-    
+
     This function provides application-wide access to the dependency injection
     container, enabling service resolution from any context within the application.
     It's commonly used in scenarios where:
     - Direct container injection is not feasible
     - Services need to be resolved in utility functions or static contexts
     - Third-party integrations require access to application services
-    
+
     **Return Value Handling:**
     The function returns None if no global container has been set, which allows
     for graceful handling of initialization order issues or optional DI usage.
     Callers should check for None and handle accordingly.
-    
+
     **Thread Safety:**
     The global container access is thread-safe since it's a simple reference
     read operation, and the container itself provides thread-safe operations.
-    
+
     Returns:
         DIContainer | None: The global container instance if set via
         set_global_container(), otherwise None
-        
+
     Example:
         container = get_container()
         if container:

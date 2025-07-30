@@ -64,6 +64,11 @@ brew install python ffmpeg git
 
 ## ⚡ **Quick Start**
 
+### **🔒 SECURITY FIRST!**
+**⚠️ READ [SECURITY_NOTICE.md](SECURITY_NOTICE.md) BEFORE PROCEEDING!**
+
+**NEVER commit real credentials to version control!**
+
 Get QuranBot running in 5 minutes:
 
 ```bash
@@ -79,9 +84,10 @@ source venv/bin/activate  # Linux/Mac
 # 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Configure bot
+# 4. Configure bot (IMPORTANT: Use REAL values, not placeholders!)
 cp config/.env.example config/.env
-# Edit config/.env with your bot token and channel IDs
+# Edit config/.env with your REAL bot token and channel IDs
+# See SECURITY_NOTICE.md for proper credential handling
 
 # 5. Run bot
 python main.py
@@ -243,22 +249,28 @@ code config/.env  # VS Code
 # =============================================================================
 
 # Discord bot token from developer portal
-DISCORD_TOKEN=your_discord_bot_token_here
+# ⚠️ NEVER commit real tokens to version control!
+DISCORD_TOKEN=paste_your_bot_token_here_from_discord_developer_portal
 
 # Discord server (guild) ID where bot operates
-GUILD_ID=123456789012345678
+# Right-click server → Copy Server ID (Developer Mode required)
+GUILD_ID=your_discord_server_id_18_digits
 
 # Voice channel ID for Quran recitation
-TARGET_CHANNEL_ID=123456789012345678
+# Right-click voice channel → Copy Channel ID
+TARGET_CHANNEL_ID=your_voice_channel_id_18_digits
 
 # Text channel ID for control panel
-PANEL_CHANNEL_ID=123456789012345678
+# Right-click text channel → Copy Channel ID
+PANEL_CHANNEL_ID=control_panel_channel_id_18_digits
 
 # Text channel ID for daily verses
-DAILY_VERSE_CHANNEL_ID=123456789012345678
+# Right-click text channel → Copy Channel ID
+DAILY_VERSE_CHANNEL_ID=daily_verses_channel_id_18_digits
 
 # Your Discord user ID (for admin commands)
-ADMIN_USER_ID=123456789012345678
+# Right-click your user → Copy User ID (Developer Mode required)
+ADMIN_USER_ID=your_user_id_18_digits
 
 # =============================================================================
 # AUDIO CONFIGURATION
@@ -377,7 +389,7 @@ audio_folder = Path(config.get_audio_folder())
 if audio_folder.exists():
     reciters = [d for d in audio_folder.iterdir() if d.is_dir()]
     print(f'✅ Found {len(reciters)} reciter folders')
-    
+
     for reciter in reciters[:3]:  # Check first 3
         mp3_files = list(reciter.glob('*.mp3'))
         print(f'  📁 {reciter.name}: {len(mp3_files)} files')
@@ -725,7 +737,7 @@ ps aux | grep main.py
 
 ## 🎉 **Success!**
 
-If you've followed this guide, you should now have QuranBot running successfully! 
+If you've followed this guide, you should now have QuranBot running successfully!
 
 ### **Next Steps**
 1. **Test all features** - Try commands, audio playback, etc.

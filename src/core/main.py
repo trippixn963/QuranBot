@@ -18,11 +18,11 @@ Features:
 
 import asyncio
 import os
-from pathlib import Path
 import signal
 import sys
 import time
 import traceback
+from pathlib import Path
 from typing import Optional
 
 import psutil
@@ -84,13 +84,13 @@ from .heartbeat_monitor import HeartbeatMonitor
 
 class AudioServiceAdapter:
     """Adapter to make AudioService compatible with the control panel's expectations.
-    
+
     The control panel was designed for the old AudioManager, but we're using the new AudioService.
     This adapter bridges the gap by providing the expected interface.
-    
+
     Attributes:
         audio_service (AudioService): The modern audio service instance
-    
+
     Methods:
         get_playback_status: Get current playback status
         jump_to_surah: Jump to a specific surah
@@ -106,7 +106,7 @@ class AudioServiceAdapter:
 
     def __init__(self, audio_service: AudioService) -> None:
         """Initialize the adapter with an AudioService instance.
-        
+
         Args:
             audio_service: The AudioService instance to adapt
         """
@@ -114,7 +114,7 @@ class AudioServiceAdapter:
 
     def get_playback_status(self) -> dict:
         """Get playback status in the format expected by the control panel.
-        
+
         Returns:
             dict: Playback status containing:
                 - is_playing: Whether audio is currently playing
@@ -258,7 +258,7 @@ class AudioServiceAdapter:
 
     def _get_default_status(self) -> dict:
         """Return safe default status when AudioService is unavailable.
-        
+
         Returns:
             dict: Default playback status with safe fallback values
         """
@@ -278,7 +278,7 @@ class AudioServiceAdapter:
 
     async def jump_to_surah(self, surah_number: int) -> None:
         """Jump to a specific surah.
-        
+
         Args:
             surah_number: The surah number to jump to (1-114)
         """
@@ -292,7 +292,7 @@ class AudioServiceAdapter:
 
     async def switch_reciter(self, reciter_name: str) -> None:
         """Switch to a different reciter.
-        
+
         Args:
             reciter_name: Name of the reciter to switch to
         """
@@ -306,7 +306,7 @@ class AudioServiceAdapter:
 
     async def skip_to_next(self) -> None:
         """Skip to the next surah.
-        
+
         Automatically handles wrapping from surah 114 back to surah 1.
         """
         try:
@@ -324,7 +324,7 @@ class AudioServiceAdapter:
 
     async def skip_to_previous(self) -> None:
         """Skip to the previous surah.
-        
+
         Automatically handles wrapping from surah 1 back to surah 114.
         """
         try:
@@ -342,7 +342,7 @@ class AudioServiceAdapter:
 
     def toggle_loop(self) -> None:
         """Toggle loop mode between normal and loop track modes.
-        
+
         Switches between PlaybackMode.NORMAL and PlaybackMode.LOOP_TRACK.
         """
         try:
@@ -365,7 +365,7 @@ class AudioServiceAdapter:
 
     def toggle_shuffle(self) -> None:
         """Toggle shuffle mode between normal and shuffle modes.
-        
+
         Switches between PlaybackMode.NORMAL and PlaybackMode.SHUFFLE.
         """
         try:
@@ -388,7 +388,7 @@ class AudioServiceAdapter:
 
     async def pause_playback(self) -> None:
         """Disabled - 24/7 Quran bot should never be paused.
-        
+
         This method is intentionally disabled to maintain continuous 24/7 operation.
         The bot is designed for uninterrupted Quran recitation.
         """
@@ -400,7 +400,7 @@ class AudioServiceAdapter:
 
     async def resume_playback(self) -> None:
         """Disabled - 24/7 Quran bot should never need resuming as it never pauses.
-        
+
         This method is intentionally disabled since the bot never pauses.
         For starting stopped playback, use toggle_playback() instead.
         """
@@ -412,7 +412,7 @@ class AudioServiceAdapter:
 
     async def toggle_playback(self) -> None:
         """Start playback if stopped - pause/resume disabled for 24/7 operation.
-        
+
         This method will start playback if the bot is stopped, but will not
         pause active playback to maintain 24/7 continuous operation.
         """
@@ -432,7 +432,7 @@ class AudioServiceAdapter:
 
 class ModernizedQuranBot:
     """Modernized QuranBot with dependency injection and 100% automated audio playback.
-    
+
     This class represents the main bot instance with modern architecture featuring:
     - Dependency injection container for service management
     - 100% automated continuous Quran recitation
@@ -440,7 +440,7 @@ class ModernizedQuranBot:
     - Modern webhook logging and notifications
     - Rich presence integration
     - Voice channel management with role assignment
-    
+
     Attributes:
         container: Dependency injection container for service management
         bot: Discord bot instance
@@ -453,7 +453,7 @@ class ModernizedQuranBot:
 
     def __init__(self) -> None:
         """Initialize the ModernizedQuranBot instance.
-        
+
         Sets up all instance variables and records startup time for metrics.
         """
         self.container: DIContainer | None = None
@@ -466,7 +466,7 @@ class ModernizedQuranBot:
 
     async def initialize(self) -> bool:
         """Initialize the modernized bot with all services.
-        
+
         Performs complete bot initialization including:
         - Configuration loading and validation
         - Dependency injection container setup
@@ -475,10 +475,10 @@ class ModernizedQuranBot:
         - Discord bot configuration
         - Health and heartbeat monitoring
         - Webhook logging setup
-        
+
         Returns:
             bool: True if initialization successful, False otherwise
-            
+
         Raises:
             Exception: If critical initialization steps fail
         """
@@ -532,14 +532,14 @@ class ModernizedQuranBot:
             # Health Monitor - Comprehensive health monitoring with webhooks
             log_status("Initializing health monitoring system", "💚")
             from .health_monitor import HealthMonitor
-            
+
             # Get webhook logger if available
             webhook_logger = None
             try:
                 webhook_logger = self.container.get(ModernWebhookLogger)
             except:
                 pass  # Webhook logger not available
-            
+
             health_monitor = HealthMonitor(
                 logger=self.logger,
                 webhook_logger=webhook_logger,
@@ -547,12 +547,12 @@ class ModernizedQuranBot:
                 check_interval_minutes=60,  # Regular health reports every hour
                 alert_interval_minutes=5    # Critical alerts every 5 minutes
             )
-            
+
             await health_monitor.start_monitoring()
             self.container.register_singleton(HealthMonitor, health_monitor)
-            
+
             # Note: Heartbeat Monitor will be initialized after webhook logger is set up
-            
+
             # Set health monitor on services that need it
             try:
                 metadata_cache = self.container.get(MetadataCache)
@@ -598,11 +598,11 @@ class ModernizedQuranBot:
                         container=self.container,
                         bot=self,
                     )
-                    
+
                     if webhook_service:
                         # Register the webhook service in the container
                         self.container.register_singleton("webhook_service", lambda: webhook_service)
-                        
+
                         # Also register as ModernWebhookLogger for backward compatibility
                         if isinstance(webhook_service, ModernWebhookLogger):
                             self.container.register_singleton(ModernWebhookLogger, lambda: webhook_service)
@@ -643,14 +643,14 @@ class ModernizedQuranBot:
             try:
                 log_status("Starting heartbeat monitor initialization", "🔍")
                 await self.logger.info("DEBUG: About to initialize heartbeat monitor")
-                
+
                 # Heartbeat Monitor - Regular Discord webhook heartbeats
                 # Must be initialized after webhook logger is available
                 log_status("Initializing heartbeat monitoring system", "💓")
                 from .heartbeat_monitor import HeartbeatMonitor
-                
+
                 await self.logger.info("DEBUG: HeartbeatMonitor imported successfully")
-                
+
                 # Get the initialized webhook logger
                 webhook_logger = None
                 try:
@@ -658,7 +658,7 @@ class ModernizedQuranBot:
                     await self.logger.info("DEBUG: Got webhook logger from container", {"webhook_logger": webhook_logger is not None})
                 except Exception as e:
                     await self.logger.warning("Webhook logger not available for heartbeat monitor", {"error": str(e)})
-                
+
                 await self.logger.info("DEBUG: Creating HeartbeatMonitor instance")
                 heartbeat_monitor = HeartbeatMonitor(
                     logger=self.logger,
@@ -666,23 +666,23 @@ class ModernizedQuranBot:
                     heartbeat_interval_minutes=30,  # Heartbeat every 30 minutes
                     quick_check_interval_minutes=5  # Quick health checks every 5 minutes
                 )
-                
+
                 await self.logger.info("DEBUG: Starting heartbeat monitor")
                 await heartbeat_monitor.start_monitoring()
-                
+
                 await self.logger.info("DEBUG: Registering heartbeat monitor in container")
                 self.container.register_singleton(HeartbeatMonitor, heartbeat_monitor)
-                
+
                 await self.logger.info("DEBUG: Setting bot references")
                 # Set bot references for heartbeat monitoring
                 heartbeat_monitor.set_bot_references(
                     bot=self,  # Pass bot instance for Discord status monitoring
                     audio_service=None  # Will be set later when audio service is initialized
                 )
-                
+
                 await self.logger.info("DEBUG: Heartbeat monitor initialization completed successfully")
                 log_status("Heartbeat monitor initialized", "💓")
-                
+
             except Exception as e:
                 await self.logger.error("CRITICAL: Heartbeat monitor initialization failed", {
                     "error": str(e),
@@ -727,19 +727,19 @@ class ModernizedQuranBot:
 
             # SQLite State Service - Modern SQLite-based state management
             from ..services.sqlite_state_service import SQLiteStateService
-            
+
             # Get webhook logger if available
             webhook_logger = None
             try:
                 webhook_logger = self.container.get(ModernWebhookLogger)
             except:
                 pass  # Webhook logger not available yet
-            
+
             sqlite_state_service = SQLiteStateService(
                 logger=self.logger,
                 db_path=project_root / "data" / "quranbot.db"
             )
-            
+
             # Set webhook logger on the database service
             if webhook_logger and hasattr(sqlite_state_service, 'db_service'):
                 sqlite_state_service.db_service.webhook_logger = webhook_logger
@@ -1817,7 +1817,7 @@ async def main():
 
     def signal_handler(signum, frame) -> None:
         """Handle shutdown signals.
-        
+
         Args:
             signum: Signal number received
             frame: Current stack frame

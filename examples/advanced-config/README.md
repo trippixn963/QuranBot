@@ -18,7 +18,7 @@ This example demonstrates a production-ready configuration with all features ena
 │                    Load Balancer (Nginx)               │
 ├─────────────────────────────────────────────────────────┤
 │                QuranBot Instance 1                     │
-│                QuranBot Instance 2                     │ 
+│                QuranBot Instance 2                     │
 │                QuranBot Instance 3                     │
 ├─────────────────────────────────────────────────────────┤
 │              Shared Services Layer                     │

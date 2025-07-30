@@ -53,7 +53,7 @@ User-Agent: YourApp/1.0.0
 
 ### Required Permissions
 - `CONNECT` - Connect to voice channels
-- `SPEAK` - Play audio in voice channels  
+- `SPEAK` - Play audio in voice channels
 - `USE_SLASH_COMMANDS` - Register and use slash commands
 - `SEND_MESSAGES` - Send response messages
 - `EMBED_LINKS` - Send rich embeds
@@ -220,7 +220,7 @@ Generate client libraries using our OpenAPI specification:
 # Generate Python client
 openapi-generator generate -i openapi.yaml -g python -o ./python-client
 
-# Generate JavaScript client  
+# Generate JavaScript client
 openapi-generator generate -i openapi.yaml -g javascript -o ./js-client
 ```
 
@@ -246,7 +246,7 @@ curl https://api.quranbot.example.com/health
     "uptime": 86400,
     "services": {
         "audio": "operational",
-        "quiz": "operational", 
+        "quiz": "operational",
         "ai": "operational",
         "database": "operational"
     }
@@ -304,7 +304,7 @@ Ensure your bot has these permissions in Discord:
 ```json
 {
     "error": {
-        "code": "AUTH_INSUFFICIENT_PERMISSIONS", 
+        "code": "AUTH_INSUFFICIENT_PERMISSIONS",
         "message": "Bot lacks required permissions"
     }
 }

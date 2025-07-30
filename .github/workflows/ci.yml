@@ -55,26 +55,26 @@ jobs:
     name: 🔍 Code Quality & Islamic Content Validation
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    
+
     steps:
     - name: 📥 Checkout Repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0  # Full history for better analysis
-    
+
     - name: 🐍 Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
         cache: 'pip'
-    
+
     - name: 📦 Install Poetry
       uses: snok/install-poetry@v1
       with:
         version: ${{ env.POETRY_VERSION }}
         virtualenvs-create: true
         virtualenvs-in-project: true
-    
+
     - name: 🔧 Load Cached Dependencies
       uses: actions/cache@v4
       with:
@@ -82,43 +82,43 @@ jobs:
         key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}
         restore-keys: |
           venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-
-    
+
     - name: 📚 Install Dependencies
       run: |
         poetry install --no-interaction --no-ansi
         poetry run pip install pre-commit
-    
+
     - name: 🎨 Code Formatting Check (Black)
       run: |
         poetry run black --check --diff src/ tests/
         echo "✅ Code formatting follows Islamic principles of order and beauty"
-    
+
     - name: 🔍 Linting (Ruff)
       run: |
         poetry run ruff check src/ tests/ --output-format=github
         echo "✅ Code quality meets excellence standards (Ihsan)"
-    
+
     - name: 🏷️ Type Checking (MyPy)
       run: |
         poetry run mypy src/ --show-error-codes --pretty
         echo "✅ Type safety ensures reliable service to the community"
-    
+
     - name: 🛡️ Security Scan (Bandit)
       run: |
         poetry run bandit -r src/ -f json -o bandit-report.json || true
         poetry run bandit -r src/ -f txt
         echo "✅ Security scan protects our Islamic community"
-    
+
     - name: 🕌 Islamic Content Validation
       run: |
         python scripts/validate_islamic_content.py data/complete_quiz_questions.json data/daily_verses_pool.json
         echo "✅ Islamic content validated for accuracy and respect"
-    
+
     - name: ⚙️ Configuration Validation
       run: |
         python scripts/validate_config.py config/.env.example pyproject.toml
         echo "✅ Configuration files validated for completeness"
-    
+
     - name: 📊 Upload Security Report
       uses: actions/upload-artifact@v4
       if: always()
@@ -138,7 +138,7 @@ jobs:
       matrix:
         python-version: ['3.11', '3.12']
         test-suite: ['unit', 'integration', 'security']
-    
+
     services:
       redis:
         image: redis:7-alpine
@@ -149,42 +149,42 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
-    
+
     steps:
     - name: 📥 Checkout Repository
       uses: actions/checkout@v4
       with:
         lfs: true  # For audio file testing
-    
+
     - name: 🐍 Setup Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip'
-    
+
     - name: 🎵 Install FFmpeg
       run: |
         sudo apt-get update
         sudo apt-get install -y ffmpeg
         ffmpeg -version
-    
+
     - name: 📦 Install Poetry
       uses: snok/install-poetry@v1
       with:
         version: ${{ env.POETRY_VERSION }}
         virtualenvs-create: true
         virtualenvs-in-project: true
-    
+
     - name: 📚 Install Dependencies
       run: |
         poetry install --no-interaction --no-ansi --with dev
-    
+
     - name: 🏗️ Create Test Environment
       run: |
         mkdir -p test_data/audio/test_reciter
         echo "mock audio" > test_data/audio/test_reciter/001.mp3
         mkdir -p test_data/logs test_data/backup
-    
+
     - name: 🧪 Run Unit Tests
       if: matrix.test-suite == 'unit'
       run: |
@@ -195,7 +195,7 @@ jobs:
           --cov-fail-under=80 \
           --junitxml=test-results-unit.xml \
           -k "not integration and not security_comprehensive"
-    
+
     - name: 🔗 Run Integration Tests
       if: matrix.test-suite == 'integration'
       env:
@@ -206,7 +206,7 @@ jobs:
           --cov-report=xml \
           --junitxml=test-results-integration.xml \
           --timeout=300
-    
+
     - name: 🛡️ Run Security Tests
       if: matrix.test-suite == 'security'
       run: |
@@ -215,7 +215,7 @@ jobs:
           --cov-report=xml \
           --junitxml=test-results-security.xml \
           --timeout=180
-    
+
     - name: 📊 Upload Coverage to Codecov
       if: matrix.python-version == '3.11'
       uses: codecov/codecov-action@v4
@@ -225,7 +225,7 @@ jobs:
         flags: ${{ matrix.test-suite }}
         name: QuranBot-${{ matrix.test-suite }}
         fail_ci_if_error: false
-    
+
     - name: 📋 Upload Test Results
       uses: actions/upload-artifact@v4
       if: always()
@@ -245,80 +245,80 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [quality-checks]
-    
+
     steps:
     - name: 📥 Checkout Repository
       uses: actions/checkout@v4
-    
+
     - name: 🐍 Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
         cache: 'pip'
-    
+
     - name: 📦 Install Dependencies
       run: |
         pip install poetry
         poetry install --no-interaction --no-ansi
-    
+
     - name: ⚡ Memory Usage Test
       run: |
         poetry run python -c "
         import psutil
         import gc
         from src.core.di_container import DIContainer
-        
+
         # Test memory efficiency
         process = psutil.Process()
         initial_memory = process.memory_info().rss / (1024 * 1024)  # MB
-        
+
         # Create multiple containers to test memory usage
         containers = [DIContainer() for _ in range(100)]
-        
+
         final_memory = process.memory_info().rss / (1024 * 1024)  # MB
         memory_per_container = (final_memory - initial_memory) / 100
-        
+
         print(f'Memory per container: {memory_per_container:.2f} MB')
         print(f'Total memory usage: {final_memory:.2f} MB')
-        
+
         # Should not exceed reasonable limits
         assert memory_per_container < 1.0, f'Memory usage too high: {memory_per_container:.2f} MB per container'
         print('✅ Memory usage within acceptable limits')
         "
-    
+
     - name: 🔄 Concurrency Test
       run: |
         poetry run python -c "
         import asyncio
         import time
         from src.core.cache_service import CacheService, CacheStrategy
-        
+
         async def test_concurrent_operations():
             cache = CacheService(CacheStrategy.LRU, 1000, 300)
             await cache.initialize()
-            
+
             async def worker(worker_id, operations):
                 for i in range(operations):
                     key = f'worker_{worker_id}_key_{i}'
                     await cache.set(key, f'value_{i}')
                     value = await cache.get(key)
                     assert value == f'value_{i}'
-            
+
             # Test with multiple concurrent workers
             start_time = time.time()
             tasks = [worker(i, 50) for i in range(10)]
             await asyncio.gather(*tasks)
             end_time = time.time()
-            
+
             total_ops = 10 * 50 * 2  # workers * operations * (set + get)
             ops_per_second = total_ops / (end_time - start_time)
-            
+
             print(f'Operations per second: {ops_per_second:.2f}')
             assert ops_per_second > 1000, f'Performance too low: {ops_per_second:.2f} ops/sec'
             print('✅ Concurrency performance meets requirements')
-            
+
             await cache.shutdown()
-        
+
         asyncio.run(test_concurrent_operations())
         "
 
@@ -330,14 +330,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [quality-checks]
-    
+
     steps:
     - name: 📥 Checkout Repository
       uses: actions/checkout@v4
-    
+
     - name: 🐳 Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-    
+
     - name: 🏗️ Build Docker Image
       uses: docker/build-push-action@v5
       with:
@@ -350,14 +350,14 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
         platforms: linux/amd64,linux/arm64
-    
+
     - name: 🔍 Run Trivy Security Scan
       uses: aquasecurity/trivy-action@master
       with:
         image-ref: 'quranbot:latest'
         format: 'sarif'
         output: 'trivy-results.sarif'
-    
+
     - name: 📊 Upload Trivy Results
       uses: github/codeql-action/upload-sarif@v3
       if: always()
@@ -371,16 +371,16 @@ jobs:
     name: 📚 Documentation & API Validation
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
     - name: 📥 Checkout Repository
       uses: actions/checkout@v4
-    
+
     - name: 🐍 Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-    
+
     - name: 📖 Validate Documentation Links
       run: |
         # Check for broken internal links
@@ -400,15 +400,15 @@ jobs:
             fi
           done
         done
-    
+
     - name: 📋 Check README Completeness
       run: |
         # Ensure README has essential sections
         required_sections=(
-          "# " "## Features" "## Installation" "## Usage" 
+          "# " "## Features" "## Installation" "## Usage"
           "## Contributing" "## License" "discord.gg/syria"
         )
-        
+
         for section in "${required_sections[@]}"; do
           if grep -q "$section" README.md; then
             echo "✅ Found section: $section"
@@ -417,19 +417,19 @@ jobs:
             exit 1
           fi
         done
-    
+
     - name: 🕌 Validate Islamic Content References
       run: |
         python -c "
         import re
         import json
         from pathlib import Path
-        
+
         # Check Quran references format
         def validate_quran_reference(ref):
             pattern = r'^(Quran|Qur\'an) \d{1,3}:\d{1,3}$'
             return re.match(pattern, ref) is not None
-        
+
         # Scan documentation for Quran references
         for md_file in Path('.').glob('**/*.md'):
             content = md_file.read_text()
@@ -440,7 +440,7 @@ jobs:
                 else:
                     print(f'❌ Invalid reference: {ref} in {md_file}')
                     exit(1)
-        
+
         print('✅ All Quranic references validated')
         "
 
@@ -453,19 +453,19 @@ jobs:
     timeout-minutes: 15
     needs: [tests, docker-build, performance-tests]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: 
+    environment:
       name: ${{ github.event.inputs.deploy_environment || 'staging' }}
       url: ${{ steps.deploy.outputs.url }}
-    
+
     steps:
     - name: 📥 Checkout Repository
       uses: actions/checkout@v4
-    
+
     - name: 🔧 Setup Deployment Environment
       run: |
         echo "Setting up deployment for ${{ github.event.inputs.deploy_environment || 'staging' }}"
         # Add deployment-specific setup here
-    
+
     - name: 🚀 Deploy Application
       id: deploy
       run: |
@@ -473,7 +473,7 @@ jobs:
         # Add actual deployment commands here
         echo "url=https://staging.quranbot.example.com" >> $GITHUB_OUTPUT
         echo "✅ Deployment completed successfully!"
-    
+
     - name: 🔔 Notify Discord Community
       if: success()
       env:
@@ -493,7 +493,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [quality-checks, tests, performance-tests, docker-build, documentation]
     if: always()
-    
+
     steps:
     - name: 📊 Collect Results
       run: |

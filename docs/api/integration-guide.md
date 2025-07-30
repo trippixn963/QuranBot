@@ -27,7 +27,7 @@ bot.run('paste_your_bot_token_here')
 
 ### 3. Advanced Features
 - Audio playback control
-- Quiz system integration  
+- Quiz system integration
 - AI assistant queries
 - User analytics tracking
 

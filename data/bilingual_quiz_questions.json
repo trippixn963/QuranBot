@@ -20,7 +20,7 @@
           "arabic": "١١٢ سورة"
         },
         "B": {
-          "english": "114 chapters", 
+          "english": "114 chapters",
           "arabic": "١١٤ سورة"
         },
         "C": {
@@ -39,7 +39,7 @@
       }
     },
     {
-      "id": "q002", 
+      "id": "q002",
       "category": "Quran",
       "difficulty": 1,
       "question": {
@@ -72,7 +72,7 @@
     },
     {
       "id": "q003",
-      "category": "Prophets Stories", 
+      "category": "Prophets Stories",
       "difficulty": 4,
       "question": {
         "arabic": "من الذي أخبر النبي سليمان عليه السلام بأخبار ملكة سبأ؟",
@@ -480,7 +480,7 @@
           "arabic": "أنس بن مالك"
         }
       },
-      "correct_answer": "A", 
+      "correct_answer": "A",
       "explanation": {
         "english": "Abu Hurairah narrated the most hadiths from Prophet Muhammad (PBUH).",
         "arabic": "أبو هريرة رضي الله عنه روى أكثر الأحاديث عن النبي صلى الله عليه وسلم"
@@ -628,7 +628,7 @@
           "arabic": "١٠ أولاد"
         },
         "B": {
-          "english": "11 sons", 
+          "english": "11 sons",
           "arabic": "١١ ولداً"
         },
         "C": {
@@ -640,7 +640,7 @@
           "arabic": "١٣ ولداً"
         }
       },
-      "correct_answer": "C", 
+      "correct_answer": "C",
       "explanation": {
         "english": "Prophet Yaqub had 12 sons, who became the 12 tribes of Israel.",
         "arabic": "كان للنبي يعقوب عليه السلام ١٢ ولداً، وهم الأسباط الاثنا عشر"

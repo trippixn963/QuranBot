@@ -15,7 +15,7 @@ Brief description of what this PR does and why it's needed.
 
 ## 📊 **Feature Category** (if applicable)
 - [ ] 🎵 Audio/Recitation System
-- [ ] 📚 Islamic Learning Features  
+- [ ] 📚 Islamic Learning Features
 - [ ] 🎮 User Interface/Discord Integration
 - [ ] 🔧 Core Architecture/Performance
 - [ ] 🌍 Localization/Translation
@@ -57,7 +57,7 @@ Brief description of what this PR does and why it's needed.
 
 ### **Manual Testing Steps**
 1. Step 1 - Expected result
-2. Step 2 - Expected result  
+2. Step 2 - Expected result
 3. Step 3 - Expected result
 
 ## 🎵 **Audio System Testing** (if applicable)

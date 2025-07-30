@@ -483,9 +483,9 @@ class ListeningStatsManager:
                                                 ).__name__,
                                             },
                                         )
-                                    self.active_sessions[
-                                        user_id
-                                    ] = ActiveSession.from_dict(session_data)
+                                    self.active_sessions[user_id] = (
+                                        ActiveSession.from_dict(session_data)
+                                    )
                                 except (
                                     ValueError,
                                     KeyError,
@@ -1367,7 +1367,7 @@ def stop_leaderboard_updates():
 
 def get_listening_stats_manager() -> "ListeningStatsManager":
     """Get the global listening stats manager instance.
-    
+
     Returns:
         ListeningStatsManager: The global listening stats manager instance
     """

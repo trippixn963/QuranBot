@@ -9,10 +9,10 @@
 
 import asyncio
 import os
+from pathlib import Path
 import signal
 import sys
 import time
-from pathlib import Path
 
 import psutil
 
@@ -34,10 +34,10 @@ from src.utils.tree_log import (
 def check_existing_instances():
     """
     Detect and automatically terminate existing bot instances.
-    
+
     This function prevents multiple QuranBot instances from running simultaneously
     to avoid conflicts with Discord API, voice channels, and database access.
-    
+
     Returns:
         bool: True if safe to proceed, False if critical error occurred
     """
@@ -60,7 +60,9 @@ def check_existing_instances():
                                 proc_cwd = proc.cwd()
                                 current_cwd = os.getcwd()
                                 if "QuranBot" in proc_cwd:
-                                    if os.path.normpath(proc_cwd) == os.path.normpath(current_cwd):
+                                    if os.path.normpath(proc_cwd) == os.path.normpath(
+                                        current_cwd
+                                    ):
                                         bot_processes.append(proc)
                             except (psutil.NoSuchProcess, psutil.AccessDenied):
                                 continue
@@ -104,10 +106,10 @@ def check_existing_instances():
 def stop_existing_instances(bot_processes):
     """
     Terminate existing bot instances gracefully with fallback to force kill.
-    
+
     Args:
         bot_processes: List of psutil.Process objects to terminate
-        
+
     Returns:
         bool: True if termination process completed
     """
@@ -118,7 +120,7 @@ def stop_existing_instances(bot_processes):
         try:
             # Attempt graceful termination first
             proc.terminate()
-            
+
             try:
                 proc.wait(timeout=5)
                 stopped_count += 1
@@ -150,7 +152,12 @@ def stop_existing_instances(bot_processes):
     else:
         log_perfect_tree_section(
             "Instance Termination",
-            [("termination_result", f"⚠️ {stopped_count} stopped, {failed_count} failed")],
+            [
+                (
+                    "termination_result",
+                    f"⚠️ {stopped_count} stopped, {failed_count} failed",
+                )
+            ],
             "🛑",
         )
 
@@ -160,7 +167,7 @@ def stop_existing_instances(bot_processes):
 async def main():
     """
     Main entry point for the modernized bot.
-    
+
     This function orchestrates the complete bot lifecycle from startup to shutdown
     using the modular architecture with proper separation of concerns.
     """
@@ -170,10 +177,12 @@ async def main():
         """Handle shutdown signals gracefully."""
         print(f"\nReceived signal {signum}, initiating graceful shutdown...")
         if bot_instance:
+
             async def shutdown_and_exit():
                 await bot_instance.shutdown()
                 loop = asyncio.get_running_loop()
                 loop.stop()
+
             asyncio.create_task(shutdown_and_exit())
 
     # Set up signal handlers
@@ -183,7 +192,7 @@ async def main():
     try:
         # Generate unique run ID for this session
         run_id = f"run_{int(time.time())}"
-        
+
         log_perfect_tree_section(
             "🚀 QuranBot Starting",
             [
@@ -204,7 +213,7 @@ async def main():
         # Initialize and run the modernized bot
         log_status("Initializing modernized bot", "🏗️")
         bot_instance = ModernizedQuranBot(project_root)
-        
+
         # Run the bot
         await bot_instance.run()
 
@@ -241,7 +250,7 @@ async def main():
 if __name__ == "__main__":
     # Ensure we're in the right directory
     os.chdir(project_root)
-    
+
     try:
         asyncio.run(main())
     except KeyboardInterrupt:

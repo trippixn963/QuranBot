@@ -154,18 +154,18 @@ class ManagedResource(ABC):
 class ResourceManager:
     """
     Enterprise-grade resource management system for production Discord bots.
-    
+
     This class provides comprehensive lifecycle management for system resources including
     async tasks, network connections, file handles, and memory buffers. Designed to
     prevent resource leaks and ensure graceful shutdown in long-running bot processes.
-    
+
     **Core Architecture**:
     - **Automatic Registration**: Resources are tracked from creation to cleanup
     - **Dependency Management**: Enforces proper cleanup order based on resource relationships
     - **Lifecycle Tracking**: Monitors resource states from creation through disposal
     - **Memory Monitoring**: Tracks memory usage and detects potential leaks
     - **Signal Handling**: Responds to system signals for graceful shutdown
-    
+
     **Resource Lifecycle States**:
     - CREATING: Resource is being initialized
     - ACTIVE: Resource is in use and healthy
@@ -173,7 +173,7 @@ class ResourceManager:
     - CLEANING_UP: Resource cleanup is in progress
     - CLEANED: Resource has been successfully disposed
     - FAILED: Resource cleanup failed and requires attention
-    
+
     **Shutdown Management**:
     Implements a sophisticated multi-phase shutdown process:
     1. **STOP_ACCEPTING_NEW**: Prevent new resource creation
@@ -183,44 +183,44 @@ class ResourceManager:
     5. **CLEANUP_FILES**: Close file handles and temporary files
     6. **CLEANUP_MEMORY**: Release memory buffers and caches
     7. **FINAL_CLEANUP**: Emergency cleanup for remaining resources
-    
+
     **Dependency Resolution Algorithm**:
     - Uses topological sorting for cleanup order determination
     - Detects circular dependencies and handles them gracefully
     - Provides configurable timeout for cleanup operations
     - Implements emergency shutdown for stuck resources
-    
+
     **Performance Monitoring**:
     - Real-time memory usage tracking per resource type
     - Resource age and idle time monitoring
     - Cleanup performance metrics and bottleneck detection
     - Integration with system monitoring tools via structured logging
-    
+
     **Security Considerations**:
     - Prevents resource exhaustion attacks through limits
     - Secure cleanup of sensitive resources (credentials, keys)
     - Audit logging for resource lifecycle events
     - Protection against resource injection attacks
-    
+
     **Integration Points**:
     - DI Container for service dependency resolution
     - Structured Logger for operational monitoring and debugging
     - Discord.py integration for bot-specific resource management
     - psutil for system-level resource monitoring
-    
+
     **Production Features**:
     - Concurrent cleanup with configurable limits (max 10 simultaneous)
     - Weak reference tracking for automatic garbage collection
     - Thread-safe operations with async locks
     - Emergency shutdown mechanisms for critical situations
     - Comprehensive error handling and recovery strategies
-    
+
     Example Usage:
     ```python
     # Initialize resource manager
     resource_manager = ResourceManager(container, logger)
     await resource_manager.initialize()
-    
+
     # Register a resource with dependencies
     task_id = await resource_manager.register_resource(
         resource=async_task,
@@ -228,7 +228,7 @@ class ResourceManager:
         dependencies={"connection_pool"},
         cleanup_timeout=60.0
     )
-    
+
     # Graceful shutdown
     await resource_manager.shutdown(timeout=120.0)
     ```
@@ -237,27 +237,27 @@ class ResourceManager:
     def __init__(self, container: DIContainer, logger: StructuredLogger | None = None):
         """
         Initialize the resource management system with dependency injection.
-        
+
         Sets up the complete resource tracking infrastructure including state management,
         monitoring systems, and shutdown coordination. All components are initialized
         with production-ready defaults optimized for Discord bot workloads.
-        
+
         **Infrastructure Setup**:
         - Initializes resource tracking dictionaries with thread-safe access
         - Configures shutdown coordination with proper phase sequencing
         - Sets up performance monitoring with system resource tracking
         - Prepares signal handling infrastructure for graceful termination
-        
+
         **Concurrency Management**:
         - Creates async locks for thread-safe resource operations
         - Initializes semaphores for controlling concurrent cleanup operations
         - Sets up weak reference tracking for automatic garbage collection
         - Configures task management for background monitoring
-        
+
         Args:
             container (DIContainer): Dependency injection container for service resolution
             logger (StructuredLogger, optional): Logger for operational monitoring
-            
+
         **Performance Characteristics**:
         - O(1) resource registration and lookup operations
         - O(n log n) dependency resolution using topological sorting

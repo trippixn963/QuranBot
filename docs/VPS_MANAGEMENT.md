@@ -36,7 +36,7 @@ qb-restart     # Restart VPS bot
 qb-audio       # Check if audio is playing
 qb-system      # VPS system information
 
-# Log Management  
+# Log Management
 qb-sync        # Sync logs from VPS once
 qb-sync-daemon # Run continuous log sync
 qb-recent      # Recent VPS logs
@@ -240,7 +240,7 @@ ssh root@YOUR_VPS_IP "reboot"
 # Complete health check
 source tools/qb_aliases.sh
 echo "=== VPS Status ===" && qb-status
-echo "=== Audio Check ===" && qb-audio  
+echo "=== Audio Check ===" && qb-audio
 echo "=== Recent Activity ===" && qb-recent | tail -10
 echo "=== System Resources ===" && qb-system
 ```
@@ -251,7 +251,7 @@ echo "=== System Resources ===" && qb-system
 qb-sync
 echo "Recent errors:" > diagnostic.txt
 qb-errors >> diagnostic.txt
-echo "Recent logs:" >> diagnostic.txt  
+echo "Recent logs:" >> diagnostic.txt
 qb-recent >> diagnostic.txt
 echo "System status:" >> diagnostic.txt
 qb-system >> diagnostic.txt
@@ -259,4 +259,4 @@ qb-system >> diagnostic.txt
 
 ---
 
-*This guide ensures reliable 24/7 operation of QuranBot while providing flexible local monitoring capabilities. The VPS operates independently, allowing your local machine to be turned off without affecting the community's access to Quranic content.* 
+*This guide ensures reliable 24/7 operation of QuranBot while providing flexible local monitoring capabilities. The VPS operates independently, allowing your local machine to be turned off without affecting the community's access to Quranic content.*

@@ -84,7 +84,7 @@ from discord.ext import commands
 async def play_quran(ctx, surah: int = 1):
     audio_service = bot.get_cog('AudioService')
     result = await audio_service.start_playback(surah_number=surah)
-    
+
     if result['success']:
         await ctx.respond(f"🎵 Now playing Surah {surah}")
     else:
@@ -99,7 +99,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('play')
         .setDescription('Start Quran playback'),
-    
+
     async execute(interaction) {
         const result = await quranbot.audio.play();
         await interaction.reply('🎵 Quran playback started!');
@@ -159,7 +159,7 @@ const ws = new WebSocket('wss://api.quranbot.example.com/ws');
 
 ws.onmessage = (event) => {
     const data = JSON.parse(event.data);
-    
+
     switch(data.type) {
         case 'audio.started':
             console.log(`Audio started: Surah ${data.surah_number}`);

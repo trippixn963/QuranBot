@@ -30,14 +30,13 @@
 # =============================================================================
 
 import asyncio
+from datetime import UTC, datetime
 import glob
 import os
-import re
-import time
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
 from pathlib import Path
 import random
+import re
+from typing import Any
 
 import discord
 from mutagen.mp3 import MP3  # For MP3 duration detection
@@ -45,7 +44,6 @@ from mutagen.mp3 import MP3  # For MP3 duration detection
 from .state_manager import state_manager
 from .surah_mapper import (
     get_surah_display,
-    get_surah_info,
     get_surah_name,
     validate_surah_number,
 )
@@ -61,49 +59,50 @@ from .tree_log import (
 # Audio Monitoring System
 # =============================================================================
 
+
 class AudioPlaybackMonitor:
     """
     Comprehensive audio playback and voice connection health monitoring system.
-    
+
     This class implements a sophisticated monitoring and auto-recovery system for Discord
     voice connections and audio playback. It provides:
-    
+
     1. **Health Monitoring**: Tracks playback failures, connection issues, and timeouts
     2. **Alert System**: Sends Discord alerts with escalation levels (standard -> critical -> emergency)
     3. **Auto-Recovery**: Automatically attempts to recover from failures with exponential backoff
     4. **Connection Validation**: Proactively validates voice connections to prevent silent failures
     5. **Rate Limiting**: Implements cooldowns to prevent alert spam
-    
+
     **Failure Escalation Strategy**:
     - Standard failures (3+): Basic alert + auto-recovery attempt
     - Critical failures (10+): Escalated alert with detailed diagnostics
     - Emergency failures (20+): Emergency ping with immediate attention required
-    
+
     **Recovery Strategy**:
     - Exponential backoff with configurable max attempts (5)
     - Faster recovery window (3 minutes) for quick issue resolution
     - Proactive connection validation to catch issues early
     - State reset on successful recovery to prevent cascading failures
-    
+
     **Performance Considerations**:
     - Uses async tasks for non-blocking alerts and recovery
     - Implements cooldowns to prevent resource exhaustion
     - Efficient health checks with minimal Discord API usage
     """
-    
+
     def __init__(self):
         """
         Initialize the audio monitoring system with production-ready defaults.
-        
+
         Sets up comprehensive monitoring thresholds, recovery settings, and
         escalation policies optimized for a Discord bot serving Quranic audio.
-        
+
         **Timing Configuration**:
         - Alert cooldown: 10 minutes (prevents spam while allowing timely updates)
         - Recovery cooldown: 3 minutes (balance between quick recovery and stability)
         - Playback timeout: 5 minutes (reasonable gap between Quranic recitations)
         - Connection validation: Every health check cycle
-        
+
         **Threshold Strategy**:
         - Failure thresholds are set to catch issues quickly without false positives
         - Escalation thresholds provide progressive alert severity
@@ -111,82 +110,110 @@ class AudioPlaybackMonitor:
         """
         # === Core State Tracking ===
         # These timestamps track the last successful operations for timeout detection
-        self.last_successful_playback = datetime.now(timezone.utc)  # When audio last played successfully
-        self.last_voice_connection = datetime.now(timezone.utc)     # When voice connection was last established
-        
+        self.last_successful_playback = datetime.now(
+            UTC
+        )  # When audio last played successfully
+        self.last_voice_connection = datetime.now(
+            UTC
+        )  # When voice connection was last established
+
         # Failure counters for escalation logic - reset on success to prevent false escalations
-        self.consecutive_playback_failures = 0    # Count of sequential playback failures
-        self.consecutive_connection_failures = 0  # Count of sequential connection failures
-        
+        self.consecutive_playback_failures = 0  # Count of sequential playback failures
+        self.consecutive_connection_failures = (
+            0  # Count of sequential connection failures
+        )
+
         # === Alert Management ===
         # Track when alerts were last sent to implement cooldown periods
-        self.last_playback_alert = None     # Prevents playback alert spam
-        self.last_connection_alert = None   # Prevents connection alert spam
-        self.alert_cooldown = 600           # 10 minutes between alerts - balances responsiveness with spam prevention
-        
+        self.last_playback_alert = None  # Prevents playback alert spam
+        self.last_connection_alert = None  # Prevents connection alert spam
+        self.alert_cooldown = 600  # 10 minutes between alerts - balances responsiveness with spam prevention
+
         # === Failure Detection Thresholds ===
         # These determine when to trigger alerts and recovery - tuned for Discord voice reliability
-        self.playback_failure_threshold = 3      # Trigger alert after 3 consecutive playback failures
-        self.connection_failure_threshold = 2    # Trigger alert after 2 consecutive connection failures (more sensitive)
-        self.expected_playback_interval = 300    # 5 minutes max gap between tracks (reasonable for Quranic audio)
-        
+        self.playback_failure_threshold = (
+            3  # Trigger alert after 3 consecutive playback failures
+        )
+        self.connection_failure_threshold = (
+            2  # Trigger alert after 2 consecutive connection failures (more sensitive)
+        )
+        self.expected_playback_interval = (
+            300  # 5 minutes max gap between tracks (reasonable for Quranic audio)
+        )
+
         # === Health Status Flags ===
         # Binary flags to track current system health and prevent duplicate alerts
-        self.is_audio_healthy = True        # False when playback issues detected
-        self.is_connection_healthy = True   # False when connection issues detected
-        
+        self.is_audio_healthy = True  # False when playback issues detected
+        self.is_connection_healthy = True  # False when connection issues detected
+
         # === Auto-Recovery System ===
         # Intelligent recovery with exponential backoff to handle transient Discord issues
-        self.auto_recovery_enabled = True       # Master switch for recovery attempts
-        self.max_recovery_attempts = 5          # Increased from 3 for better resilience
-        self.recovery_cooldown = 180            # 3 minutes between recovery attempts (reduced for faster resolution)
-        self.last_recovery_attempt = None       # Timestamp for cooldown calculation
-        self.recovery_attempts = 0              # Current recovery attempt count
-        
+        self.auto_recovery_enabled = True  # Master switch for recovery attempts
+        self.max_recovery_attempts = 5  # Increased from 3 for better resilience
+        self.recovery_cooldown = (
+            180  # 3 minutes between recovery attempts (reduced for faster resolution)
+        )
+        self.last_recovery_attempt = None  # Timestamp for cooldown calculation
+        self.recovery_attempts = 0  # Current recovery attempt count
+
         # === Proactive Health Monitoring ===
         # Regular health checks to catch issues before they become critical
-        self.connection_health_checks = 0           # Counter for health check cycles
-        self.last_health_check = datetime.now(timezone.utc)  # Timing for health check intervals
-        
+        self.connection_health_checks = 0  # Counter for health check cycles
+        self.last_health_check = datetime.now(UTC)  # Timing for health check intervals
+
         # === Alert Escalation System ===
         # Progressive alert severity based on failure persistence - prevents alert fatigue
-        self.critical_failure_threshold = 10       # After 10 failures, escalate to critical alerts
-        self.emergency_failure_threshold = 20      # After 20 failures, emergency ping with immediate attention
-        self.extended_silence_threshold = 900      # 15 minutes of silence triggers emergency response
-        self.last_escalation_alert = None          # Timestamp for escalation cooldown
-        self.escalation_cooldown = 1800            # 30 minutes between escalation alerts
-        
+        self.critical_failure_threshold = (
+            10  # After 10 failures, escalate to critical alerts
+        )
+        self.emergency_failure_threshold = (
+            20  # After 20 failures, emergency ping with immediate attention
+        )
+        self.extended_silence_threshold = (
+            900  # 15 minutes of silence triggers emergency response
+        )
+        self.last_escalation_alert = None  # Timestamp for escalation cooldown
+        self.escalation_cooldown = 1800  # 30 minutes between escalation alerts
+
         # === Proactive Connection Management ===
         # Validates connections before they fail to minimize user impact
-        self.proactive_reconnect_enabled = True            # Enable proactive reconnection on issues
-        self.connection_stability_threshold = 30           # Seconds to consider a connection stable
-        self.last_connection_validation = datetime.now(timezone.utc)  # Last successful connection validation
-        
+        self.proactive_reconnect_enabled = (
+            True  # Enable proactive reconnection on issues
+        )
+        self.connection_stability_threshold = (
+            30  # Seconds to consider a connection stable
+        )
+        self.last_connection_validation = datetime.now(
+            UTC
+        )  # Last successful connection validation
+
         # === Health Check Configuration ===
         # Controls proactive health monitoring frequency and thresholds
-        self.health_check_interval = 60              # Seconds between health checks (1 minute)
-        self.connection_timeout_threshold = 300      # 5 minutes before connection considered stale
-        
+        self.health_check_interval = 60  # Seconds between health checks (1 minute)
+        self.connection_timeout_threshold = (
+            300  # 5 minutes before connection considered stale
+        )
+
     def record_successful_playback(self):
         """
         Record a successful audio playback event and handle recovery state transitions.
-        
+
         This method serves dual purposes:
         1. **Normal Operation**: Updates last successful playback timestamp for timeout detection
         2. **Recovery Handling**: Detects audio system recovery from failure state and sends notifications
-        
+
         **Recovery Logic**:
         When transitioning from failure to success, this method:
         - Resets consecutive failure counters to prevent false escalations
         - Marks audio system as healthy to resume normal monitoring
         - Triggers async recovery notification to inform administrators
         - Resets recovery attempt counters to allow future recovery cycles
-        
+
         **Performance Considerations**:
         - Uses asyncio.create_task() for non-blocking alert delivery
         - Minimal timestamp operations for low-latency audio handling
         - State transitions are atomic to prevent race conditions
-        
+
         **Integration Points**:
         Called by AudioManager when FFmpeg audio source starts successfully,
         ensuring the monitoring system stays synchronized with actual playback state.
@@ -195,9 +222,9 @@ class AudioPlaybackMonitor:
             # Audio system has recovered from failure state
             # Reset all failure-related counters to clean slate
             self.consecutive_playback_failures = 0
-            self.last_successful_playback = datetime.now(timezone.utc)
+            self.last_successful_playback = datetime.now(UTC)
             self.recovery_attempts = 0  # Allow future recovery attempts
-            
+
             # Transition from unhealthy to healthy state
             if not self.is_audio_healthy:
                 self.is_audio_healthy = True
@@ -205,11 +232,11 @@ class AudioPlaybackMonitor:
                 asyncio.create_task(self._send_audio_recovery_alert())
         else:
             # Normal operation: just update timestamp for timeout monitoring
-            self.last_successful_playback = datetime.now(timezone.utc)
-    
+            self.last_successful_playback = datetime.now(UTC)
+
     def record_successful_connection(self):
         """Record successful voice connection"""
-        current_time = datetime.now(timezone.utc)
+        current_time = datetime.now(UTC)
         if self.consecutive_connection_failures > 0:
             # Connection recovered
             self.consecutive_connection_failures = 0
@@ -222,171 +249,202 @@ class AudioPlaybackMonitor:
         else:
             self.last_voice_connection = current_time
             self.last_connection_validation = current_time
-    
+
     def record_playback_failure(self, error_type: str, error_message: str):
         """
         Record an audio playback failure and trigger appropriate escalation responses.
-        
+
         This method implements a sophisticated three-tier escalation system designed to
         balance immediate response with alert fatigue prevention:
-        
+
         **Escalation Tiers**:
         1. **Standard Alert (3+ failures)**: Basic notification + auto-recovery attempt
         2. **Critical Alert (10+ failures)**: Escalated notification with detailed diagnostics
         3. **Emergency Alert (20+ failures)**: Immediate attention required with ping escalation
-        
+
         **Algorithm Logic**:
         - Uses elif chain to ensure only one alert type per failure
         - Checks cooldown periods to prevent alert spam
         - Triggers auto-recovery only on initial failure detection (not escalations)
         - Maintains separate health flags for different alert types
-        
+
         **Auto-Recovery Integration**:
         Recovery is only attempted on standard failures to prevent:
         - Recovery interference during critical debugging
         - Resource exhaustion from repeated recovery attempts
         - State confusion during emergency interventions
-        
+
         Args:
             error_type (str): Category of error (e.g., "ffmpeg", "connection", "timeout")
             error_message (str): Detailed error description for diagnostics
-            
+
         **Performance Considerations**:
         - All alerts are sent asynchronously to prevent blocking audio pipeline
         - Failure counter increment is atomic and thread-safe
         - Escalation checks are optimized with short-circuit evaluation
         """
         self.consecutive_playback_failures += 1
-        
+
         # Tier 1: Standard failure alert with auto-recovery
         # Triggered on initial failure detection (3+ consecutive failures)
-        if (self.consecutive_playback_failures >= self.playback_failure_threshold and 
-            self.is_audio_healthy and  # Only trigger when transitioning to unhealthy
-            self._should_send_playback_alert()):  # Respect cooldown periods
-            
+        if (
+            self.consecutive_playback_failures >= self.playback_failure_threshold
+            and self.is_audio_healthy  # Only trigger when transitioning to unhealthy
+            and self._should_send_playback_alert()
+        ):  # Respect cooldown periods
             self.is_audio_healthy = False  # Mark system as unhealthy
-            asyncio.create_task(self._send_playback_failure_alert(error_type, error_message))
-            
+            asyncio.create_task(
+                self._send_playback_failure_alert(error_type, error_message)
+            )
+
             # Attempt auto-recovery on initial failure detection
             # Recovery is disabled for escalated failures to prevent interference
             if self.auto_recovery_enabled and self._should_attempt_recovery():
                 asyncio.create_task(self._attempt_audio_recovery())
-        
+
         # Tier 2: Critical failure escalation (persistent issues)
         # Indicates systemic problems requiring deeper investigation
-        elif (self.consecutive_playback_failures >= self.critical_failure_threshold and
-              self._should_send_escalation_alert()):  # Separate cooldown for escalations
-            asyncio.create_task(self._send_critical_escalation_alert(error_type, error_message))
-        
+        elif (
+            self.consecutive_playback_failures >= self.critical_failure_threshold
+            and self._should_send_escalation_alert()
+        ):  # Separate cooldown for escalations
+            asyncio.create_task(
+                self._send_critical_escalation_alert(error_type, error_message)
+            )
+
         # Tier 3: Emergency failure escalation (system breakdown)
         # Indicates complete failure requiring immediate intervention
-        elif (self.consecutive_playback_failures >= self.emergency_failure_threshold and
-              self._should_send_escalation_alert()):  # Same cooldown as critical
-            asyncio.create_task(self._send_emergency_escalation_alert(error_type, error_message))
-    
+        elif (
+            self.consecutive_playback_failures >= self.emergency_failure_threshold
+            and self._should_send_escalation_alert()
+        ):  # Same cooldown as critical
+            asyncio.create_task(
+                self._send_emergency_escalation_alert(error_type, error_message)
+            )
+
     def record_connection_failure(self, error_type: str, error_message: str):
         """Record voice connection failure"""
         self.consecutive_connection_failures += 1
-        
-        if (self.consecutive_connection_failures >= self.connection_failure_threshold and 
-            self.is_connection_healthy and
-            self._should_send_connection_alert()):
+
+        if (
+            self.consecutive_connection_failures >= self.connection_failure_threshold
+            and self.is_connection_healthy
+            and self._should_send_connection_alert()
+        ):
             self.is_connection_healthy = False
-            asyncio.create_task(self._send_connection_failure_alert(error_type, error_message))
-            
+            asyncio.create_task(
+                self._send_connection_failure_alert(error_type, error_message)
+            )
+
             # Trigger auto-recovery if enabled
             if self.auto_recovery_enabled and self._should_attempt_recovery():
                 asyncio.create_task(self._attempt_connection_recovery())
-    
+
     def check_playback_timeout(self):
         """Check if audio hasn't played for too long"""
-        time_since_playback = datetime.now(timezone.utc) - self.last_successful_playback
-        if (time_since_playback.total_seconds() > self.expected_playback_interval and 
-            self.is_audio_healthy and
-            self._should_send_playback_alert()):
+        time_since_playback = datetime.now(UTC) - self.last_successful_playback
+        if (
+            time_since_playback.total_seconds() > self.expected_playback_interval
+            and self.is_audio_healthy
+            and self._should_send_playback_alert()
+        ):
             self.is_audio_healthy = False
             minutes_silent = int(time_since_playback.total_seconds() / 60)
             asyncio.create_task(self._send_playback_timeout_alert(minutes_silent))
-            
+
             # Trigger auto-recovery for timeout
             if self.auto_recovery_enabled and self._should_attempt_recovery():
                 asyncio.create_task(self._attempt_audio_recovery())
-    
+
     def check_connection_health(self, audio_manager):
         """
         Proactively validate voice connection health to prevent silent failures.
-        
+
         This method implements proactive connection monitoring to catch issues before
         they impact users. It performs comprehensive validation of the Discord voice
         connection and triggers recovery actions when problems are detected.
-        
+
         **Health Check Algorithm**:
         1. **Interval Check**: Respects health_check_interval to prevent API abuse
         2. **Client Validation**: Ensures voice client exists and is connected
         3. **Timeout Detection**: Identifies stale connections based on validation age
         4. **Recovery Triggers**: Initiates reconnection for detected issues
         5. **Status Logging**: Provides periodic health status reports
-        
+
         **Why Proactive Monitoring**:
         - Discord connections can silently fail without immediate notification
         - Early detection prevents extended outages during Quranic recitations
         - Reduces user-reported issues through automated problem resolution
         - Maintains consistent audio service availability
-        
+
         **Performance Optimizations**:
         - Respects check intervals to minimize Discord API load
         - Uses efficient timestamp comparisons for timeout detection
         - Logs status only periodically to reduce log noise
         - Handles exceptions gracefully to prevent monitor crashes
-        
+
         Args:
             audio_manager: The AudioManager instance to validate connections for
-            
+
         **Integration Points**:
         - Called periodically by the main event loop or scheduler
         - Triggers connection recovery through record_connection_failure()
         - Reports status via structured logging for operations monitoring
         """
         try:
-            current_time = datetime.now(timezone.utc)
-            
+            current_time = datetime.now(UTC)
+
             # Check if enough time has passed since last health check
-            if (current_time - self.last_health_check).total_seconds() < self.health_check_interval:
+            if (
+                current_time - self.last_health_check
+            ).total_seconds() < self.health_check_interval:
                 return
-            
+
             self.last_health_check = current_time
             self.connection_health_checks += 1
-            
+
             # Validate voice client connection
             if not audio_manager or not audio_manager.voice_client:
-                self.record_connection_failure("health_check", "No voice client available")
+                self.record_connection_failure(
+                    "health_check", "No voice client available"
+                )
                 return
-            
+
             voice_client = audio_manager.voice_client
-            
+
             # Check if voice client is connected
             if not voice_client.is_connected():
-                self.record_connection_failure("health_check", "Voice client not connected")
+                self.record_connection_failure(
+                    "health_check", "Voice client not connected"
+                )
                 return
-            
+
             # Check connection timeout
             time_since_validation = current_time - self.last_connection_validation
-            if time_since_validation.total_seconds() > self.connection_timeout_threshold:
+            if (
+                time_since_validation.total_seconds()
+                > self.connection_timeout_threshold
+            ):
                 log_perfect_tree_section(
                     "Connection Health - Timeout Detected",
                     [
-                        ("timeout_duration", f"{time_since_validation.total_seconds():.1f}s"),
+                        (
+                            "timeout_duration",
+                            f"{time_since_validation.total_seconds():.1f}s",
+                        ),
                         ("threshold", f"{self.connection_timeout_threshold}s"),
                         ("action", "Triggering proactive reconnection"),
                     ],
-                    "⚠️"
+                    "⚠️",
                 )
-                self.record_connection_failure("timeout", "Connection validation timeout")
+                self.record_connection_failure(
+                    "timeout", "Connection validation timeout"
+                )
                 return
-            
+
             # Connection is healthy
             self.record_successful_connection()
-            
+
             # Log health check status periodically
             if self.connection_health_checks % 10 == 0:  # Every 10 checks (10 minutes)
                 log_perfect_tree_section(
@@ -394,79 +452,90 @@ class AudioPlaybackMonitor:
                     [
                         ("health_checks", str(self.connection_health_checks)),
                         ("connection_status", "✅ Healthy"),
-                        ("last_validation", f"{time_since_validation.total_seconds():.1f}s ago"),
+                        (
+                            "last_validation",
+                            f"{time_since_validation.total_seconds():.1f}s ago",
+                        ),
                     ],
-                    "💚"
+                    "💚",
                 )
-            
+
         except Exception as e:
             log_error_with_traceback("Error in connection health check", e)
-    
+
     def _should_send_playback_alert(self) -> bool:
         """Check if enough time has passed since last playback alert"""
         if not self.last_playback_alert:
             return True
-        time_since_last = datetime.now(timezone.utc) - self.last_playback_alert
+        time_since_last = datetime.now(UTC) - self.last_playback_alert
         return time_since_last.total_seconds() >= self.alert_cooldown
-    
+
     def _should_send_connection_alert(self) -> bool:
         """Check if enough time has passed since last connection alert"""
         if not self.last_connection_alert:
             return True
-        time_since_last = datetime.now(timezone.utc) - self.last_connection_alert
+        time_since_last = datetime.now(UTC) - self.last_connection_alert
         return time_since_last.total_seconds() >= self.alert_cooldown
-    
+
     def _should_attempt_recovery(self) -> bool:
         """Check if we should attempt auto-recovery"""
         if not self.auto_recovery_enabled:
             return False
-            
+
         if self.recovery_attempts >= self.max_recovery_attempts:
             return False
-            
+
         if self.last_recovery_attempt:
-            time_since_last = datetime.now(timezone.utc) - self.last_recovery_attempt
+            time_since_last = datetime.now(UTC) - self.last_recovery_attempt
             if time_since_last.total_seconds() < self.recovery_cooldown:
                 return False
-                
+
         return True
-    
+
     async def _attempt_audio_recovery(self):
         """Attempt to recover audio playback automatically"""
         try:
             self.recovery_attempts += 1
-            self.last_recovery_attempt = datetime.now(timezone.utc)
-            
+            self.last_recovery_attempt = datetime.now(UTC)
+
             log_perfect_tree_section(
                 "Audio Recovery - Attempting Auto-Recovery",
                 [
-                    ("attempt_number", f"{self.recovery_attempts}/{self.max_recovery_attempts}"),
+                    (
+                        "attempt_number",
+                        f"{self.recovery_attempts}/{self.max_recovery_attempts}",
+                    ),
                     ("recovery_type", "Audio Playback Recovery"),
                     ("trigger", "Automatic recovery system"),
                     ("action", "Restarting audio system"),
                 ],
                 "🔄",
             )
-            
+
             # Get the audio manager instance
-            audio_manager = getattr(self, '_audio_manager', None)
+            audio_manager = getattr(self, "_audio_manager", None)
             if not audio_manager:
-                log_error_with_traceback("Auto-recovery failed", Exception("No audio manager reference"))
+                log_error_with_traceback(
+                    "Auto-recovery failed", Exception("No audio manager reference")
+                )
                 return
-            
+
             # Attempt to restart audio playback
             try:
                 await audio_manager.stop_playback()
                 await asyncio.sleep(2)  # Brief pause before restart
                 await audio_manager.start_playback(resume_position=True)
-                
+
                 # Send recovery attempt notification using enhanced webhook router
                 try:
                     from src.core.di_container import get_container
+
                     container = get_container()
                     if container:
                         enhanced_webhook = container.get("enhanced_webhook_router")
-                        if enhanced_webhook and hasattr(enhanced_webhook, "log_audio_event"):
+                        if enhanced_webhook and hasattr(
+                            enhanced_webhook, "log_audio_event"
+                        ):
                             await enhanced_webhook.log_audio_event(
                                 event_type="auto_recovery_attempt",
                                 event_data={
@@ -475,24 +544,27 @@ class AudioPlaybackMonitor:
                                     "attempt": f"{self.recovery_attempts}/{self.max_recovery_attempts}",
                                     "action": "Restarted audio playback",
                                     "status": "Recovery in progress",
-                                    "current_surah": str(self.current_surah)
+                                    "current_surah": str(self.current_surah),
                                 },
-                                severity="warning"
+                                severity="warning",
                             )
                 except Exception:
                     pass  # Don't let logging prevent recovery
-                
+
             except Exception as e:
                 log_error_with_traceback("Audio recovery attempt failed", e)
-                
+
                 # If this was the last attempt, send final failure alert using enhanced webhook router
                 if self.recovery_attempts >= self.max_recovery_attempts:
                     try:
                         from src.core.di_container import get_container
+
                         container = get_container()
                         if container:
                             enhanced_webhook = container.get("enhanced_webhook_router")
-                            if enhanced_webhook and hasattr(enhanced_webhook, "log_audio_event"):
+                            if enhanced_webhook and hasattr(
+                                enhanced_webhook, "log_audio_event"
+                            ):
                                 await enhanced_webhook.log_audio_event(
                                     event_type="auto_recovery_failed",
                                     event_data={
@@ -501,26 +573,29 @@ class AudioPlaybackMonitor:
                                         "status": "Auto-recovery exhausted",
                                         "action_required": "Manual restart needed",
                                         "recommendation": "Check VPS and restart bot service",
-                                        "current_surah": str(self.current_surah)
+                                        "current_surah": str(self.current_surah),
                                     },
-                                    severity="critical"
+                                    severity="critical",
                                 )
                     except Exception:
                         pass  # Don't let logging prevent recovery
-                
+
         except Exception as e:
             log_error_with_traceback("Critical error in audio recovery", e)
-    
+
     async def _attempt_connection_recovery(self):
         """Attempt to recover voice connection automatically with enhanced retry logic"""
         try:
             self.recovery_attempts += 1
-            self.last_recovery_attempt = datetime.now(timezone.utc)
-            
+            self.last_recovery_attempt = datetime.now(UTC)
+
             log_perfect_tree_section(
                 "Audio Recovery - Enhanced Connection Recovery",
                 [
-                    ("attempt_number", f"{self.recovery_attempts}/{self.max_recovery_attempts}"),
+                    (
+                        "attempt_number",
+                        f"{self.recovery_attempts}/{self.max_recovery_attempts}",
+                    ),
                     ("recovery_type", "Enhanced Voice Connection Recovery"),
                     ("trigger", "Automatic monitoring system"),
                     ("action", "Multi-step reconnection process"),
@@ -528,37 +603,47 @@ class AudioPlaybackMonitor:
                 ],
                 "🔄",
             )
-            
+
             # Get the audio manager instance
-            audio_manager = getattr(self, '_audio_manager', None)
+            audio_manager = getattr(self, "_audio_manager", None)
             if not audio_manager:
-                log_error_with_traceback("Connection recovery failed", Exception("No audio manager reference"))
+                log_error_with_traceback(
+                    "Connection recovery failed",
+                    Exception("No audio manager reference"),
+                )
                 return
-            
+
             # Enhanced reconnection process
             recovery_success = False
-            
+
             for retry in range(3):  # Try up to 3 times per recovery attempt
                 try:
                     log_perfect_tree_section(
                         f"Connection Recovery - Retry {retry + 1}",
                         [
                             ("step", f"Reconnection retry {retry + 1}/3"),
-                            ("recovery_attempt", f"{self.recovery_attempts}/{self.max_recovery_attempts}"),
+                            (
+                                "recovery_attempt",
+                                f"{self.recovery_attempts}/{self.max_recovery_attempts}",
+                            ),
                             ("action", "Attempting voice channel connection"),
                         ],
                         "🔄",
                     )
-                    
+
                     # Step 1: Clean disconnect if connected
                     if audio_manager.voice_client:
                         try:
                             await audio_manager.voice_client.disconnect(force=True)
                             audio_manager.voice_client = None
-                            await asyncio.sleep(3)  # Increased delay for Discord processing
+                            await asyncio.sleep(
+                                3
+                            )  # Increased delay for Discord processing
                         except Exception as disconnect_error:
-                            log_error_with_traceback("Error during disconnect in recovery", disconnect_error)
-                    
+                            log_error_with_traceback(
+                                "Error during disconnect in recovery", disconnect_error
+                            )
+
                     # Step 2: Attempt fresh connection with extended timeout
                     connection_success = await audio_manager.connect_to_voice_channel()
                     if not connection_success:
@@ -567,16 +652,26 @@ class AudioPlaybackMonitor:
                             [
                                 ("retry", f"{retry + 1}/3"),
                                 ("status", "❌ Connection failed"),
-                                ("next_action", "Trying again" if retry < 2 else "Recovery attempt failed"),
+                                (
+                                    "next_action",
+                                    (
+                                        "Trying again"
+                                        if retry < 2
+                                        else "Recovery attempt failed"
+                                    ),
+                                ),
                             ],
                             "❌",
                         )
                         await asyncio.sleep(5)  # Wait before next retry
                         continue
-                    
+
                     # Step 3: Validate connection stability
                     await asyncio.sleep(3)  # Wait for connection to stabilize
-                    if not audio_manager.voice_client or not audio_manager.voice_client.is_connected():
+                    if (
+                        not audio_manager.voice_client
+                        or not audio_manager.voice_client.is_connected()
+                    ):
                         log_perfect_tree_section(
                             f"Connection Recovery - Unstable {retry + 1}",
                             [
@@ -587,29 +682,41 @@ class AudioPlaybackMonitor:
                             "⚠️",
                         )
                         continue
-                    
+
                     # Step 4: Restart audio playback
                     await audio_manager.start_playback(resume_position=True)
-                    
+
                     # Step 5: Final validation
                     await asyncio.sleep(2)
-                    if audio_manager.is_playing and audio_manager.voice_client.is_connected():
+                    if (
+                        audio_manager.is_playing
+                        and audio_manager.voice_client.is_connected()
+                    ):
                         recovery_success = True
                         break
-                    
+
                 except Exception as retry_error:
-                    log_error_with_traceback(f"Connection recovery retry {retry + 1} failed", retry_error)
+                    log_error_with_traceback(
+                        f"Connection recovery retry {retry + 1} failed", retry_error
+                    )
                     await asyncio.sleep(5)  # Wait before next retry
-            
+
             # Send recovery notification using enhanced webhook router
             try:
                 from src.core.di_container import get_container
+
                 container = get_container()
                 if container:
                     enhanced_webhook = container.get("enhanced_webhook_router")
-                    if enhanced_webhook and hasattr(enhanced_webhook, "log_audio_event"):
-                        status_text = "Recovery successful" if recovery_success else "Recovery failed"
-                        
+                    if enhanced_webhook and hasattr(
+                        enhanced_webhook, "log_audio_event"
+                    ):
+                        status_text = (
+                            "Recovery successful"
+                            if recovery_success
+                            else "Recovery failed"
+                        )
+
                         await enhanced_webhook.log_audio_event(
                             event_type="enhanced_auto_recovery",
                             event_data={
@@ -620,13 +727,13 @@ class AudioPlaybackMonitor:
                                 "retries_performed": "Up to 3 per attempt",
                                 "status": status_text,
                                 "audio_restored": "Yes" if recovery_success else "No",
-                                "current_surah": str(self.current_surah)
+                                "current_surah": str(self.current_surah),
                             },
-                            severity="info" if recovery_success else "warning"
+                            severity="info" if recovery_success else "warning",
                         )
             except Exception:
                 pass  # Don't let logging prevent recovery
-            
+
             if recovery_success:
                 log_perfect_tree_section(
                     "Audio Recovery - Enhanced Success",
@@ -634,7 +741,10 @@ class AudioPlaybackMonitor:
                         ("recovery_result", "✅ Enhanced recovery successful"),
                         ("connection_status", "✅ Voice connection stable"),
                         ("audio_status", "✅ Playback resumed"),
-                        ("attempt", f"{self.recovery_attempts}/{self.max_recovery_attempts}"),
+                        (
+                            "attempt",
+                            f"{self.recovery_attempts}/{self.max_recovery_attempts}",
+                        ),
                     ],
                     "✅",
                 )
@@ -645,30 +755,46 @@ class AudioPlaybackMonitor:
                     "Audio Recovery - Attempt Failed",
                     [
                         ("recovery_result", "❌ Recovery attempt failed"),
-                        ("attempt", f"{self.recovery_attempts}/{self.max_recovery_attempts}"),
-                        ("next_action", "Will retry later" if self.recovery_attempts < self.max_recovery_attempts else "Max attempts reached"),
+                        (
+                            "attempt",
+                            f"{self.recovery_attempts}/{self.max_recovery_attempts}",
+                        ),
+                        (
+                            "next_action",
+                            (
+                                "Will retry later"
+                                if self.recovery_attempts < self.max_recovery_attempts
+                                else "Max attempts reached"
+                            ),
+                        ),
                     ],
                     "❌",
                 )
-                
+
         except Exception as e:
-            log_error_with_traceback("Critical error in enhanced connection recovery", e)
-    
+            log_error_with_traceback(
+                "Critical error in enhanced connection recovery", e
+            )
+
     async def _send_playback_failure_alert(self, error_type: str, error_message: str):
         """Send Discord alert for audio playback failure"""
         try:
             # Use modern webhook logger instead of discord_logger
             from src.core.di_container import get_container
+
             container = get_container()
             if container:
                 from src.core.webhook_logger import ModernWebhookLogger
+
                 webhook_logger = container.get(ModernWebhookLogger)
                 if webhook_logger and webhook_logger.initialized:
-                    self.last_playback_alert = datetime.now(timezone.utc)
-                    
-                    time_since_success = datetime.now(timezone.utc) - self.last_successful_playback
+                    self.last_playback_alert = datetime.now(UTC)
+
+                    time_since_success = (
+                        datetime.now(UTC) - self.last_successful_playback
+                    )
                     minutes_down = int(time_since_success.total_seconds() / 60)
-                    
+
                     await webhook_logger.log_audio_event(
                         event_type="playback_failure",
                         error_message=f"Audio Playback Failure: {error_type}",
@@ -679,16 +805,19 @@ class AudioPlaybackMonitor:
                             "minutes_down": minutes_down,
                             "impact": "❌ Audio playback stopped - bot is silent",
                             "status": "🔇 Audio System Down",
-                            "action_required": "Check voice connection and audio files"
+                            "action_required": "Check voice connection and audio files",
                         },
-                        ping_owner=True  # Critical audio failure requires owner attention
+                        ping_owner=True,  # Critical audio failure requires owner attention
                     )
-                    
+
                     log_perfect_tree_section(
                         "Audio Monitor - Playback Alert Sent",
                         [
                             ("alert_type", "Audio Playback Failure"),
-                            ("consecutive_failures", str(self.consecutive_playback_failures)),
+                            (
+                                "consecutive_failures",
+                                str(self.consecutive_playback_failures),
+                            ),
                             ("time_since_success", f"{minutes_down}m ago"),
                             ("webhook_alert", "✅ Sent"),
                         ],
@@ -696,22 +825,24 @@ class AudioPlaybackMonitor:
                     )
         except Exception as e:
             log_error_with_traceback("Failed to send audio playback failure alert", e)
-    
+
     async def _send_connection_failure_alert(self, error_type: str, error_message: str):
         """Send Discord alert for voice connection failure"""
         try:
             # Use modern webhook logger instead of discord_logger
             from src.core.di_container import get_container
+
             container = get_container()
             if container:
                 from src.core.webhook_logger import ModernWebhookLogger
+
                 webhook_logger = container.get(ModernWebhookLogger)
                 if webhook_logger and webhook_logger.initialized:
-                    self.last_connection_alert = datetime.now(timezone.utc)
-                    
-                    time_since_success = datetime.now(timezone.utc) - self.last_voice_connection
+                    self.last_connection_alert = datetime.now(UTC)
+
+                    time_since_success = datetime.now(UTC) - self.last_voice_connection
                     minutes_down = int(time_since_success.total_seconds() / 60)
-                    
+
                     await webhook_logger.log_voice_connection_issue(
                         issue_type=error_type,
                         error_details=error_message[:500],
@@ -721,16 +852,19 @@ class AudioPlaybackMonitor:
                             "consecutive_failures": self.consecutive_connection_failures,
                             "minutes_down": minutes_down,
                             "impact": "❌ Bot disconnected from voice channel",
-                            "status": "🔌 Voice Connection Down"
+                            "status": "🔌 Voice Connection Down",
                         },
-                        ping_owner=True  # Critical connection failure requires owner attention
+                        ping_owner=True,  # Critical connection failure requires owner attention
                     )
-                    
+
                     log_perfect_tree_section(
                         "Audio Monitor - Connection Alert Sent",
                         [
                             ("alert_type", "Voice Connection Failure"),
-                            ("consecutive_failures", str(self.consecutive_connection_failures)),
+                            (
+                                "consecutive_failures",
+                                str(self.consecutive_connection_failures),
+                            ),
                             ("time_since_success", f"{minutes_down}m ago"),
                             ("webhook_alert", "✅ Sent"),
                         ],
@@ -738,19 +872,21 @@ class AudioPlaybackMonitor:
                     )
         except Exception as e:
             log_error_with_traceback("Failed to send voice connection failure alert", e)
-    
+
     async def _send_playback_timeout_alert(self, minutes_silent: int):
         """Send Discord alert for audio playback timeout"""
         try:
             # Use modern webhook logger instead of discord_logger
             from src.core.di_container import get_container
+
             container = get_container()
             if container:
                 from src.core.webhook_logger import ModernWebhookLogger
+
                 webhook_logger = container.get(ModernWebhookLogger)
                 if webhook_logger and webhook_logger.initialized:
-                    self.last_playback_alert = datetime.now(timezone.utc)
-                    
+                    self.last_playback_alert = datetime.now(UTC)
+
                     await webhook_logger.log_audio_event(
                         event_type="playback_timeout",
                         error_message=f"Audio Silence Detected: {minutes_silent} minutes",
@@ -760,11 +896,11 @@ class AudioPlaybackMonitor:
                             "expected_interval": f"{self.expected_playback_interval//60} minutes max",
                             "impact": "❌ Bot has been silent too long",
                             "status": "🔇 Audio Timeout",
-                            "action_required": "Check audio playback loop and restart if needed"
+                            "action_required": "Check audio playback loop and restart if needed",
                         },
-                        ping_owner=True  # Audio silence requires immediate owner attention
+                        ping_owner=True,  # Audio silence requires immediate owner attention
                     )
-                    
+
                     log_perfect_tree_section(
                         "Audio Monitor - Timeout Alert Sent",
                         [
@@ -777,15 +913,17 @@ class AudioPlaybackMonitor:
                     )
         except Exception as e:
             log_error_with_traceback("Failed to send audio timeout alert", e)
-    
+
     async def _send_audio_recovery_alert(self):
         """Send Discord alert for audio recovery"""
         try:
             # Use modern webhook logger instead of discord_logger
             from src.core.di_container import get_container
+
             container = get_container()
             if container:
                 from src.core.webhook_logger import ModernWebhookLogger
+
                 webhook_logger = container.get(ModernWebhookLogger)
                 if webhook_logger and webhook_logger.initialized:
                     await webhook_logger.log_audio_event(
@@ -793,33 +931,38 @@ class AudioPlaybackMonitor:
                         error_message="Audio Playback Successfully Recovered",
                         audio_details={
                             "status": "✅ Audio Playback Restored",
-                            "recovery_time": datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
+                            "recovery_time": datetime.now(UTC).strftime("%H:%M:%S UTC"),
                             "action": "Audio playback resumed successfully",
-                            "auto_recovery": "✅ Automatic recovery successful"
+                            "auto_recovery": "✅ Automatic recovery successful",
                         },
-                        ping_owner=False  # Recovery success doesn't need owner ping
+                        ping_owner=False,  # Recovery success doesn't need owner ping
                     )
-                    
+
                     log_perfect_tree_section(
                         "Audio Monitor - Playback Recovery",
                         [
                             ("status", "✅ Audio recovered"),
-                            ("recovery_time", datetime.now(timezone.utc).strftime("%H:%M:%S")),
+                            (
+                                "recovery_time",
+                                datetime.now(UTC).strftime("%H:%M:%S"),
+                            ),
                             ("webhook_alert", "✅ Sent"),
                         ],
                         "✅",
                     )
         except Exception as e:
             log_error_with_traceback("Failed to send audio recovery alert", e)
-    
+
     async def _send_connection_recovery_alert(self):
         """Send Discord alert for connection recovery"""
         try:
             # Use modern webhook logger instead of discord_logger
             from src.core.di_container import get_container
+
             container = get_container()
             if container:
                 from src.core.webhook_logger import ModernWebhookLogger
+
                 webhook_logger = container.get(ModernWebhookLogger)
                 if webhook_logger and webhook_logger.initialized:
                     await webhook_logger.log_voice_connection_issue(
@@ -829,17 +972,20 @@ class AudioPlaybackMonitor:
                         recovery_action="✅ Automatic recovery successful",
                         additional_info={
                             "status": "✅ Voice Connection Restored",
-                            "recovery_time": datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
-                            "action": "Voice connection resumed successfully"
+                            "recovery_time": datetime.now(UTC).strftime("%H:%M:%S UTC"),
+                            "action": "Voice connection resumed successfully",
                         },
-                        ping_owner=False  # Recovery success doesn't need owner ping
+                        ping_owner=False,  # Recovery success doesn't need owner ping
                     )
-                    
+
                     log_perfect_tree_section(
                         "Audio Monitor - Connection Recovery",
                         [
                             ("status", "✅ Connection recovered"),
-                            ("recovery_time", datetime.now(timezone.utc).strftime("%H:%M:%S")),
+                            (
+                                "recovery_time",
+                                datetime.now(UTC).strftime("%H:%M:%S"),
+                            ),
                             ("webhook_alert", "✅ Sent"),
                         ],
                         "✅",
@@ -851,24 +997,30 @@ class AudioPlaybackMonitor:
         """Check if enough time has passed to send escalation alert"""
         if not self.last_escalation_alert:
             return True
-        
-        time_since_last = datetime.now(timezone.utc) - self.last_escalation_alert
+
+        time_since_last = datetime.now(UTC) - self.last_escalation_alert
         return time_since_last.total_seconds() >= self.escalation_cooldown
-    
-    async def _send_critical_escalation_alert(self, error_type: str, error_message: str):
+
+    async def _send_critical_escalation_alert(
+        self, error_type: str, error_message: str
+    ):
         """Send critical escalation alert for persistent failures"""
         try:
             from src.core.di_container import get_container
+
             container = get_container()
             if container:
                 from src.core.webhook_logger import ModernWebhookLogger
+
                 webhook_logger = container.get(ModernWebhookLogger)
                 if webhook_logger and webhook_logger.initialized:
-                    self.last_escalation_alert = datetime.now(timezone.utc)
-                    
-                    time_since_success = datetime.now(timezone.utc) - self.last_successful_playback
+                    self.last_escalation_alert = datetime.now(UTC)
+
+                    time_since_success = (
+                        datetime.now(UTC) - self.last_successful_playback
+                    )
                     hours_down = int(time_since_success.total_seconds() / 3600)
-                    
+
                     await webhook_logger.log_audio_event(
                         event_type="critical_failure_escalation",
                         error_message=f"🚨 CRITICAL: {self.consecutive_playback_failures} Consecutive Audio Failures",
@@ -880,16 +1032,19 @@ class AudioPlaybackMonitor:
                             "error_message": error_message[:300],
                             "impact": "❌ Audio system has been down for extended period",
                             "status": "🔴 CRITICAL FAILURE - MANUAL INTERVENTION REQUIRED",
-                            "action_required": "🆘 Immediate admin attention needed - audio system failing repeatedly"
+                            "action_required": "🆘 Immediate admin attention needed - audio system failing repeatedly",
                         },
-                        ping_owner=True
+                        ping_owner=True,
                     )
-                    
+
                     log_perfect_tree_section(
                         "Audio Monitor - CRITICAL ESCALATION",
                         [
                             ("escalation_level", "🚨 CRITICAL"),
-                            ("consecutive_failures", str(self.consecutive_playback_failures)),
+                            (
+                                "consecutive_failures",
+                                str(self.consecutive_playback_failures),
+                            ),
                             ("hours_down", f"{hours_down}h"),
                             ("webhook_alert", "✅ SENT"),
                         ],
@@ -897,21 +1052,27 @@ class AudioPlaybackMonitor:
                     )
         except Exception as e:
             log_error_with_traceback("Failed to send critical escalation alert", e)
-    
-    async def _send_emergency_escalation_alert(self, error_type: str, error_message: str):
+
+    async def _send_emergency_escalation_alert(
+        self, error_type: str, error_message: str
+    ):
         """Send emergency escalation alert for severe persistent failures"""
         try:
             from src.core.di_container import get_container
+
             container = get_container()
             if container:
                 from src.core.webhook_logger import ModernWebhookLogger
+
                 webhook_logger = container.get(ModernWebhookLogger)
                 if webhook_logger and webhook_logger.initialized:
-                    self.last_escalation_alert = datetime.now(timezone.utc)
-                    
-                    time_since_success = datetime.now(timezone.utc) - self.last_successful_playback
+                    self.last_escalation_alert = datetime.now(UTC)
+
+                    time_since_success = (
+                        datetime.now(UTC) - self.last_successful_playback
+                    )
                     hours_down = int(time_since_success.total_seconds() / 3600)
-                    
+
                     await webhook_logger.log_audio_event(
                         event_type="emergency_failure_escalation",
                         error_message=f"🆘 EMERGENCY: {self.consecutive_playback_failures} Consecutive Audio Failures - SYSTEM DOWN",
@@ -923,16 +1084,19 @@ class AudioPlaybackMonitor:
                             "error_message": error_message[:300],
                             "impact": "🆘 COMPLETE AUDIO SYSTEM FAILURE - BOT NOT FUNCTIONING",
                             "status": "🔴 EMERGENCY - SYSTEM COMPLETELY DOWN",
-                            "action_required": "🚨 URGENT: Bot requires immediate manual restart/repair"
+                            "action_required": "🚨 URGENT: Bot requires immediate manual restart/repair",
                         },
-                        ping_owner=True
+                        ping_owner=True,
                     )
-                    
+
                     log_perfect_tree_section(
                         "Audio Monitor - EMERGENCY ESCALATION",
                         [
                             ("escalation_level", "🆘 EMERGENCY"),
-                            ("consecutive_failures", str(self.consecutive_playback_failures)),
+                            (
+                                "consecutive_failures",
+                                str(self.consecutive_playback_failures),
+                            ),
                             ("hours_down", f"{hours_down}h"),
                             ("webhook_alert", "✅ EMERGENCY SENT"),
                         ],
@@ -945,43 +1109,55 @@ class AudioPlaybackMonitor:
         """Send emergency alert for extended silence"""
         try:
             from src.core.di_container import get_container
+
             container = get_container()
             if container:
                 from src.core.webhook_logger import ModernWebhookLogger
+
                 webhook_logger = container.get(ModernWebhookLogger)
                 if webhook_logger and webhook_logger.initialized:
-                    self.last_escalation_alert = datetime.now(timezone.utc)
-                    
-                    time_since_playback = datetime.now(timezone.utc) - self.last_successful_playback
+                    self.last_escalation_alert = datetime.now(UTC)
+
+                    time_since_playback = (
+                        datetime.now(UTC) - self.last_successful_playback
+                    )
                     minutes_silent = int(time_since_playback.total_seconds() / 60)
-                    
+
                     await webhook_logger.log_audio_event(
                         event_type="extended_silence_emergency",
                         error_message=f"🆘 EMERGENCY: Bot Silent for {minutes_silent} Minutes",
                         audio_details={
                             "escalation_level": "EXTENDED SILENCE EMERGENCY",
                             "minutes_silent": minutes_silent,
-                            "threshold_minutes": int(self.extended_silence_threshold / 60),
-                            "last_playback": self.last_successful_playback.strftime("%H:%M:%S UTC"),
+                            "threshold_minutes": int(
+                                self.extended_silence_threshold / 60
+                            ),
+                            "last_playback": self.last_successful_playback.strftime(
+                                "%H:%M:%S UTC"
+                            ),
                             "impact": "🆘 BOT COMPLETELY SILENT - NOT SERVING USERS",
                             "status": "🔇 EMERGENCY SILENCE - IMMEDIATE ACTION REQUIRED",
-                            "action_required": "🚨 URGENT: Bot has been silent too long - manual intervention needed"
+                            "action_required": "🚨 URGENT: Bot has been silent too long - manual intervention needed",
                         },
-                        ping_owner=True
+                        ping_owner=True,
                     )
-                    
+
                     log_perfect_tree_section(
                         "Audio Monitor - EXTENDED SILENCE EMERGENCY",
                         [
                             ("escalation_level", "🆘 SILENCE EMERGENCY"),
                             ("minutes_silent", f"{minutes_silent}m"),
-                            ("threshold", f"{int(self.extended_silence_threshold / 60)}m"),
+                            (
+                                "threshold",
+                                f"{int(self.extended_silence_threshold / 60)}m",
+                            ),
                             ("webhook_alert", "✅ EMERGENCY SENT"),
                         ],
                         "🔇",
                     )
         except Exception as e:
             log_error_with_traceback("Failed to send extended silence alert", e)
+
 
 # Global monitor instance
 _audio_monitor = AudioPlaybackMonitor()
@@ -990,87 +1166,149 @@ _audio_monitor = AudioPlaybackMonitor()
 # Monitoring Task
 # =============================================================================
 
+
 async def start_audio_monitoring_task(audio_manager):
     """Start a background task to monitor audio health with enhanced connection monitoring"""
     # Link the audio manager to the monitor for auto-recovery
     _audio_monitor._audio_manager = audio_manager
-    
+
     async def monitoring_loop():
         """Monitor audio health with enhanced frequency and connection validation"""
         while True:
             try:
-                await asyncio.sleep(60)  # Reduced from 120 to 60 seconds for more responsive monitoring
-                
+                await asyncio.sleep(
+                    60
+                )  # Reduced from 120 to 60 seconds for more responsive monitoring
+
                 # Check if audio manager exists and is healthy
                 if audio_manager:
                     # Enhanced connection health monitoring
                     _audio_monitor.check_connection_health(audio_manager)
-                    
+
                     # Check for playback timeout
                     _audio_monitor.check_playback_timeout()
-                    
+
                     # Enhanced voice connection validation
-                    if not audio_manager.voice_client or not audio_manager.voice_client.is_connected():
-                        _audio_monitor.record_connection_failure("monitoring_check", "Voice client not connected during health check")
+                    if (
+                        not audio_manager.voice_client
+                        or not audio_manager.voice_client.is_connected()
+                    ):
+                        _audio_monitor.record_connection_failure(
+                            "monitoring_check",
+                            "Voice client not connected during health check",
+                        )
                     else:
                         # Proactive connection validation
                         try:
                             # Test if the voice client is actually responsive
-                            if hasattr(audio_manager.voice_client, 'channel') and audio_manager.voice_client.channel:
+                            if (
+                                hasattr(audio_manager.voice_client, "channel")
+                                and audio_manager.voice_client.channel
+                            ):
                                 # Connection appears healthy
                                 _audio_monitor.record_successful_connection()
                             else:
-                                _audio_monitor.record_connection_failure("monitoring_check", "Voice client channel reference lost")
+                                _audio_monitor.record_connection_failure(
+                                    "monitoring_check",
+                                    "Voice client channel reference lost",
+                                )
                         except Exception as validation_error:
-                            _audio_monitor.record_connection_failure("validation_error", str(validation_error))
-                    
+                            _audio_monitor.record_connection_failure(
+                                "validation_error", str(validation_error)
+                            )
+
                     # Enhanced audio playback monitoring
-                    if (hasattr(audio_manager, 'playback_task') and 
-                        audio_manager.playback_task and 
-                        not audio_manager.playback_task.done()):
-                        
+                    if (
+                        hasattr(audio_manager, "playback_task")
+                        and audio_manager.playback_task
+                        and not audio_manager.playback_task.done()
+                    ):
                         # Check if audio should be playing but isn't
                         if not audio_manager.is_playing:
-                            _audio_monitor.record_playback_failure("monitoring_check", "Playback task running but audio not playing")
+                            _audio_monitor.record_playback_failure(
+                                "monitoring_check",
+                                "Playback task running but audio not playing",
+                            )
                         else:
                             # Audio is playing - record success
                             _audio_monitor.record_successful_playback()
-                    
+
                     # Extended silence detection for emergency escalation
-                    time_since_playback = datetime.now(timezone.utc) - _audio_monitor.last_successful_playback
-                    if (time_since_playback.total_seconds() > _audio_monitor.extended_silence_threshold and
-                        _audio_monitor._should_send_escalation_alert()):
-                        asyncio.create_task(_audio_monitor._send_extended_silence_alert())
-                    
+                    time_since_playback = (
+                        datetime.now(UTC) - _audio_monitor.last_successful_playback
+                    )
+                    if (
+                        time_since_playback.total_seconds()
+                        > _audio_monitor.extended_silence_threshold
+                        and _audio_monitor._should_send_escalation_alert()
+                    ):
+                        asyncio.create_task(
+                            _audio_monitor._send_extended_silence_alert()
+                        )
+
                     # Periodic status logging with enhanced details
-                    if hasattr(_audio_monitor, '_monitoring_cycles'):
+                    if hasattr(_audio_monitor, "_monitoring_cycles"):
                         _audio_monitor._monitoring_cycles += 1
                     else:
                         _audio_monitor._monitoring_cycles = 1
-                    
+
                     # Log comprehensive status every 5 minutes (5 cycles)
                     if _audio_monitor._monitoring_cycles % 5 == 0:
-                        connection_status = "✅ Connected" if (audio_manager.voice_client and audio_manager.voice_client.is_connected()) else "❌ Disconnected"
-                        playback_status = "✅ Playing" if audio_manager.is_playing else "⏸️ Not Playing"
-                        
+                        connection_status = (
+                            "✅ Connected"
+                            if (
+                                audio_manager.voice_client
+                                and audio_manager.voice_client.is_connected()
+                            )
+                            else "❌ Disconnected"
+                        )
+                        playback_status = (
+                            "✅ Playing"
+                            if audio_manager.is_playing
+                            else "⏸️ Not Playing"
+                        )
+
                         log_perfect_tree_section(
                             "Audio Monitoring - Health Status",
                             [
-                                ("monitoring_cycle", str(_audio_monitor._monitoring_cycles)),
+                                (
+                                    "monitoring_cycle",
+                                    str(_audio_monitor._monitoring_cycles),
+                                ),
                                 ("connection_status", connection_status),
                                 ("playback_status", playback_status),
-                                ("connection_health", "✅ Healthy" if _audio_monitor.is_connection_healthy else "❌ Unhealthy"),
-                                ("audio_health", "✅ Healthy" if _audio_monitor.is_audio_healthy else "❌ Unhealthy"),
-                                ("recovery_attempts", str(_audio_monitor.recovery_attempts)),
-                                ("last_successful_playback", f"{(datetime.now(timezone.utc) - _audio_monitor.last_successful_playback).total_seconds():.0f}s ago"),
+                                (
+                                    "connection_health",
+                                    (
+                                        "✅ Healthy"
+                                        if _audio_monitor.is_connection_healthy
+                                        else "❌ Unhealthy"
+                                    ),
+                                ),
+                                (
+                                    "audio_health",
+                                    (
+                                        "✅ Healthy"
+                                        if _audio_monitor.is_audio_healthy
+                                        else "❌ Unhealthy"
+                                    ),
+                                ),
+                                (
+                                    "recovery_attempts",
+                                    str(_audio_monitor.recovery_attempts),
+                                ),
+                                (
+                                    "last_successful_playback",
+                                    f"{(datetime.now(UTC) - _audio_monitor.last_successful_playback).total_seconds():.0f}s ago",
+                                ),
                             ],
                             "📊",
                         )
-                
+
             except Exception as e:
                 log_error_with_traceback("Error in enhanced audio monitoring loop", e)
                 # Continue monitoring even if there's an error
-                
+
     # Start the monitoring task
     asyncio.create_task(monitoring_loop())
 
@@ -1078,11 +1316,11 @@ async def start_audio_monitoring_task(audio_manager):
 class AudioManager:
     """
     Comprehensive audio playback system for Discord voice channels with Quranic content.
-    
+
     This class provides enterprise-grade audio management capabilities specifically designed
     for serving Quranic recitations in Discord voice channels. It integrates with multiple
     system components to provide a seamless audio experience.
-    
+
     **Core Features**:
     - **Multi-Reciter Support**: Dynamic discovery and switching between Quranic reciters
     - **State Persistence**: Maintains playback position across bot restarts
@@ -1090,27 +1328,27 @@ class AudioManager:
     - **Health Monitoring**: Comprehensive failure detection and auto-recovery
     - **Performance Tracking**: Detailed metrics and position tracking
     - **Rich Presence**: Discord status updates with current recitation info
-    
+
     **Architecture Components**:
     - **Audio Pipeline**: FFmpeg-based audio processing with optimized settings
     - **State Management**: Persistent storage of user preferences and playback state
     - **Monitoring System**: Real-time health checks and failure recovery
     - **Control Interface**: Discord embeds and buttons for user interaction
     - **File Management**: Dynamic audio file discovery and validation
-    
+
     **Performance Optimizations**:
     - Asynchronous operations to prevent blocking Discord events
     - Efficient file caching and metadata extraction
     - Position tracking with configurable save intervals
     - Memory-efficient audio streaming with FFmpeg
-    
+
     **Integration Points**:
     - Discord.py voice clients for audio streaming
     - State manager for persistence across restarts
     - Resource manager for audio file discovery
     - Unified scheduler for background tasks
     - Webhook logger for operational monitoring
-    
+
     **Security Considerations**:
     - Safe file path handling to prevent directory traversal
     - Input validation for reciter names and surah numbers
@@ -1129,22 +1367,22 @@ class AudioManager:
     ):
         """
         Initialize the audio management system with production-ready configuration.
-        
+
         Sets up the complete audio pipeline including state management, monitoring,
         control interfaces, and file discovery. All components are initialized
         asynchronously to prevent blocking the Discord bot startup.
-        
+
         **Configuration Strategy**:
         - Uses safe defaults optimized for Quranic audio content
         - Validates file paths and FFmpeg availability during startup
         - Discovers available reciters dynamically from filesystem
         - Initializes monitoring with appropriate thresholds for religious content
-        
+
         **State Management**:
         - Loads previous session state from persistent storage
         - Maintains user preferences across bot restarts
         - Handles state corruption gracefully with fallback defaults
-        
+
         Args:
             bot: Discord bot instance for event handling and API access
             ffmpeg_path (str): Path to FFmpeg executable for audio processing
@@ -1152,7 +1390,7 @@ class AudioManager:
             default_reciter (str): Preferred reciter for new sessions
             default_shuffle (bool): Enable shuffle mode by default
             default_loop (bool): Enable loop mode by default
-            
+
         **Performance Considerations**:
         - Initialization is designed to be fast to minimize bot startup time
         - Heavy operations (file discovery) are deferred to async methods
@@ -1164,7 +1402,7 @@ class AudioManager:
         self.default_reciter = default_reciter
         self.default_loop = default_loop
         self.default_shuffle = default_shuffle
-        
+
         # State variables
         self.current_reciter = default_reciter
         self.current_surah = 1
@@ -1176,30 +1414,30 @@ class AudioManager:
         self.current_audio_files = []
         self.current_file_index = 0
         self.available_reciters = []
-        
+
         # Initialize components
         self.voice_client = None
         self.rich_presence = None
         self.control_panel = None
         self.control_panel_view = None
         self.monitor = AudioPlaybackMonitor()
-        
+
         # Initialize task variables
         self._position_save_task = None
         self._position_tracking_task = None
         self._jump_occurred = False
         self.playback_task = None
-        
+
         # Initialize timing variables
         self.track_start_time = None
         self.track_pause_time = None
-        
+
         # Discover available reciters
         self.available_reciters = self._discover_reciters()
-        
+
         # Load saved state
         self._load_saved_state()
-        
+
         # Start background tasks
         if bot and bot.loop:
             self._start_position_saving()
@@ -1255,7 +1493,11 @@ class AudioManager:
     def _start_position_saving(self):
         """Start the periodic position saving task"""
         try:
-            if hasattr(self, '_position_save_task') and self._position_save_task and not self._position_save_task.done():
+            if (
+                hasattr(self, "_position_save_task")
+                and self._position_save_task
+                and not self._position_save_task.done()
+            ):
                 self._position_save_task.cancel()
 
             self._position_save_task = asyncio.create_task(self._position_save_loop())
@@ -1342,30 +1584,43 @@ class AudioManager:
                         # Ensure position doesn't exceed track duration
                         if track_duration > 0:
                             self.current_position = min(elapsed_time, track_duration)
-                            
+
                             # SAFEGUARD: Check if we've reached the end of the track
                             # If position is within 5 seconds of the end and voice client is still playing,
                             # this indicates a potential stuck state - force progression
-                            if (self.current_position >= (track_duration - 5) and 
-                                self.voice_client and self.voice_client.is_playing()):
-                                
+                            if (
+                                self.current_position >= (track_duration - 5)
+                                and self.voice_client
+                                and self.voice_client.is_playing()
+                            ):
                                 # Log the safeguard activation
                                 log_perfect_tree_section(
                                     "Audio Safeguard - Track End Detected",
                                     [
-                                        ("current_position", f"{self.current_position:.1f}s"),
+                                        (
+                                            "current_position",
+                                            f"{self.current_position:.1f}s",
+                                        ),
                                         ("track_duration", f"{track_duration:.1f}s"),
-                                        ("action", "Force stopping to prevent stuck state"),
-                                        ("safeguard", "✅ Automatic progression activated"),
+                                        (
+                                            "action",
+                                            "Force stopping to prevent stuck state",
+                                        ),
+                                        (
+                                            "safeguard",
+                                            "✅ Automatic progression activated",
+                                        ),
                                     ],
-                                    "🛡️"
+                                    "🛡️",
                                 )
-                                
+
                                 # Force stop the voice client to trigger progression
                                 try:
                                     self.voice_client.stop()
                                 except Exception as e:
-                                    log_error_with_traceback("Error force-stopping voice client", e)
+                                    log_error_with_traceback(
+                                        "Error force-stopping voice client", e
+                                    )
                         else:
                             self.current_position = elapsed_time
 
@@ -1394,7 +1649,7 @@ class AudioManager:
         except Exception as e:
             log_error_with_traceback("Critical error in position tracking loop", e)
 
-    def _discover_reciters(self) -> List[str]:
+    def _discover_reciters(self) -> list[str]:
         """Discover available reciters from audio folder structure"""
         try:
             log_perfect_tree_section(
@@ -1538,7 +1793,7 @@ class AudioManager:
         global _audio_monitor
         try:
             import os
-            
+
             # Disconnect from any existing voice client first
             if self.voice_client:
                 try:
@@ -1546,8 +1801,10 @@ class AudioManager:
                     self.voice_client = None
                     await asyncio.sleep(3)  # Increased delay for Discord processing
                 except Exception as disconnect_error:
-                    log_error_with_traceback("Error disconnecting existing voice client", disconnect_error)
-            
+                    log_error_with_traceback(
+                        "Error disconnecting existing voice client", disconnect_error
+                    )
+
             # Get the bot's target guild and channel
             guild_id = int(os.getenv("GUILD_ID", "0"))
             channel_id = int(os.getenv("VOICE_CHANNEL_ID", "0"))
@@ -1560,9 +1817,7 @@ class AudioManager:
 
             guild = self.bot.get_guild(guild_id)
             if not guild:
-                log_warning_with_context(
-                    "Guild not found", f"Guild ID: {guild_id}"
-                )
+                log_warning_with_context("Guild not found", f"Guild ID: {guild_id}")
                 return False
 
             channel = guild.get_channel(channel_id)
@@ -1575,7 +1830,7 @@ class AudioManager:
             # Enhanced connection attempt with multiple retry strategies
             max_connection_attempts = 3
             connection_timeout = 90  # Extended timeout for stability
-            
+
             for attempt in range(max_connection_attempts):
                 try:
                     # Log connection attempt
@@ -1601,7 +1856,10 @@ class AudioManager:
                             log_perfect_tree_section(
                                 "Voice Connection - Already Connected",
                                 [
-                                    ("status", "✅ Already connected to target channel"),
+                                    (
+                                        "status",
+                                        "✅ Already connected to target channel",
+                                    ),
                                     ("channel_name", channel.name),
                                     ("action", "Using existing connection"),
                                 ],
@@ -1616,23 +1874,25 @@ class AudioManager:
 
                     # Attempt connection with enhanced timeout
                     self.voice_client = await channel.connect(
-                        reconnect=False, 
-                        timeout=connection_timeout
+                        reconnect=False, timeout=connection_timeout
                     )
 
                     # Enhanced connection validation
                     validation_attempts = 0
                     max_validation_attempts = 5
-                    
+
                     while validation_attempts < max_validation_attempts:
-                        await asyncio.sleep(1)  # Brief delay for connection to stabilize
+                        await asyncio.sleep(
+                            1
+                        )  # Brief delay for connection to stabilize
                         validation_attempts += 1
-                        
-                        if (self.voice_client and 
-                            self.voice_client.is_connected() and 
-                            hasattr(self.voice_client, 'channel') and 
-                            self.voice_client.channel):
-                            
+
+                        if (
+                            self.voice_client
+                            and self.voice_client.is_connected()
+                            and hasattr(self.voice_client, "channel")
+                            and self.voice_client.channel
+                        ):
                             # Connection is stable
                             log_perfect_tree_section(
                                 f"Voice Channel Connection - Enhanced Success (Attempt {attempt + 1})",
@@ -1642,30 +1902,43 @@ class AudioManager:
                                     ("channel_id", channel_id),
                                     ("guild_name", guild.name),
                                     ("guild_id", guild_id),
-                                    ("validation_checks", f"{validation_attempts}/{max_validation_attempts}"),
+                                    (
+                                        "validation_checks",
+                                        f"{validation_attempts}/{max_validation_attempts}",
+                                    ),
                                     ("connection_timeout", f"{connection_timeout}s"),
                                     ("recovery_result", "✅ Voice connection restored"),
                                     ("stability_verified", "✅ Connection validated"),
                                 ],
                                 "✅",
                             )
-                            
+
                             # Record successful connection for monitoring
                             _audio_monitor.record_successful_connection()
-                            
+
                             return True
-                    
+
                     # Connection validation failed
                     log_perfect_tree_section(
                         f"Voice Connection - Validation Failed (Attempt {attempt + 1})",
                         [
                             ("status", "❌ Connection validation failed"),
-                            ("validation_attempts", f"{validation_attempts}/{max_validation_attempts}"),
-                            ("action", "Retrying connection" if attempt < max_connection_attempts - 1 else "Connection failed"),
+                            (
+                                "validation_attempts",
+                                f"{validation_attempts}/{max_validation_attempts}",
+                            ),
+                            (
+                                "action",
+                                (
+                                    "Retrying connection"
+                                    if attempt < max_connection_attempts - 1
+                                    else "Connection failed"
+                                ),
+                            ),
                         ],
                         "❌",
                     )
-                    
+
                     # Clean up failed connection
                     if self.voice_client:
                         try:
@@ -1673,13 +1946,13 @@ class AudioManager:
                             self.voice_client = None
                         except:
                             pass
-                    
+
                     if attempt < max_connection_attempts - 1:
                         await asyncio.sleep(5)  # Wait before next attempt
-                
+
                 except discord.errors.ClientException as client_error:
                     error_msg = str(client_error).lower()
-                    
+
                     if "already connected" in error_msg:
                         # Handle already connected case
                         existing_client = guild.voice_client
@@ -1694,32 +1967,44 @@ class AudioManager:
                                 "ℹ️",
                             )
                             return True
-                    
-                    log_error_with_traceback(f"Discord client error on attempt {attempt + 1}", client_error)
-                    
+
+                    log_error_with_traceback(
+                        f"Discord client error on attempt {attempt + 1}", client_error
+                    )
+
                     if attempt < max_connection_attempts - 1:
                         await asyncio.sleep(5)  # Wait before retry
-                
-                except asyncio.TimeoutError:
+
+                except TimeoutError:
                     log_perfect_tree_section(
                         f"Voice Connection - Timeout (Attempt {attempt + 1})",
                         [
                             ("status", "⏱️ Connection timeout"),
                             ("timeout_duration", f"{connection_timeout}s"),
-                            ("action", "Retrying with extended timeout" if attempt < max_connection_attempts - 1 else "Connection failed"),
+                            (
+                                "action",
+                                (
+                                    "Retrying with extended timeout"
+                                    if attempt < max_connection_attempts - 1
+                                    else "Connection failed"
+                                ),
+                            ),
                         ],
                         "⏱️",
                     )
-                    
+
                     # Increase timeout for next attempt
                     connection_timeout += 30
-                    
+
                     if attempt < max_connection_attempts - 1:
                         await asyncio.sleep(10)  # Longer wait after timeout
-                
+
                 except Exception as general_error:
-                    log_error_with_traceback(f"General error on connection attempt {attempt + 1}", general_error)
-                    
+                    log_error_with_traceback(
+                        f"General error on connection attempt {attempt + 1}",
+                        general_error,
+                    )
+
                     if attempt < max_connection_attempts - 1:
                         await asyncio.sleep(5)
 
@@ -1728,24 +2013,32 @@ class AudioManager:
                 "Voice Connection - All Attempts Failed",
                 [
                     ("status", "❌ All connection attempts failed"),
-                    ("attempts_made", f"{max_connection_attempts}/{max_connection_attempts}"),
+                    (
+                        "attempts_made",
+                        f"{max_connection_attempts}/{max_connection_attempts}",
+                    ),
                     ("channel_name", channel.name),
                     ("action", "Connection recovery failed"),
                 ],
                 "❌",
             )
-            
+
             # Record connection failure for monitoring
-            _audio_monitor.record_connection_failure("connection_failed", f"All {max_connection_attempts} connection attempts failed")
-            
+            _audio_monitor.record_connection_failure(
+                "connection_failed",
+                f"All {max_connection_attempts} connection attempts failed",
+            )
+
             return False
 
         except Exception as e:
-            log_error_with_traceback("Critical error in enhanced voice channel connection", e)
-            
+            log_error_with_traceback(
+                "Critical error in enhanced voice channel connection", e
+            )
+
             # Record critical failure
             _audio_monitor.record_connection_failure("critical_error", str(e))
-            
+
             return False
 
     def get_current_audio_folder(self) -> str:
@@ -1885,7 +2178,7 @@ class AudioManager:
     async def start_playback(self, resume_position: bool = True):
         """Start the audio playback loop with monitoring"""
         global _audio_monitor
-        
+
         try:
             log_perfect_tree_section(
                 "Audio Manager - Starting Playback",
@@ -1897,14 +2190,18 @@ class AudioManager:
             )
 
             if not self.voice_client or not self.voice_client.is_connected():
-                _audio_monitor.record_connection_failure("no_voice_client", "Voice client not connected")
+                _audio_monitor.record_connection_failure(
+                    "no_voice_client", "Voice client not connected"
+                )
                 log_warning_with_context(
                     "Cannot start playback", "Voice client not connected"
                 )
                 return
 
             if not self.load_audio_files():
-                _audio_monitor.record_playback_failure("no_audio_files", "No audio files loaded")
+                _audio_monitor.record_playback_failure(
+                    "no_audio_files", "No audio files loaded"
+                )
                 log_warning_with_context(
                     "Cannot start playback", "No audio files loaded"
                 )
@@ -1920,10 +2217,10 @@ class AudioManager:
             self.playback_task = asyncio.create_task(
                 self._playback_loop(resume_position=resume_position)
             )
-            
+
             # Record successful start
             _audio_monitor.record_successful_connection()
-            
+
             log_perfect_tree_section(
                 "Audio Manager - Playback Started",
                 [
@@ -1961,11 +2258,19 @@ class AudioManager:
                     log_error_with_traceback("Error saving final state", e)
 
             # Stop position saving task
-            if hasattr(self, '_position_save_task') and self._position_save_task and not self._position_save_task.done():
+            if (
+                hasattr(self, "_position_save_task")
+                and self._position_save_task
+                and not self._position_save_task.done()
+            ):
                 self._position_save_task.cancel()
 
             # Stop position tracking task
-            if hasattr(self, '_position_tracking_task') and self._position_tracking_task and not self._position_tracking_task.done():
+            if (
+                hasattr(self, "_position_tracking_task")
+                and self._position_tracking_task
+                and not self._position_tracking_task.done()
+            ):
                 self._position_tracking_task.cancel()
 
             if self.playback_task and not self.playback_task.done():
@@ -2014,11 +2319,14 @@ class AudioManager:
                 "Pause Attempt - Blocked",
                 [
                     ("pause_blocked", "⚠️ 24/7 continuous playback only"),
-                    ("reason", "Pause functionality disabled for continuous Quran recitation"),
+                    (
+                        "reason",
+                        "Pause functionality disabled for continuous Quran recitation",
+                    ),
                 ],
                 "🚫",
             )
-            
+
         except Exception as e:
             log_async_error("pause_playback", e, "Error logging pause attempt")
 
@@ -2033,7 +2341,7 @@ class AudioManager:
                 ],
                 "ℹ️",
             )
-            
+
         except Exception as e:
             log_async_error("resume_playback", e, "Error logging resume attempt")
 
@@ -2079,9 +2387,11 @@ class AudioManager:
                         try:
                             await self.control_panel_view.update_panel()
                         except Exception as e:
-                            log_error_with_traceback("Error updating control panel after skip", e)
+                            log_error_with_traceback(
+                                "Error updating control panel after skip", e
+                            )
                     break
-                
+
                 await asyncio.sleep(wait_interval)
                 waited_time += wait_interval
 
@@ -2092,7 +2402,10 @@ class AudioManager:
                     ("skipped_to_next", f"Track {self.current_file_index + 1}"),
                     ("current_surah", self.current_surah),
                     ("wait_time", f"{waited_time:.1f}s"),
-                    ("is_playing", self.voice_client.is_playing() if self.voice_client else False),
+                    (
+                        "is_playing",
+                        self.voice_client.is_playing() if self.voice_client else False,
+                    ),
                 ],
                 "⏭️",
             )
@@ -2146,9 +2459,11 @@ class AudioManager:
                         try:
                             await self.control_panel_view.update_panel()
                         except Exception as e:
-                            log_error_with_traceback("Error updating control panel after skip", e)
+                            log_error_with_traceback(
+                                "Error updating control panel after skip", e
+                            )
                     break
-                
+
                 await asyncio.sleep(wait_interval)
                 waited_time += wait_interval
 
@@ -2159,7 +2474,10 @@ class AudioManager:
                     ("skipped_to_previous", f"Track {self.current_file_index + 1}"),
                     ("current_surah", self.current_surah),
                     ("wait_time", f"{waited_time:.1f}s"),
-                    ("is_playing", self.voice_client.is_playing() if self.voice_client else False),
+                    (
+                        "is_playing",
+                        self.voice_client.is_playing() if self.voice_client else False,
+                    ),
                 ],
                 "⏮️",
             )
@@ -2271,10 +2589,13 @@ class AudioManager:
                 # Log reciter switch using enhanced webhook router
                 try:
                     from src.core.di_container import get_container
+
                     container = get_container()
                     if container:
                         enhanced_webhook = container.get("enhanced_webhook_router")
-                        if enhanced_webhook and hasattr(enhanced_webhook, "log_audio_event"):
+                        if enhanced_webhook and hasattr(
+                            enhanced_webhook, "log_audio_event"
+                        ):
                             await enhanced_webhook.log_audio_event(
                                 event_type="reciter_switch",
                                 event_data={
@@ -2282,9 +2603,9 @@ class AudioManager:
                                     "new_reciter": reciter_name,
                                     "current_surah": f"{self.current_surah}. {self._get_surah_name(self.current_surah)}",
                                     "audio_files": f"{len(self.current_audio_files)} files loaded",
-                                    "action": "Automatic restart with new reciter"
+                                    "action": "Automatic restart with new reciter",
                                 },
-                                severity="info"
+                                severity="info",
                             )
                 except Exception:
                     pass  # Don't let logging prevent operation
@@ -2466,9 +2787,15 @@ class AudioManager:
                                             f"{self.current_position:.1f}s",
                                         ),
                                         ("track_duration", f"{duration:.1f}s"),
-                                        ("remaining_time", f"{duration - self.current_position:.1f}s"),
+                                        (
+                                            "remaining_time",
+                                            f"{duration - self.current_position:.1f}s",
+                                        ),
                                         ("action", "Skipping to next track"),
-                                        ("reason", "Track nearly complete (< 30s remaining)"),
+                                        (
+                                            "reason",
+                                            "Track nearly complete (< 30s remaining)",
+                                        ),
                                     ],
                                     "⏭️",
                                 )
@@ -2523,7 +2850,10 @@ class AudioManager:
             while True:
                 try:
                     if not self.voice_client or not self.voice_client.is_connected():
-                        _audio_monitor.record_connection_failure("voice_disconnected", "Voice client disconnected during playback")
+                        _audio_monitor.record_connection_failure(
+                            "voice_disconnected",
+                            "Voice client disconnected during playback",
+                        )
                         log_warning_with_context(
                             "Voice client disconnected", "Stopping playback"
                         )
@@ -2563,10 +2893,13 @@ class AudioManager:
                     # Log automatic surah start using enhanced webhook router
                     try:
                         from src.core.di_container import get_container
+
                         container = get_container()
                         if container:
                             enhanced_webhook = container.get("enhanced_webhook_router")
-                            if enhanced_webhook and hasattr(enhanced_webhook, "log_audio_event"):
+                            if enhanced_webhook and hasattr(
+                                enhanced_webhook, "log_audio_event"
+                            ):
                                 surah_name = self._get_surah_name(self.current_surah)
                                 await enhanced_webhook.log_audio_event(
                                     event_type="surah_start",
@@ -2575,9 +2908,13 @@ class AudioManager:
                                         "surah_name": surah_name,
                                         "reciter": self.current_reciter,
                                         "file_index": f"{self.current_file_index + 1}/{len(self.current_audio_files)}",
-                                        "position": f"{self.current_position:.1f}s" if self.current_position > 0 else "From beginning"
+                                        "position": (
+                                            f"{self.current_position:.1f}s"
+                                            if self.current_position > 0
+                                            else "From beginning"
+                                        ),
                                     },
-                                    severity="info"
+                                    severity="info",
                                 )
                     except Exception:
                         pass  # Don't let logging prevent playback
@@ -2610,14 +2947,17 @@ class AudioManager:
 
                                 # Calculate the actual start time for Discord's automatic elapsed time
                                 # This accounts for resume position by adjusting the start time backwards
-                                from datetime import datetime, timezone
+                                from datetime import datetime
                                 import time
-                                
+
                                 # If we're resuming, adjust start time to account for current position
-                                actual_start_time = datetime.now(timezone.utc)
+                                actual_start_time = datetime.now(UTC)
                                 if self.current_position > 0:
                                     from datetime import timedelta
-                                    actual_start_time -= timedelta(seconds=self.current_position)
+
+                                    actual_start_time -= timedelta(
+                                        seconds=self.current_position
+                                    )
 
                                 self.rich_presence.update_presence_with_template(
                                     "listening",
@@ -2644,9 +2984,8 @@ class AudioManager:
                         if should_resume and self.current_position > 0:
                             # Validate resume position against track duration
                             track_duration = self._get_current_file_duration()
-                            if (
-                                track_duration > 0
-                                and self.current_position >= (track_duration - 30)
+                            if track_duration > 0 and self.current_position >= (
+                                track_duration - 30
                             ):
                                 # Position is too close to end - start from beginning
                                 log_perfect_tree_section(
@@ -2657,7 +2996,10 @@ class AudioManager:
                                             f"{self.current_position:.1f}s",
                                         ),
                                         ("track_duration", f"{track_duration:.1f}s"),
-                                        ("remaining_time", f"{track_duration - self.current_position:.1f}s"),
+                                        (
+                                            "remaining_time",
+                                            f"{track_duration - self.current_position:.1f}s",
+                                        ),
                                         ("action", "Starting from beginning instead"),
                                         ("reason", "Less than 30s remaining"),
                                     ],
@@ -2680,7 +3022,10 @@ class AudioManager:
                                 "Audio Resume - Enhanced",
                                 [
                                     ("resumed_from", f"{self.current_position:.1f}s"),
-                                    ("enhanced_stability", "✅ Using enhanced FFmpeg options"),
+                                    (
+                                        "enhanced_stability",
+                                        "✅ Using enhanced FFmpeg options",
+                                    ),
                                     ("buffer_size", "2048k (increased)"),
                                     ("reconnection", "✅ Enhanced auto-reconnect"),
                                     ("timeout_handling", "✅ 30s timeout protection"),
@@ -2699,54 +3044,87 @@ class AudioManager:
                             # Enhanced audio validation before playback
                             if not os.path.exists(current_file):
                                 log_error_with_traceback(
-                                    f"Audio file no longer exists: {current_file}", 
-                                    FileNotFoundError(f"File not found: {current_file}")
+                                    f"Audio file no longer exists: {current_file}",
+                                    FileNotFoundError(
+                                        f"File not found: {current_file}"
+                                    ),
                                 )
-                                _audio_monitor.record_playback_failure("file_missing", f"Audio file not found: {current_file}")
+                                _audio_monitor.record_playback_failure(
+                                    "file_missing",
+                                    f"Audio file not found: {current_file}",
+                                )
                                 continue
 
                             # Check file accessibility
                             try:
-                                with open(current_file, 'rb') as f:
+                                with open(current_file, "rb") as f:
                                     f.read(1024)  # Test read first 1KB
                             except Exception as file_error:
-                                log_error_with_traceback(f"Audio file not accessible: {current_file}", file_error)
-                                _audio_monitor.record_playback_failure("file_access", f"Cannot access audio file: {file_error}")
+                                log_error_with_traceback(
+                                    f"Audio file not accessible: {current_file}",
+                                    file_error,
+                                )
+                                _audio_monitor.record_playback_failure(
+                                    "file_access",
+                                    f"Cannot access audio file: {file_error}",
+                                )
                                 continue
 
                             # Enhanced voice client validation before playback
-                            if not self.voice_client or not self.voice_client.is_connected():
-                                _audio_monitor.record_connection_failure("pre_playback_check", "Voice client lost connection before playback")
-                                log_warning_with_context("Voice client disconnected", "Cannot start audio playback")
+                            if (
+                                not self.voice_client
+                                or not self.voice_client.is_connected()
+                            ):
+                                _audio_monitor.record_connection_failure(
+                                    "pre_playback_check",
+                                    "Voice client lost connection before playback",
+                                )
+                                log_warning_with_context(
+                                    "Voice client disconnected",
+                                    "Cannot start audio playback",
+                                )
                                 break
 
                             # Attempt to play with enhanced error handling
                             self.voice_client.play(source)
-                            
+
                             # Enhanced playback validation with multiple checks
                             playback_validation_attempts = 0
-                            max_playback_validation = 10  # Check up to 10 times (5 seconds)
-                            
-                            while playback_validation_attempts < max_playback_validation:
+                            max_playback_validation = (
+                                10  # Check up to 10 times (5 seconds)
+                            )
+
+                            while (
+                                playback_validation_attempts < max_playback_validation
+                            ):
                                 await asyncio.sleep(0.5)
                                 playback_validation_attempts += 1
-                                
+
                                 if self.voice_client.is_playing():
                                     # Playback successfully started
                                     break
-                                elif playback_validation_attempts >= max_playback_validation:
+                                elif (
+                                    playback_validation_attempts
+                                    >= max_playback_validation
+                                ):
                                     # Playback failed to start
                                     log_perfect_tree_section(
                                         "Audio Playback - Failed to Start",
                                         [
                                             ("file", filename),
                                             ("status", "❌ Playback validation failed"),
-                                            ("validation_attempts", f"{playback_validation_attempts}/{max_playback_validation}"),
+                                            (
+                                                "validation_attempts",
+                                                f"{playback_validation_attempts}/{max_playback_validation}",
+                                            ),
                                             ("action", "Retrying next track"),
                                         ],
                                         "❌",
                                     )
-                                    _audio_monitor.record_playback_failure("playback_start", "Audio playback failed to start after validation")
+                                    _audio_monitor.record_playback_failure(
+                                        "playback_start",
+                                        "Audio playback failed to start after validation",
+                                    )
                                     continue
 
                             # Verify playback actually started successfully
@@ -2760,7 +3138,10 @@ class AudioManager:
                                     ],
                                     "❌",
                                 )
-                                _audio_monitor.record_playback_failure("playback_verification", "Playback verification failed")
+                                _audio_monitor.record_playback_failure(
+                                    "playback_verification",
+                                    "Playback verification failed",
+                                )
                                 continue
 
                             self.is_playing = True
@@ -2778,7 +3159,8 @@ class AudioManager:
 
                             # Start position tracking task
                             if (
-                                not hasattr(self, '_position_tracking_task') or not self._position_tracking_task
+                                not hasattr(self, "_position_tracking_task")
+                                or not self._position_tracking_task
                                 or self._position_tracking_task.done()
                             ):
                                 self._position_tracking_task = asyncio.create_task(
@@ -2798,37 +3180,53 @@ class AudioManager:
                             # Wait for playback to finish with better error handling
                             playback_start_time = time.time()
                             track_duration = self._get_current_file_duration()
-                            
+
                             # Set a reasonable timeout: track duration + 30 seconds buffer
                             # This prevents infinite waiting if the track gets stuck
-                            timeout_duration = track_duration + 30 if track_duration > 0 else 300  # 5 min default
-                            
+                            timeout_duration = (
+                                track_duration + 30 if track_duration > 0 else 300
+                            )  # 5 min default
+
                             while (
                                 self.voice_client.is_playing()
                                 or self.voice_client.is_paused()
                             ):
                                 await asyncio.sleep(1)
-                                
+
                                 # SAFEGUARD: Check for timeout to prevent infinite waiting
                                 elapsed_playback = time.time() - playback_start_time
                                 if elapsed_playback > timeout_duration:
                                     log_perfect_tree_section(
                                         "Audio Safeguard - Playback Timeout",
                                         [
-                                            ("elapsed_time", f"{elapsed_playback:.1f}s"),
-                                            ("timeout_limit", f"{timeout_duration:.1f}s"),
-                                            ("track_duration", f"{track_duration:.1f}s"),
+                                            (
+                                                "elapsed_time",
+                                                f"{elapsed_playback:.1f}s",
+                                            ),
+                                            (
+                                                "timeout_limit",
+                                                f"{timeout_duration:.1f}s",
+                                            ),
+                                            (
+                                                "track_duration",
+                                                f"{track_duration:.1f}s",
+                                            ),
                                             ("action", "Force stopping stuck playback"),
-                                            ("safeguard", "✅ Timeout protection activated"),
+                                            (
+                                                "safeguard",
+                                                "✅ Timeout protection activated",
+                                            ),
                                         ],
-                                        "⏰"
+                                        "⏰",
                                     )
-                                    
+
                                     # Force stop the stuck playback
                                     try:
                                         self.voice_client.stop()
                                     except Exception as e:
-                                        log_error_with_traceback("Error force-stopping stuck playback", e)
+                                        log_error_with_traceback(
+                                            "Error force-stopping stuck playback", e
+                                        )
                                     break
 
                             # Mark surah as completed
@@ -2866,7 +3264,9 @@ class AudioManager:
                                     "✅",
                                 )
                             else:
-                                _audio_monitor.record_playback_failure("voice_client_error", str(voice_error))
+                                _audio_monitor.record_playback_failure(
+                                    "voice_client_error", str(voice_error)
+                                )
                                 log_error_with_traceback(
                                     f"Voice client error for: {filename}", voice_error
                                 )
@@ -2888,7 +3288,9 @@ class AudioManager:
                                 "✅",
                             )
                         else:
-                            _audio_monitor.record_playback_failure("audio_file_error", str(e))
+                            _audio_monitor.record_playback_failure(
+                                "audio_file_error", str(e)
+                            )
                             log_error_with_traceback(
                                 f"Error playing audio file: {filename}", e
                             )
@@ -2964,10 +3366,15 @@ class AudioManager:
                             # Log 24/7 restart using enhanced webhook router
                             try:
                                 from src.core.di_container import get_container
+
                                 container = get_container()
                                 if container:
-                                    enhanced_webhook = container.get("enhanced_webhook_router")
-                                    if enhanced_webhook and hasattr(enhanced_webhook, "log_audio_event"):
+                                    enhanced_webhook = container.get(
+                                        "enhanced_webhook_router"
+                                    )
+                                    if enhanced_webhook and hasattr(
+                                        enhanced_webhook, "log_audio_event"
+                                    ):
                                         await enhanced_webhook.log_audio_event(
                                             event_type="surah_switch",
                                             event_data={
@@ -2976,9 +3383,9 @@ class AudioManager:
                                                 "reason": "Completed all 114 surahs",
                                                 "next_surah": "1. Al-Fatiha",
                                                 "reciter": self.current_reciter,
-                                                "cycle_completed": "True"
+                                                "cycle_completed": "True",
                                             },
-                                            severity="info"
+                                            severity="info",
                                         )
                             except Exception:
                                 pass  # Don't let logging prevent playback
@@ -2998,7 +3405,9 @@ class AudioManager:
                     # 24/7 mode - never break the loop, always continue playing
 
                 except Exception as e:
-                    _audio_monitor.record_playback_failure("playback_loop_error", str(e))
+                    _audio_monitor.record_playback_failure(
+                        "playback_loop_error", str(e)
+                    )
                     log_error_with_traceback("Error in playback loop iteration", e)
                     # Wait a bit before continuing to avoid rapid error loops
                     await asyncio.sleep(2)
@@ -3038,7 +3447,7 @@ class AudioManager:
             except Exception as e:
                 log_error_with_traceback("Error in playback loop cleanup", e)
 
-    def get_playback_status(self) -> Dict[str, Any]:
+    def get_playback_status(self) -> dict[str, Any]:
         """Get current playback status for control panel"""
         try:
             # Get basic status
@@ -3063,6 +3472,7 @@ class AudioManager:
             current_time_seconds = 0.0
             if self.is_playing and self.track_start_time:
                 import time
+
                 current_time = time.time()
                 # This calculation already accounts for resumed position
                 current_time_seconds = current_time - self.track_start_time
@@ -3103,17 +3513,22 @@ class AudioManager:
         """Get the name of a surah by its number"""
         try:
             from .surah_mapper import get_surah_info
+
             surah_info = get_surah_info(surah_number)
-            return surah_info.name_transliteration if surah_info else f"Surah {surah_number}"
+            return (
+                surah_info.name_transliteration
+                if surah_info
+                else f"Surah {surah_number}"
+            )
         except Exception:
             return f"Surah {surah_number}"
 
-    def _get_surah_files(self, reciter: str) -> List[str]:
+    def _get_surah_files(self, reciter: str) -> list[str]:
         """Get list of surah files for a reciter"""
         reciter_dir = Path(self.audio_base_folder) / reciter
         if not reciter_dir.exists():
             return []
-        
+
         files = sorted(glob.glob(str(reciter_dir / "*.mp3")))
         return [str(Path(f)) for f in files]
 
@@ -3122,20 +3537,20 @@ class AudioManager:
         reciter_dir = Path(self.audio_base_folder) / reciter_name
         if not reciter_dir.exists():
             return False
-        
+
         self.current_reciter = reciter_name
         return True
 
-    def get_current_surah_file(self) -> Optional[str]:
+    def get_current_surah_file(self) -> str | None:
         """Get current surah audio file path"""
         return self.get_surah_file(self.current_surah)
 
-    def get_surah_file(self, surah_number: int) -> Optional[str]:
+    def get_surah_file(self, surah_number: int) -> str | None:
         """Get specific surah audio file path"""
         files = self._get_surah_files(self.current_reciter)
         if not files:
             return None
-        
+
         try:
             return files[surah_number - 1]
         except IndexError:

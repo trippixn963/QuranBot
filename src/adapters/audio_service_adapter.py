@@ -7,9 +7,9 @@
 # modern architecture patterns.
 # =============================================================================
 
-import traceback
 from pathlib import Path
-from typing import Dict, Any
+import traceback
+from typing import Any
 
 from src.data.models import PlaybackMode
 from src.services.audio_service import AudioService
@@ -21,11 +21,11 @@ class AudioServiceAdapter:
 
     The control panel was designed for the old AudioManager, but we're using the new AudioService.
     This adapter bridges the gap by providing the expected interface.
-    
+
     This adapter is crucial for maintaining backward compatibility while using the modern
     AudioService architecture. It translates control panel expectations into AudioService
     method calls and handles the asynchronous nature of the new service.
-    
+
     Key Responsibilities:
     - Translating synchronous control panel calls to async AudioService methods
     - Converting AudioService state format to control panel expected format
@@ -37,23 +37,23 @@ class AudioServiceAdapter:
     def __init__(self, audio_service: AudioService):
         self.audio_service = audio_service
 
-    def get_playback_status(self) -> Dict[str, Any]:
+    def get_playback_status(self) -> dict[str, Any]:
         """Get playback status in the format expected by the control panel.
-        
+
         This method performs complex state translation between the modern AudioService
         and the legacy control panel interface. It handles:
-        
+
         - Real-time playback position calculation
         - Metadata retrieval with caching fallbacks
         - Audio file duration extraction from multiple sources
         - State format conversion for UI compatibility
-        
+
         The method tries multiple approaches to get accurate timing information:
         1. From AudioService current state
         2. From cache service if available
         3. Direct MP3 metadata reading as fallback
         4. Known duration constants for common surahs
-        
+
         Returns:
             dict: Complete playback status containing playback state, position,
                  reciter info, available options, and timing data in control panel format
@@ -127,7 +127,7 @@ class AudioServiceAdapter:
 
             return result
 
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
             return self._get_default_status()
 
@@ -159,6 +159,7 @@ class AudioServiceAdapter:
             if full_path.exists():
                 try:
                     from mutagen.mp3 import MP3
+
                     audio_file = MP3(str(full_path))
                     return audio_file.info.length
                 except Exception:
@@ -175,13 +176,13 @@ class AudioServiceAdapter:
         except Exception:
             return 0
 
-    def _get_default_status(self) -> Dict[str, Any]:
+    def _get_default_status(self) -> dict[str, Any]:
         """Return safe default status when AudioService is unavailable.
-        
+
         Provides a complete fallback status structure that prevents control panel
         errors when the AudioService is not accessible. This ensures the UI remains
         functional even during service initialization or failure states.
-        
+
         Returns:
             dict: Safe default status with all required fields and sensible defaults
         """
@@ -204,14 +205,14 @@ class AudioServiceAdapter:
         """Jump to a specific surah."""
         try:
             await self.audio_service.set_surah(surah_number)
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
 
     async def switch_reciter(self, reciter_name: str):
         """Switch to a different reciter."""
         try:
             await self.audio_service.set_reciter(reciter_name)
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
 
     async def skip_to_next(self):
@@ -223,7 +224,7 @@ class AudioServiceAdapter:
             )
             next_surah = current_surah + 1 if current_surah < 114 else 1
             await self.audio_service.set_surah(next_surah)
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
 
     async def skip_to_previous(self):
@@ -235,7 +236,7 @@ class AudioServiceAdapter:
             )
             previous_surah = current_surah - 1 if current_surah > 1 else 114
             await self.audio_service.set_surah(previous_surah)
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
 
     async def toggle_loop(self):
@@ -248,7 +249,7 @@ class AudioServiceAdapter:
                     await self.audio_service.set_playback_mode(PlaybackMode.NORMAL)
                 else:
                     await self.audio_service.set_playback_mode(PlaybackMode.LOOP_TRACK)
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
 
     async def toggle_shuffle(self):
@@ -261,7 +262,7 @@ class AudioServiceAdapter:
                     await self.audio_service.set_playback_mode(PlaybackMode.NORMAL)
                 else:
                     await self.audio_service.set_playback_mode(PlaybackMode.SHUFFLE)
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
 
     @property
@@ -293,7 +294,7 @@ class AudioServiceAdapter:
         try:
             # 24/7 bot never pauses - this is a no-op for control panel compatibility
             pass
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
 
     async def resume_playback(self):
@@ -301,7 +302,7 @@ class AudioServiceAdapter:
         try:
             # 24/7 bot never needs resuming - this is a no-op for control panel compatibility
             pass
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
 
     async def toggle_playback(self):
@@ -313,5 +314,5 @@ class AudioServiceAdapter:
             else:
                 # Already playing - no action needed
                 pass
-        except Exception as e:
+        except Exception:
             traceback.print_exc()

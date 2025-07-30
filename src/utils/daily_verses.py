@@ -945,25 +945,38 @@ async def check_and_post_verse(bot, channel_id: int) -> None:
                     # Log daily verse posting to enhanced webhook router first
                     try:
                         from src.core.di_container import get_container
+
                         container = get_container()
                         if container:
                             enhanced_webhook = container.get("enhanced_webhook_router")
-                            if enhanced_webhook and hasattr(enhanced_webhook, "log_bot_event"):
+                            if enhanced_webhook and hasattr(
+                                enhanced_webhook, "log_bot_event"
+                            ):
                                 await enhanced_webhook.log_bot_event(
                                     event_type="daily_verse_posted",
                                     event_data={
                                         "surah_number": str(verse["surah"]),
-                                        "surah_name": verse.get("surah_name", f"Surah {verse['surah']}"),
-                                        "verse_number": str(verse.get("ayah", verse["verse"])),
+                                        "surah_name": verse.get(
+                                            "surah_name", f"Surah {verse['surah']}"
+                                        ),
+                                        "verse_number": str(
+                                            verse.get("ayah", verse["verse"])
+                                        ),
                                         "channel_id": str(channel_id),
                                         "verse_type": "Automated Daily Verse",
-                                        "arabic_text_length": len(verse.get("arabic", verse.get("text", ""))),
-                                        "translation_length": len(verse.get("translation", "")),
-                                        "posting_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
+                                        "arabic_text_length": len(
+                                            verse.get("arabic", verse.get("text", ""))
+                                        ),
+                                        "translation_length": len(
+                                            verse.get("translation", "")
+                                        ),
+                                        "posting_time": datetime.now().strftime(
+                                            "%Y-%m-%d %H:%M:%S UTC"
+                                        ),
                                     },
-                                    severity="info"
+                                    severity="info",
                                 )
-                    except Exception as e:
+                    except Exception:
                         # No fallback - enhanced webhook router is the primary logging method
                         pass
 
@@ -1171,26 +1184,41 @@ async def check_and_send_scheduled_verse(bot, channel_id: int) -> None:
                     # Log scheduled verse posting to enhanced webhook router first
                     try:
                         from src.core.di_container import get_container
+
                         container = get_container()
                         if container:
                             enhanced_webhook = container.get("enhanced_webhook_router")
-                            if enhanced_webhook and hasattr(enhanced_webhook, "log_bot_event"):
+                            if enhanced_webhook and hasattr(
+                                enhanced_webhook, "log_bot_event"
+                            ):
                                 await enhanced_webhook.log_bot_event(
                                     event_type="scheduled_verse_posted",
                                     event_data={
                                         "surah_number": str(verse["surah"]),
-                                        "surah_name": verse.get("surah_name", f"Surah {verse['surah']}"),
-                                        "verse_number": str(verse.get("ayah", verse["verse"])),
+                                        "surah_name": verse.get(
+                                            "surah_name", f"Surah {verse['surah']}"
+                                        ),
+                                        "verse_number": str(
+                                            verse.get("ayah", verse["verse"])
+                                        ),
                                         "channel_id": str(channel_id),
                                         "verse_type": "Scheduled Verse",
-                                        "interval_hours": str(daily_verse_manager.get_interval_hours()),
-                                        "arabic_text_length": len(verse.get("arabic", verse.get("text", ""))),
-                                        "translation_length": len(verse.get("translation", "")),
-                                        "posting_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
+                                        "interval_hours": str(
+                                            daily_verse_manager.get_interval_hours()
+                                        ),
+                                        "arabic_text_length": len(
+                                            verse.get("arabic", verse.get("text", ""))
+                                        ),
+                                        "translation_length": len(
+                                            verse.get("translation", "")
+                                        ),
+                                        "posting_time": datetime.now().strftime(
+                                            "%Y-%m-%d %H:%M:%S UTC"
+                                        ),
                                     },
-                                    severity="info"
+                                    severity="info",
                                 )
-                    except Exception as e:
+                    except Exception:
                         # No fallback - enhanced webhook router is the primary logging method
                         pass
 
