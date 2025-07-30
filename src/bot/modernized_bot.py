@@ -15,7 +15,7 @@ from discord.ext import commands
 
 from src.adapters.audio_service_adapter import AudioServiceAdapter
 from src.commands import load_commands
-from src.config import BotConfig, get_config, get_discord_token, get_guild_id, get_target_channel_id
+from src.config import QuranBotConfig, get_config, get_discord_token, get_guild_id, get_target_channel_id
 from src.core.cache_service import CacheService
 from src.core.di_container import DIContainer, set_global_container
 from src.core.health_monitor import HealthMonitor
@@ -71,8 +71,7 @@ class ModernizedQuranBot:
         self.container: DIContainer | None = None
         self.bot: commands.Bot | None = None
         self.logger: StructuredLogger | None = None
-        self.config: BotConfig | None = None
-        self.config: BotConfig | None = None
+        self.config: QuranBotConfig | None = None
         self.is_running = False
         self._startup_start_time = time.time()
         self._shutdown_in_progress = False
@@ -109,7 +108,7 @@ class ModernizedQuranBot:
             set_global_container(self.container)
 
             # Register configuration services
-            self.container.register_singleton(BotConfig, self.config)
+            self.container.register_singleton(QuranBotConfig, self.config)
 
             # 3. Initialize core services
             await self._initialize_core_services()
