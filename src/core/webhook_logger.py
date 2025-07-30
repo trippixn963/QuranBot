@@ -289,16 +289,24 @@ class WebhookFormatter:
         - Bot identity integration
     """
 
-    # Color mapping for log levels
+    # Enhanced color mapping for log levels with richer palette
     LEVEL_COLORS = {
-        LogLevel.DEBUG: 0x95A5A6,  # Gray
-        LogLevel.INFO: 0x3498DB,  # Blue
+        LogLevel.DEBUG: 0x95A5A6,    # Gray
+        LogLevel.INFO: 0x3498DB,     # Blue  
         LogLevel.WARNING: 0xF39C12,  # Orange
-        LogLevel.ERROR: 0xE74C3C,  # Red
-        LogLevel.CRITICAL: 0x8B0000,  # Dark Red
-        LogLevel.SUCCESS: 0x27AE60,  # Green
-        LogLevel.SYSTEM: 0x9B59B6,  # Purple
-        LogLevel.USER: 0x1ABC9C,  # Teal
+        LogLevel.ERROR: 0xE74C3C,    # Red
+        LogLevel.CRITICAL: 0x8B0000, # Dark Red
+        LogLevel.SUCCESS: 0x00D4AA,  # Bright Green
+        LogLevel.SYSTEM: 0x9B59B6,   # Purple
+        LogLevel.USER: 0x1ABC9C,     # Teal
+    }
+    
+    # Resource usage color mapping for dynamic coloring
+    RESOURCE_COLORS = {
+        "healthy": 0x00D4AA,    # Bright Green
+        "warning": 0xF39C12,    # Orange  
+        "critical": 0xE74C3C,   # Red
+        "unknown": 0x95A5A6,    # Gray
     }
 
     # Emoji mapping for log levels
@@ -336,15 +344,11 @@ class WebhookFormatter:
         Returns:
             dict[str, Any]: Discord webhook payload
         """
-        # Create embed
+        # Create embed with enhanced formatting
         embed = {
             "title": f"{self.LEVEL_EMOJIS.get(message.level, '📝')} {message.title}",
-            "description": self._truncate_text(
-                message.description, self.config.max_description_length
-            ),
-            "color": self.LEVEL_COLORS.get(
-                message.level, self.LEVEL_COLORS[LogLevel.INFO]
-            ),
+            "description": self._enhance_description(message),
+            "color": self._get_dynamic_color(message),
             "footer": {"text": message.footer or self._get_formatted_time_est()},
         }
 
@@ -358,17 +362,10 @@ class WebhookFormatter:
             if message.author_url:
                 embed["author"]["url"] = message.author_url
 
-        # Always add bot thumbnail if available
-        if (
-            self.bot
-            and hasattr(self.bot, "user")
-            and self.bot.user
-            and self.bot.user.avatar
-        ):
-            embed["thumbnail"] = {"url": self.bot.user.avatar.url}
-        elif message.thumbnail_url:
-            # Fallback to custom thumbnail if provided
-            embed["thumbnail"] = {"url": message.thumbnail_url}
+        # Smart thumbnail selection: user avatar for user events, bot avatar for system events
+        thumbnail_url = self._get_smart_thumbnail(message)
+        if thumbnail_url:
+            embed["thumbnail"] = {"url": thumbnail_url}
 
         # Add image (large image at bottom)
         if message.image_url:
@@ -435,6 +432,104 @@ class WebhookFormatter:
             return now_est.strftime("%m/%d/%Y %I:%M %p EST")
         except Exception:
             return datetime.now().strftime("%m/%d/%Y %I:%M %p UTC")
+    
+    def _get_smart_thumbnail(self, message: WebhookMessage) -> str | None:
+        """Get appropriate thumbnail based on message type and context.
+        
+        Returns user avatar for user events, bot avatar for system events.
+        
+        Args:
+            message: WebhookMessage to determine thumbnail for
+            
+        Returns:
+            str | None: Thumbnail URL or None if not available
+        """
+        # Priority 1: Use custom thumbnail if explicitly provided
+        if message.thumbnail_url:
+            return message.thumbnail_url
+            
+        # Priority 2: Use user avatar for user-related events
+        if message.level == LogLevel.USER and message.author_icon_url:
+            return message.author_icon_url
+            
+        # Priority 3: Use bot avatar for system events
+        if (
+            self.bot
+            and hasattr(self.bot, "user")
+            and self.bot.user
+            and self.bot.user.avatar
+        ):
+            return self.bot.user.avatar.url
+            
+        # Priority 4: Fallback to default bot avatar
+        return "https://cdn.discordapp.com/attachments/1044035927281262673/1044036084692160512/PFP_Cropped_-_Animated.gif"
+    
+    def _create_progress_bar(self, percentage: float, length: int = 10) -> str:
+        """Create a visual progress bar for resource usage.
+        
+        Args:
+            percentage: Usage percentage (0-100)
+            length: Length of progress bar in characters
+            
+        Returns:
+            str: Visual progress bar with percentage
+        """
+        if percentage < 0:
+            percentage = 0
+        elif percentage > 100:
+            percentage = 100
+            
+        filled = int((percentage / 100) * length)
+        empty = length - filled
+        
+        # Choose bar style based on usage level
+        if percentage >= 95:
+            bar_char = "🟥"  # Critical - Red
+        elif percentage >= 80:
+            bar_char = "🟨"  # Warning - Yellow
+        else:
+            bar_char = "🟩"  # Healthy - Green
+            
+        empty_char = "⬜"
+        
+        bar = bar_char * filled + empty_char * empty
+        return f"{bar} {percentage:.1f}%"
+    
+    def _get_dynamic_color(self, message: WebhookMessage) -> int:
+        """Get dynamic color based on message content and context.
+        
+        Args:
+            message: WebhookMessage to analyze
+            
+        Returns:
+            int: Color value for embed
+        """
+        # Check for resource usage in fields to determine color
+        if message.fields:
+            for field in message.fields:
+                field_name = field.name.lower()
+                field_value = field.value.lower()
+                
+                # Look for resource usage indicators
+                if any(keyword in field_name for keyword in ["cpu", "memory", "disk", "usage"]):
+                    if "critical" in field_value or any(word in field_value for word in ["95%", "96%", "97%", "98%", "99%", "100%"]):
+                        return self.RESOURCE_COLORS["critical"]
+                    elif "warning" in field_value or any(word in field_value for word in ["80%", "85%", "90%"]):
+                        return self.RESOURCE_COLORS["warning"]
+                    elif "healthy" in field_value:
+                        return self.RESOURCE_COLORS["healthy"]
+        
+        # Check message title and description for status indicators
+        content = f"{message.title} {message.description}".lower()
+        if any(word in content for word in ["critical", "failed", "error", "crash"]):
+            return self.LEVEL_COLORS[LogLevel.CRITICAL]
+        elif any(word in content for word in ["warning", "high", "disconnected"]):
+            return self.LEVEL_COLORS[LogLevel.WARNING]
+        elif any(word in content for word in ["success", "connected", "recovered", "healthy"]):
+            return self.LEVEL_COLORS[LogLevel.SUCCESS]
+        
+        # Fallback to level-based color
+        return self.LEVEL_COLORS.get(message.level, self.LEVEL_COLORS[LogLevel.INFO])
 
     def _truncate_text(self, text: str, max_length: int) -> str:
         """Safely truncate text to fit Discord limits.

@@ -1431,6 +1431,2606 @@
         "arabic": "القدر يشير إلى القضاء والقدر، وهو أحد أركان الإيمان الستة."
       },
       "reference": "Islamic Theology"
+    },
+    {
+      "id": "q036",
+      "category": "Pillars of Islam",
+      "difficulty": 1,
+      "themes": [
+        "Sawm"
+      ],
+      "context": {
+        "english": "Fasting in Islam",
+        "arabic": "الصيام في الإسلام"
+      },
+      "question": {
+        "english": "In which month do Muslims fast?",
+        "arabic": "في أي شهر يصوم المسلمون؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Muharram",
+          "arabic": "محرم"
+        },
+        "B": {
+          "english": "Rajab",
+          "arabic": "رجب"
+        },
+        "C": {
+          "english": "Ramadan",
+          "arabic": "رمضان"
+        },
+        "D": {
+          "english": "Shawwal",
+          "arabic": "شوال"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "Muslims fast during the month of Ramadan, the ninth month of the Islamic calendar.",
+        "arabic": "يصوم المسلمون في شهر رمضان، الشهر التاسع من التقويم الإسلامي."
+      },
+      "reference": "Quran 2:185"
+    },
+    {
+      "id": "q037",
+      "category": "Quran",
+      "difficulty": 1,
+      "themes": [
+        "Quran Structure"
+      ],
+      "context": {
+        "english": "Quran Organization",
+        "arabic": "تنظيم القرآن"
+      },
+      "question": {
+        "english": "What is the shortest surah in the Quran?",
+        "arabic": "ما هي أقصر سورة في القرآن الكريم؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Al-Kawthar",
+          "arabic": "الكوثر"
+        },
+        "B": {
+          "english": "Al-Ikhlas",
+          "arabic": "الإخلاص"
+        },
+        "C": {
+          "english": "Al-Asr",
+          "arabic": "العصر"
+        },
+        "D": {
+          "english": "Al-Nasr",
+          "arabic": "النصر"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Surah Al-Kawthar is the shortest surah with only 3 verses.",
+        "arabic": "سورة الكوثر هي أقصر سورة بثلاث آيات فقط."
+      },
+      "reference": "Quran 108"
+    },
+    {
+      "id": "q038",
+      "category": "Prophets",
+      "difficulty": 2,
+      "themes": [
+        "Prophet Stories"
+      ],
+      "context": {
+        "english": "Prophetic Miracles",
+        "arabic": "معجزات الأنبياء"
+      },
+      "question": {
+        "english": "Which prophet could speak to animals and jinn?",
+        "arabic": "أي نبي كان يستطيع التحدث مع الحيوانات والجن؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Prophet Dawud (David)",
+          "arabic": "النبي داود"
+        },
+        "B": {
+          "english": "Prophet Sulaiman (Solomon)",
+          "arabic": "النبي سليمان"
+        },
+        "C": {
+          "english": "Prophet Yusuf (Joseph)",
+          "arabic": "النبي يوسف"
+        },
+        "D": {
+          "english": "Prophet Isa (Jesus)",
+          "arabic": "النبي عيسى"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Prophet Sulaiman (Solomon) was given the ability to understand the speech of animals and control jinn.",
+        "arabic": "أُعطي النبي سليمان القدرة على فهم كلام الحيوانات والتحكم في الجن."
+      },
+      "reference": "Quran 27:16"
+    },
+    {
+      "id": "q039",
+      "category": "Islamic Ethics",
+      "difficulty": 2,
+      "themes": [
+        "Character Development"
+      ],
+      "context": {
+        "english": "Islamic Virtues",
+        "arabic": "الفضائل الإسلامية"
+      },
+      "question": {
+        "english": "What does 'Sabr' mean in Islamic ethics?",
+        "arabic": "ماذا يعني 'الصبر' في الأخلاق الإسلامية؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Kindness",
+          "arabic": "اللطف"
+        },
+        "B": {
+          "english": "Patience",
+          "arabic": "الصبر"
+        },
+        "C": {
+          "english": "Courage",
+          "arabic": "الشجاعة"
+        },
+        "D": {
+          "english": "Wisdom",
+          "arabic": "الحكمة"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Sabr means patience and perseverance, a highly valued virtue in Islam.",
+        "arabic": "الصبر يعني التحمل والمثابرة، وهو فضيلة عالية القيمة في الإسلام."
+      },
+      "reference": "Quran 2:153"
+    },
+    {
+      "id": "q040",
+      "category": "Islamic History",
+      "difficulty": 2,
+      "themes": [
+        "Migration"
+      ],
+      "context": {
+        "english": "Early Islamic Events",
+        "arabic": "الأحداث الإسلامية المبكرة"
+      },
+      "question": {
+        "english": "What is the Islamic calendar based on?",
+        "arabic": "على ماذا يعتمد التقويم الإسلامي؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Birth of Prophet Muhammad",
+          "arabic": "ولادة النبي محمد"
+        },
+        "B": {
+          "english": "First revelation",
+          "arabic": "أول وحي"
+        },
+        "C": {
+          "english": "Hijra to Medina",
+          "arabic": "الهجرة إلى المدينة"
+        },
+        "D": {
+          "english": "Conquest of Mecca",
+          "arabic": "فتح مكة"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "The Islamic calendar begins with the Hijra (migration) to Medina in 622 CE.",
+        "arabic": "يبدأ التقويم الإسلامي بالهجرة إلى المدينة في عام ٦٢٢ م."
+      },
+      "reference": "Islamic History"
+    },
+    {
+      "id": "q041",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Prayer Times"
+      ],
+      "context": {
+        "english": "Islamic Worship Schedule",
+        "arabic": "جدول العبادة الإسلامية"
+      },
+      "question": {
+        "english": "Which prayer has no sunnah prayers before it?",
+        "arabic": "أي صلاة ليس لها سنة قبلها؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Fajr",
+          "arabic": "الفجر"
+        },
+        "B": {
+          "english": "Dhuhr",
+          "arabic": "الظهر"
+        },
+        "C": {
+          "english": "Asr",
+          "arabic": "العصر"
+        },
+        "D": {
+          "english": "Maghrib",
+          "arabic": "المغرب"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "Asr prayer has no regular sunnah prayers before it, only after.",
+        "arabic": "صلاة العصر ليس لها سنة راتبة قبلها، فقط بعدها."
+      },
+      "reference": "Fiqh - Sunnah Prayers"
+    },
+    {
+      "id": "q042",
+      "category": "Hadith",
+      "difficulty": 3,
+      "themes": [
+        "Hadith Compilation"
+      ],
+      "context": {
+        "english": "Hadith Collectors",
+        "arabic": "جامعي الحديث"
+      },
+      "question": {
+        "english": "Who compiled Sahih Bukhari?",
+        "arabic": "من جمع صحيح البخاري؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Imam Muslim",
+          "arabic": "الإمام مسلم"
+        },
+        "B": {
+          "english": "Imam Bukhari",
+          "arabic": "الإمام البخاري"
+        },
+        "C": {
+          "english": "Imam Tirmidhi",
+          "arabic": "الإمام الترمذي"
+        },
+        "D": {
+          "english": "Imam Abu Dawood",
+          "arabic": "الإمام أبو داود"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Imam Muhammad al-Bukhari compiled Sahih Bukhari, considered the most authentic hadith collection.",
+        "arabic": "جمع الإمام محمد البخاري صحيح البخاري، الذي يُعتبر أصح كتاب حديث."
+      },
+      "reference": "Hadith Sciences"
+    },
+    {
+      "id": "q043",
+      "category": "Companions",
+      "difficulty": 3,
+      "themes": [
+        "Caliphs"
+      ],
+      "context": {
+        "english": "Leadership in Islam",
+        "arabic": "القيادة في الإسلام"
+      },
+      "question": {
+        "english": "Which Caliph compiled the Quran into one book?",
+        "arabic": "أي خليفة جمع القرآن في كتاب واحد؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Abu Bakr (RA)",
+          "arabic": "أبو بكر رضي الله عنه"
+        },
+        "B": {
+          "english": "Umar (RA)",
+          "arabic": "عمر رضي الله عنه"
+        },
+        "C": {
+          "english": "Uthman (RA)",
+          "arabic": "عثمان رضي الله عنه"
+        },
+        "D": {
+          "english": "Ali (RA)",
+          "arabic": "علي رضي الله عنه"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Abu Bakr (RA) ordered the first compilation of the Quran into one book after the Battle of Yamama.",
+        "arabic": "أمر أبو بكر رضي الله عنه بأول جمع للقرآن في كتاب واحد بعد معركة اليمامة."
+      },
+      "reference": "Islamic History"
+    },
+    {
+      "id": "q044",
+      "category": "Quran",
+      "difficulty": 4,
+      "themes": [
+        "Quranic Verses"
+      ],
+      "context": {
+        "english": "Special Verses",
+        "arabic": "الآيات الخاصة"
+      },
+      "question": {
+        "english": "Which verse is known as 'Ayat al-Kursi'?",
+        "arabic": "أي آية تُعرف بـ 'آية الكرسي'؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Al-Baqarah 255",
+          "arabic": "البقرة ٢٥٥"
+        },
+        "B": {
+          "english": "Al-Fatihah 1",
+          "arabic": "الفاتحة ١"
+        },
+        "C": {
+          "english": "Al-Ikhlas 1",
+          "arabic": "الإخلاص ١"
+        },
+        "D": {
+          "english": "Ya-Sin 1",
+          "arabic": "يس ١"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Ayat al-Kursi is verse 255 of Surah Al-Baqarah, known as the greatest verse in the Quran.",
+        "arabic": "آية الكرسي هي الآية ٢٥٥ من سورة البقرة، وتُعرف بأنها أعظم آية في القرآن."
+      },
+      "reference": "Quran 2:255"
+    },
+    {
+      "id": "q045",
+      "category": "Islamic Architecture",
+      "difficulty": 4,
+      "themes": [
+        "Sacred Sites"
+      ],
+      "context": {
+        "english": "Holy Places",
+        "arabic": "الأماكن المقدسة"
+      },
+      "question": {
+        "english": "What is the black stone in the Kaaba called?",
+        "arabic": "ماذا يُسمى الحجر الأسود في الكعبة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Hajar al-Aswad",
+          "arabic": "الحجر الأسود"
+        },
+        "B": {
+          "english": "Rukn Yamani",
+          "arabic": "الركن اليماني"
+        },
+        "C": {
+          "english": "Maqam Ibrahim",
+          "arabic": "مقام إبراهيم"
+        },
+        "D": {
+          "english": "Hijr Ismail",
+          "arabic": "حجر إسماعيل"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The black stone is called Hajar al-Aswad, believed to be from Paradise.",
+        "arabic": "الحجر الأسود يُسمى الحجر الأسود، ويُعتقد أنه من الجنة."
+      },
+      "reference": "Islamic Tradition"
+    },
+    {
+      "id": "q046",
+      "category": "Prophets",
+      "difficulty": 1,
+      "themes": [
+        "Prophet Families"
+      ],
+      "context": {
+        "english": "Family Relations",
+        "arabic": "العلاقات الأسرية"
+      },
+      "question": {
+        "english": "Who was the father of Prophet Isa (Jesus)?",
+        "arabic": "من كان والد النبي عيسى؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Zakariya",
+          "arabic": "زكريا"
+        },
+        "B": {
+          "english": "Yusuf",
+          "arabic": "يوسف"
+        },
+        "C": {
+          "english": "He had no father",
+          "arabic": "لم يكن له أب"
+        },
+        "D": {
+          "english": "Imran",
+          "arabic": "عمران"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "Prophet Isa (Jesus) was born without a father as a miracle from Allah.",
+        "arabic": "وُلد النبي عيسى بدون أب كمعجزة من الله."
+      },
+      "reference": "Quran 3:45-47"
+    },
+    {
+      "id": "q047",
+      "category": "Pillars of Iman",
+      "difficulty": 2,
+      "themes": [
+        "Angels"
+      ],
+      "context": {
+        "english": "Belief in Angels",
+        "arabic": "الإيمان بالملائكة"
+      },
+      "question": {
+        "english": "Which angel is responsible for bringing revelation?",
+        "arabic": "أي ملك مسؤول عن إنزال الوحي؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Mikail (Michael)",
+          "arabic": "ميكائيل"
+        },
+        "B": {
+          "english": "Jibril (Gabriel)",
+          "arabic": "جبريل"
+        },
+        "C": {
+          "english": "Israfil",
+          "arabic": "إسرافيل"
+        },
+        "D": {
+          "english": "Malik",
+          "arabic": "مالك"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Angel Jibril (Gabriel) is responsible for bringing Allah's revelation to prophets.",
+        "arabic": "الملك جبريل مسؤول عن إنزال وحي الله إلى الأنبياء."
+      },
+      "reference": "Quran 2:97"
+    },
+    {
+      "id": "q048",
+      "category": "Islamic Culture",
+      "difficulty": 3,
+      "themes": [
+        "Islamic Calendar"
+      ],
+      "context": {
+        "english": "Sacred Months",
+        "arabic": "الأشهر الحُرُم"
+      },
+      "question": {
+        "english": "How many sacred months are there in Islam?",
+        "arabic": "كم عدد الأشهر الحُرُم في الإسلام؟"
+      },
+      "choices": {
+        "A": {
+          "english": "2",
+          "arabic": "٢"
+        },
+        "B": {
+          "english": "3",
+          "arabic": "٣"
+        },
+        "C": {
+          "english": "4",
+          "arabic": "٤"
+        },
+        "D": {
+          "english": "5",
+          "arabic": "٥"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "There are 4 sacred months: Muharram, Rajab, Dhul Qa'dah, and Dhul Hijjah.",
+        "arabic": "هناك ٤ أشهر حُرُم: محرم، رجب، ذو القعدة، وذو الحجة."
+      },
+      "reference": "Quran 9:36"
+    },
+    {
+      "id": "q049",
+      "category": "Seerah",
+      "difficulty": 4,
+      "themes": [
+        "Prophet's Companions"
+      ],
+      "context": {
+        "english": "Close Companions",
+        "arabic": "الصحابة المقربون"
+      },
+      "question": {
+        "english": "Who was the Prophet's closest friend and first adult male to accept Islam?",
+        "arabic": "من كان أقرب صديق للنبي وأول رجل بالغ يقبل الإسلام؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Umar ibn al-Khattab",
+          "arabic": "عمر بن الخطاب"
+        },
+        "B": {
+          "english": "Abu Bakr as-Siddiq",
+          "arabic": "أبو بكر الصديق"
+        },
+        "C": {
+          "english": "Uthman ibn Affan",
+          "arabic": "عثمان بن عفان"
+        },
+        "D": {
+          "english": "Ali ibn Abi Talib",
+          "arabic": "علي بن أبي طالب"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Abu Bakr as-Siddiq was the Prophet's closest friend and first adult male to accept Islam.",
+        "arabic": "أبو بكر الصديق كان أقرب صديق للنبي وأول رجل بالغ يقبل الإسلام."
+      },
+      "reference": "Seerah"
+    },
+    {
+      "id": "q050",
+      "category": "Aqidah",
+      "difficulty": 5,
+      "themes": [
+        "Names of Allah"
+      ],
+      "context": {
+        "english": "Divine Attributes",
+        "arabic": "الصفات الإلهية"
+      },
+      "question": {
+        "english": "What does 'Al-Rahman' mean?",
+        "arabic": "ماذا يعني 'الرحمن'؟"
+      },
+      "choices": {
+        "A": {
+          "english": "The Most Merciful",
+          "arabic": "الأكثر رحمة"
+        },
+        "B": {
+          "english": "The Most Compassionate",
+          "arabic": "الأكثر شفقة"
+        },
+        "C": {
+          "english": "The Most Gracious",
+          "arabic": "الأكثر كرماً"
+        },
+        "D": {
+          "english": "The Entirely Merciful",
+          "arabic": "الرحمن"
+        }
+      },
+      "correct_answer": "D",
+      "explanation": {
+        "english": "Al-Rahman means 'The Entirely Merciful', indicating Allah's all-encompassing mercy.",
+        "arabic": "الرحمن يعني الرحمة الشاملة التي تشمل جميع المخلوقات."
+      },
+      "reference": "Quran 1:1"
+    },
+    {
+      "id": "q051",
+      "category": "Islamic Sciences",
+      "difficulty": 5,
+      "themes": [
+        "Quranic Recitation"
+      ],
+      "context": {
+        "english": "Recitation Styles",
+        "arabic": "أساليب التلاوة"
+      },
+      "question": {
+        "english": "How many accepted ways (Qira'at) of reciting the Quran are there?",
+        "arabic": "كم عدد القراءات المقبولة للقرآن الكريم؟"
+      },
+      "choices": {
+        "A": {
+          "english": "7",
+          "arabic": "٧"
+        },
+        "B": {
+          "english": "10",
+          "arabic": "١٠"
+        },
+        "C": {
+          "english": "14",
+          "arabic": "١٤"
+        },
+        "D": {
+          "english": "20",
+          "arabic": "٢٠"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "There are 10 accepted Qira'at (recitation methods) of the Quran.",
+        "arabic": "هناك ١٠ قراءات مقبولة للقرآن الكريم."
+      },
+      "reference": "Quranic Sciences"
+    },
+    {
+      "id": "q052",
+      "category": "Fiqh",
+      "difficulty": 1,
+      "themes": [
+        "Dietary Laws"
+      ],
+      "context": {
+        "english": "Halal and Haram",
+        "arabic": "الحلال والحرام"
+      },
+      "question": {
+        "english": "Which meat is explicitly forbidden in the Quran?",
+        "arabic": "أي لحم محرم صراحة في القرآن؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Chicken",
+          "arabic": "الدجاج"
+        },
+        "B": {
+          "english": "Fish",
+          "arabic": "السمك"
+        },
+        "C": {
+          "english": "Pork",
+          "arabic": "لحم الخنزير"
+        },
+        "D": {
+          "english": "Beef",
+          "arabic": "لحم البقر"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "Pork is explicitly forbidden in the Quran in multiple verses.",
+        "arabic": "لحم الخنزير محرم صراحة في القرآن في آيات متعددة."
+      },
+      "reference": "Quran 2:173"
+    },
+    {
+      "id": "q053",
+      "category": "Islamic Ethics",
+      "difficulty": 2,
+      "themes": [
+        "Social Ethics"
+      ],
+      "context": {
+        "english": "Community Relations",
+        "arabic": "العلاقات المجتمعية"
+      },
+      "question": {
+        "english": "What does Islam say about neighbors' rights?",
+        "arabic": "ماذا يقول الإسلام عن حقوق الجيران؟"
+      },
+      "choices": {
+        "A": {
+          "english": "They have no special rights",
+          "arabic": "ليس لهم حقوق خاصة"
+        },
+        "B": {
+          "english": "They have great rights",
+          "arabic": "لهم حقوق عظيمة"
+        },
+        "C": {
+          "english": "Only Muslim neighbors have rights",
+          "arabic": "فقط الجيران المسلمون لهم حقوق"
+        },
+        "D": {
+          "english": "Only family neighbors have rights",
+          "arabic": "فقط الجيران من الأقارب لهم حقوق"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Islam emphasizes great rights for all neighbors, regardless of their faith.",
+        "arabic": "يؤكد الإسلام على حقوق عظيمة لجميع الجيران، بغض النظر عن دينهم."
+      },
+      "reference": "Hadith - Bukhari"
+    },
+    {
+      "id": "q054",
+      "category": "Prophets",
+      "difficulty": 3,
+      "themes": [
+        "Prophet Miracles"
+      ],
+      "context": {
+        "english": "Divine Signs",
+        "arabic": "الآيات الإلهية"
+      },
+      "question": {
+        "english": "Which prophet's staff turned into a snake?",
+        "arabic": "عصا أي نبي تحولت إلى ثعبان؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Prophet Ibrahim",
+          "arabic": "النبي إبراهيم"
+        },
+        "B": {
+          "english": "Prophet Musa",
+          "arabic": "النبي موسى"
+        },
+        "C": {
+          "english": "Prophet Harun",
+          "arabic": "النبي هارون"
+        },
+        "D": {
+          "english": "Prophet Dawud",
+          "arabic": "النبي داود"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Prophet Musa's (Moses) staff turned into a snake as one of his miracles.",
+        "arabic": "عصا النبي موسى تحولت إلى ثعبان كإحدى معجزاته."
+      },
+      "reference": "Quran 7:107"
+    },
+    {
+      "id": "q055",
+      "category": "Islamic History",
+      "difficulty": 4,
+      "themes": [
+        "Islamic Expansion"
+      ],
+      "context": {
+        "english": "Historical Events",
+        "arabic": "الأحداث التاريخية"
+      },
+      "question": {
+        "english": "In which year was Mecca conquered peacefully?",
+        "arabic": "في أي سنة تم فتح مكة سلمياً؟"
+      },
+      "choices": {
+        "A": {
+          "english": "6 AH",
+          "arabic": "٦ هـ"
+        },
+        "B": {
+          "english": "8 AH",
+          "arabic": "٨ هـ"
+        },
+        "C": {
+          "english": "10 AH",
+          "arabic": "١٠ هـ"
+        },
+        "D": {
+          "english": "12 AH",
+          "arabic": "١٢ هـ"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Mecca was conquered peacefully in 8 AH (630 CE) with minimal bloodshed.",
+        "arabic": "تم فتح مكة سلمياً في السنة ٨ هجرية (٦٣٠ م) بأقل إراقة للدماء."
+      },
+      "reference": "Islamic History"
+    },
+    {
+      "id": "q056",
+      "category": "Quran",
+      "difficulty": 2,
+      "themes": [
+        "Night Journey"
+      ],
+      "context": {
+        "english": "Miraculous Journey",
+        "arabic": "الرحلة المعجزة"
+      },
+      "question": {
+        "english": "Which surah mentions the night journey (Isra) of Prophet Muhammad?",
+        "arabic": "أي سورة تذكر رحلة الإسراء للنبي محمد؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Al-Isra",
+          "arabic": "الإسراء"
+        },
+        "B": {
+          "english": "Al-Najm",
+          "arabic": "النجم"
+        },
+        "C": {
+          "english": "Al-Miraj",
+          "arabic": "المعراج"
+        },
+        "D": {
+          "english": "Al-Buraq",
+          "arabic": "البراق"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Surah Al-Isra (The Night Journey) begins by mentioning this miraculous journey.",
+        "arabic": "سورة الإسراء تبدأ بذكر هذه الرحلة المعجزة."
+      },
+      "reference": "Quran 17:1"
+    },
+    {
+      "id": "q057",
+      "category": "Pillars of Islam",
+      "difficulty": 2,
+      "themes": [
+        "Hajj Rituals"
+      ],
+      "context": {
+        "english": "Pilgrimage Rites",
+        "arabic": "مناسك الحج"
+      },
+      "question": {
+        "english": "What is the ritual of walking between Safa and Marwa called?",
+        "arabic": "ماذا يُسمى طقس المشي بين الصفا والمروة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Tawaf",
+          "arabic": "طواف"
+        },
+        "B": {
+          "english": "Sa'i",
+          "arabic": "سعي"
+        },
+        "C": {
+          "english": "Wuquf",
+          "arabic": "وقوف"
+        },
+        "D": {
+          "english": "Ihram",
+          "arabic": "إحرام"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Sa'i is the ritual of walking seven times between the hills of Safa and Marwa.",
+        "arabic": "السعي هو طقس المشي سبع مرات بين تلتي الصفا والمروة."
+      },
+      "reference": "Quran 2:158"
+    },
+    {
+      "id": "q058",
+      "category": "Companions",
+      "difficulty": 3,
+      "themes": [
+        "Early Converts"
+      ],
+      "context": {
+        "english": "First Muslims",
+        "arabic": "أوائل المسلمين"
+      },
+      "question": {
+        "english": "Who was the first young person to accept Islam?",
+        "arabic": "من كان أول شاب يقبل الإسلام؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Hassan ibn Abi Talib",
+          "arabic": "الحسن بن أبي طالب"
+        },
+        "B": {
+          "english": "Ali ibn Abi Talib",
+          "arabic": "علي بن أبي طالب"
+        },
+        "C": {
+          "english": "Abdullah ibn Abbas",
+          "arabic": "عبد الله بن عباس"
+        },
+        "D": {
+          "english": "Umar ibn al-Khattab",
+          "arabic": "عمر بن الخطاب"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Ali ibn Abi Talib was the first young person to accept Islam at about age 10.",
+        "arabic": "علي بن أبي طالب كان أول شاب يقبل الإسلام في حوالي سن العاشرة."
+      },
+      "reference": "Seerah"
+    },
+    {
+      "id": "q059",
+      "category": "Hadith",
+      "difficulty": 4,
+      "themes": [
+        "Famous Hadiths"
+      ],
+      "context": {
+        "english": "Prophetic Sayings",
+        "arabic": "الأقوال النبوية"
+      },
+      "question": {
+        "english": "Complete the hadith: 'Actions are but by intention, and every man shall have...'",
+        "arabic": "أكمل الحديث: 'إنما الأعمال بالنيات وإنما لكل امرئ...'؟"
+      },
+      "choices": {
+        "A": {
+          "english": "what he intended",
+          "arabic": "ما نوى"
+        },
+        "B": {
+          "english": "what he deserves",
+          "arabic": "ما يستحق"
+        },
+        "C": {
+          "english": "what he earns",
+          "arabic": "ما يكسب"
+        },
+        "D": {
+          "english": "what he gives",
+          "arabic": "ما يعطي"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The complete hadith is: 'Actions are but by intention, and every man shall have what he intended.'",
+        "arabic": "الحديث الكامل: 'إنما الأعمال بالنيات وإنما لكل امرئ ما نوى'."
+      },
+      "reference": "Hadith - Sahih Bukhari"
+    },
+    {
+      "id": "q060",
+      "category": "Islamic Culture",
+      "difficulty": 1,
+      "themes": [
+        "Greetings"
+      ],
+      "context": {
+        "english": "Islamic Etiquette",
+        "arabic": "الآداب الإسلامية"
+      },
+      "question": {
+        "english": "What is the standard Islamic greeting?",
+        "arabic": "ما هي التحية الإسلامية المعتادة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Ahlan wa sahlan",
+          "arabic": "أهلاً وسهلاً"
+        },
+        "B": {
+          "english": "As-salamu alaykum",
+          "arabic": "السلام عليكم"
+        },
+        "C": {
+          "english": "Marhaba",
+          "arabic": "مرحباً"
+        },
+        "D": {
+          "english": "Barakallahu feeki",
+          "arabic": "بارك الله فيك"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "'As-salamu alaykum' (Peace be upon you) is the standard Islamic greeting.",
+        "arabic": "'السلام عليكم' هي التحية الإسلامية المعتادة."
+      },
+      "reference": "Quran 4:86"
+    },
+    {
+      "id": "q061",
+      "category": "Prophets",
+      "difficulty": 3,
+      "themes": [
+        "Prophet Stories"
+      ],
+      "context": {
+        "english": "Prophetic Trials",
+        "arabic": "ابتلاءات الأنبياء"
+      },
+      "question": {
+        "english": "Which prophet was tested by Allah to sacrifice his son?",
+        "arabic": "أي نبي اختبره الله بذبح ابنه؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Prophet Ibrahim",
+          "arabic": "النبي إبراهيم"
+        },
+        "B": {
+          "english": "Prophet Yaqub",
+          "arabic": "النبي يعقوب"
+        },
+        "C": {
+          "english": "Prophet Ishaq",
+          "arabic": "النبي إسحاق"
+        },
+        "D": {
+          "english": "Prophet Ismail",
+          "arabic": "النبي إسماعيل"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Prophet Ibrahim was tested to sacrifice his son, which he was willing to do in obedience to Allah.",
+        "arabic": "اختُبر النبي إبراهيم بذبح ابنه، وكان مستعداً للطاعة لله."
+      },
+      "reference": "Quran 37:102-107"
+    },
+    {
+      "id": "q062",
+      "category": "Fiqh",
+      "difficulty": 4,
+      "themes": [
+        "Inheritance"
+      ],
+      "context": {
+        "english": "Islamic Law",
+        "arabic": "الشريعة الإسلامية"
+      },
+      "question": {
+        "english": "In Islamic inheritance law, what fraction does a wife receive if there are children?",
+        "arabic": "في قانون الميراث الإسلامي، ما نصيب الزوجة إذا كان هناك أطفال؟"
+      },
+      "choices": {
+        "A": {
+          "english": "1/4",
+          "arabic": "١/٤"
+        },
+        "B": {
+          "english": "1/8",
+          "arabic": "١/٨"
+        },
+        "C": {
+          "english": "1/3",
+          "arabic": "١/٣"
+        },
+        "D": {
+          "english": "1/2",
+          "arabic": "١/٢"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "A wife receives 1/8 of the inheritance if there are children, and 1/4 if there are no children.",
+        "arabic": "تحصل الزوجة على ١/٨ من الميراث إذا كان هناك أطفال، و١/٤ إذا لم يكن هناك أطفال."
+      },
+      "reference": "Quran 4:12"
+    },
+    {
+      "id": "q063",
+      "category": "Islamic Architecture",
+      "difficulty": 2,
+      "themes": [
+        "Mosque Elements"
+      ],
+      "context": {
+        "english": "Mosque Features",
+        "arabic": "عناصر المسجد"
+      },
+      "question": {
+        "english": "What is the niche in a mosque wall that indicates the direction of prayer called?",
+        "arabic": "ماذا يُسمى المحراب في جدار المسجد الذي يدل على اتجاه الصلاة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Minbar",
+          "arabic": "منبر"
+        },
+        "B": {
+          "english": "Mihrab",
+          "arabic": "محراب"
+        },
+        "C": {
+          "english": "Minaret",
+          "arabic": "مئذنة"
+        },
+        "D": {
+          "english": "Qiblah",
+          "arabic": "قبلة"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The mihrab is the niche in the mosque wall that indicates the direction of Mecca.",
+        "arabic": "المحراب هو التجويف في جدار المسجد الذي يدل على اتجاه مكة."
+      },
+      "reference": "Islamic Architecture"
+    },
+    {
+      "id": "q064",
+      "category": "Aqidah",
+      "difficulty": 5,
+      "themes": [
+        "Divine Books"
+      ],
+      "context": {
+        "english": "Revealed Scriptures",
+        "arabic": "الكتب المنزلة"
+      },
+      "question": {
+        "english": "Which book was revealed to Prophet Dawud (David)?",
+        "arabic": "أي كتاب أُنزل على النبي داود؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Torah",
+          "arabic": "التوراة"
+        },
+        "B": {
+          "english": "Zabur",
+          "arabic": "الزبور"
+        },
+        "C": {
+          "english": "Injil",
+          "arabic": "الإنجيل"
+        },
+        "D": {
+          "english": "Suhuf",
+          "arabic": "الصحف"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "The Zabur (Psalms) was revealed to Prophet Dawud (David).",
+        "arabic": "الزبور أُنزل على النبي داود."
+      },
+      "reference": "Quran 4:163"
+    },
+    {
+      "id": "q065",
+      "category": "Seerah",
+      "difficulty": 3,
+      "themes": [
+        "Prophet's Family"
+      ],
+      "context": {
+        "english": "Family Relations",
+        "arabic": "العلاقات الأسرية"
+      },
+      "question": {
+        "english": "What was the name of Prophet Muhammad's grandfather?",
+        "arabic": "ما اسم جد النبي محمد؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Hashim",
+          "arabic": "هاشم"
+        },
+        "B": {
+          "english": "Abdul Muttalib",
+          "arabic": "عبد المطلب"
+        },
+        "C": {
+          "english": "Abdullah",
+          "arabic": "عبد الله"
+        },
+        "D": {
+          "english": "Abu Talib",
+          "arabic": "أبو طالب"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Abdul Muttalib was Prophet Muhammad's grandfather who cared for him after his father's death.",
+        "arabic": "عبد المطلب كان جد النبي محمد الذي اعتنى به بعد وفاة والده."
+      },
+      "reference": "Seerah"
+    },
+    {
+      "id": "q066",
+      "category": "Arabic Language",
+      "difficulty": 4,
+      "themes": [
+        "Quranic Vocabulary"
+      ],
+      "context": {
+        "english": "Arabic Terms",
+        "arabic": "المصطلحات العربية"
+      },
+      "question": {
+        "english": "What does 'Muttaqin' mean in the Quran?",
+        "arabic": "ماذا تعني 'المتقين' في القرآن؟"
+      },
+      "choices": {
+        "A": {
+          "english": "The believers",
+          "arabic": "المؤمنون"
+        },
+        "B": {
+          "english": "The pious/God-conscious",
+          "arabic": "الأتقياء"
+        },
+        "C": {
+          "english": "The grateful",
+          "arabic": "الشاكرون"
+        },
+        "D": {
+          "english": "The patient",
+          "arabic": "الصابرون"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Muttaqin refers to those who are pious and God-conscious, who have taqwa.",
+        "arabic": "المتقين يشير إلى الأتقياء الذين يتقون الله، الذين لديهم تقوى."
+      },
+      "reference": "Quran 2:2"
+    },
+    {
+      "id": "q067",
+      "category": "Islamic Ethics",
+      "difficulty": 3,
+      "themes": [
+        "Business Ethics"
+      ],
+      "context": {
+        "english": "Commercial Transactions",
+        "arabic": "المعاملات التجارية"
+      },
+      "question": {
+        "english": "What is forbidden in Islamic business transactions?",
+        "arabic": "ما المحرم في المعاملات التجارية الإسلامية؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Profit",
+          "arabic": "الربح"
+        },
+        "B": {
+          "english": "Interest (Riba)",
+          "arabic": "الربا"
+        },
+        "C": {
+          "english": "Trade",
+          "arabic": "التجارة"
+        },
+        "D": {
+          "english": "Partnership",
+          "arabic": "الشراكة"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Riba (interest/usury) is strictly forbidden in Islamic financial transactions.",
+        "arabic": "الربا محرم تماماً في المعاملات المالية الإسلامية."
+      },
+      "reference": "Quran 2:275"
+    },
+    {
+      "id": "q068",
+      "category": "Pillars of Iman",
+      "difficulty": 4,
+      "themes": [
+        "Day of Judgment"
+      ],
+      "context": {
+        "english": "Belief in Afterlife",
+        "arabic": "الإيمان بالآخرة"
+      },
+      "question": {
+        "english": "What is the bridge over Hell called in Islamic belief?",
+        "arabic": "ماذا يُسمى الجسر فوق جهنم في العقيدة الإسلامية؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Sirat",
+          "arabic": "الصراط"
+        },
+        "B": {
+          "english": "Mizan",
+          "arabic": "الميزان"
+        },
+        "C": {
+          "english": "Hawd",
+          "arabic": "الحوض"
+        },
+        "D": {
+          "english": "Barzakh",
+          "arabic": "البرزخ"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "As-Sirat is the bridge over Hell that people must cross on the Day of Judgment.",
+        "arabic": "الصراط هو الجسر فوق جهنم الذي يجب على الناس عبوره يوم القيامة."
+      },
+      "reference": "Islamic Eschatology"
+    },
+    {
+      "id": "q069",
+      "category": "Islamic History",
+      "difficulty": 5,
+      "themes": [
+        "Early Expansion"
+      ],
+      "context": {
+        "english": "Islamic Conquests",
+        "arabic": "الفتوحات الإسلامية"
+      },
+      "question": {
+        "english": "Who was the Arab general who conquered Spain?",
+        "arabic": "من كان القائد العربي الذي فتح إسبانيا؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Khalid ibn al-Walid",
+          "arabic": "خالد بن الوليد"
+        },
+        "B": {
+          "english": "Tariq ibn Ziyad",
+          "arabic": "طارق بن زياد"
+        },
+        "C": {
+          "english": "Amr ibn al-As",
+          "arabic": "عمرو بن العاص"
+        },
+        "D": {
+          "english": "Sa'd ibn Abi Waqqas",
+          "arabic": "سعد بن أبي وقاص"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Tariq ibn Ziyad led the Muslim conquest of Spain in 711 CE. Gibraltar is named after him (Jabal Tariq).",
+        "arabic": "قاد طارق بن زياد الفتح الإسلامي لإسبانيا عام ٧١١ م. جبل طارق سُمي باسمه."
+      },
+      "reference": "Islamic History"
+    },
+    {
+      "id": "q070",
+      "category": "Quran",
+      "difficulty": 1,
+      "themes": [
+        "Quranic Creatures"
+      ],
+      "context": {
+        "english": "Animals in Quran",
+        "arabic": "الحيوانات في القرآن"
+      },
+      "question": {
+        "english": "Which animal is mentioned in Surah Al-Fil (The Elephant)?",
+        "arabic": "أي حيوان مذكور في سورة الفيل؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Camel",
+          "arabic": "الجمل"
+        },
+        "B": {
+          "english": "Elephant",
+          "arabic": "الفيل"
+        },
+        "C": {
+          "english": "Horse",
+          "arabic": "الحصان"
+        },
+        "D": {
+          "english": "Bird",
+          "arabic": "الطائر"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Surah Al-Fil mentions the elephant in the story of Abraha's attack on Mecca.",
+        "arabic": "سورة الفيل تذكر الفيل في قصة هجوم أبرهة على مكة."
+      },
+      "reference": "Quran 105"
+    },
+    {
+      "id": "q071",
+      "category": "Fiqh",
+      "difficulty": 2,
+      "themes": [
+        "Charity Types"
+      ],
+      "context": {
+        "english": "Islamic Giving",
+        "arabic": "العطاء الإسلامي"
+      },
+      "question": {
+        "english": "What is voluntary charity called in Islam?",
+        "arabic": "ماذا تُسمى الصدقة التطوعية في الإسلام؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Zakat",
+          "arabic": "زكاة"
+        },
+        "B": {
+          "english": "Sadaqah",
+          "arabic": "صدقة"
+        },
+        "C": {
+          "english": "Khums",
+          "arabic": "خمس"
+        },
+        "D": {
+          "english": "Waqf",
+          "arabic": "وقف"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Sadaqah refers to voluntary charity given out of kindness and generosity.",
+        "arabic": "الصدقة تشير إلى الصدقة التطوعية المعطاة من اللطف والكرم."
+      },
+      "reference": "Islamic Jurisprudence"
+    },
+    {
+      "id": "q072",
+      "category": "Companions",
+      "difficulty": 4,
+      "themes": [
+        "Martyrs"
+      ],
+      "context": {
+        "english": "Sacrifice for Islam",
+        "arabic": "التضحية من أجل الإسلام"
+      },
+      "question": {
+        "english": "Who was known as 'Sayid al-Shuhada' (Master of Martyrs)?",
+        "arabic": "من كان يُعرف بـ 'سيد الشهداء'؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Hamza ibn Abdul Muttalib",
+          "arabic": "حمزة بن عبد المطلب"
+        },
+        "B": {
+          "english": "Mus'ab ibn Umair",
+          "arabic": "مصعب بن عمير"
+        },
+        "C": {
+          "english": "Ja'far ibn Abi Talib",
+          "arabic": "جعفر بن أبي طالب"
+        },
+        "D": {
+          "english": "Abdullah ibn Rawaha",
+          "arabic": "عبد الله بن رواحة"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Hamza ibn Abdul Muttalib, the Prophet's uncle, was known as 'Sayid al-Shuhada' after his martyrdom at Uhud.",
+        "arabic": "حمزة بن عبد المطلب، عم النبي، كان يُعرف بـ 'سيد الشهداء' بعد استشهاده في أحد."
+      },
+      "reference": "Islamic History"
+    },
+    {
+      "id": "q073",
+      "category": "Islamic Sciences",
+      "difficulty": 5,
+      "themes": [
+        "Islamic Jurisprudence"
+      ],
+      "context": {
+        "english": "Legal Methodology",
+        "arabic": "المنهجية القانونية"
+      },
+      "question": {
+        "english": "What are the four main sources of Islamic law in order of priority?",
+        "arabic": "ما هي المصادر الأربعة الرئيسية للشريعة الإسلامية حسب الأولوية؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Quran, Sunnah, Ijma, Qiyas",
+          "arabic": "القرآن، السنة، الإجماع، القياس"
+        },
+        "B": {
+          "english": "Sunnah, Quran, Qiyas, Ijma",
+          "arabic": "السنة، القرآن، القياس، الإجماع"
+        },
+        "C": {
+          "english": "Quran, Ijma, Sunnah, Qiyas",
+          "arabic": "القرآن، الإجماع، السنة، القياس"
+        },
+        "D": {
+          "english": "Ijma, Quran, Sunnah, Qiyas",
+          "arabic": "الإجماع، القرآن، السنة، القياس"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The four sources in order are: Quran, Sunnah (Hadith), Ijma (consensus), and Qiyas (analogy).",
+        "arabic": "المصادر الأربعة بالترتيب هي: القرآن، السنة، الإجماع، والقياس."
+      },
+      "reference": "Usul al-Fiqh"
+    },
+    {
+      "id": "q074",
+      "category": "Prophets",
+      "difficulty": 2,
+      "themes": [
+        "Prophet Miracles"
+      ],
+      "context": {
+        "english": "Divine Signs",
+        "arabic": "الآيات الإلهية"
+      },
+      "question": {
+        "english": "Which prophet was given the miracle of healing the blind and lepers?",
+        "arabic": "أي نبي أُعطي معجزة شفاء العميان والمرضى؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Prophet Musa",
+          "arabic": "النبي موسى"
+        },
+        "B": {
+          "english": "Prophet Isa",
+          "arabic": "النبي عيسى"
+        },
+        "C": {
+          "english": "Prophet Sulaiman",
+          "arabic": "النبي سليمان"
+        },
+        "D": {
+          "english": "Prophet Yusuf",
+          "arabic": "النبي يوسف"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Prophet Isa (Jesus) was given the miracle of healing the blind and lepers by Allah's permission.",
+        "arabic": "أُعطي النبي عيسى معجزة شفاء العميان والمرضى بإذن الله."
+      },
+      "reference": "Quran 3:49"
+    },
+    {
+      "id": "q075",
+      "category": "Islamic Culture",
+      "difficulty": 3,
+      "themes": [
+        "Islamic Months"
+      ],
+      "context": {
+        "english": "Lunar Calendar",
+        "arabic": "التقويم القمري"
+      },
+      "question": {
+        "english": "Which month comes before Ramadan in the Islamic calendar?",
+        "arabic": "أي شهر يأتي قبل رمضان في التقويم الإسلامي؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Rajab",
+          "arabic": "رجب"
+        },
+        "B": {
+          "english": "Sha'ban",
+          "arabic": "شعبان"
+        },
+        "C": {
+          "english": "Jumada al-Thani",
+          "arabic": "جمادى الآخرة"
+        },
+        "D": {
+          "english": "Shawwal",
+          "arabic": "شوال"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Sha'ban is the eighth month that comes directly before Ramadan (the ninth month).",
+        "arabic": "شعبان هو الشهر الثامن الذي يأتي مباشرة قبل رمضان (الشهر التاسع)."
+      },
+      "reference": "Islamic Calendar"
+    },
+    {
+      "id": "q076",
+      "category": "Quran",
+      "difficulty": 3,
+      "themes": [
+        "Revelation Periods"
+      ],
+      "context": {
+        "english": "Meccan and Medinan Surahs",
+        "arabic": "السور المكية والمدنية"
+      },
+      "question": {
+        "english": "Surah Al-Baqarah was revealed in which city?",
+        "arabic": "سورة البقرة نزلت في أي مدينة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Mecca",
+          "arabic": "مكة"
+        },
+        "B": {
+          "english": "Medina",
+          "arabic": "المدينة"
+        },
+        "C": {
+          "english": "Jerusalem",
+          "arabic": "القدس"
+        },
+        "D": {
+          "english": "Taif",
+          "arabic": "الطائف"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Surah Al-Baqarah is a Medinan surah, revealed after the Hijra.",
+        "arabic": "سورة البقرة مدنية، نزلت بعد الهجرة."
+      },
+      "reference": "Quranic Sciences"
+    },
+    {
+      "id": "q077",
+      "category": "Pillars of Islam",
+      "difficulty": 3,
+      "themes": [
+        "Hajj Requirements"
+      ],
+      "context": {
+        "english": "Pilgrimage Conditions",
+        "arabic": "شروط الحج"
+      },
+      "question": {
+        "english": "Hajj is obligatory for those who are able to perform it how many times in their lifetime?",
+        "arabic": "الحج واجب على القادرين كم مرة في العمر؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Once",
+          "arabic": "مرة واحدة"
+        },
+        "B": {
+          "english": "Twice",
+          "arabic": "مرتين"
+        },
+        "C": {
+          "english": "Three times",
+          "arabic": "ثلاث مرات"
+        },
+        "D": {
+          "english": "Every year",
+          "arabic": "كل سنة"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Hajj is obligatory once in a lifetime for those who are physically and financially able.",
+        "arabic": "الحج واجب مرة واحدة في العمر للقادرين جسدياً ومالياً."
+      },
+      "reference": "Quran 3:97"
+    },
+    {
+      "id": "q078",
+      "category": "Islamic Ethics",
+      "difficulty": 1,
+      "themes": [
+        "Basic Manners"
+      ],
+      "context": {
+        "english": "Islamic Etiquette",
+        "arabic": "الآداب الإسلامية"
+      },
+      "question": {
+        "english": "What should a Muslim say before eating?",
+        "arabic": "ماذا يقول المسلم قبل الأكل؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Allahu Akbar",
+          "arabic": "الله أكبر"
+        },
+        "B": {
+          "english": "Bismillah",
+          "arabic": "بسم الله"
+        },
+        "C": {
+          "english": "Alhamdulillah",
+          "arabic": "الحمد لله"
+        },
+        "D": {
+          "english": "SubhanAllah",
+          "arabic": "سبحان الله"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Muslims say 'Bismillah' (In the name of Allah) before eating.",
+        "arabic": "يقول المسلمون 'بسم الله' قبل الأكل."
+      },
+      "reference": "Islamic Etiquette"
+    },
+    {
+      "id": "q079",
+      "category": "Companions",
+      "difficulty": 2,
+      "themes": [
+        "Scribes of Revelation"
+      ],
+      "context": {
+        "english": "Recording the Quran",
+        "arabic": "تسجيل القرآن"
+      },
+      "question": {
+        "english": "Who was one of the main scribes of the Quran during Prophet's time?",
+        "arabic": "من كان أحد كتاب الوحي الرئيسيين في عهد النبي؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Zaid ibn Thabit",
+          "arabic": "زيد بن ثابت"
+        },
+        "B": {
+          "english": "Bilal ibn Rabah",
+          "arabic": "بلال بن رباح"
+        },
+        "C": {
+          "english": "Salman al-Farisi",
+          "arabic": "سلمان الفارسي"
+        },
+        "D": {
+          "english": "Abu Dharr al-Ghifari",
+          "arabic": "أبو ذر الغفاري"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Zaid ibn Thabit was one of the main scribes who wrote down the Quranic revelations.",
+        "arabic": "زيد بن ثابت كان أحد كتاب الوحي الرئيسيين الذين كتبوا الوحي القرآني."
+      },
+      "reference": "Islamic History"
+    },
+    {
+      "id": "q080",
+      "category": "Hadith",
+      "difficulty": 4,
+      "themes": [
+        "Hadith Terminology"
+      ],
+      "context": {
+        "english": "Hadith Classification",
+        "arabic": "تصنيف الحديث"
+      },
+      "question": {
+        "english": "What does 'Mutawatir' mean in hadith terminology?",
+        "arabic": "ماذا يعني 'متواتر' في مصطلح الحديث؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Narrated by many people",
+          "arabic": "رواه كثير من الناس"
+        },
+        "B": {
+          "english": "Narrated by one person",
+          "arabic": "رواه شخص واحد"
+        },
+        "C": {
+          "english": "Weak narration",
+          "arabic": "رواية ضعيفة"
+        },
+        "D": {
+          "english": "Fabricated narration",
+          "arabic": "رواية مكذوبة"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Mutawatir refers to hadiths narrated by so many people that it's impossible they all conspired to lie.",
+        "arabic": "المتواتر يشير إلى الأحاديث التي رواها عدد كبير من الناس بحيث يستحيل تواطؤهم على الكذب."
+      },
+      "reference": "Hadith Sciences"
+    },
+    {
+      "id": "q081",
+      "category": "Seerah",
+      "difficulty": 2,
+      "themes": [
+        "Prophet's Childhood"
+      ],
+      "context": {
+        "english": "Early Life",
+        "arabic": "الحياة المبكرة"
+      },
+      "question": {
+        "english": "Who was Prophet Muhammad's wet nurse?",
+        "arabic": "من كانت مرضعة النبي محمد؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Thuwaybah",
+          "arabic": "ثويبة"
+        },
+        "B": {
+          "english": "Halimah as-Sa'diyyah",
+          "arabic": "حليمة السعدية"
+        },
+        "C": {
+          "english": "Aminah bint Wahb",
+          "arabic": "آمنة بنت وهب"
+        },
+        "D": {
+          "english": "Fatimah bint Asad",
+          "arabic": "فاطمة بنت أسد"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Halimah as-Sa'diyyah was Prophet Muhammad's foster mother and wet nurse from the Banu Sa'd tribe.",
+        "arabic": "حليمة السعدية كانت أم النبي محمد بالرضاعة من قبيلة بني سعد."
+      },
+      "reference": "Seerah"
+    },
+    {
+      "id": "q082",
+      "category": "Fiqh",
+      "difficulty": 3,
+      "themes": [
+        "Marriage Laws"
+      ],
+      "context": {
+        "english": "Islamic Marriage",
+        "arabic": "الزواج الإسلامي"
+      },
+      "question": {
+        "english": "What is the waiting period called after divorce in Islam?",
+        "arabic": "ماذا تُسمى فترة الانتظار بعد الطلاق في الإسلام؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Iddah",
+          "arabic": "عدة"
+        },
+        "B": {
+          "english": "Mahr",
+          "arabic": "مهر"
+        },
+        "C": {
+          "english": "Nikah",
+          "arabic": "نكاح"
+        },
+        "D": {
+          "english": "Khula",
+          "arabic": "خلع"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Iddah is the waiting period a woman must observe after divorce or widowhood before remarrying.",
+        "arabic": "العدة هي فترة الانتظار التي يجب على المرأة ملاحظتها بعد الطلاق أو الترمل قبل الزواج مرة أخرى."
+      },
+      "reference": "Quran 2:228"
+    },
+    {
+      "id": "q083",
+      "category": "Prophets",
+      "difficulty": 4,
+      "themes": [
+        "Prophet Genealogy"
+      ],
+      "context": {
+        "english": "Prophetic Lineage",
+        "arabic": "نسب الأنبياء"
+      },
+      "question": {
+        "english": "Who was the father of Prophet Yusuf (Joseph)?",
+        "arabic": "من كان والد النبي يوسف؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Prophet Ibrahim",
+          "arabic": "النبي إبراهيم"
+        },
+        "B": {
+          "english": "Prophet Ishaq",
+          "arabic": "النبي إسحاق"
+        },
+        "C": {
+          "english": "Prophet Yaqub",
+          "arabic": "النبي يعقوب"
+        },
+        "D": {
+          "english": "Prophet Ismail",
+          "arabic": "النبي إسماعيل"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "Prophet Yusuf (Joseph) was the son of Prophet Yaqub (Jacob), also known as Israel.",
+        "arabic": "النبي يوسف كان ابن النبي يعقوب، المعروف أيضاً باسم إسرائيل."
+      },
+      "reference": "Quran 12:4"
+    },
+    {
+      "id": "q084",
+      "category": "Islamic Architecture",
+      "difficulty": 3,
+      "themes": [
+        "First Mosque"
+      ],
+      "context": {
+        "english": "Early Islamic Buildings",
+        "arabic": "المباني الإسلامية المبكرة"
+      },
+      "question": {
+        "english": "What was the first mosque built by Prophet Muhammad?",
+        "arabic": "ما هو أول مسجد بناه النبي محمد؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Masjid al-Haram",
+          "arabic": "المسجد الحرام"
+        },
+        "B": {
+          "english": "Masjid an-Nabawi",
+          "arabic": "المسجد النبوي"
+        },
+        "C": {
+          "english": "Masjid Quba",
+          "arabic": "مسجد قباء"
+        },
+        "D": {
+          "english": "Masjid al-Aqsa",
+          "arabic": "المسجد الأقصى"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "Masjid Quba was the first mosque built by Prophet Muhammad upon arriving in Medina.",
+        "arabic": "مسجد قباء كان أول مسجد بناه النبي محمد عند وصوله إلى المدينة."
+      },
+      "reference": "Seerah"
+    },
+    {
+      "id": "q085",
+      "category": "Arabic Language",
+      "difficulty": 2,
+      "themes": [
+        "Islamic Phrases"
+      ],
+      "context": {
+        "english": "Common Expressions",
+        "arabic": "التعبيرات الشائعة"
+      },
+      "question": {
+        "english": "What does 'Insha'Allah' mean?",
+        "arabic": "ماذا تعني 'إن شاء الله'؟"
+      },
+      "choices": {
+        "A": {
+          "english": "God willing",
+          "arabic": "بإذن الله"
+        },
+        "B": {
+          "english": "God is great",
+          "arabic": "الله أكبر"
+        },
+        "C": {
+          "english": "Praise be to God",
+          "arabic": "الحمد لله"
+        },
+        "D": {
+          "english": "Glory to God",
+          "arabic": "سبحان الله"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "'Insha'Allah' means 'God willing' or 'if Allah wills', used when referring to future events.",
+        "arabic": "'إن شاء الله' تعني 'بإذن الله' أو 'إذا شاء الله'، تُستخدم عند الإشارة إلى الأحداث المستقبلية."
+      },
+      "reference": "Quran 18:24"
+    },
+    {
+      "id": "q086",
+      "category": "Aqidah",
+      "difficulty": 5,
+      "themes": [
+        "Angels' Duties"
+      ],
+      "context": {
+        "english": "Angelic Functions",
+        "arabic": "وظائف الملائكة"
+      },
+      "question": {
+        "english": "Which angel is responsible for rain and sustenance?",
+        "arabic": "أي ملك مسؤول عن المطر والرزق؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Jibril",
+          "arabic": "جبريل"
+        },
+        "B": {
+          "english": "Mikail",
+          "arabic": "ميكائيل"
+        },
+        "C": {
+          "english": "Israfil",
+          "arabic": "إسرافيل"
+        },
+        "D": {
+          "english": "Azrail",
+          "arabic": "عزرائيل"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Angel Mikail (Michael) is responsible for rain, weather, and providing sustenance to creation.",
+        "arabic": "الملك ميكائيل مسؤول عن المطر والطقس وتوفير الرزق للخلق."
+      },
+      "reference": "Islamic Theology"
+    },
+    {
+      "id": "q087",
+      "category": "Islamic History",
+      "difficulty": 3,
+      "themes": [
+        "Treaty of Hudaybiyyah"
+      ],
+      "context": {
+        "english": "Peace Agreements",
+        "arabic": "اتفاقيات السلام"
+      },
+      "question": {
+        "english": "The Treaty of Hudaybiyyah was made with which tribe?",
+        "arabic": "صُلح الحديبية كان مع أي قبيلة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Quraysh",
+          "arabic": "قريش"
+        },
+        "B": {
+          "english": "Hawazin",
+          "arabic": "هوازن"
+        },
+        "C": {
+          "english": "Thaqif",
+          "arabic": "ثقيف"
+        },
+        "D": {
+          "english": "Ghatafan",
+          "arabic": "غطفان"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The Treaty of Hudaybiyyah was a peace agreement between Muslims and the Quraysh tribe of Mecca.",
+        "arabic": "صلح الحديبية كان اتفاقية سلام بين المسلمين وقبيلة قريش في مكة."
+      },
+      "reference": "Islamic History"
+    },
+    {
+      "id": "q088",
+      "category": "Islamic Culture",
+      "difficulty": 2,
+      "themes": [
+        "Friday Prayer"
+      ],
+      "context": {
+        "english": "Weekly Worship",
+        "arabic": "العبادة الأسبوعية"
+      },
+      "question": {
+        "english": "What is the special congregational prayer on Friday called?",
+        "arabic": "ماذا تُسمى الصلاة الجماعية الخاصة يوم الجمعة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Salat al-Eid",
+          "arabic": "صلاة العيد"
+        },
+        "B": {
+          "english": "Salat al-Jumu'ah",
+          "arabic": "صلاة الجمعة"
+        },
+        "C": {
+          "english": "Salat at-Tarawih",
+          "arabic": "صلاة التراويح"
+        },
+        "D": {
+          "english": "Salat al-Maghrib",
+          "arabic": "صلاة المغرب"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Salat al-Jumu'ah (Friday Prayer) is the special congregational prayer performed on Fridays.",
+        "arabic": "صلاة الجمعة هي الصلاة الجماعية الخاصة التي تُؤدى يوم الجمعة."
+      },
+      "reference": "Quran 62:9"
+    },
+    {
+      "id": "q089",
+      "category": "Pillars of Iman",
+      "difficulty": 3,
+      "themes": [
+        "Books of Allah"
+      ],
+      "context": {
+        "english": "Divine Scriptures",
+        "arabic": "الكتب المقدسة"
+      },
+      "question": {
+        "english": "Which book was revealed to Prophet Musa (Moses)?",
+        "arabic": "أي كتاب أُنزل على النبي موسى؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Torah",
+          "arabic": "التوراة"
+        },
+        "B": {
+          "english": "Zabur",
+          "arabic": "الزبور"
+        },
+        "C": {
+          "english": "Injil",
+          "arabic": "الإنجيل"
+        },
+        "D": {
+          "english": "Quran",
+          "arabic": "القرآن"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The Torah was revealed to Prophet Musa (Moses) for the guidance of the Children of Israel.",
+        "arabic": "التوراة أُنزلت على النبي موسى لهداية بني إسرائيل."
+      },
+      "reference": "Quran 5:44"
+    },
+    {
+      "id": "q090",
+      "category": "Quran",
+      "difficulty": 4,
+      "themes": [
+        "Preserved Verses"
+      ],
+      "context": {
+        "english": "Quranic Preservation",
+        "arabic": "حفظ القرآن"
+      },
+      "question": {
+        "english": "Which verse mentions that Allah will protect the Quran from corruption?",
+        "arabic": "أي آية تذكر أن الله سيحفظ القرآن من التحريف؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Al-Hijr 15:9",
+          "arabic": "الحجر ١٥:٩"
+        },
+        "B": {
+          "english": "Al-Baqarah 2:2",
+          "arabic": "البقرة ٢:٢"
+        },
+        "C": {
+          "english": "Al-Fatihah 1:1",
+          "arabic": "الفاتحة ١:١"
+        },
+        "D": {
+          "english": "An-Nas 114:1",
+          "arabic": "الناس ١١٤:١"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Quran 15:9 states: 'Indeed it is We who sent down the Quran and indeed, We will be its guardian.'",
+        "arabic": "القرآن ١٥:٩ يقول: 'إنا نحن نزلنا الذكر وإنا له لحافظون'."
+      },
+      "reference": "Quran 15:9"
+    },
+    {
+      "id": "q091",
+      "category": "Fiqh",
+      "difficulty": 5,
+      "themes": [
+        "Legal Punishments"
+      ],
+      "context": {
+        "english": "Islamic Criminal Law",
+        "arabic": "القانون الجنائي الإسلامي"
+      },
+      "question": {
+        "english": "What are the fixed punishments in Islamic law called?",
+        "arabic": "ماذا تُسمى العقوبات المحددة في الشريعة الإسلامية؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Hudud",
+          "arabic": "حدود"
+        },
+        "B": {
+          "english": "Qisas",
+          "arabic": "قصاص"
+        },
+        "C": {
+          "english": "Ta'zir",
+          "arabic": "تعزير"
+        },
+        "D": {
+          "english": "Diyya",
+          "arabic": "دية"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Hudud are the fixed punishments mentioned in the Quran and Sunnah for specific crimes.",
+        "arabic": "الحدود هي العقوبات المحددة المذكورة في القرآن والسنة لجرائم معينة."
+      },
+      "reference": "Islamic Jurisprudence"
+    },
+    {
+      "id": "q092",
+      "category": "Companions",
+      "difficulty": 4,
+      "themes": [
+        "Ten Promised Paradise"
+      ],
+      "context": {
+        "english": "Al-Asharah al-Mubashsharah",
+        "arabic": "العشرة المبشرون بالجنة"
+      },
+      "question": {
+        "english": "Who among the following was NOT one of the ten promised Paradise?",
+        "arabic": "من من التالي لم يكن من العشرة المبشرين بالجنة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Abu Bakr",
+          "arabic": "أبو بكر"
+        },
+        "B": {
+          "english": "Umar ibn al-Khattab",
+          "arabic": "عمر بن الخطاب"
+        },
+        "C": {
+          "english": "Khalid ibn al-Walid",
+          "arabic": "خالد بن الوليد"
+        },
+        "D": {
+          "english": "Uthman ibn Affan",
+          "arabic": "عثمان بن عفان"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "Khalid ibn al-Walid, though a great general, was not among the ten companions promised Paradise.",
+        "arabic": "خالد بن الوليد، رغم كونه قائداً عظيماً، لم يكن من العشرة المبشرين بالجنة."
+      },
+      "reference": "Hadith - Tirmidhi"
+    },
+    {
+      "id": "q093",
+      "category": "Islamic Sciences",
+      "difficulty": 4,
+      "themes": [
+        "Hadith Collections"
+      ],
+      "context": {
+        "english": "Major Hadith Works",
+        "arabic": "أعمال الحديث الرئيسية"
+      },
+      "question": {
+        "english": "Who compiled 'Sunan at-Tirmidhi'?",
+        "arabic": "من جمع 'سنن الترمذي'؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Abu Dawood",
+          "arabic": "أبو داود"
+        },
+        "B": {
+          "english": "At-Tirmidhi",
+          "arabic": "الترمذي"
+        },
+        "C": {
+          "english": "An-Nasa'i",
+          "arabic": "النسائي"
+        },
+        "D": {
+          "english": "Ibn Majah",
+          "arabic": "ابن ماجه"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "Muhammad ibn Isa at-Tirmidhi compiled the collection known as 'Sunan at-Tirmidhi' or 'Jami' at-Tirmidhi'.",
+        "arabic": "محمد بن عيسى الترمذي جمع المجموعة المعروفة باسم 'سنن الترمذي' أو 'جامع الترمذي'."
+      },
+      "reference": "Hadith Sciences"
+    },
+    {
+      "id": "q094",
+      "category": "Seerah",
+      "difficulty": 5,
+      "themes": [
+        "Battles Details"
+      ],
+      "context": {
+        "english": "Military History",
+        "arabic": "التاريخ العسكري"
+      },
+      "question": {
+        "english": "How many Muslim fighters participated in the Battle of Badr?",
+        "arabic": "كم عدد المقاتلين المسلمين الذين شاركوا في معركة بدر؟"
+      },
+      "choices": {
+        "A": {
+          "english": "300",
+          "arabic": "٣٠٠"
+        },
+        "B": {
+          "english": "313",
+          "arabic": "٣١٣"
+        },
+        "C": {
+          "english": "700",
+          "arabic": "٧٠٠"
+        },
+        "D": {
+          "english": "1000",
+          "arabic": "١٠٠٠"
+        }
+      },
+      "correct_answer": "B",
+      "explanation": {
+        "english": "313 Muslim fighters participated in the Battle of Badr against approximately 1000 Meccan fighters.",
+        "arabic": "شارك ٣١٣ مقاتل مسلم في معركة بدر ضد حوالي ١٠٠٠ مقاتل مكي."
+      },
+      "reference": "Islamic History"
+    },
+    {
+      "id": "q095",
+      "category": "Prophets",
+      "difficulty": 1,
+      "themes": [
+        "Prophet's Family"
+      ],
+      "context": {
+        "english": "Family Relations",
+        "arabic": "العلاقات الأسرية"
+      },
+      "question": {
+        "english": "How many daughters did Prophet Muhammad have?",
+        "arabic": "كم عدد بنات النبي محمد؟"
+      },
+      "choices": {
+        "A": {
+          "english": "2",
+          "arabic": "٢"
+        },
+        "B": {
+          "english": "3",
+          "arabic": "٣"
+        },
+        "C": {
+          "english": "4",
+          "arabic": "٤"
+        },
+        "D": {
+          "english": "5",
+          "arabic": "٥"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "Prophet Muhammad had four daughters: Zainab, Ruqayyah, Umm Kulthum, and Fatimah.",
+        "arabic": "كان للنبي محمد أربع بنات: زينب، رقية، أم كلثوم، وفاطمة."
+      },
+      "reference": "Seerah"
+    },
+    {
+      "id": "q096",
+      "category": "Islamic Ethics",
+      "difficulty": 4,
+      "themes": [
+        "Spiritual Purification"
+      ],
+      "context": {
+        "english": "Soul Development",
+        "arabic": "تطوير الروح"
+      },
+      "question": {
+        "english": "What is the Islamic concept of purifying the soul called?",
+        "arabic": "ماذا يُسمى المفهوم الإسلامي لتطهير النفس؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Tazkiyah",
+          "arabic": "تزكية"
+        },
+        "B": {
+          "english": "Taqwa",
+          "arabic": "تقوى"
+        },
+        "C": {
+          "english": "Ihsan",
+          "arabic": "إحسان"
+        },
+        "D": {
+          "english": "Tawhid",
+          "arabic": "توحيد"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Tazkiyah refers to the purification and development of the soul in Islamic spirituality.",
+        "arabic": "التزكية تشير إلى تطهير وتطوير النفس في الروحانية الإسلامية."
+      },
+      "reference": "Quran 91:9"
+    },
+    {
+      "id": "q097",
+      "category": "Quran",
+      "difficulty": 2,
+      "themes": [
+        "Surah Names"
+      ],
+      "context": {
+        "english": "Chapter Titles",
+        "arabic": "أسماء السور"
+      },
+      "question": {
+        "english": "Which surah is named after a woman?",
+        "arabic": "أي سورة سُميت باسم امرأة؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Maryam",
+          "arabic": "مريم"
+        },
+        "B": {
+          "english": "Fatimah",
+          "arabic": "فاطمة"
+        },
+        "C": {
+          "english": "Khadijah",
+          "arabic": "خديجة"
+        },
+        "D": {
+          "english": "Aisha",
+          "arabic": "عائشة"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "Surah Maryam (Chapter 19) is named after Maryam (Mary), the mother of Prophet Isa.",
+        "arabic": "سورة مريم (الفصل ١٩) سُميت باسم مريم، أم النبي عيسى."
+      },
+      "reference": "Quran 19"
+    },
+    {
+      "id": "q098",
+      "category": "Islamic Culture",
+      "difficulty": 3,
+      "themes": [
+        "Festivals"
+      ],
+      "context": {
+        "english": "Islamic Celebrations",
+        "arabic": "الاحتفالات الإسلامية"
+      },
+      "question": {
+        "english": "How many days does Eid al-Adha last?",
+        "arabic": "كم يوماً يستمر عيد الأضحى؟"
+      },
+      "choices": {
+        "A": {
+          "english": "1 day",
+          "arabic": "يوم واحد"
+        },
+        "B": {
+          "english": "3 days",
+          "arabic": "٣ أيام"
+        },
+        "C": {
+          "english": "4 days",
+          "arabic": "٤ أيام"
+        },
+        "D": {
+          "english": "7 days",
+          "arabic": "٧ أيام"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "Eid al-Adha lasts for four days, from the 10th to 13th of Dhul Hijjah.",
+        "arabic": "عيد الأضحى يستمر أربعة أيام، من العاشر إلى الثالث عشر من ذي الحجة."
+      },
+      "reference": "Islamic Tradition"
+    },
+    {
+      "id": "q099",
+      "category": "Arabic Language",
+      "difficulty": 5,
+      "themes": [
+        "Quranic Grammar"
+      ],
+      "context": {
+        "english": "Arabic Linguistics",
+        "arabic": "اللسانيات العربية"
+      },
+      "question": {
+        "english": "What is the literary style of the Quran called?",
+        "arabic": "ماذا يُسمى الأسلوب الأدبي للقرآن؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Prose",
+          "arabic": "نثر"
+        },
+        "B": {
+          "english": "Poetry",
+          "arabic": "شعر"
+        },
+        "C": {
+          "english": "Unique Quranic style",
+          "arabic": "أسلوب قرآني فريد"
+        },
+        "D": {
+          "english": "Rhymed prose",
+          "arabic": "نثر مقفى"
+        }
+      },
+      "correct_answer": "C",
+      "explanation": {
+        "english": "The Quran has a unique literary style that is neither prose nor poetry, but distinctly Quranic.",
+        "arabic": "للقرآن أسلوب أدبي فريد ليس نثراً ولا شعراً، بل قرآني مميز."
+      },
+      "reference": "Quranic Studies"
+    },
+    {
+      "id": "q100",
+      "category": "Pillars of Iman",
+      "difficulty": 5,
+      "themes": [
+        "Day of Judgment"
+      ],
+      "context": {
+        "english": "Eschatology",
+        "arabic": "علم الآخرة"
+      },
+      "question": {
+        "english": "What are the two questions asked in the grave according to Islamic belief?",
+        "arabic": "ما هما السؤالان اللذان يُسألان في القبر حسب العقيدة الإسلامية؟"
+      },
+      "choices": {
+        "A": {
+          "english": "Who is your Lord? What is your religion?",
+          "arabic": "من ربك؟ ما دينك؟"
+        },
+        "B": {
+          "english": "What did you do? How much did you pray?",
+          "arabic": "ماذا فعلت؟ كم صليت؟"
+        },
+        "C": {
+          "english": "Where are you from? What is your name?",
+          "arabic": "من أين أنت؟ ما اسمك؟"
+        },
+        "D": {
+          "english": "How old are you? What did you earn?",
+          "arabic": "كم عمرك؟ ماذا كسبت؟"
+        }
+      },
+      "correct_answer": "A",
+      "explanation": {
+        "english": "The angels ask: 'Who is your Lord? What is your religion? Who is this man (Prophet)?'",
+        "arabic": "يسأل الملائكة: 'من ربك؟ ما دينك؟ من هذا الرجل (النبي)؟'"
+      },
+      "reference": "Islamic Eschatology"
     }
   ]
 }

@@ -1173,7 +1173,9 @@ class QuizManager:
 
         # Recent questions tracking to avoid duplicates
         self.recent_questions: list[str] = []  # Store question IDs
-        self.max_recent_questions = 15  # Track last 15 questions
+        self.recent_questions_timestamps: dict[str, float] = {}  # Track when each question was asked
+        self.max_recent_questions = 72  # Track last 72 questions (3 days at 3-hour intervals)
+        self.max_recent_hours = 72  # Maximum hours to consider a question "recent"
 
         # Create data directory if it doesn't exist
         self.data_dir.mkdir(parents=True, exist_ok=True)
@@ -1389,12 +1391,25 @@ class QuizManager:
             if not filtered_questions:
                 return None
 
-            # Filter out recently asked questions
-            available_questions = [
-                q
-                for q in filtered_questions
-                if q.get("id", str(hash(str(q)))) not in self.recent_questions
-            ]
+            # Filter out recently asked questions (both list-based and time-based)
+            current_time = datetime.now(UTC).timestamp()
+            max_age_seconds = self.max_recent_hours * 3600  # Convert hours to seconds
+            
+            available_questions = []
+            for q in filtered_questions:
+                question_id = q.get("id", str(hash(str(q))))
+                
+                # Check if question is in recent list
+                if question_id in self.recent_questions:
+                    continue
+                    
+                # Check if question was asked within the time limit
+                if question_id in self.recent_questions_timestamps:
+                    question_age = current_time - self.recent_questions_timestamps[question_id]
+                    if question_age < max_age_seconds:
+                        continue
+                
+                available_questions.append(q)
 
             # If no questions available (all recent), reset recent list and use all
             if not available_questions:
@@ -1436,32 +1451,75 @@ class QuizManager:
             return None
 
     def add_to_recent_questions(self, question_id: str) -> None:
-        """Add a question ID to the recent questions list"""
+        """Add a question ID to the recent questions list with timestamp tracking"""
         try:
+            current_time = datetime.now(UTC).timestamp()
+            
             # Add to beginning of list
             if question_id in self.recent_questions:
                 self.recent_questions.remove(question_id)
 
             self.recent_questions.insert(0, question_id)
+            
+            # Update timestamp
+            self.recent_questions_timestamps[question_id] = current_time
 
             # Keep only the most recent questions
             if len(self.recent_questions) > self.max_recent_questions:
-                self.recent_questions = self.recent_questions[
-                    : self.max_recent_questions
-                ]
+                removed_question = self.recent_questions.pop()
+                if removed_question in self.recent_questions_timestamps:
+                    del self.recent_questions_timestamps[removed_question]
+
+            # Clean up old timestamps (older than 72 hours)
+            self._cleanup_old_timestamps()
 
             # Save state to persist recent questions
             self.save_state()
 
         except Exception as e:
             log_error_with_traceback("Error adding to recent questions", e)
+    
+    def _cleanup_old_timestamps(self) -> None:
+        """Clean up timestamps older than the maximum recent hours"""
+        try:
+            current_time = datetime.now(UTC).timestamp()
+            max_age_seconds = self.max_recent_hours * 3600
+            
+            # Find old timestamps to remove
+            old_timestamps = []
+            for question_id, timestamp in self.recent_questions_timestamps.items():
+                if current_time - timestamp > max_age_seconds:
+                    old_timestamps.append(question_id)
+            
+            # Remove old timestamps
+            for question_id in old_timestamps:
+                del self.recent_questions_timestamps[question_id]
+                
+            # Also remove from recent_questions list if they're still there
+            for question_id in old_timestamps:
+                if question_id in self.recent_questions:
+                    self.recent_questions.remove(question_id)
+                    
+        except Exception as e:
+            log_error_with_traceback("Error cleaning up old timestamps", e)
 
     def get_recent_questions_info(self) -> dict:
         """Get information about recently asked questions"""
         try:
+            current_time = datetime.now(UTC).timestamp()
+            max_age_seconds = self.max_recent_hours * 3600
+            
+            # Count questions that are still within time limit
+            recent_within_time = 0
+            for question_id, timestamp in self.recent_questions_timestamps.items():
+                if current_time - timestamp < max_age_seconds:
+                    recent_within_time += 1
+            
             return {
                 "recent_count": len(self.recent_questions),
+                "recent_within_time": recent_within_time,
                 "max_recent": self.max_recent_questions,
+                "max_recent_hours": self.max_recent_hours,
                 "recent_ids": self.recent_questions.copy(),
                 "total_questions": len(self.questions),
                 "available_questions": len(
@@ -1471,6 +1529,7 @@ class QuizManager:
                         if q.get("id", str(hash(str(q)))) not in self.recent_questions
                     ]
                 ),
+                "timestamp_count": len(self.recent_questions_timestamps),
             }
         except Exception as e:
             log_error_with_traceback("Error getting recent questions info", e)
@@ -1845,6 +1904,7 @@ class QuizManager:
                 "questions": self.questions,
                 "user_scores": self.user_scores,
                 "recent_questions": self.recent_questions,  # Add recent questions tracking
+                "recent_questions_timestamps": self.recent_questions_timestamps,  # Add timestamp tracking
             }
 
             # Add last_sent_time if it exists
@@ -1900,6 +1960,7 @@ class QuizManager:
                     # Only load user scores, timing, and recent questions, not questions
                     self.user_scores = state.get("user_scores", {})
                     self.recent_questions = state.get("recent_questions", [])
+                    self.recent_questions_timestamps = state.get("recent_questions_timestamps", {})
 
                     # Handle last_sent_time with timezone
                     if state.get("last_sent_time"):
