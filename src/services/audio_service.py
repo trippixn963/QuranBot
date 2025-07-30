@@ -14,7 +14,7 @@ The AudioService is the core component responsible for:
 
 Classes:
     AudioService: Main audio service with comprehensive playback management
-    
+
 Exceptions:
     AudioError: Generic audio-related error
     FFmpegError: FFmpeg-specific error
@@ -31,7 +31,7 @@ import re
 import discord
 from discord.ext import commands
 
-from src.config import ConfigService
+from src.config import get_guild_id, get_target_channel_id
 from src.core.di_container import DIContainer
 from src.core.exceptions import (
     AudioError,
@@ -64,7 +64,7 @@ class AudioService:
     - State persistence using SQLite database
     - 24/7 monitoring and health checks with aggressive reconnection
     - Support for multiple playback modes (normal, loop, shuffle)
-    
+
     Attributes:
         _container: Dependency injection container
         _bot: Discord bot instance
@@ -105,7 +105,7 @@ class AudioService:
         self._config = config
         self._logger = logger
         self._cache = metadata_cache
-        
+
         # Health monitor (will be set during initialization)
         self._health_monitor = None
 
@@ -141,7 +141,7 @@ class AudioService:
 
     async def initialize(self) -> None:
         """Initialize the audio service.
-        
+
         Performs complete initialization including:
         - Metadata cache initialization
         - Saved state loading from SQLite database
@@ -149,7 +149,7 @@ class AudioService:
         - Bot configuration loading
         - Background task startup
         - Health monitor integration
-        
+
         Raises:
             AudioError: If initialization fails at any critical step
         """
@@ -170,13 +170,16 @@ class AudioService:
 
             # Start background tasks
             await self._start_background_tasks()
-            
+
             # Get health monitor if available
             try:
                 from ..core.health_monitor import HealthMonitor
+
                 self._health_monitor = self._container.get(HealthMonitor)
             except (ImportError, AttributeError, Exception) as e:
-                await self._logger.debug("Health monitor not available", {"error": str(e)})
+                await self._logger.debug(
+                    "Health monitor not available", {"error": str(e)}
+                )
                 self._health_monitor = None
 
             await self._logger.info(
@@ -203,7 +206,7 @@ class AudioService:
 
     async def shutdown(self) -> None:
         """Shutdown the audio service gracefully.
-        
+
         Performs orderly shutdown including:
         - Stopping active playback
         - Disconnecting from voice channels
@@ -237,14 +240,16 @@ class AudioService:
 
             # Shutdown cache
             await self._cache.shutdown()
-            
+
             # Shutdown state service
             try:
                 state_service = self._container.get(SQLiteStateService)
                 if state_service:
                     await state_service.shutdown()
             except Exception as e:
-                await self._logger.warning("Failed to shutdown state service", {"error": str(e)})
+                await self._logger.warning(
+                    "Failed to shutdown state service", {"error": str(e)}
+                )
 
             await self._logger.info("Audio service shutdown complete")
 
@@ -265,7 +270,7 @@ class AudioService:
 
         Returns:
             bool: True if connection successful, False otherwise
-            
+
         Raises:
             VoiceConnectionError: If connection fails due to various reasons:
                 - Guild not found
@@ -326,7 +331,9 @@ class AudioService:
             try:
                 self._voice_client = await asyncio.wait_for(
                     channel.connect(reconnect=True),
-                    timeout=max(self._config.connection_timeout, 45),  # At least 45 seconds
+                    timeout=max(
+                        self._config.connection_timeout, 45
+                    ),  # At least 45 seconds
                 )
             except TimeoutError:
                 raise VoiceConnectionError(
@@ -381,7 +388,7 @@ class AudioService:
 
     async def disconnect(self) -> None:
         """Disconnect from voice channel gracefully.
-        
+
         Safely disconnects from the current voice channel, handles errors,
         and updates internal state to reflect the disconnection.
         """
@@ -416,7 +423,7 @@ class AudioService:
 
         Returns:
             bool: True if playback started successfully
-            
+
         Raises:
             AudioError: If not connected to voice channel or other playback issues
         """
@@ -454,7 +461,7 @@ class AudioService:
 
     async def stop_playback(self) -> None:
         """Stop audio playback immediately.
-        
+
         Cancels the playback task, stops the voice client, and updates
         playback state to reflect the stopped status.
         """
@@ -475,26 +482,30 @@ class AudioService:
 
     async def pause_playback(self) -> bool:
         """Disabled - 24/7 Quran bot should never be paused.
-        
+
         This method is intentionally disabled to maintain continuous 24/7 operation.
         The bot is designed for uninterrupted Quran recitation.
-        
+
         Returns:
             bool: False - pause is not allowed for 24/7 operation
         """
-        await self._logger.warning("Pause attempt blocked - 24/7 continuous playback only")
+        await self._logger.warning(
+            "Pause attempt blocked - 24/7 continuous playback only"
+        )
         return False
 
     async def resume_playback(self) -> bool:
         """Disabled - 24/7 Quran bot should never need resuming as it never pauses.
-        
+
         This method is intentionally disabled since the bot never pauses.
         For starting stopped playback, use start_playback() instead.
-        
+
         Returns:
             bool: False - resume is not needed for 24/7 operation
         """
-        await self._logger.warning("Resume attempt ignored - bot should never be paused")
+        await self._logger.warning(
+            "Resume attempt ignored - bot should never be paused"
+        )
         return False
 
     async def set_reciter(self, reciter: str) -> bool:
@@ -508,7 +519,7 @@ class AudioService:
 
         Returns:
             bool: True if reciter changed successfully
-            
+
         Raises:
             ValidationError: If reciter not found in available reciters
         """
@@ -574,7 +585,7 @@ class AudioService:
 
         Returns:
             bool: True if surah changed successfully
-            
+
         Raises:
             ValidationError: If surah number is not between 1 and 114
         """
@@ -634,7 +645,7 @@ class AudioService:
 
         Returns:
             bool: True if volume set successfully
-            
+
         Raises:
             ValidationError: If volume is not between 0.0 and 1.0
         """
@@ -685,10 +696,10 @@ class AudioService:
 
     async def get_playback_state(self) -> PlaybackState:
         """Get current playback state.
-        
+
         Returns a deep copy of the current playback state including position,
         reciter, volume, mode, and connection status. Updates position if playing.
-        
+
         Returns:
             PlaybackState: Deep copy of current playback state
         """
@@ -703,10 +714,10 @@ class AudioService:
 
     async def get_available_reciters(self) -> list[ReciterInfo]:
         """Get list of available reciters.
-        
+
         Returns a copy of the discovered reciters list with information about
         each reciter including name, total surahs, and file count.
-        
+
         Returns:
             list[ReciterInfo]: List of available reciter information
         """
@@ -714,10 +725,10 @@ class AudioService:
 
     async def get_current_file_info(self) -> AudioFileInfo | None:
         """Get information about the currently playing file.
-        
+
         Retrieves cached metadata for the currently playing audio file including
         duration, bitrate, and other technical information.
-        
+
         Returns:
             AudioFileInfo | None: File information if available, None if not found
         """
@@ -739,7 +750,7 @@ class AudioService:
 
     async def _discover_reciters(self) -> None:
         """Discover available reciters from audio folder structure.
-        
+
         Scans the audio base folder for subdirectories containing MP3 files,
         analyzes file naming patterns to determine surah counts, and builds
         the available reciters list. Optionally warms cache for default reciter.
@@ -796,14 +807,13 @@ class AudioService:
 
     async def _load_bot_configuration(self) -> None:
         """Load configuration from config service.
-        
+
         Retrieves voice channel ID and guild ID from the bot configuration
         service for automatic connection management.
         """
         try:
-            config_service = self._container.get(ConfigService)
-            self._target_channel_id = config_service.get_voice_channel_id()
-            self._guild_id = config_service.get_guild_id()
+            self._target_channel_id = get_target_channel_id()
+            self._guild_id = get_guild_id()
 
             await self._logger.info(
                 "Loaded bot configuration",
@@ -819,7 +829,7 @@ class AudioService:
 
     async def _load_saved_state(self) -> None:
         """Load saved playback state from SQLiteStateService.
-        
+
         Attempts to restore previous playback state from SQLite database
         including current surah, position, reciter, and playback mode.
         Falls back to defaults if loading fails.
@@ -827,7 +837,7 @@ class AudioService:
         try:
             state_service = self._container.get(SQLiteStateService)
             saved_data = await state_service.load_playback_state()
-            
+
             if saved_data:
                 # Convert SQLite data to PlaybackState objects
                 current_position = saved_data.get("current_position", {})
@@ -836,24 +846,26 @@ class AudioService:
                     position_seconds=current_position.get("position_seconds", 0.0),
                     total_duration=current_position.get("total_duration"),
                     track_index=current_position.get("track_index", 0),
-                    timestamp=datetime.now(UTC)
+                    timestamp=datetime.now(UTC),
                 )
-                
+
                 saved_state = PlaybackState(
                     is_playing=False,  # Always start stopped
                     is_paused=False,
-                    current_reciter=saved_data.get("current_reciter", self._config.default_reciter),
+                    current_reciter=saved_data.get(
+                        "current_reciter", self._config.default_reciter
+                    ),
                     current_position=position,
                     mode=PlaybackMode(saved_data.get("playback_mode", "normal")),
                     volume=saved_data.get("volume", 1.0),
                     voice_channel_id=saved_data.get("voice_channel_id"),
                     guild_id=saved_data.get("guild_id"),
-                    last_updated=datetime.now(UTC)
+                    last_updated=datetime.now(UTC),
                 )
-                
+
                 # Update current state with saved data
                 self._current_state = saved_state
-                
+
                 await self._logger.info(
                     "Loaded saved playback state from SQLite",
                     {
@@ -865,7 +877,7 @@ class AudioService:
                 )
             else:
                 await self._logger.info("No saved playback state found, using defaults")
-                
+
         except Exception as e:
             await self._logger.warning(
                 "Failed to load saved state, using defaults", {"error": str(e)}
@@ -874,7 +886,7 @@ class AudioService:
 
     async def _start_background_tasks(self) -> None:
         """Start background monitoring and maintenance tasks.
-        
+
         Initiates background tasks for:
         - Connection monitoring and automatic reconnection
         - Periodic position saving for resume functionality
@@ -889,7 +901,7 @@ class AudioService:
 
     async def _playback_loop(self, resume_position: bool = True) -> None:
         """Main playback loop for continuous audio playback.
-        
+
         Manages the core playback cycle:
         1. Validates voice connection
         2. Gets current audio file and metadata
@@ -897,10 +909,10 @@ class AudioService:
         4. Starts playback and monitors completion
         5. Advances to next track based on playback mode
         6. Repeats until cancelled
-        
+
         Args:
             resume_position: Whether to resume from saved position on first track
-            
+
         Raises:
             FFmpegError: If audio source creation fails
             AudioError: If playback fails
@@ -939,7 +951,10 @@ class AudioService:
 
                 # Create audio source
                 try:
-                    should_resume = resume_position and self._current_state.current_position.position_seconds > 0
+                    should_resume = (
+                        resume_position
+                        and self._current_state.current_position.position_seconds > 0
+                    )
                     audio_source = await self._create_audio_source(
                         file_path,
                         should_resume,
@@ -961,18 +976,23 @@ class AudioService:
                 try:
                     self._voice_client.play(audio_source)
                     self._current_state.is_playing = True
-                    
+
                     # Set track start time for position tracking
                     current_time = asyncio.get_event_loop().time()
-                    if resume_position and self._current_state.current_position.position_seconds > 0:
+                    if (
+                        resume_position
+                        and self._current_state.current_position.position_seconds > 0
+                    ):
                         # If resuming, store the original position and start tracking from now
-                        self._resume_offset = self._current_state.current_position.position_seconds
+                        self._resume_offset = (
+                            self._current_state.current_position.position_seconds
+                        )
                         self._track_start_time = current_time
                     else:
                         # Normal start from beginning
                         self._resume_offset = 0.0
                         self._track_start_time = current_time
-                    
+
                     self._last_successful_playback = datetime.now(UTC)
 
                     # Update position info
@@ -990,7 +1010,7 @@ class AudioService:
                             "duration": file_info.duration_seconds,
                         },
                     )
-                    
+
                     # Report audio activity to health monitor
                     if self._health_monitor:
                         await self._health_monitor.report_audio_activity(
@@ -1000,12 +1020,12 @@ class AudioService:
                                 "reciter": self._current_state.current_reciter,
                                 "surah": self._current_state.current_position.surah_number,
                                 "duration": file_info.duration_seconds,
-                            }
+                            },
                         )
 
                     # Wait for playback to complete
                     await self._wait_for_playback_completion()
-                    
+
                     # Reset resume flag after first track
                     resume_position = False
 
@@ -1038,17 +1058,17 @@ class AudioService:
         self, file_path: Path, resume: bool = False
     ) -> discord.AudioSource:
         """Create FFmpeg audio source with robust options for 24/7 stability.
-        
+
         Configures FFmpeg with stability-focused options including:
         - Large buffer sizes for smooth playback
         - Reconnection options for network resilience
         - Timestamp handling for seamless audio
         - Resume capability from specific positions
-        
+
         Args:
             file_path: Path to the audio file
             resume: Whether to resume from saved position
-            
+
         Returns:
             discord.AudioSource: Configured FFmpeg audio source
         """
@@ -1065,12 +1085,12 @@ class AudioService:
             ffmpeg_options.extend(
                 [
                     "-reconnect 1",
-                    "-reconnect_streamed 1", 
+                    "-reconnect_streamed 1",
                     "-reconnect_delay_max 10",  # Increased delay
                     "-reconnect_at_eof 1",  # Reconnect at end of file
                     "-multiple_requests 1",
                     "-rw_timeout 60000000",  # 60 second timeout (increased)
-                    "-timeout 60000000",     # Connection timeout
+                    "-timeout 60000000",  # Connection timeout
                     "-user_agent 'QuranBot/4.0'",  # Custom user agent
                 ]
             )
@@ -1090,7 +1110,7 @@ class AudioService:
 
     async def _wait_for_playback_completion(self) -> None:
         """Wait for current track to complete playback.
-        
+
         Monitors playback status and updates position tracking while waiting
         for the current track to finish. Updates position every second.
         """
@@ -1103,17 +1123,15 @@ class AudioService:
                 # Add resume offset to the elapsed time for correct position tracking
                 total_position = self._resume_offset + max(0.0, elapsed)
                 self._current_state.current_position.position_seconds = total_position
-                
-
 
     async def _advance_to_next_track(self) -> None:
         """Advance to the next track based on playback mode.
-        
+
         Determines next track based on current playback mode:
         - LOOP_TRACK: Restarts current surah
         - SHUFFLE: Selects random different surah
         - NORMAL/LOOP_PLAYLIST: Sequential progression
-        
+
         Updates position tracking and reports progression to health monitor.
         """
         current_surah = self._current_state.current_position.surah_number
@@ -1162,7 +1180,7 @@ class AudioService:
                 "mode": self._current_state.mode.value,
             },
         )
-        
+
         # Report progression to health monitor
         if self._health_monitor:
             await self._health_monitor.report_audio_activity(
@@ -1171,15 +1189,15 @@ class AudioService:
                     "from_surah": current_surah,
                     "to_surah": self._current_state.current_position.surah_number,
                     "mode": self._current_state.mode.value,
-                }
+                },
             )
 
     async def _get_current_audio_file_path(self) -> Path | None:
         """Get the path to the current audio file.
-        
+
         Constructs the file path based on current reciter and surah number,
         searching for MP3 files that match the expected naming pattern.
-        
+
         Returns:
             Path | None: Path to audio file if found, None otherwise
         """
@@ -1200,10 +1218,10 @@ class AudioService:
 
     async def _get_reciter_info(self, reciter: str) -> ReciterInfo | None:
         """Get reciter information by name.
-        
+
         Args:
             reciter: Name of the reciter to find
-            
+
         Returns:
             ReciterInfo | None: Reciter information if found, None otherwise
         """
@@ -1214,13 +1232,13 @@ class AudioService:
 
     def _extract_surah_number(self, filename: str) -> int | None:
         """Extract surah number from filename.
-        
+
         Uses regex to find numeric patterns in filenames and validates
         they represent valid surah numbers (1-114).
-        
+
         Args:
             filename: Audio filename to analyze
-            
+
         Returns:
             int | None: Surah number if valid, None otherwise
         """
@@ -1232,14 +1250,14 @@ class AudioService:
 
     async def _monitoring_loop(self) -> None:
         """Enhanced background monitoring loop with aggressive reconnection for 24/7 stability.
-        
+
         Provides comprehensive health monitoring including:
         - Voice connection health checks with WebSocket monitoring
         - Automatic reconnection with exponential backoff
         - Playback health monitoring and recovery
         - Audio stuck detection and recovery
         - Emergency webhook notifications for critical failures
-        
+
         Uses aggressive reconnection strategies optimized for 24/7 operation
         with multiple retry attempts and escalating intervention levels.
         """
@@ -1247,31 +1265,34 @@ class AudioService:
         max_consecutive_failures = 5
         base_retry_delay = 2  # Start with 2 seconds
         max_retry_delay = 30  # Cap at 30 seconds
-        
+
         while True:
             try:
                 # Less frequent health checks to avoid aggressive reconnection
-                await asyncio.sleep(min(self._health_check_interval, 30))  # Increased from 10 to 30 seconds
+                await asyncio.sleep(
+                    min(self._health_check_interval, 30)
+                )  # Increased from 10 to 30 seconds
 
                 # Check voice connection health - only disconnect if clearly disconnected
                 connection_lost = False
-                if not self._voice_client:
-                    connection_lost = True
-                elif not self._voice_client.is_connected():
+                if not self._voice_client or not self._voice_client.is_connected():
                     connection_lost = True
                 # Removed aggressive WebSocket checking that was causing false disconnections
-                    
+
                 if connection_lost:
                     consecutive_failures += 1
-                    retry_delay = min(base_retry_delay * (2 ** min(consecutive_failures - 1, 4)), max_retry_delay)
-                    
+                    retry_delay = min(
+                        base_retry_delay * (2 ** min(consecutive_failures - 1, 4)),
+                        max_retry_delay,
+                    )
+
                     await self._logger.warning(
                         "Voice connection lost, attempting aggressive reconnection",
                         {
                             "consecutive_failures": consecutive_failures,
                             "retry_delay": retry_delay,
-                            "max_failures": max_consecutive_failures
-                        }
+                            "max_failures": max_consecutive_failures,
+                        },
                     )
 
                     if self._target_channel_id and self._guild_id:
@@ -1280,83 +1301,111 @@ class AudioService:
                             if self._voice_client:
                                 try:
                                     await self._voice_client.disconnect(force=True)
-                                except (discord.ConnectionClosed, discord.HTTPException, Exception) as e:
-                                    await self._logger.debug("Error on forced disconnect (expected)", {"error": str(e)})
+                                except (
+                                    discord.ConnectionClosed,
+                                    discord.HTTPException,
+                                    Exception,
+                                ) as e:
+                                    await self._logger.debug(
+                                        "Error on forced disconnect (expected)",
+                                        {"error": str(e)},
+                                    )
                                 await asyncio.sleep(1)  # Brief pause
-                            
+
                             # Attempt reconnection with retries
                             success = False
-                            for attempt in range(1):  # Reduced from 3 to 1 attempt per health check
+                            for attempt in range(
+                                1
+                            ):  # Reduced from 3 to 1 attempt per health check
                                 try:
                                     await self.connect_to_voice_channel(
                                         self._target_channel_id, self._guild_id
                                     )
                                     success = True
                                     consecutive_failures = 0  # Reset on success
-                                    
+
                                     # Resume playback if we were playing
-                                    if self._current_state.is_playing and not self._playback_task:
-                                        await self._logger.info("Resuming playback after reconnection")
+                                    if (
+                                        self._current_state.is_playing
+                                        and not self._playback_task
+                                    ):
+                                        await self._logger.info(
+                                            "Resuming playback after reconnection"
+                                        )
                                         await self.start_playback(resume_position=True)
                                     break
-                                    
+
                                 except Exception as e:
                                     await self._logger.warning(
                                         f"Reconnection attempt {attempt + 1}/1 failed",
-                                        {"error": str(e)}
+                                        {"error": str(e)},
                                     )
                                     # No sleep needed since we only try once
-                            
+
                             if not success:
                                 await self._logger.error(
                                     "All reconnection attempts failed",
-                                    {"consecutive_failures": consecutive_failures}
+                                    {"consecutive_failures": consecutive_failures},
                                 )
-                                
+
                                 # If we've failed too many times consecutively, take drastic action
                                 if consecutive_failures >= max_consecutive_failures:
                                     await self._logger.critical(
                                         "Too many consecutive connection failures - requesting bot restart",
-                                        {"consecutive_failures": consecutive_failures}
+                                        {"consecutive_failures": consecutive_failures},
                                     )
                                     # Emergency webhook notification if available
                                     try:
-                                        if hasattr(self, '_webhook_logger') and self._webhook_logger:
+                                        if (
+                                            hasattr(self, "_webhook_logger")
+                                            and self._webhook_logger
+                                        ):
                                             await self._webhook_logger.log_audio_event(
                                                 "critical_connection_failure",
                                                 f"Bot needs restart after {consecutive_failures} consecutive connection failures",
-                                                ping_owner=True
+                                                ping_owner=True,
                                             )
                                     except Exception as webhook_error:
-                                        await self._logger.debug("Failed to send critical reconnection webhook", {"error": str(webhook_error)})
-                                
+                                        await self._logger.debug(
+                                            "Failed to send critical reconnection webhook",
+                                            {"error": str(webhook_error)},
+                                        )
+
                         except Exception as e:
                             await self._logger.error(
                                 "Critical error in reconnection logic",
-                                {"error": str(e), "consecutive_failures": consecutive_failures}
+                                {
+                                    "error": str(e),
+                                    "consecutive_failures": consecutive_failures,
+                                },
                             )
-                    
+
                     # Apply exponential backoff delay
                     await asyncio.sleep(retry_delay)
-                else:
-                    # Connection is healthy, reset failure counter
-                    if consecutive_failures > 0:
-                        await self._logger.info(
-                            "Voice connection restored and stable",
-                            {"was_failing_for": consecutive_failures}
-                        )
-                        consecutive_failures = 0
-                
+                elif consecutive_failures > 0:
+                    await self._logger.info(
+                        "Voice connection restored and stable",
+                        {"was_failing_for": consecutive_failures},
+                    )
+                    consecutive_failures = 0
+
                 # Additional health checks for 24/7 stability
                 if self._voice_client and self._voice_client.is_connected():
                     # Check if we should be playing but aren't
-                    if self._current_state.is_playing and not self._voice_client.is_playing():
-                        await self._logger.warning("Audio should be playing but isn't - attempting restart")
+                    if (
+                        self._current_state.is_playing
+                        and not self._voice_client.is_playing()
+                    ):
+                        await self._logger.warning(
+                            "Audio should be playing but isn't - attempting restart"
+                        )
                         try:
                             await self.start_playback(resume_position=True)
                         except Exception as e:
-                            await self._logger.error("Failed to restart playback", {"error": str(e)})
-                
+                            await self._logger.error(
+                                "Failed to restart playback", {"error": str(e)}
+                            )
+
                 # Enhanced playback health monitoring
                 time_since_playback = datetime.now(UTC) - self._last_successful_playback
                 if time_since_playback.total_seconds() > 600:  # 10 minutes
@@ -1364,43 +1413,55 @@ class AudioService:
                         "No successful playback in 10 minutes - attempting recovery",
                         {"last_playback": self._last_successful_playback.isoformat()},
                     )
-                    
+
                     # Report audio stuck to health monitor for webhook alert
                     if self._health_monitor:
                         await self._health_monitor.report_audio_activity(
                             "audio_stuck",
                             {
                                 "last_playback": self._last_successful_playback.isoformat(),
-                                "minutes_since_playback": time_since_playback.total_seconds() / 60,
+                                "minutes_since_playback": time_since_playback.total_seconds()
+                                / 60,
                                 "current_surah": self._current_state.current_position.surah_number,
-                                "is_connected": self._voice_client.is_connected() if self._voice_client else False,
-                                "is_playing": self._voice_client.is_playing() if self._voice_client else False,
+                                "is_connected": (
+                                    self._voice_client.is_connected()
+                                    if self._voice_client
+                                    else False
+                                ),
+                                "is_playing": (
+                                    self._voice_client.is_playing()
+                                    if self._voice_client
+                                    else False
+                                ),
                                 "consecutive_failures": consecutive_failures,
-                            }
+                            },
                         )
-                    
+
                     # Attempt recovery for stuck audio
                     if self._voice_client and self._voice_client.is_connected():
                         try:
-                            await self._logger.info("Attempting audio recovery - restarting playback")
+                            await self._logger.info(
+                                "Attempting audio recovery - restarting playback"
+                            )
                             await self.start_playback(resume_position=True)
                         except Exception as e:
-                            await self._logger.error("Audio recovery failed", {"error": str(e)})
+                            await self._logger.error(
+                                "Audio recovery failed", {"error": str(e)}
+                            )
 
             except asyncio.CancelledError:
                 await self._logger.info("Audio monitoring cancelled")
                 break
             except Exception as e:
                 await self._logger.error(
-                    "Error in audio monitoring loop", 
-                    {"error": str(e)}
+                    "Error in audio monitoring loop", {"error": str(e)}
                 )
                 # Don't let monitoring loop die
                 await asyncio.sleep(5)
 
     async def _position_save_loop(self) -> None:
         """Background loop to save playback position periodically.
-        
+
         Saves current playback state to SQLite database every 5 seconds while
         playing, enabling seamless resume functionality across bot restarts.
         Also ensures final position is saved during shutdown.
@@ -1413,7 +1474,7 @@ class AudioService:
                     try:
                         # Get current state service
                         state_service = self._container.get(SQLiteStateService)
-                        
+
                         # Prepare state data for SQLite
                         state_data = {
                             "current_position": {
@@ -1429,19 +1490,19 @@ class AudioService:
                             "voice_channel_id": self._current_state.voice_channel_id,
                             "guild_id": self._current_state.guild_id,
                         }
-                        
+
                         # Save to SQLite with proper structure
                         await state_service.save_playback_state(state_data)
-                        
+
                         await self._logger.debug(
                             "Saved playback position",
                             {
                                 "surah": state_data["current_position"]["surah_number"],
                                 "position": f"{state_data['current_position']['position_seconds']:.1f}s",
                                 "reciter": state_data["current_reciter"],
-                            }
+                            },
                         )
-                        
+
                     except Exception as e:
                         await self._logger.error(
                             "Failed to save playback position", {"error": str(e)}
@@ -1467,9 +1528,13 @@ class AudioService:
                             "guild_id": self._current_state.guild_id,
                         }
                         await state_service.save_playback_state(state_data)
-                        await self._logger.info("Saved final playback position before shutdown")
+                        await self._logger.info(
+                            "Saved final playback position before shutdown"
+                        )
                 except Exception as e:
-                    await self._logger.error("Failed to save final position", {"error": str(e)})
+                    await self._logger.error(
+                        "Failed to save final position", {"error": str(e)}
+                    )
                 break
             except Exception as e:
                 await self._logger.error(

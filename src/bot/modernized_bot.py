@@ -15,7 +15,7 @@ from discord.ext import commands
 
 from src.adapters.audio_service_adapter import AudioServiceAdapter
 from src.commands import load_commands
-from src.config import BotConfig, ConfigService
+from src.config import BotConfig, get_config, get_discord_token, get_guild_id, get_target_channel_id
 from src.core.cache_service import CacheService
 from src.core.di_container import DIContainer, set_global_container
 from src.core.health_monitor import HealthMonitor
@@ -72,7 +72,7 @@ class ModernizedQuranBot:
         self.bot: commands.Bot | None = None
         self.logger: StructuredLogger | None = None
         self.config: BotConfig | None = None
-        self.config_service: ConfigService | None = None
+        self.config: BotConfig | None = None
         self.is_running = False
         self._startup_start_time = time.time()
         self._shutdown_in_progress = False
@@ -97,8 +97,7 @@ class ModernizedQuranBot:
             # 1. Initialize configuration
             log_status("Loading configuration", "⚙️")
             try:
-                self.config_service = ConfigService()
-                self.config = self.config_service.config
+                self.config = get_config()
                 log_status("Configuration loaded successfully", "✅")
             except Exception as e:
                 log_critical_error(f"Configuration failed: {e}")
@@ -111,7 +110,6 @@ class ModernizedQuranBot:
 
             # Register configuration services
             self.container.register_singleton(BotConfig, self.config)
-            self.container.register_singleton(ConfigService, self.config_service)
 
             # 3. Initialize core services
             await self._initialize_core_services()
@@ -165,7 +163,7 @@ class ModernizedQuranBot:
         self.container.register_singleton(HealthMonitor, health_monitor)
 
         # Cache Service
-        cache_config = self.config_service.create_cache_service_config()
+        cache_config = self.config
         cache_factory = lambda: CacheService(
             container=self.container, config=cache_config, logger=self.logger
         )
@@ -206,9 +204,9 @@ class ModernizedQuranBot:
     async def _initialize_webhook_service(self):
         """Initialize webhook service if enabled."""
         try:
-            if self.config_service.config.USE_WEBHOOK_LOGGING:
+            if self.config.use_webhook_logging:
                 webhook_service = await create_webhook_service(
-                    config=self.config_service.config,
+                    config=self.config,
                     logger=self.logger,
                     container=self.container,
                     bot=self,
@@ -265,7 +263,7 @@ class ModernizedQuranBot:
         self.container.register_singleton(MetadataCache, metadata_cache)
 
         # Audio Service
-        audio_config = self.config_service.create_audio_service_config()
+        audio_config = self.config
         audio_factory = lambda: AudioService(
             container=self.container,
             bot=self.bot,
@@ -500,7 +498,7 @@ class ModernizedQuranBot:
                 return
 
             audio_service = self.container.get(AudioService)
-            target_channel_id = self.config_service.get_target_channel_id()
+            target_channel_id = get_target_channel_id()
 
             # Handle role management
             await self._handle_voice_channel_roles(
@@ -531,7 +529,7 @@ class ModernizedQuranBot:
         if member.bot:
             return
 
-        panel_access_role_id = self.config.PANEL_ACCESS_ROLE_ID
+        panel_access_role_id = self.config.panel_access_role_id
         if not panel_access_role_id:
             return
 
@@ -692,7 +690,7 @@ class ModernizedQuranBot:
                     ("Automation", "No manual intervention required"),
                     (
                         "Voice Channel",
-                        f"Auto-connecting to {self.config_service.get_target_channel_id()}",
+                        f"Auto-connecting to {get_target_channel_id()}",
                     ),
                     ("Playback", "Automatic progression through all 114 surahs"),
                 ],
@@ -708,8 +706,8 @@ class ModernizedQuranBot:
             )
 
             # Connect to voice channel
-            voice_channel_id = self.config_service.get_target_channel_id()
-            guild_id = self.config_service.get_guild_id()
+            voice_channel_id = get_target_channel_id()
+            guild_id = get_guild_id()
             connected = await audio_service.connect_to_voice_channel(
                 voice_channel_id, guild_id
             )
@@ -804,7 +802,7 @@ class ModernizedQuranBot:
 
             await setup_control_panel(
                 bot=self.bot,
-                channel_id=self.config_service.get_panel_channel_id(),
+                channel_id=self.config.panel_channel_id,
                 audio_manager=audio_adapter,
             )
 
@@ -837,11 +835,11 @@ class ModernizedQuranBot:
 
                 for guild in self.bot.guilds:
                     try:
-                        target_channel_id = self.config_service.get_target_channel_id()
+                        target_channel_id = get_target_channel_id()
                         if not target_channel_id:
                             continue
 
-                        panel_access_role_id = self.config.PANEL_ACCESS_ROLE_ID
+                        panel_access_role_id = self.config.panel_access_role_id
                         if not panel_access_role_id:
                             continue
 
@@ -914,7 +912,7 @@ class ModernizedQuranBot:
                 return False
 
             log_status("Starting Discord bot", "🚀")
-            await self.bot.start(self.config_service.get_discord_token())
+            await self.bot.start(get_discord_token())
 
         except KeyboardInterrupt:
             log_status("Received shutdown signal", "⏹️")
