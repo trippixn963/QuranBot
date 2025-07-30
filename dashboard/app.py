@@ -171,7 +171,14 @@ def get_islamic_content_stats():
         }
     except Exception as e:
         print(f"Error getting Islamic content stats: {e}")
-        return {}
+        return {
+            'quiz_total': 0,
+            'quiz_categories': {},
+            'verses_total': 0,
+            'verse_categories': {},
+            'quiz_metadata': {},
+            'verses_metadata': {}
+        }
 
 def get_performance_metrics():
     """Get performance and API metrics"""
