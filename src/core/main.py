@@ -1158,6 +1158,36 @@ class ModernizedQuranBot:
                 }
             )
 
+            # Log role assignment to webhook
+            try:
+                from src.core.di_container import get_container
+
+                container = get_container()
+                if container:
+                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    if enhanced_webhook and hasattr(
+                        enhanced_webhook, "log_role_management"
+                    ):
+                        await enhanced_webhook.log_role_management(
+                            action="assigned",
+                            user_name=member.display_name,
+                            user_id=member.id,
+                            role_name=panel_role.name,
+                            role_id=panel_role.id,
+                            channel_name=channel.name,
+                            user_avatar_url=member.avatar.url if member.avatar else None,
+                            additional_info={
+                                "trigger": "voice_channel_join",
+                                "channel_id": str(channel.id),
+                                "guild_id": str(channel.guild.id),
+                            },
+                        )
+            except Exception as e:
+                await self.logger.warning(
+                    "Failed to log role assignment to webhook",
+                    {"error": str(e)}
+                )
+
         except discord.Forbidden:
             await self.logger.error(
                 "No permission to assign panel access role",
@@ -1210,6 +1240,36 @@ class ModernizedQuranBot:
                     "channel": channel.name,
                 }
             )
+
+            # Log role removal to webhook
+            try:
+                from src.core.di_container import get_container
+
+                container = get_container()
+                if container:
+                    enhanced_webhook = container.get("enhanced_webhook_router")
+                    if enhanced_webhook and hasattr(
+                        enhanced_webhook, "log_role_management"
+                    ):
+                        await enhanced_webhook.log_role_management(
+                            action="removed",
+                            user_name=member.display_name,
+                            user_id=member.id,
+                            role_name=panel_role.name,
+                            role_id=panel_role.id,
+                            channel_name=channel.name,
+                            user_avatar_url=member.avatar.url if member.avatar else None,
+                            additional_info={
+                                "trigger": "voice_channel_leave",
+                                "channel_id": str(channel.id),
+                                "guild_id": str(channel.guild.id),
+                            },
+                        )
+            except Exception as e:
+                await self.logger.warning(
+                    "Failed to log role removal to webhook",
+                    {"error": str(e)}
+                )
 
         except discord.Forbidden:
             await self.logger.error(

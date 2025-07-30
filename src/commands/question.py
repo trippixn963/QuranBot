@@ -526,13 +526,19 @@ class QuestionCog(commands.Cog):
                     if container:
                         enhanced_webhook = container.get("enhanced_webhook_router")
                         if enhanced_webhook and hasattr(
-                            enhanced_webhook, "log_quran_command_usage"
+                            enhanced_webhook, "log_quiz_event"
                         ):
-                            await enhanced_webhook.log_quran_command_usage(
-                                admin_name=interaction.user.display_name,
-                                admin_id=interaction.user.id,
-                                command_name="/question",
-                                command_details={
+                            await enhanced_webhook.log_quiz_event(
+                                event_type="sent",
+                                user_name=interaction.user.display_name,
+                                user_id=interaction.user.id,
+                                question_text=question_data.get("question", "Unknown question"),
+                                user_avatar_url=(
+                                    interaction.user.avatar.url
+                                    if interaction.user.avatar
+                                    else None
+                                ),
+                                quiz_details={
                                     "question_category": question_data.get(
                                         "category", "Unknown"
                                     ),
@@ -546,12 +552,8 @@ class QuestionCog(commands.Cog):
                                     "message_id": str(message.id),
                                     "timer_duration": "60 seconds",
                                     "quiz_type": "Manual Quiz",
+                                    "triggered_by": "admin_command",
                                 },
-                                admin_avatar_url=(
-                                    interaction.user.avatar.url
-                                    if interaction.user.avatar
-                                    else None
-                                ),
                             )
                 except Exception as e:
                     log_error_with_traceback(

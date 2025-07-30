@@ -27,6 +27,12 @@ class SecureErrorHandler:
     """Secure error handling with information disclosure prevention."""
 
     def __init__(self, logger: logging.Logger, debug_mode: bool = False):
+        """Initialize secure error handler.
+        
+        Args:
+            logger: Logger instance for error reporting
+            debug_mode: Whether to include detailed stack traces in logs
+        """
         self.logger = logger
         self.debug_mode = debug_mode
         self.error_codes = {
@@ -67,12 +73,11 @@ class SecureErrorHandler:
     async def handle_error(
         self,
         error: Exception,
-        context: dict[str, Any] = None,
+        context: dict[str, Any] | None = None,
         user_facing: bool = True,
         user_id: int | None = None,
     ) -> dict[str, Any]:
-        """
-        Handle errors securely without information disclosure.
+        """Handle errors securely without information disclosure.
 
         Args:
             error: The exception that occurred

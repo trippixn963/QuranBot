@@ -52,8 +52,6 @@ from .tree_log import (
     log_user_interaction,
 )
 
-# from .user_cache import cache_user_from_interaction  # Temporarily disabled
-
 # Global scheduler task reference
 _quiz_scheduler_task = None
 
@@ -384,6 +382,29 @@ class QuizView(discord.ui.View):
             "⏰",
         )
 
+        # Log quiz timeout to webhook
+        try:
+            from src.core.di_container import get_container
+
+            container = get_container()
+            if container:
+                enhanced_webhook = container.get("enhanced_webhook_router")
+                if enhanced_webhook and hasattr(
+                    enhanced_webhook, "log_quiz_event"
+                ):
+                    await enhanced_webhook.log_quiz_event(
+                        event_type="timeout",
+                        question_text=self.question_data.get("question", "Unknown question"),
+                        quiz_details={
+                            "total_responses": len(self.responses),
+                            "elapsed_time": f"{elapsed:.1f} seconds",
+                            "question_id": str(self.question_data.get("id", "Unknown")),
+                            "channel_id": str(self.message.channel.id) if self.message else "Unknown",
+                        },
+                    )
+        except Exception as e:
+            log_error_with_traceback("Failed to log quiz timeout to webhook", e)
+
         # Send results
         await self.send_results()
 
@@ -448,6 +469,32 @@ class QuizView(discord.ui.View):
                         ],
                         "🗑️",
                     )
+
+                    # Log quiz deletion to webhook
+                    try:
+                        from src.core.di_container import get_container
+
+                        container = get_container()
+                        if container:
+                            enhanced_webhook = container.get("enhanced_webhook_router")
+                            if enhanced_webhook and hasattr(
+                                enhanced_webhook, "log_embed_deletion"
+                            ):
+                                await enhanced_webhook.log_embed_deletion(
+                                    embed_type="quiz",
+                                    message_id=self.message.id,
+                                    channel_id=self.message.channel.id,
+                                    channel_name=self.message.channel.name,
+                                    deletion_reason="Automatic cleanup after timeout",
+                                    additional_info={
+                                        "question_id": str(self.question_data.get("id", "Unknown")),
+                                        "total_responses": len(self.responses),
+                                        "timeout_duration": "120 seconds",
+                                    },
+                                )
+                    except Exception as e:
+                        log_error_with_traceback("Failed to log quiz deletion to webhook", e)
+
                 except discord.NotFound:
                     # Message was already deleted
                     messages_deleted.append("question (already deleted)")
@@ -467,6 +514,32 @@ class QuizView(discord.ui.View):
                         ],
                         "🗑️",
                     )
+
+                    # Log results deletion to webhook
+                    try:
+                        from src.core.di_container import get_container
+
+                        container = get_container()
+                        if container:
+                            enhanced_webhook = container.get("enhanced_webhook_router")
+                            if enhanced_webhook and hasattr(
+                                enhanced_webhook, "log_embed_deletion"
+                            ):
+                                await enhanced_webhook.log_embed_deletion(
+                                    embed_type="results",
+                                    message_id=self.results_message.id,
+                                    channel_id=self.results_message.channel.id,
+                                    channel_name=self.results_message.channel.name,
+                                    deletion_reason="Automatic cleanup after timeout",
+                                    additional_info={
+                                        "question_id": str(self.question_data.get("id", "Unknown")),
+                                        "total_responses": len(self.responses),
+                                        "timeout_duration": "120 seconds",
+                                    },
+                                )
+                    except Exception as e:
+                        log_error_with_traceback("Failed to log results deletion to webhook", e)
+
                 except discord.NotFound:
                     # Message was already deleted
                     messages_deleted.append("results (already deleted)")
@@ -858,9 +931,10 @@ class QuizButton(discord.ui.Button):
             if container:
                 enhanced_webhook = container.get("enhanced_webhook_router")
                 if enhanced_webhook and hasattr(
-                    enhanced_webhook, "log_quran_quiz_activity"
+                    enhanced_webhook, "log_quiz_event"
                 ):
-                    await enhanced_webhook.log_quran_quiz_activity(
+                    await enhanced_webhook.log_quiz_event(
+                        event_type="answered",
                         user_name=interaction.user.display_name,
                         user_id=interaction.user.id,
                         question_text=self.view.question_data.get(
@@ -876,7 +950,7 @@ class QuizButton(discord.ui.Button):
                             if interaction.user.avatar
                             else None
                         ),
-                        quiz_stats={
+                        quiz_details={
                             "question_id": str(
                                 self.view.question_data.get("id", "Unknown")
                             ),

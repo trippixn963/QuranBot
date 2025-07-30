@@ -110,8 +110,6 @@ except ImportError:
 
     listening_stats_manager = None
 
-# Backup manager removed - using SQLite database backups instead
-
 # Import version utilities with absolute import
 try:
     from src.version import (

@@ -1731,3 +1731,302 @@ class ModernWebhookLogger:
         )
 
         return await self._send_message(message)
+
+    async def log_quiz_event(
+        self,
+        event_type: str,
+        user_name: str | None = None,
+        user_id: int | None = None,
+        question_text: str | None = None,
+        user_answer: str | None = None,
+        correct_answer: str | None = None,
+        is_correct: bool | None = None,
+        user_avatar_url: str | None = None,
+        quiz_details: dict[str, Any] | None = None,
+    ) -> bool:
+        """
+        Log comprehensive quiz events (sent, answered, timed out, deleted).
+
+        Args:
+            event_type: Type of quiz event (sent, answered, timeout, deleted, results_sent)
+            user_name: User's display name (for answers)
+            user_id: User's Discord ID (for answers)
+            question_text: The quiz question
+            user_answer: User's answer (for answered events)
+            correct_answer: The correct answer (for answered events)
+            is_correct: Whether the answer was correct (for answered events)
+            user_avatar_url: User's avatar URL
+            quiz_details: Additional quiz details
+        """
+        # Quiz event emojis
+        quiz_emojis = {
+            "sent": "📝",
+            "answered": "✅",
+            "timeout": "⏰",
+            "deleted": "🗑️",
+            "results_sent": "📊",
+            "button_click": "🔘",
+            "default": "🧠",
+        }
+
+        emoji = quiz_emojis.get(event_type, quiz_emojis["default"])
+
+        fields = [
+            EmbedField("Event Type", event_type.replace("_", " ").title(), True),
+            EmbedField("Time", f"<t:{int(time.time())}:R>", True),
+        ]
+
+        if user_name and user_id:
+            fields.extend([
+                EmbedField("User", user_name, True),
+                EmbedField("User ID", str(user_id), True),
+            ])
+
+        if question_text:
+            fields.append(EmbedField("Question", question_text[:1000], False))
+
+        if user_answer:
+            fields.append(EmbedField("User Answer", user_answer, True))
+
+        if correct_answer:
+            fields.append(EmbedField("Correct Answer", correct_answer, True))
+
+        if is_correct is not None:
+            result_text = "✅ Correct!" if is_correct else "❌ Incorrect"
+            fields.append(EmbedField("Result", result_text, True))
+
+        if quiz_details:
+            for key, value in quiz_details.items():
+                fields.append(
+                    EmbedField(key.replace("_", " ").title(), str(value)[:1024], True)
+                )
+
+        # Determine description based on event type
+        if event_type == "sent":
+            description = "📝 New quiz question sent to channel"
+        elif event_type == "answered":
+            description = f"**{user_name}** answered a quiz question"
+        elif event_type == "timeout":
+            description = "⏰ Quiz timed out - no more answers accepted"
+        elif event_type == "deleted":
+            description = "🗑️ Quiz message deleted after timeout"
+        elif event_type == "results_sent":
+            description = "📊 Quiz results sent to channel"
+        else:
+            description = f"Quiz event: {event_type}"
+
+        message = WebhookMessage(
+            title=f"{emoji} Quiz Event - {event_type.replace('_', ' ').title()}",
+            description=description,
+            level=LogLevel.USER,
+            fields=fields,
+            author_name=user_name,
+            author_icon_url=user_avatar_url,
+            author_url=f"https://discord.com/users/{user_id}" if user_id else None,
+        )
+
+        return await self._send_message(message)
+
+    async def log_role_management(
+        self,
+        action: str,
+        user_name: str,
+        user_id: int,
+        role_name: str,
+        role_id: int,
+        channel_name: str,
+        user_avatar_url: str | None = None,
+        additional_info: dict[str, Any] | None = None,
+    ) -> bool:
+        """
+        Log role assignment/removal events.
+
+        Args:
+            action: Role action (assigned, removed, refreshed)
+            user_name: User's display name
+            user_id: User's Discord ID
+            role_name: Name of the role
+            role_id: ID of the role
+            channel_name: Name of the voice channel
+            user_avatar_url: User's avatar URL
+            additional_info: Additional context information
+        """
+        # Role management emojis
+        role_emojis = {
+            "assigned": "➕",
+            "removed": "➖",
+            "refreshed": "🔄",
+            "default": "👤",
+        }
+
+        emoji = role_emojis.get(action, role_emojis["default"])
+
+        fields = [
+            EmbedField("Action", action.replace("_", " ").title(), True),
+            EmbedField("User", user_name, True),
+            EmbedField("User ID", str(user_id), True),
+            EmbedField("Role", role_name, True),
+            EmbedField("Role ID", str(role_id), True),
+            EmbedField("Channel", channel_name, True),
+            EmbedField("Time", f"<t:{int(time.time())}:R>", True),
+        ]
+
+        if additional_info:
+            for key, value in additional_info.items():
+                fields.append(
+                    EmbedField(key.replace("_", " ").title(), str(value)[:1024], True)
+                )
+
+        # Determine description based on action
+        if action == "assigned":
+            description = f"**{user_name}** was assigned the **{role_name}** role"
+        elif action == "removed":
+            description = f"**{user_name}** had the **{role_name}** role removed"
+        elif action == "refreshed":
+            description = f"**{user_name}**'s **{role_name}** role was refreshed"
+        else:
+            description = f"Role management: {action}"
+
+        message = WebhookMessage(
+            title=f"{emoji} Role Management - {action.replace('_', ' ').title()}",
+            description=description,
+            level=LogLevel.USER,
+            fields=fields,
+            author_name=user_name,
+            author_icon_url=user_avatar_url,
+            author_url=f"https://discord.com/users/{user_id}",
+        )
+
+        return await self._send_message(message)
+
+    async def log_embed_deletion(
+        self,
+        embed_type: str,
+        message_id: int,
+        channel_id: int,
+        channel_name: str,
+        user_name: str | None = None,
+        user_id: int | None = None,
+        deletion_reason: str = "Automatic cleanup",
+        additional_info: dict[str, Any] | None = None,
+    ) -> bool:
+        """
+        Log embed/message deletion events.
+
+        Args:
+            embed_type: Type of embed (quiz, results, verse, dua, etc.)
+            message_id: ID of the deleted message
+            channel_id: ID of the channel
+            channel_name: Name of the channel
+            user_name: User who triggered deletion (if applicable)
+            user_id: User ID who triggered deletion (if applicable)
+            deletion_reason: Reason for deletion
+            additional_info: Additional context information
+        """
+        # Embed deletion emojis
+        embed_emojis = {
+            "quiz": "🧠",
+            "results": "📊",
+            "verse": "📖",
+            "dua": "🤲",
+            "control_panel": "🎛️",
+            "default": "🗑️",
+        }
+
+        emoji = embed_emojis.get(embed_type, embed_emojis["default"])
+
+        fields = [
+            EmbedField("Embed Type", embed_type.replace("_", " ").title(), True),
+            EmbedField("Message ID", str(message_id), True),
+            EmbedField("Channel", channel_name, True),
+            EmbedField("Channel ID", str(channel_id), True),
+            EmbedField("Reason", deletion_reason, True),
+            EmbedField("Time", f"<t:{int(time.time())}:R>", True),
+        ]
+
+        if user_name and user_id:
+            fields.extend([
+                EmbedField("Triggered By", user_name, True),
+                EmbedField("User ID", str(user_id), True),
+            ])
+
+        if additional_info:
+            for key, value in additional_info.items():
+                fields.append(
+                    EmbedField(key.replace("_", " ").title(), str(value)[:1024], True)
+                )
+
+        description = f"🗑️ **{embed_type.replace('_', ' ').title()}** embed deleted from **{channel_name}**"
+
+        message = WebhookMessage(
+            title=f"{emoji} Embed Deletion - {embed_type.replace('_', ' ').title()}",
+            description=description,
+            level=LogLevel.SYSTEM,
+            fields=fields,
+            author_name=user_name,
+            author_url=f"https://discord.com/users/{user_id}" if user_id else None,
+        )
+
+        return await self._send_message(message)
+
+    async def log_user_interaction_comprehensive(
+        self,
+        interaction_type: str,
+        user_name: str,
+        user_id: int,
+        action_description: str,
+        user_avatar_url: str | None = None,
+        interaction_details: dict[str, Any] | None = None,
+    ) -> bool:
+        """
+        Log comprehensive user interactions with the bot.
+
+        Args:
+            interaction_type: Type of interaction (button_click, reaction, command, etc.)
+            user_name: User's display name
+            user_id: User's Discord ID
+            action_description: Description of what the user did
+            user_avatar_url: User's avatar URL
+            interaction_details: Additional interaction details
+        """
+        # User interaction emojis
+        interaction_emojis = {
+            "button_click": "🔘",
+            "reaction_add": "➕",
+            "reaction_remove": "➖",
+            "command_used": "💬",
+            "voice_join": "🎤",
+            "voice_leave": "🚪",
+            "voice_move": "🔄",
+            "dropdown_select": "📋",
+            "modal_submit": "📝",
+            "default": "👤",
+        }
+
+        emoji = interaction_emojis.get(interaction_type, interaction_emojis["default"])
+
+        fields = [
+            EmbedField("Interaction Type", interaction_type.replace("_", " ").title(), True),
+            EmbedField("User", user_name, True),
+            EmbedField("User ID", str(user_id), True),
+            EmbedField("Action", action_description, False),
+            EmbedField("Time", f"<t:{int(time.time())}:R>", True),
+        ]
+
+        if interaction_details:
+            for key, value in interaction_details.items():
+                fields.append(
+                    EmbedField(key.replace("_", " ").title(), str(value)[:1024], True)
+                )
+
+        message = WebhookMessage(
+            title=f"{emoji} User Interaction - {interaction_type.replace('_', ' ').title()}",
+            description=f"**{user_name}** {action_description}",
+            level=LogLevel.USER,
+            fields=fields,
+            author_name=user_name,
+            author_icon_url=user_avatar_url,
+            author_url=f"https://discord.com/users/{user_id}",
+        )
+
+        return await self._send_message(message)

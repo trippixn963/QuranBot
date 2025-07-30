@@ -91,9 +91,8 @@ and comprehensive documentation for users and contributors.
 # =============================================================================
 
 
-def get_version_string():
-    """
-    Get the complete version string with optional pre-release and build info.
+def get_version_string() -> str:
+    """Get the complete version string with optional pre-release and build info.
 
     Returns:
         str: Complete version string (e.g., "4.0.0", "4.1.0-beta", "4.0.1+build123")
@@ -109,9 +108,8 @@ def get_version_string():
     return version
 
 
-def get_version_tuple():
-    """
-    Get version as a tuple for version comparison.
+def get_version_tuple() -> tuple[int, int, int]:
+    """Get version as a tuple for version comparison.
 
     Returns:
         tuple: Version tuple (major, minor, patch)
@@ -119,9 +117,8 @@ def get_version_tuple():
     return (VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH)
 
 
-def get_version_info():
-    """
-    Get comprehensive version information.
+def get_version_info() -> dict[str, str | int | tuple[int, int, int]]:
+    """Get comprehensive version information.
 
     Returns:
         dict: Complete version information

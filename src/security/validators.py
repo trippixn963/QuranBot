@@ -202,7 +202,7 @@ class SecureValidator:
         return text.strip()
 
     @classmethod
-    def validate_file_path(cls, path: str, allowed_extensions: list[str] = None) -> str:
+    def validate_file_path(cls, path: str, allowed_extensions: list[str] | None = None) -> str:
         """Validate file path for security."""
         if not path:
             raise SecurityError("File path is required")

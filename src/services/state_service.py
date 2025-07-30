@@ -256,18 +256,6 @@ class StateService:
                 data = await self._atomic_load_json(self._playback_state_file)
                 if data:
                     try:
-                        # Handle legacy format where current_position might be a float
-                        if isinstance(data.get("current_position"), (int, float)):
-                            # Convert legacy float position to PlaybackPosition object
-                            legacy_position = data["current_position"]
-                            data["current_position"] = {
-                                "surah_number": data.get(
-                                    "current_reciter_surah", 1
-                                ),  # Default to Surah 1
-                                "position_seconds": float(legacy_position),
-                                "total_duration": None,
-                            }
-
                         state = PlaybackState(**data)
                         self._playback_state = state
 
@@ -507,16 +495,8 @@ class StateService:
             with gzip.open(backup_file, "rt", encoding="utf-8") as f:
                 backup_data = json.load(f)
 
-            # Handle both old and new backup formats
-            if "snapshot" in backup_data:
-                # New format with metadata
-                snapshot_data = backup_data["snapshot"]
-            else:
-                # Old format (direct snapshot)
-                snapshot_data = backup_data
-
             # Validate backup data
-            snapshot = StateSnapshot(**snapshot_data)
+            snapshot = StateSnapshot(**backup_data["snapshot"])
 
             # Restore state
             self._playback_state = snapshot.playback_state
