@@ -413,8 +413,14 @@ class BackupManagerCog(commands.Cog):
         return colors.get(status.lower(), 0x999999)
 
 
-async def setup(
-    bot: commands.Bot, data_manager: HybridDataManager, logger: StructuredLogger
-):
+async def setup(bot, container=None):
     """Setup the backup manager cog."""
-    await bot.add_cog(BackupManagerCog(bot, data_manager, logger))
+    try:
+        # Get data manager from container
+        data_manager = container.get("HybridDataManager") if container else None
+        logger = container.get("StructuredLogger") if container else None
+        
+        await bot.add_cog(BackupManagerCog(bot, data_manager, logger))
+    except Exception as e:
+        # Fallback if container or services not available
+        await bot.add_cog(BackupManagerCog(bot, None, None))

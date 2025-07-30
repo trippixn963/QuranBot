@@ -323,8 +323,14 @@ class QuizEditorCog(commands.Cog):
         return str(uuid.uuid4())[:8]
 
 
-async def setup(
-    bot: commands.Bot, data_manager: HybridDataManager, logger: StructuredLogger
-):
+async def setup(bot, container=None):
     """Setup the quiz editor cog."""
-    await bot.add_cog(QuizEditorCog(bot, data_manager, logger))
+    try:
+        # Get data manager from container
+        data_manager = container.get("HybridDataManager") if container else None
+        logger = container.get("StructuredLogger") if container else None
+        
+        await bot.add_cog(QuizEditorCog(bot, data_manager, logger))
+    except Exception as e:
+        # Fallback if container or services not available
+        await bot.add_cog(QuizEditorCog(bot, None, None))
