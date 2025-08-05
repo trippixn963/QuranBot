@@ -73,13 +73,22 @@ class PaginatedSelect(Select, LoggingMixin, InteractionLoggingMixin, ActivityTra
         self.error_handler = create_consistent_error_handler("Dropdowns")
     
     def update_options(self):
-        """Update dropdown options based on current page."""
+        """
+        Update dropdown options based on current page.
+        
+        Calculates the items to display for the current page and
+        updates the Discord select options accordingly. Also updates
+        the placeholder text to show current page information.
+        """
+        # Calculate page boundaries for item slicing
         start_idx = self.current_page * self.items_per_page
         end_idx = start_idx + self.items_per_page
         current_items = self.all_items[start_idx:end_idx]
         
+        # Clear existing options before adding new ones
         self.options.clear()
         
+        # Create Discord select options from current page items
         for item in current_items:
             self.options.append(discord.SelectOption(
                 label=item.get("label", "Unknown"),
@@ -88,20 +97,30 @@ class PaginatedSelect(Select, LoggingMixin, InteractionLoggingMixin, ActivityTra
                 emoji=item.get("emoji")
             ))
         
-        # Update placeholder with page info
+        # Update placeholder text with pagination info
         if self.total_pages > 1:
             self.placeholder = f"{self.base_placeholder} ({self.current_page + 1}/{self.total_pages})"
         else:
             self.placeholder = self.base_placeholder
     
     async def next_page(self):
-        """Navigate to next page."""
+        """
+        Navigate to next page if not at the end.
+        
+        Advances to the next page of items and updates the dropdown
+        options to display the new page content.
+        """
         if self.current_page < self.total_pages - 1:
             self.current_page += 1
             self.update_options()
     
     async def previous_page(self):
-        """Navigate to previous page."""
+        """
+        Navigate to previous page if not at the beginning.
+        
+        Goes back to the previous page of items and updates the dropdown
+        options to display the previous page content.
+        """
         if self.current_page > 0:
             self.current_page -= 1
             self.update_options()
@@ -135,43 +154,64 @@ class SurahSelect(PaginatedSelect):
         self.update_page_data()
     
     def load_complete_surah_data(self):
-        """Load surah data with custom emojis and improved formatting."""
-        # Calculate total pages for 10 surahs per page
+        """
+        Load surah data with custom emojis and improved formatting.
+        
+        Initializes the dropdown with complete Quran data including
+        Arabic names, English translations, verse counts, and custom
+        emojis for each surah. Calculates pagination requirements.
+        """
+        # Calculate total pages needed for all 114 surahs
         self.total_pages = get_total_pages(self.items_per_page)
         
-        # Load current page data
+        # Initialize with first page of surah data
         self.update_page_data()
     
     def update_page_data(self):
-        """Update dropdown options for current page"""
+        """
+        Update dropdown options for current page with surah data.
+        
+        Generates Discord select options for the current page of surahs,
+        including bilingual names, verse counts, and custom emojis.
+        Provides fallback options if data loading fails.
+        """
         try:
+            # STEP 1: Calculate Page Boundaries
+            # Determine which surahs to display on current page
             start_idx = self.current_page * self.items_per_page
             end_idx = min(start_idx + self.items_per_page, 114)
             
-            # Update placeholder with current page
+            # STEP 2: Update Placeholder with Page Info
+            # Show current page number in dropdown placeholder
             total_pages = (114 + self.items_per_page - 1) // self.items_per_page
             self.placeholder = f"{self.base_placeholder} ({self.current_page + 1}/{total_pages})"
             
-            # Clear existing options
+            # STEP 3: Clear Existing Options
+            # Remove previous page options before adding new ones
             self.options.clear()
             
-            # Generate new options for current page
+            # STEP 4: Generate Options for Current Page
+            # Create select options for each surah on this page
             for i in range(start_idx, end_idx):
                 surah_number = i + 1
                 
-                # Get surah data from our data file
+                # STEP 5: Lookup Surah Data
+                # Find matching surah data from complete dataset
                 surah_data = None
                 for surah in COMPLETE_SURAHS_DATA:
                     if surah["number"] == surah_number:
                         surah_data = surah
                         break
                 
+                # STEP 6: Create Select Option
+                # Format surah information for Discord display
                 if surah_data:
                     english_name = surah_data["name_english"]
                     arabic_name = surah_data["name_arabic"]
                     emoji = surah_data["emoji"]
                     verses = surah_data["verses"]
                     
+                    # Format label with length limit for Discord
                     label = f"{english_name} | {arabic_name}"
                     if len(label) > 100:
                         label = label[:97] + "..."
@@ -185,7 +225,8 @@ class SurahSelect(PaginatedSelect):
                         emoji=emoji
                     ))
                     
-            # Ensure we have at least one option
+            # STEP 7: Fallback Option Validation
+            # Ensure at least one option exists to prevent Discord errors
             if not self.options:
                 self.options.append(discord.SelectOption(
                     label="Al-Fatiha | الفاتحة",
@@ -195,8 +236,9 @@ class SurahSelect(PaginatedSelect):
                 ))
                     
         except Exception as e:
+            # STEP 8: Error Recovery
+            # Provide safe fallback if data loading fails
             TreeLogger.error(f"Error updating page data: {e}", service="ControlPanelDropdowns")
-            # Add fallback option to prevent Discord API error
             self.options.clear()
             self.options.append(discord.SelectOption(
                 label="Al-Fatiha | الفاتحة",
@@ -206,11 +248,19 @@ class SurahSelect(PaginatedSelect):
             ))
     
     async def callback(self, interaction: discord.Interaction):
-        """Process Surah selection"""
+        """
+        Process Surah selection from dropdown.
+        
+        Handles user selection of a surah from the paginated dropdown,
+        updates the audio manager, and refreshes the control panel display.
+        """
         try:
+            # STEP 1: Extract Selection Data
+            # Get selected surah number from dropdown value
             selected_surah_number = int(self.values[0])
             
-            # Get surah name for better activity display
+            # STEP 2: Lookup Surah Name
+            # Find human-readable name for activity tracking
             from ...data.surahs_data import COMPLETE_SURAHS_DATA
             surah_name = "Unknown"
             for surah in COMPLETE_SURAHS_DATA:
@@ -218,7 +268,8 @@ class SurahSelect(PaginatedSelect):
                     surah_name = surah["name_english"]
                     break
             
-            # Start detailed interaction logging
+            # STEP 3: Initialize Interaction Logging
+            # Start detailed logging for analytics and debugging
             interaction_id = await self.start_interaction_logging(
                 interaction=interaction,
                 component_type="dropdown",
@@ -227,13 +278,16 @@ class SurahSelect(PaginatedSelect):
                 selected_values=[str(selected_surah_number), surah_name]
             )
             
-            # Track activity using mixin (keep existing)
+            # STEP 4: Track User Activity
+            # Record selection for display in control panel
             self.track_activity(interaction, f"selected `{surah_name}`")
             
-            # Respond immediately to prevent timeouts
+            # STEP 5: Defer Interaction Response
+            # Prevent Discord timeout during audio manager operations
             await safe_defer(interaction)
             
-            # Get audio manager from parent view
+            # STEP 6: Execute Audio Manager Command
+            # Request surah change from audio playback system
             if hasattr(self.view, 'audio_manager') and self.view.audio_manager:
                 TreeLogger.info(f"Calling change_surah with number: {selected_surah_number}", 
                               service="ControlPanelDropdowns")
@@ -241,10 +295,11 @@ class SurahSelect(PaginatedSelect):
                 TreeLogger.info(f"change_surah returned: {success}", 
                               service="ControlPanelDropdowns")
                 
-                # Small delay to let audio manager update its state
+                # Allow time for audio manager to update internal state
                 await asyncio.sleep(0.2)
                 
-            # Immediately update the panel to show the change
+            # STEP 7: Update Control Panel Display
+            # Refresh panel to show new surah information
             if hasattr(self.view, 'update_panel'):
                 try:
                     TreeLogger.info("Calling update_panel after surah change", 
@@ -254,7 +309,8 @@ class SurahSelect(PaginatedSelect):
                     TreeLogger.error(f"Error updating panel after surah selection: {e}", 
                                    service="ControlPanelDropdowns")
             
-            # Complete interaction logging with success
+            # STEP 8: Complete Interaction Logging
+            # Mark interaction as successful for analytics
             await self.complete_interaction_logging(status=InteractionStatus.SUCCESS)
                 
         except Exception as e:
@@ -288,11 +344,20 @@ class ReciterSelect(PaginatedSelect):
         self.load_reciter_data()
     
     def load_reciter_data(self):
-        """Scan audio directory and load available reciters."""
+        """
+        Scan audio directory and load available reciters.
+        
+        Dynamically discovers available reciters by scanning the audio
+        directory structure. Falls back to default reciter list if
+        directory scanning fails or no audio folder is configured.
+        """
         items = []
         
+        # STEP 1: Check Audio Folder Availability
+        # Determine if we can scan for reciters or use defaults
         if not self.audio_folder or not self.audio_folder.exists():
-            # Default reciters matching the actual audio folders
+            # STEP 2: Use Default Reciter List
+            # Provide known reciters when directory scanning isn't possible
             default_reciters = [
                 {"name": "Abdul Basit Abdul Samad", "name_arabic": "عبد الباسط عبد الصمد", "folder": "Abdul Basit Abdul Samad"},
                 {"name": "Maher Al Muaiqly", "name_arabic": "ماهر المعيقلي", "folder": "Maher Al Muaiqly"},
@@ -302,6 +367,8 @@ class ReciterSelect(PaginatedSelect):
                 {"name": "Yasser Al Dosari", "name_arabic": "ياسر الدوسري", "folder": "Yasser Al Dosari"},
             ]
             
+            # STEP 3: Format Default Reciters
+            # Create dropdown items from default reciter data
             for reciter in default_reciters:
                 label = reciter["name"]
                 description = reciter.get("name_arabic", "")
@@ -313,22 +380,28 @@ class ReciterSelect(PaginatedSelect):
                     "emoji": "🎙️"
                 })
         else:
-            # Scan audio directory for reciter folders
+            # STEP 4: Scan Audio Directory
+            # Dynamically discover reciters from filesystem
             try:
                 for folder_path in self.audio_folder.iterdir():
+                    # STEP 5: Validate Reciter Folders
+                    # Check if folder is a valid reciter directory
                     if folder_path.is_dir() and not folder_path.name.startswith('.'):
                         folder_name = folder_path.name
                         
-                        # Format folder name for display
+                        # Format folder name for user-friendly display
                         display_name = folder_name.replace('_', ' ').title()
                         
-                        # Check if folder has audio files
+                        # STEP 6: Verify Audio Content
+                        # Ensure folder contains actual audio files
                         has_audio = any(
                             file.suffix.lower() in ['.mp3', '.wav', '.ogg', '.m4a']
                             for file in folder_path.rglob('*')
                             if file.is_file()
                         )
                         
+                        # STEP 7: Add Valid Reciters
+                        # Create dropdown item for reciters with audio
                         if has_audio:
                             items.append({
                                 "label": truncate_text(display_name, 97),
@@ -337,6 +410,8 @@ class ReciterSelect(PaginatedSelect):
                                 "emoji": "🎙️"
                             })
                 
+                # STEP 8: Handle Empty Directory
+                # Provide feedback if no reciters found
                 if not items:
                     items.append({
                         "label": "No reciters found",
@@ -346,6 +421,8 @@ class ReciterSelect(PaginatedSelect):
                     })
                     
             except Exception as e:
+                # STEP 9: Error Recovery
+                # Provide error feedback if directory scanning fails
                 TreeLogger.error(f"Error scanning audio directory: {e}", service="ControlPanelDropdowns")
                 items.append({
                     "label": "Error loading reciters",
@@ -354,6 +431,8 @@ class ReciterSelect(PaginatedSelect):
                     "emoji": "❌"
                 })
         
+        # STEP 10: Initialize Dropdown Items
+        # Set the discovered/default items for pagination
         self.set_items(items)
     
     async def callback(self, interaction: discord.Interaction):

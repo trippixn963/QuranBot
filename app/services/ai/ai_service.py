@@ -413,17 +413,17 @@ Remember: You're not just an information source - you're a companion who loves I
             enriched_context = []
             
             # Add emotional context if detected
-            if emotional_context["needs_comfort"]:
-                emotion_response = emotional_context["response"]
+            if emotional_context.get("needs_support", False):
+                emotion_response = emotional_context.get("response")
                 enriched_context.append(
-                    f"User seems to be feeling {emotional_context['emotion']}. "
+                    f"User seems to be feeling {emotional_context.get('primary_emotion', 'emotional')}. "
                     f"Consider providing comfort and support."
                 )
                 
                 # Add relevant verses for emotional support
-                if emotion_response and emotion_response.get("include_verse"):
-                    emotional_support = self.islamic_knowledge.get_emotional_support(emotional_context['emotion'])
-                    if emotional_support["verses"]:
+                if emotion_response and emotion_response.get("islamic_guidance"):
+                    emotional_support = self.islamic_knowledge.get_emotional_support(emotional_context.get('primary_emotion', 'general'))
+                    if emotional_support.get("verses"):
                         verse_text = "Relevant verses for comfort:\n"
                         for verse in emotional_support["verses"]:
                             verse_text += f"- {verse['reference']}: {verse['text']}\n"

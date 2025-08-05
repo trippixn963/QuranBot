@@ -44,10 +44,15 @@ class ActivityTrackerMixin:
         """
         Track user activity if the view supports it.
         
+        Records user interactions for display in the control panel's
+        "Last Activity" section, providing context about recent changes
+        and helping users understand bot state changes.
+        
         Args:
-            interaction: Discord interaction
-            action: Description of the action taken
+            interaction: Discord interaction containing user information
+            action: Human-readable description of the action taken
         """
+        # Log activity tracking attempt with context
         TreeLogger.debug(f"Tracking activity: {action}", {
             "user": interaction.user.display_name,
             "user_id": interaction.user.id,
@@ -55,6 +60,7 @@ class ActivityTrackerMixin:
             "has_update_method": hasattr(self.view, '_update_last_activity') if hasattr(self, 'view') else False
         }, service="ActivityTrackerMixin")
         
+        # Update activity tracking if view supports it
         if hasattr(self, 'view') and hasattr(self.view, '_update_last_activity'):
             self.view._update_last_activity(interaction.user, action)
 
@@ -66,17 +72,23 @@ class ValidationMixin:
         """
         Check if user is in the Quran voice channel.
         
+        Validates that the user has permission to use control panel
+        features by verifying they are connected to the designated
+        Quran voice channel. Provides user feedback if validation fails.
+        
         Args:
-            interaction: Discord interaction
+            interaction: Discord interaction to validate
             
         Returns:
             True if user is in voice channel, False otherwise
         """
+        # Perform voice channel validation check
         if not await self.is_user_in_quran_vc(interaction):
+            # Create user-friendly error message
             embed = create_error_embed("You must be in the Quran voice channel to use the control panel.")
             await safe_interaction_response(interaction, embed=embed, ephemeral=True)
             
-            # Log if we have interaction logging capability
+            # Log permission error if interaction logging is available
             if hasattr(self, 'complete_interaction_logging'):
                 await self.complete_interaction_logging(
                     status=InteractionStatus.PERMISSION_ERROR,
@@ -95,30 +107,39 @@ class AudioManagerProxy:
     
     async def safe_call(self, method_name: str, *args, **kwargs) -> Optional[Any]:
         """
-        Safely call an audio manager method.
+        Safely call an audio manager method with error handling.
+        
+        Provides a safe interface for calling audio manager methods
+        with comprehensive error handling and logging. Returns None
+        on any failure to prevent control panel crashes.
         
         Args:
-            method_name: Name of the method to call
-            *args: Positional arguments for the method
-            **kwargs: Keyword arguments for the method
+            method_name: Name of the method to call on audio manager
+            *args: Positional arguments to pass to the method
+            **kwargs: Keyword arguments to pass to the method
             
         Returns:
             Result of the method call or None if failed
         """
+        # Check if audio manager is available
         if not self.audio_manager:
             TreeLogger.warning(f"Audio manager not available for {method_name}", 
                              service="ControlPanelCommon")
             return None
         
         try:
+            # Get method reference with validation
             method = getattr(self.audio_manager, method_name, None)
             if method and callable(method):
+                # Execute method with provided arguments
                 return await method(*args, **kwargs)
             else:
+                # Method not found or not callable
                 TreeLogger.error(f"Method {method_name} not found on audio manager", 
                                service="ControlPanelCommon")
                 return None
         except Exception as e:
+            # Log any errors during method execution
             TreeLogger.error(f"Error calling audio manager.{method_name}: {e}", 
                            service="ControlPanelCommon")
             return None
@@ -133,20 +154,26 @@ class ButtonStateMixin:
                           enabled_emoji: Optional[str] = None,
                           disabled_emoji: Optional[str] = None):
         """
-        Update button appearance based on state.
+        Update button appearance based on state with visual feedback.
+        
+        Provides consistent visual feedback for toggle buttons by
+        changing colors and optionally emojis based on the current
+        state. Helps users understand the current mode at a glance.
         
         Args:
-            enabled: Whether the feature is enabled
-            enabled_style: Button style when enabled
-            disabled_style: Button style when disabled
-            enabled_emoji: Emoji when enabled (optional)
-            disabled_emoji: Emoji when disabled (optional)
+            enabled: Whether the feature is currently enabled
+            enabled_style: Button style when feature is enabled (default: success/green)
+            disabled_style: Button style when feature is disabled (default: secondary/gray)
+            enabled_emoji: Emoji to show when enabled (optional)
+            disabled_emoji: Emoji to show when disabled (optional)
         """
         if enabled:
+            # Apply enabled styling (typically green/success)
             self.style = enabled_style
             if enabled_emoji and hasattr(self, 'emoji'):
                 self.emoji = enabled_emoji
         else:
+            # Apply disabled styling (typically gray/secondary)
             self.style = disabled_style
             if disabled_emoji and hasattr(self, 'emoji'):
                 self.emoji = disabled_emoji
@@ -200,27 +227,35 @@ class InteractionHandlerMixin(ActivityTrackerMixin, ValidationMixin):
                                      action: str,
                                      check_voice: bool = False) -> bool:
         """
-        Standard interaction start handling.
+        Standard interaction start handling with validation and tracking.
+        
+        Provides a consistent pattern for handling the start of any
+        control panel interaction, including activity tracking,
+        permission validation, and response deferral.
         
         Args:
-            interaction: Discord interaction
-            action: Action description for tracking
-            check_voice: Whether to check voice channel
+            interaction: Discord interaction to process
+            action: Human-readable action description for tracking
+            check_voice: Whether to validate voice channel membership
             
         Returns:
-            True if interaction can proceed, False otherwise
+            True if interaction can proceed, False if validation failed
         """
-        # Track activity
+        # STEP 1: Activity Tracking
+        # Record user action for display in control panel
         self.track_activity(interaction, action)
         
-        # Check voice channel if required
+        # STEP 2: Voice Channel Validation (if required)
+        # Check if user has permission to use control panel
         if check_voice and not await self.check_voice_channel(interaction):
             return False
         
-        # Defer the interaction
+        # STEP 3: Interaction Response Deferral
+        # Prevent Discord timeout by deferring response
         await safe_defer(interaction)
         
-        # Increment interaction count if we have it
+        # STEP 4: Interaction Counter Update
+        # Track usage statistics if counter is available
         if hasattr(self, 'interaction_count'):
             self.interaction_count += 1
         
@@ -233,29 +268,38 @@ def create_audio_callback(method_name: str,
     """
     Factory function to create standardized audio callbacks.
     
+    Creates consistent callback functions for audio manager operations
+    with built-in error handling, logging, and interaction management.
+    Reduces code duplication across control panel components.
+    
     Args:
-        method_name: Audio manager method to call
-        action_description: Description for logging
-        service_name: Service name for logging
+        method_name: Name of audio manager method to call
+        action_description: Human-readable description for logging
+        service_name: Service name for logging context
         
     Returns:
-        Async callback function
+        Configured async callback function ready for use
     """
     async def callback(self, interaction: discord.Interaction):
         try:
-            # Use interaction handler if available
+            # STEP 1: Interaction Handling
+            # Use standardized interaction start handling if available
             if hasattr(self, 'handle_interaction_start'):
                 if not await self.handle_interaction_start(interaction, action_description):
                     return
             else:
+                # Fallback: simple defer if no handler available
                 await safe_defer(interaction)
             
-            # Call audio manager method
+            # STEP 2: Audio Manager Method Execution
+            # Call the specified audio manager method safely
             if hasattr(self, 'audio_manager') and self.audio_manager:
                 method = getattr(self.audio_manager, method_name, None)
                 if method:
                     await method()
                     
+                    # STEP 3: Success Logging
+                    # Log successful operation completion
                     TreeLogger.info(f"{action_description} completed", {
                         "user_id": interaction.user.id,
                         "username": interaction.user.display_name,
@@ -263,6 +307,8 @@ def create_audio_callback(method_name: str,
                     }, service=service_name)
             
         except Exception as e:
+            # STEP 4: Error Handling
+            # Use component error handler if available, otherwise log
             if hasattr(self, 'handle_error'):
                 await self.handle_error(interaction, e)
             else:
