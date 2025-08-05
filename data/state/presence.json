@@ -1,11 +1,11 @@
 {
   "is_enabled": true,
-  "current_status": "🐄 Al-Baqarah",
-  "current_details": "Muhammad Al Luhaidan",
-  "current_state": "Verse 1 of 286",
-  "current_activity_type": "listening",
-  "start_time": 1754357894.006861,
-  "last_saved": "2025-08-04T21:38:14.008048-04:00",
-  "update_count": 165,
-  "failed_updates": 33
+  "current_status": "",
+  "current_details": "",
+  "current_state": "",
+  "current_activity_type": "playing",
+  "start_time": null,
+  "last_saved": "2025-08-04T21:51:50.806050-04:00",
+  "update_count": 168,
+  "failed_updates": 34
 }
