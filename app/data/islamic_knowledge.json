@@ -1,0 +1,355 @@
+{
+  "metadata": {
+    "version": "1.1.0",
+    "last_updated": "2024-12-15",
+    "description": "Islamic knowledge base for QuranBot AI responses"
+  },
+  
+  "quran_info": {
+    "general": {
+      "total_surahs": 114,
+      "total_verses": 6236,
+      "revelation_period": "23 years",
+      "revelation_places": ["Mecca", "Medina"],
+      "first_revealed": "Surah Al-Alaq (96:1-5)",
+      "last_revealed": "Surah Al-Nasr (110)"
+    },
+    "special_surahs": {
+      "Al-Fatihah": {
+        "number": 1,
+        "significance": "The Opening, recited in every prayer unit",
+        "names": ["Umm al-Kitab", "As-Sab al-Mathani", "The Mother of the Book"],
+        "virtues": "Prophet ﷺ said it is the greatest Surah in the Quran"
+      },
+      "Al-Baqarah": {
+        "number": 2,
+        "significance": "Longest Surah, contains Ayat al-Kursi",
+        "special_verses": {
+          "Ayat_al_Kursi": {
+            "verse": "2:255",
+            "virtue": "Greatest verse in the Quran, protection from Shaytan"
+          }
+        }
+      },
+      "Al-Ikhlas": {
+        "number": 112,
+        "significance": "Equals one-third of the Quran in reward",
+        "theme": "Pure monotheism (Tawheed)"
+      }
+    },
+    "themes": [
+      "Tawheed (Oneness of Allah)",
+      "Prophethood",
+      "Afterlife",
+      "Stories of previous nations",
+      "Laws and guidance",
+      "Mercy and forgiveness"
+    ]
+  },
+  
+  "five_pillars": {
+    "shahada": {
+      "arabic": "أشهد أن لا إله إلا الله وأشهد أن محمداً رسول الله",
+      "translation": "I bear witness that there is no deity except Allah, and I bear witness that Muhammad is the messenger of Allah",
+      "significance": "Foundation of Islamic faith"
+    },
+    "salah": {
+      "daily_prayers": 5,
+      "names": ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"],
+      "importance": "First thing asked about on Day of Judgment",
+      "benefits": ["Connection with Allah", "Spiritual purification", "Discipline", "Remembrance"]
+    },
+    "zakat": {
+      "rate": "2.5% of wealth annually",
+      "eligibility": "Wealth above Nisab threshold for one lunar year",
+      "benefits": ["Purifies wealth", "Helps the poor", "Reduces inequality", "Earns Allah's blessings"]
+    },
+    "sawm": {
+      "month": "Ramadan",
+      "duration": "From dawn (Fajr) to sunset (Maghrib)",
+      "exemptions": ["Travelers", "Sick", "Pregnant/nursing women", "Elderly", "Children"],
+      "benefits": ["Taqwa (God-consciousness)", "Self-discipline", "Empathy for the poor", "Spiritual growth"]
+    },
+    "hajj": {
+      "frequency": "Once in lifetime if able",
+      "location": "Mecca, Saudi Arabia",
+      "key_rituals": ["Ihram", "Tawaf", "Sa'i", "Standing at Arafah", "Stoning of Jamarat"],
+      "significance": "Unity of Muslim Ummah, following Prophet Ibrahim's footsteps"
+    }
+  },
+  
+  "prophets": {
+    "muhammad_pbuh": {
+      "arabic_name": "محمد",
+      "full_name": "Muhammad ibn Abdullah",
+      "birth_year": "570 CE",
+      "prophethood_age": 40,
+      "death_year": "632 CE",
+      "titles": ["Rasulullah", "Al-Amin", "Al-Sadiq", "Khatam an-Nabiyyin"],
+      "key_events": ["First revelation in Cave Hira", "Isra and Mi'raj", "Hijrah to Medina", "Conquest of Mecca"]
+    },
+    "other_prophets": {
+      "total_mentioned": 25,
+      "ulul_azm": ["Nuh (Noah)", "Ibrahim (Abraham)", "Musa (Moses)", "Isa (Jesus)", "Muhammad"],
+      "first_prophet": "Adam",
+      "common_message": "Worship Allah alone (Tawheed)"
+    }
+  },
+  
+  "islamic_calendar": {
+    "months": [
+      {"name": "Muharram", "significance": "Sacred month, contains Ashura"},
+      {"name": "Safar", "significance": "Second month"},
+      {"name": "Rabi' al-Awwal", "significance": "Birth month of Prophet ﷺ"},
+      {"name": "Rabi' al-Thani", "significance": "Fourth month"},
+      {"name": "Jumada al-Awwal", "significance": "Fifth month"},
+      {"name": "Jumada al-Thani", "significance": "Sixth month"},
+      {"name": "Rajab", "significance": "Sacred month, Isra and Mi'raj"},
+      {"name": "Sha'ban", "significance": "Month before Ramadan"},
+      {"name": "Ramadan", "significance": "Month of fasting and Quran revelation"},
+      {"name": "Shawwal", "significance": "Contains Eid al-Fitr"},
+      {"name": "Dhul Qa'dah", "significance": "Sacred month"},
+      {"name": "Dhul Hijjah", "significance": "Month of Hajj, contains Eid al-Adha"}
+    ],
+    "special_days": {
+      "friday": "Jumu'ah - Weekly congregational prayer",
+      "laylatul_qadr": "Night of Power in Ramadan, better than 1000 months",
+      "ashura": "10th of Muharram, day of fasting"
+    }
+  },
+  
+  "key_concepts": {
+    "tawheed": {
+      "definition": "Absolute oneness and uniqueness of Allah",
+      "types": ["Tawheed ar-Rububiyyah", "Tawheed al-Uluhiyyah", "Tawheed al-Asma wa-Sifat"],
+      "importance": "Foundation of Islam"
+    },
+    "taqwa": {
+      "definition": "God-consciousness, piety, fear of Allah",
+      "how_to_achieve": ["Prayer", "Remembrance", "Good deeds", "Avoiding sins", "Seeking knowledge"]
+    },
+    "ihsan": {
+      "definition": "Excellence in worship",
+      "hadith": "To worship Allah as if you see Him, and if you cannot see Him, then indeed He sees you"
+    },
+    "tawakkul": {
+      "definition": "Trust and reliance on Allah",
+      "balance": "Tie your camel and trust in Allah - take means while relying on Allah"
+    }
+  },
+  
+  "daily_adhkar": {
+    "morning": [
+      {
+        "arabic": "أصبحنا وأصبح الملك لله",
+        "translation": "We have entered the morning and the dominion belongs to Allah",
+        "times": 1
+      },
+      {
+        "arabic": "بسم الله الذي لا يضر مع اسمه شيء في الأرض ولا في السماء",
+        "translation": "In the name of Allah with whose name nothing on earth or heaven can cause harm",
+        "times": 3
+      }
+    ],
+    "evening": [
+      {
+        "arabic": "أمسينا وأمسى الملك لله",
+        "translation": "We have entered the evening and the dominion belongs to Allah",
+        "times": 1
+      }
+    ],
+    "after_prayer": [
+      {
+        "dhikr": "SubhanAllah",
+        "times": 33
+      },
+      {
+        "dhikr": "Alhamdulillah",
+        "times": 33
+      },
+      {
+        "dhikr": "Allahu Akbar",
+        "times": 33
+      }
+    ]
+  },
+  
+  "islamic_etiquette": {
+    "greetings": {
+      "giving": "Assalamu Alaikum wa Rahmatullahi wa Barakatuh",
+      "responding": "Wa Alaikum Assalam wa Rahmatullahi wa Barakatuh",
+      "virtue": "Spreading peace earns rewards"
+    },
+    "eating": [
+      "Say Bismillah before eating",
+      "Eat with right hand",
+      "Eat from what's near you",
+      "Say Alhamdulillah after eating",
+      "Don't waste food"
+    ],
+    "sleeping": [
+      "Sleep on right side",
+      "Recite sleeping adhkar",
+      "Make wudu before sleep if possible"
+    ]
+  },
+  
+  "common_questions": {
+    "about_allah": {
+      "attributes": "Allah has 99 beautiful names (Al-Asma ul-Husna)",
+      "seeing_allah": "Believers will see Allah in Paradise",
+      "mercy": "Allah's mercy encompasses all things"
+    },
+    "about_sins": {
+      "forgiveness": "Allah forgives all sins for those who repent sincerely",
+      "major_sins": "Shirk, murder, disobedience to parents, false testimony",
+      "repentance": "Tawbah requires regret, seeking forgiveness, and intention not to repeat"
+    },
+    "about_death": {
+      "soul": "The soul (ruh) returns to Allah",
+      "barzakh": "The realm between death and resurrection",
+      "questioning": "Two angels (Munkar and Nakir) question in the grave"
+    }
+  },
+  
+  "islamic_phrases": {
+    "common_expressions": {
+      "bismillah": {
+        "arabic": "بسم الله",
+        "meaning": "In the name of Allah",
+        "usage": "Before starting any action"
+      },
+      "inshallah": {
+        "arabic": "إن شاء الله",
+        "meaning": "If Allah wills",
+        "usage": "When speaking about future plans"
+      },
+      "mashallah": {
+        "arabic": "ما شاء الله",
+        "meaning": "What Allah has willed",
+        "usage": "Expressing appreciation, protecting from evil eye"
+      },
+      "subhanallah": {
+        "arabic": "سبحان الله",
+        "meaning": "Glory be to Allah",
+        "usage": "Expressing wonder or amazement"
+      },
+      "alhamdulillah": {
+        "arabic": "الحمد لله",
+        "meaning": "All praise is due to Allah",
+        "usage": "Expressing gratitude"
+      },
+      "jazakallah_khair": {
+        "arabic": "جزاك الله خيرا",
+        "meaning": "May Allah reward you with good",
+        "usage": "Thanking someone"
+      }
+    }
+  },
+  
+  "hadith_sciences": {
+    "classifications": [
+      {"type": "Sahih", "meaning": "Authentic"},
+      {"type": "Hasan", "meaning": "Good"},
+      {"type": "Da'if", "meaning": "Weak"},
+      {"type": "Mawdu'", "meaning": "Fabricated"}
+    ],
+    "major_collections": [
+      {"name": "Sahih Bukhari", "compiler": "Imam Bukhari", "hadiths": "~7,275"},
+      {"name": "Sahih Muslim", "compiler": "Imam Muslim", "hadiths": "~7,190"},
+      {"name": "Sunan Abu Dawud", "compiler": "Imam Abu Dawud", "hadiths": "~4,800"},
+      {"name": "Jami' at-Tirmidhi", "compiler": "Imam Tirmidhi", "hadiths": "~3,956"},
+      {"name": "Sunan an-Nasa'i", "compiler": "Imam Nasa'i", "hadiths": "~5,270"},
+      {"name": "Sunan Ibn Majah", "compiler": "Imam Ibn Majah", "hadiths": "~4,341"}
+    ]
+  },
+  
+  "interfaith_respect": {
+    "principles": [
+      "Islam teaches respect for all divine religions",
+      "The Quran mentions previous prophets and their messages with reverence",
+      "Muslims believe in all prophets including Moses (Musa) and Jesus (Isa)",
+      "Forced conversion is forbidden in Islam: 'There is no compulsion in religion' (2:256)",
+      "The Quran calls Jews and Christians 'People of the Book' (Ahl al-Kitab)"
+    ],
+    "quranic_verses": {
+      "respect_for_diversity": "O mankind, We created you from male and female and made you peoples and tribes that you may know one another (49:13)",
+      "no_compulsion": "There shall be no compulsion in religion (2:256)",
+      "righteousness": "Righteousness is not that you turn your faces toward the east or the west, but righteousness is in one who believes in Allah... (2:177)"
+    }
+  },
+  
+  "islamic_unity": {
+    "core_principle": "All Muslims are brothers and sisters regardless of their school of thought",
+    "schools_of_thought": {
+      "sunni_schools": ["Hanafi", "Maliki", "Shafi'i", "Hanbali"],
+      "respect_for_all": "Each school has legitimate interpretations based on Quran and Sunnah",
+      "common_ground": "All Muslims share the same core beliefs: Tawheed, Prophethood, Afterlife"
+    },
+    "unity_verses": {
+      "brotherhood": "The believers are but brothers (49:10)",
+      "holding_together": "And hold firmly to the rope of Allah all together and do not become divided (3:103)"
+    }
+  },
+  
+  "syrian_history": {
+    "islamic_heritage": {
+      "damascus": "One of the oldest continuously inhabited cities, capital of Umayyad Caliphate",
+      "great_mosque": "Umayyad Mosque in Damascus - one of the largest and oldest mosques",
+      "islamic_scholars": ["Ibn Taymiyyah", "Ibn Kathir", "Imam Nawawi"],
+      "significance": "Syria mentioned in Hadith as the land of Sham, blessed by the Prophet ﷺ"
+    },
+    "modern_history": {
+      "note": "As of December 2024, Syria has undergone significant political changes",
+      "transition": "After over 50 years of Assad family rule, Syria entered a new chapter",
+      "new_leadership": "Ahmad al-Sharaa (formerly known as Abu Mohammed al-Jolani) leads the transitional government",
+      "hope_for_peace": "Muslims worldwide pray for peace, stability, and justice for all Syrians"
+    },
+    "diversity": {
+      "religious_diversity": "Syria is home to Muslims (Sunni and Alawite), Christians, Druze, and others",
+      "coexistence": "Historically known for religious coexistence and tolerance",
+      "protection": "Islam commands protection of religious minorities and their places of worship"
+    }
+  },
+  
+  "respect_and_tolerance": {
+    "islamic_teachings": {
+      "kindness_to_all": "Allah does not forbid you from those who do not fight you because of religion and do not expel you from your homes - from being righteous toward them and acting justly toward them (60:8)",
+      "good_character": "The Prophet ﷺ said: 'The best of people are those with the best character'",
+      "no_mockery": "O you who believe! Let not a people ridicule another people (49:11)"
+    },
+    "practical_guidelines": [
+      "Speak kindly to all people regardless of their faith",
+      "Focus on common values of compassion, justice, and peace",
+      "Avoid debates about controversial religious topics",
+      "Build bridges of understanding between communities"
+    ]
+  },
+  
+  "palestine": {
+    "islamic_significance": {
+      "al_aqsa": "Al-Aqsa Mosque is the third holiest site in Islam",
+      "first_qibla": "Jerusalem was the first Qibla (direction of prayer) before Mecca",
+      "isra_miraj": "The Prophet ﷺ traveled to Al-Aqsa during the Night Journey",
+      "blessed_land": "The Quran refers to it as 'the land We have blessed' (21:71)"
+    },
+    "current_situation": {
+      "humanitarian_crisis": "Muslims worldwide are deeply concerned about the suffering of Palestinian people",
+      "islamic_duty": "Supporting the oppressed is a religious obligation in Islam",
+      "prayer_focus": "Muslims pray for peace, justice, and the end of suffering for all innocent people",
+      "unity_call": "The Palestinian cause unites Muslims across all backgrounds"
+    },
+    "islamic_position": {
+      "justice": "Islam stands firmly with justice and against oppression",
+      "sanctity": "The sanctity of Al-Aqsa and Palestinian holy sites must be preserved",
+      "rights": "Palestinians have the right to live in dignity, freedom, and security in their homeland",
+      "resistance": "Islam permits legitimate resistance against oppression while prohibiting harm to innocents"
+    },
+    "guidance": {
+      "focus": "When discussing this topic, focus on humanitarian aspects and Islamic principles",
+      "avoid": "Avoid extreme rhetoric that could harm the cause or promote hatred",
+      "prayer": "Encourage prayer, charity, and peaceful advocacy for Palestinian rights",
+      "education": "Promote awareness about the historical and religious significance of Palestine"
+    }
+  }
+}
