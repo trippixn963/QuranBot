@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "quranbot"
-version = "4.0.1"
-description = "A comprehensive Discord bot for Islamic content including Quran recitation, daily verses, and interactive quizzes"
-authors = ["QuranBot Team <contact@example.com>"]
+version = "1.0.0"
+description = "A feature-rich Discord bot serving as an Islamic companion with Quran recitations, AI assistance, and Islamic knowledge"
+authors = ["حَـــــنَّـــــا"]
 readme = "README.md"
 license = "MIT"
-homepage = "https://github.com/example/quranbot"
-repository = "https://github.com/example/quranbot"
-documentation = "https://github.com/example/quranbot/docs"
+homepage = "https://github.com/trippixn963/QuranBot"
+repository = "https://github.com/trippixn963/QuranBot"
+documentation = "https://github.com/trippixn963/QuranBot"
 keywords = ["discord", "bot", "quran", "islamic", "audio"]
 classifiers = [
     "Development Status :: 4 - Beta",
