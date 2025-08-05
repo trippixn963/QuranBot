@@ -4,17 +4,17 @@
   "panel_channel_id": 1389716643512455219,
   "current_reciter": "Muhammad Al Luhaidan",
   "playback_mode": "sequential",
-  "playback_state": "playing",
+  "playback_state": "stopped",
   "current_position": {
-    "surah": 2,
+    "surah": 3,
     "position_seconds": 0.0,
     "total_duration_seconds": null,
-    "timestamp": "2025-08-04T21:54:32.787909-04:00"
+    "timestamp": "2025-08-04T21:59:04.111513-04:00"
   },
   "volume": 1.0,
   "loop_enabled": false,
   "shuffle_enabled": false,
-  "last_activity": "2025-08-04T21:54:32.788309-04:00",
+  "last_activity": "2025-08-04T21:59:04.111640-04:00",
   "created_at": "2025-08-02T17:06:09.651372-04:00",
-  "updated_at": "2025-08-04T21:54:32.788933-04:00"
+  "updated_at": "2025-08-04T21:59:04.112160-04:00"
 }

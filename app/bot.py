@@ -1914,12 +1914,19 @@ class QuranBot(discord.Client):
                     "Background task stop timed out, forcing", service="QuranBot"
                 )
 
-            # Stop services (with shorter timeout)
+            # Stop and cleanup services (with shorter timeout)
             try:
                 await asyncio.wait_for(self._stop_services(), timeout=3.0)
             except TimeoutError:
                 TreeLogger.warning(
                     "Service stop timed out, forcing", service="QuranBot"
+                )
+                
+            try:
+                await asyncio.wait_for(self._shutdown_services(), timeout=3.0)
+            except TimeoutError:
+                TreeLogger.warning(
+                    "Service cleanup timed out, forcing", service="QuranBot"
                 )
 
             # Shutdown control panel (with shorter timeout)
@@ -1932,14 +1939,6 @@ class QuranBot(discord.Client):
                     TreeLogger.warning(
                         "Control panel shutdown timed out, forcing", service="QuranBot"
                     )
-
-            # Shutdown services (with shorter timeout)
-            try:
-                await asyncio.wait_for(self._shutdown_services(), timeout=3.0)
-            except TimeoutError:
-                TreeLogger.warning(
-                    "Service shutdown timed out, forcing", service="QuranBot"
-                )
 
             # Force Discord connection close
             try:

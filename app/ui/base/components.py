@@ -31,10 +31,8 @@ def create_developer_footer(
 
     config = get_config()
 
-    # Create developer mention if developer_id is available
+    # Use Arabic name for footer (Discord embed footers don't support clickable mentions)
     footer_text = "Developed by حَـــــنَّـــــا"
-    if config.developer_id:
-        footer_text = f"Developed by <@{config.developer_id}>"
 
     # Try to get developer avatar if bot is provided
     developer_icon_url = None

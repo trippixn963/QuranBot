@@ -245,6 +245,15 @@ class BaseService(ABC):
         Stop service gracefully with error handling.
         Implements graceful shutdown with resource cleanup.
         """
+        # If already stopped or cleaned up, just return silently
+        if self.state in [ServiceState.STOPPED, ServiceState.CLEANED_UP]:
+            TreeLogger.debug(
+                f"Service '{self.service_name}' already stopped/cleaned up",
+                context={"current_state": self.state.value},
+                service="system",
+            )
+            return
+            
         if self.state not in [ServiceState.RUNNING, ServiceState.ERROR]:
             TreeLogger.error(
                 f"Service '{self.service_name}' cannot stop from state: {self.state.value}",

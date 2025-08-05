@@ -47,16 +47,16 @@ def create_ai_response_embed(
         name="❓ Your Question", value=f"```\n{question}\n```", inline=False
     )
 
-    # Add bot thumbnail
+        # Add bot thumbnail
     if bot and bot.user:
         try:
             embed.set_thumbnail(url=bot.user.avatar.url)
         except:
             pass
-
-    # Create standardized developer footer
+    
+    # Create developer footer (Discord embed footers don't support clickable mentions)
     footer_text, developer_icon_url = create_developer_footer(bot)
-
+    
     embed.set_footer(text=footer_text, icon_url=developer_icon_url)
 
     return embed
@@ -93,16 +93,16 @@ def create_rate_limit_embed(
         color=0xFF0000,  # Red color as requested
     )
 
-    # Add bot thumbnail
+        # Add bot thumbnail
     if bot and bot.user and bot.user.avatar:
         try:
             embed.set_thumbnail(url=bot.user.avatar.url)
         except:
             pass
-
-    # Create standardized developer footer
+    
+    # Create developer footer (Discord embed footers don't support clickable mentions)
     footer_text, developer_icon_url = create_developer_footer(bot)
-
+    
     embed.set_footer(text=footer_text, icon_url=developer_icon_url)
 
     return embed
