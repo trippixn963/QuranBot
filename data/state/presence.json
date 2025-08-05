@@ -1,11 +1,11 @@
 {
   "is_enabled": true,
-  "current_status": "",
-  "current_details": "",
-  "current_state": "",
-  "current_activity_type": "playing",
-  "start_time": null,
-  "last_saved": "2025-08-04T21:59:04.156495-04:00",
-  "update_count": 170,
-  "failed_updates": 35
+  "current_status": "👨‍👩‍👧‍👦 Aal-Imran",
+  "current_details": "Muhammad Al Luhaidan",
+  "current_state": "Verse 1 of 200",
+  "current_activity_type": "listening",
+  "start_time": 1754360000.868726,
+  "last_saved": "2025-08-04T22:13:20.869156-04:00",
+  "update_count": 171,
+  "failed_updates": 36
 }

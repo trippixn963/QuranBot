@@ -283,8 +283,21 @@ class MentionHandler:
                         },
                     )
 
-                # Add user_id to context
+                # Add user_id to context and check if user is developer
                 context["user_id"] = message.author.id
+                context["is_developer"] = message.author.id == self.config.developer_id
+                
+                # Log developer interaction if detected
+                if context["is_developer"]:
+                    TreeLogger.info(
+                        "Developer interaction detected",
+                        {
+                            "user_id": message.author.id,
+                            "username": message.author.name,
+                            "display_name": message.author.display_name,
+                            "developer_id": self.config.developer_id,
+                        },
+                    )
 
                 # Generate AI response
                 TreeLogger.debug(

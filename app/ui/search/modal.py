@@ -111,21 +111,11 @@ class SurahSearchModal(Modal, LoggingMixin, InteractionLoggingMixin):
                     except:
                         pass
 
-                # Get developer avatar
-                from ...config import get_config
-
-                config = get_config()
-                developer_icon_url = None
-                if config.developer_id:
-                    try:
-                        developer = interaction.client.get_user(config.developer_id)
-                        if developer and developer.avatar:
-                            developer_icon_url = developer.avatar.url
-                    except:
-                        pass
+                # Create developer footer
+                footer_text, developer_icon_url = create_developer_footer(interaction.client)
 
                 embed.set_footer(
-                    text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url
+                    text=footer_text, icon_url=developer_icon_url
                 )
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
@@ -176,21 +166,11 @@ class SurahSearchModal(Modal, LoggingMixin, InteractionLoggingMixin):
                 except:
                     pass
 
-            # Get developer avatar
-            from ...config import get_config
-
-            config = get_config()
-            developer_icon_url = None
-            if config.developer_id:
-                try:
-                    developer = interaction.client.get_user(config.developer_id)
-                    if developer and developer.avatar:
-                        developer_icon_url = developer.avatar.url
-                except:
-                    pass
+            # Create developer footer
+            footer_text, developer_icon_url = create_developer_footer(interaction.client)
 
             embed.set_footer(
-                text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url
+                text=footer_text, icon_url=developer_icon_url
             )
 
             try:
@@ -233,20 +213,10 @@ class SurahSearchModal(Modal, LoggingMixin, InteractionLoggingMixin):
         if surah.get("meaning"):
             embed.add_field(name="💫 Meaning", value=surah["meaning"], inline=True)
 
-        # Get developer avatar
-        from ...config import get_config
+        # Create developer footer
+        footer_text, developer_icon_url = create_developer_footer(interaction.client)
 
-        config = get_config()
-        developer_icon_url = None
-        if config.developer_id:
-            try:
-                developer = interaction.client.get_user(config.developer_id)
-                if developer and developer.avatar:
-                    developer_icon_url = developer.avatar.url
-            except:
-                pass
-
-        embed.set_footer(text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url)
+        embed.set_footer(text=footer_text, icon_url=developer_icon_url)
 
         await interaction.response.send_message(
             embed=embed, view=confirmation_view, ephemeral=True
@@ -305,18 +275,8 @@ class SurahSearchModal(Modal, LoggingMixin, InteractionLoggingMixin):
                 inline=False,
             )
 
-        # Get developer avatar
-        from ...config import get_config
+        # Create developer footer
+        footer_text, developer_icon_url = create_developer_footer(interaction.client)
 
-        config = get_config()
-        developer_icon_url = None
-        if config.developer_id:
-            try:
-                developer = interaction.client.get_user(config.developer_id)
-                if developer and developer.avatar:
-                    developer_icon_url = developer.avatar.url
-            except:
-                pass
-
-        embed.set_footer(text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url)
+        embed.set_footer(text=footer_text, icon_url=developer_icon_url)
         await interaction.followup.send(embed=embed, view=results_view, ephemeral=True)

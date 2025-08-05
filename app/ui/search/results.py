@@ -10,7 +10,7 @@ from typing import Any
 import discord
 from discord.ui import Select, View
 
-from ..base.components import LoggingMixin
+from ..base.components import LoggingMixin, create_developer_footer
 
 
 class SearchResultsView(View, LoggingMixin):
@@ -125,21 +125,11 @@ class SearchResultsSelect(Select, LoggingMixin):
                     name="💫 Meaning", value=selected_surah["meaning"], inline=True
                 )
 
-            # Get developer avatar
-            from ...config import get_config
-
-            config = get_config()
-            developer_icon_url = None
-            if config.developer_id:
-                try:
-                    developer = interaction.client.get_user(config.developer_id)
-                    if developer and developer.avatar:
-                        developer_icon_url = developer.avatar.url
-                except:
-                    pass
+            # Create developer footer
+            footer_text, developer_icon_url = create_developer_footer(interaction.client)
 
             embed.set_footer(
-                text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url
+                text=footer_text, icon_url=developer_icon_url
             )
 
             await interaction.response.send_message(
@@ -168,20 +158,10 @@ class SearchResultsSelect(Select, LoggingMixin):
                 except:
                     pass
 
-            # Get developer avatar
-            from ...config import get_config
-
-            config = get_config()
-            developer_icon_url = None
-            if config.developer_id:
-                try:
-                    developer = interaction.client.get_user(config.developer_id)
-                    if developer and developer.avatar:
-                        developer_icon_url = developer.avatar.url
-                except:
-                    pass
+            # Create developer footer
+            footer_text, developer_icon_url = create_developer_footer(interaction.client)
 
             embed.set_footer(
-                text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url
+                text=footer_text, icon_url=developer_icon_url
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)

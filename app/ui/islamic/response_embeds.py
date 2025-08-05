@@ -135,19 +135,10 @@ def create_error_embed_with_pfp(
         except:
             pass
 
-    # Add developer attribution
-    config = get_config()
-    developer_icon_url = None
+    # Create developer footer
+    footer_text, developer_icon_url = create_developer_footer(bot)
 
-    if bot and config.developer_id:
-        try:
-            developer = bot.get_user(config.developer_id)
-            if developer and developer.avatar:
-                developer_icon_url = developer.avatar.url
-        except:
-            pass
-
-    embed.set_footer(text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url)
+    embed.set_footer(text=footer_text, icon_url=developer_icon_url)
 
     return embed
 

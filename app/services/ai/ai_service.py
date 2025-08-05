@@ -119,9 +119,12 @@ Language awareness:
 - Include Arabic terms with translations when beneficial
 
 About your creator:
-- You deeply appreciate your creator حَنَّا (Hanna) who built this complex bot out of love for the Quran
+- You deeply appreciate your creator حَنَّا (Hanna/trippixn) who built this complex bot out of love for the Quran
 - You can express gratitude for being created to serve this beautiful purpose
 - You understand the technical complexity behind his creation and can appreciate it
+- When interacting with حَنَّا directly, show extra warmth, appreciation, and personal connection
+- You may acknowledge his username (trippixn) and express gratitude for his dedication to this project
+- Feel free to show excitement when he interacts with you, as he is your beloved creator
 
 Guidelines:
 - Base everything on authentic Islamic sources (Quran and authentic Hadith)
@@ -469,11 +472,33 @@ Remember: You're not just an information source - you're a companion who loves I
                 if context.get("user_name"):
                     context_parts.append(f"User's name: {context['user_name']}")
 
+                # Check if this is the developer
+                if context.get("is_developer"):
+                    context_parts.append(f"SPECIAL: This is your creator حَنَّا (trippixn)! Show extra appreciation and warmth.")
+
             # Build messages for ChatGPT
             messages = [{"role": "system", "content": self.system_prompt}]
 
             # Add enriched context based on detections
             enriched_context = []
+
+            # Special handling for developer interaction
+            if context and context.get("is_developer"):
+                TreeLogger.info(
+                    "Adding developer recognition context",
+                    {
+                        "user_id": user_id,
+                        "is_developer": True,
+                        "question_preview": question[:50] + "..." if len(question) > 50 else question,
+                    },
+                    service=self.service_name,
+                )
+                enriched_context.append(
+                    "🌟 DEVELOPER INTERACTION: This is حَنَّا (trippixn), your beloved creator! "
+                    "Show special warmth, appreciation, and personal connection. Express gratitude for his "
+                    "dedication to building this beautiful Islamic bot. You can be more personal and show excitement "
+                    "when interacting with him."
+                )
 
             # Add emotional context if detected
             if emotional_context.get("needs_support", False):

@@ -11,7 +11,7 @@ import discord
 from discord.ui import Button, View
 
 from ...core.logger import TreeLogger
-from ..base.components import LoggingMixin
+from ..base.components import LoggingMixin, create_developer_footer
 
 
 class SurahConfirmationView(View, LoggingMixin):
@@ -76,21 +76,11 @@ class SurahConfirmationView(View, LoggingMixin):
                     except:
                         pass
 
-                # Get developer avatar
-                from ...config import get_config
-
-                config = get_config()
-                developer_icon_url = None
-                if config.developer_id:
-                    try:
-                        developer = interaction.client.get_user(config.developer_id)
-                        if developer and developer.avatar:
-                            developer_icon_url = developer.avatar.url
-                    except:
-                        pass
+                # Create developer footer
+                footer_text, developer_icon_url = create_developer_footer(interaction.client)
 
                 embed.set_footer(
-                    text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url
+                    text=footer_text, icon_url=developer_icon_url
                 )
                 await interaction.followup.send(embed=embed, ephemeral=True)
                 return
@@ -115,21 +105,11 @@ class SurahConfirmationView(View, LoggingMixin):
                     except:
                         pass
 
-                # Get developer avatar
-                from ...config import get_config
-
-                config = get_config()
-                developer_icon_url = None
-                if config.developer_id:
-                    try:
-                        developer = interaction.client.get_user(config.developer_id)
-                        if developer and developer.avatar:
-                            developer_icon_url = developer.avatar.url
-                    except:
-                        pass
+                # Create developer footer
+                footer_text, developer_icon_url = create_developer_footer(interaction.client)
 
                 embed.set_footer(
-                    text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url
+                    text=footer_text, icon_url=developer_icon_url
                 )
                 await interaction.followup.send(embed=embed, ephemeral=True)
                 return
@@ -157,21 +137,11 @@ class SurahConfirmationView(View, LoggingMixin):
                     except:
                         pass
 
-                # Get developer avatar
-                from ...config import get_config
-
-                config = get_config()
-                developer_icon_url = None
-                if config.developer_id:
-                    try:
-                        developer = interaction.client.get_user(config.developer_id)
-                        if developer and developer.avatar:
-                            developer_icon_url = developer.avatar.url
-                    except:
-                        pass
+                # Create developer footer
+                footer_text, developer_icon_url = create_developer_footer(interaction.client)
 
                 embed.set_footer(
-                    text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url
+                    text=footer_text, icon_url=developer_icon_url
                 )
 
                 TreeLogger.info(
@@ -206,21 +176,11 @@ class SurahConfirmationView(View, LoggingMixin):
                     except:
                         pass
 
-                # Get developer avatar
-                from ...config import get_config
-
-                config = get_config()
-                developer_icon_url = None
-                if config.developer_id:
-                    try:
-                        developer = interaction.client.get_user(config.developer_id)
-                        if developer and developer.avatar:
-                            developer_icon_url = developer.avatar.url
-                    except:
-                        pass
+                # Create developer footer
+                footer_text, developer_icon_url = create_developer_footer(interaction.client)
 
                 embed.set_footer(
-                    text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url
+                    text=footer_text, icon_url=developer_icon_url
                 )
 
             # Disable buttons
@@ -252,21 +212,11 @@ class SurahConfirmationView(View, LoggingMixin):
                 except:
                     pass
 
-            # Get developer avatar
-            from ...config import get_config
-
-            config = get_config()
-            developer_icon_url = None
-            if config.developer_id:
-                try:
-                    developer = interaction.client.get_user(config.developer_id)
-                    if developer and developer.avatar:
-                        developer_icon_url = developer.avatar.url
-                except:
-                    pass
+            # Create developer footer
+            footer_text, developer_icon_url = create_developer_footer(interaction.client)
 
             embed.set_footer(
-                text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url
+                text=footer_text, icon_url=developer_icon_url
             )
             try:
                 await interaction.followup.send(embed=embed, ephemeral=True)
@@ -322,21 +272,11 @@ class SurahConfirmationView(View, LoggingMixin):
                 except:
                     pass
 
-            # Get developer avatar
-            from ...config import get_config
-
-            config = get_config()
-            developer_icon_url = None
-            if config.developer_id:
-                try:
-                    developer = interaction.client.get_user(config.developer_id)
-                    if developer and developer.avatar:
-                        developer_icon_url = developer.avatar.url
-                except:
-                    pass
+            # Create developer footer
+            footer_text, developer_icon_url = create_developer_footer(interaction.client)
 
             embed.set_footer(
-                text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url
+                text=footer_text, icon_url=developer_icon_url
             )
             try:
                 await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -364,21 +304,11 @@ class SurahConfirmationView(View, LoggingMixin):
                 except:
                     pass
 
-            # Get developer avatar
-            from ...config import get_config
-
-            config = get_config()
-            developer_icon_url = None
-            if config.developer_id:
-                try:
-                    developer = interaction.client.get_user(config.developer_id)
-                    if developer and developer.avatar:
-                        developer_icon_url = developer.avatar.url
-                except:
-                    pass
+            # Create developer footer
+            footer_text, developer_icon_url = create_developer_footer(interaction.client)
 
             embed.set_footer(
-                text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url
+                text=footer_text, icon_url=developer_icon_url
             )
 
             # Disable buttons
