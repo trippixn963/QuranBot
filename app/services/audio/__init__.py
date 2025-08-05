@@ -8,6 +8,6 @@ from .audio_service import AudioService
 from .metadata_cache import MetadataCache
 
 __all__ = [
-    'AudioService',
-    'MetadataCache',
+    "AudioService",
+    "MetadataCache",
 ]

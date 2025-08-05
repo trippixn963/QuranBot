@@ -51,29 +51,29 @@ try:
     TreeLogger.debug("Operation starting", {
         "param": value
     }, service=self.service_name)
-    
+
     # Validate inputs
     if not param:
         TreeLogger.warning("Invalid input", {
             "param": param
         }, service=self.service_name)
         return default_value
-    
+
     # Main logic
     result = do_something()
-    
+
     TreeLogger.info("Operation completed", {
         "result": result
     }, service=self.service_name)
-    
+
     return result
-    
+
 except Exception as e:
     TreeLogger.error("Operation failed", e, {
         "error_type": type(e).__name__,
         "traceback": traceback.format_exc()
     }, service=self.service_name)
-    
+
     await self.error_handler.handle_error(
         e,
         {
@@ -81,7 +81,7 @@ except Exception as e:
             "service": self.service_name
         }
     )
-    
+
     return default_value
 ```
 

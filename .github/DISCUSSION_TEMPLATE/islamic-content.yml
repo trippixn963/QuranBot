@@ -9,13 +9,13 @@ body:
     attributes:
       value: |
         # 📖 Islamic Content Discussion
-        
+
         This template is for discussions about:
         - Islamic content accuracy in QuranBot
         - Questions about Quranic verses, Hadith, or Islamic knowledge
         - Suggestions for Islamic content improvements
         - Educational discussions about Islam
-        
+
         **Important:** All Islamic content is verified for accuracy, but community input is valuable for continuous improvement.
 
   - type: dropdown

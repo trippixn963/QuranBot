@@ -9,13 +9,13 @@ body:
     attributes:
       value: |
         # 🕌 Welcome to QuranBot Discussions!
-        
+
         Thank you for participating in our community discussions. This is a space for:
         - General questions about QuranBot
         - Sharing your experiences with the bot
         - Community support and help
         - Islamic knowledge discussions related to the bot's content
-        
+
         Please be respectful and follow Islamic etiquette in all discussions.
 
   - type: textarea
@@ -34,7 +34,7 @@ body:
       description: "What category best describes your discussion?"
       options:
         - General Support
-        - Islamic Content Questions  
+        - Islamic Content Questions
         - Bot Features
         - Community
         - Technical Questions

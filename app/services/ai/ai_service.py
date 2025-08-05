@@ -1,12 +1,12 @@
-# =============================================================================
-# QuranBot - AI Service
-# =============================================================================
-# Core AI service with ChatGPT integration for Islamic knowledge companion
-# =============================================================================
+"""QuranBot AI Service Module.
+
+This module provides the core AI service with ChatGPT integration for Islamic
+knowledge companion functionality.
+"""
 
 from datetime import datetime
 import json
-import os
+from pathlib import Path
 from typing import Any
 
 from openai import AsyncOpenAI
@@ -24,8 +24,7 @@ from .user_memory import UserMemory
 
 
 class AIService(BaseService):
-    """
-    AI service for processing Islamic questions using ChatGPT.
+    """AI service for processing Islamic questions using ChatGPT.
 
     Features:
     - ChatGPT 3.5 Turbo integration
@@ -35,7 +34,7 @@ class AIService(BaseService):
     - Project awareness
     """
 
-    def __init__(self, bot):
+    def __init__(self, bot) -> None:
         """Initialize AI service."""
         super().__init__("AIService")
         self.bot = bot
@@ -161,9 +160,9 @@ Remember: You're not just an information source - you're a companion who loves I
                 return ISLAMIC_KNOWLEDGE_BASE
 
             # Fallback to JSON file if needed
-            knowledge_path = os.path.join("data", "knowledge", "islamic_knowledge.json")
-            if os.path.exists(knowledge_path):
-                with open(knowledge_path, encoding="utf-8") as f:
+            knowledge_path = Path("data") / "knowledge" / "islamic_knowledge.json"
+            if knowledge_path.exists():
+                with knowledge_path.open(encoding="utf-8") as f:
                     knowledge = json.load(f)
                     TreeLogger.info(
                         "Knowledge base loaded from file",
@@ -197,7 +196,7 @@ Remember: You're not just an information source - you're a companion who loves I
             if self.client:
                 try:
                     # Simple test to verify API key works
-                    response = await self.client.chat.completions.create(
+                    await self.client.chat.completions.create(
                         model="gpt-3.5-turbo",
                         messages=[{"role": "user", "content": "test"}],
                         max_tokens=5,
@@ -344,8 +343,7 @@ Remember: You're not just an information source - you're a companion who loves I
         return relevant_info
 
     def count_tokens(self, text: str) -> int:
-        """
-        Count tokens in a text string.
+        """Count tokens in a text string.
 
         Args:
             text: Text to count tokens for
@@ -377,8 +375,7 @@ Remember: You're not just an information source - you're a companion who loves I
     def calculate_cost(
         self, input_tokens: int, output_tokens: int, model: str = "gpt-3.5-turbo"
     ) -> float:
-        """
-        Calculate cost for API usage.
+        """Calculate cost for API usage.
 
         Args:
             input_tokens: Number of input tokens
@@ -422,8 +419,7 @@ Remember: You're not just an information source - you're a companion who loves I
         context: dict[str, Any] | None = None,
         user_id: int | None = None,
     ) -> tuple[bool, str, dict[str, Any]]:
-        """
-        Generate AI response for an Islamic question.
+        """Generate AI response for an Islamic question.
 
         Args:
             question: The user's question
@@ -501,7 +497,7 @@ Remember: You're not just an information source - you're a companion who loves I
             # Add question type specific knowledge
             if question_type == "verse_request":
                 # Extract topic from question
-                for topic in self.islamic_knowledge.verses_by_topic.keys():
+                for topic in self.islamic_knowledge.verses_by_topic:
                     if topic in question.lower():
                         verses = self.islamic_knowledge.get_relevant_verses(topic)
                         if verses:
@@ -661,7 +657,8 @@ Remember: You're not just an information source - you're a companion who loves I
                         # Add to response occasionally (30% chance)
                         import random
 
-                        if random.random() < 0.3:
+                        TOPIC_SUGGESTION_PROBABILITY = 0.3
+                        if random.random() < TOPIC_SUGGESTION_PROBABILITY:
                             ai_response += f"\n\n💡 You might also be interested in learning about: {', '.join(related_topics[:2])}"
 
             # Track user interaction in memory
@@ -730,8 +727,7 @@ Remember: You're not just an information source - you're a companion who loves I
             return False, error_message, {}
 
     async def _health_check(self) -> dict[str, Any]:
-        """
-        Perform health check for AI service.
+        """Perform health check for AI service.
 
         Returns:
             Health status dictionary

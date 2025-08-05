@@ -9,8 +9,8 @@ from .database_service import DatabaseService
 from .state_service import StateService
 
 __all__ = [
-    'BaseService',
-    'ServiceStatus',
-    'DatabaseService',
-    'StateService',
+    "BaseService",
+    "ServiceStatus",
+    "DatabaseService",
+    "StateService",
 ]

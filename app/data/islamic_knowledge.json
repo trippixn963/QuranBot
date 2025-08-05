@@ -4,7 +4,7 @@
     "last_updated": "2024-12-15",
     "description": "Islamic knowledge base for QuranBot AI responses"
   },
-  
+
   "quran_info": {
     "general": {
       "total_surahs": 114,
@@ -46,7 +46,7 @@
       "Mercy and forgiveness"
     ]
   },
-  
+
   "five_pillars": {
     "shahada": {
       "arabic": "أشهد أن لا إله إلا الله وأشهد أن محمداً رسول الله",
@@ -77,7 +77,7 @@
       "significance": "Unity of Muslim Ummah, following Prophet Ibrahim's footsteps"
     }
   },
-  
+
   "prophets": {
     "muhammad_pbuh": {
       "arabic_name": "محمد",
@@ -95,7 +95,7 @@
       "common_message": "Worship Allah alone (Tawheed)"
     }
   },
-  
+
   "islamic_calendar": {
     "months": [
       {"name": "Muharram", "significance": "Sacred month, contains Ashura"},
@@ -117,7 +117,7 @@
       "ashura": "10th of Muharram, day of fasting"
     }
   },
-  
+
   "key_concepts": {
     "tawheed": {
       "definition": "Absolute oneness and uniqueness of Allah",
@@ -137,7 +137,7 @@
       "balance": "Tie your camel and trust in Allah - take means while relying on Allah"
     }
   },
-  
+
   "daily_adhkar": {
     "morning": [
       {
@@ -173,7 +173,7 @@
       }
     ]
   },
-  
+
   "islamic_etiquette": {
     "greetings": {
       "giving": "Assalamu Alaikum wa Rahmatullahi wa Barakatuh",
@@ -193,7 +193,7 @@
       "Make wudu before sleep if possible"
     ]
   },
-  
+
   "common_questions": {
     "about_allah": {
       "attributes": "Allah has 99 beautiful names (Al-Asma ul-Husna)",
@@ -211,7 +211,7 @@
       "questioning": "Two angels (Munkar and Nakir) question in the grave"
     }
   },
-  
+
   "islamic_phrases": {
     "common_expressions": {
       "bismillah": {
@@ -246,7 +246,7 @@
       }
     }
   },
-  
+
   "hadith_sciences": {
     "classifications": [
       {"type": "Sahih", "meaning": "Authentic"},
@@ -263,7 +263,7 @@
       {"name": "Sunan Ibn Majah", "compiler": "Imam Ibn Majah", "hadiths": "~4,341"}
     ]
   },
-  
+
   "interfaith_respect": {
     "principles": [
       "Islam teaches respect for all divine religions",
@@ -278,7 +278,7 @@
       "righteousness": "Righteousness is not that you turn your faces toward the east or the west, but righteousness is in one who believes in Allah... (2:177)"
     }
   },
-  
+
   "islamic_unity": {
     "core_principle": "All Muslims are brothers and sisters regardless of their school of thought",
     "schools_of_thought": {
@@ -291,7 +291,7 @@
       "holding_together": "And hold firmly to the rope of Allah all together and do not become divided (3:103)"
     }
   },
-  
+
   "syrian_history": {
     "islamic_heritage": {
       "damascus": "One of the oldest continuously inhabited cities, capital of Umayyad Caliphate",
@@ -311,7 +311,7 @@
       "protection": "Islam commands protection of religious minorities and their places of worship"
     }
   },
-  
+
   "respect_and_tolerance": {
     "islamic_teachings": {
       "kindness_to_all": "Allah does not forbid you from those who do not fight you because of religion and do not expel you from your homes - from being righteous toward them and acting justly toward them (60:8)",
@@ -325,7 +325,7 @@
       "Build bridges of understanding between communities"
     ]
   },
-  
+
   "palestine": {
     "islamic_significance": {
       "al_aqsa": "Al-Aqsa Mosque is the third holiest site in Islam",

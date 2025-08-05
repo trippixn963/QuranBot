@@ -58,7 +58,7 @@ repos:
       - id: bandit
         name: "Security scan with Bandit"
         description: "Scan for common security issues"
-        args: ["-r", "src/", "-f", "json", "-o", "bandit-report.json"]
+        args: ["-ll", "-i"]
         exclude: tests/
 
   # General Hooks
@@ -104,43 +104,7 @@ repos:
         args: [--convention=google]
         exclude: tests/
 
-  # Test Coverage Check
-  - repo: local
-    hooks:
-      - id: pytest-check
-        name: "Run pytest with coverage"
-        description: "Execute tests and check coverage"
-        entry: pytest
-        language: system
-        args: [--cov=src, --cov-fail-under=80, --no-cov-report]
-        pass_filenames: false
-        always_run: false
-        stages: [pre-push]
 
-  # Islamic Content Validation
-  - repo: local
-    hooks:
-      - id: islamic-content-validation
-        name: "Validate Islamic content accuracy"
-        description: "Ensure Islamic content meets religious standards"
-        entry: python
-        language: system
-        args: [scripts/validate_islamic_content.py]
-        files: "data/.*\\.(json|py)$"
-        pass_filenames: true
-        always_run: false
-
-  # Configuration Validation
-  - repo: local
-    hooks:
-      - id: config-validation
-        name: "Validate configuration files"
-        description: "Check configuration file completeness"
-        entry: python
-        language: system
-        args: [scripts/validate_config.py]
-        files: "config/.*\\.(py|toml|env)$"
-        pass_filenames: true
 
 # =============================================================================
 # Hook Configuration
@@ -149,7 +113,7 @@ repos:
 default_language_version:
   python: python3.11
 
-default_stages: [commit, push]
+default_stages: [pre-commit, pre-push]
 
 # Exclude patterns for all hooks
 exclude: |

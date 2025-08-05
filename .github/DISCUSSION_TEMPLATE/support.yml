@@ -9,14 +9,14 @@ body:
     attributes:
       value: |
         # 🆘 QuranBot Support
-        
+
         Need help with QuranBot? You're in the right place! This template is for:
         - Bot setup and configuration issues
         - Discord server integration problems
         - Command usage questions
         - Audio playback issues
         - General technical support
-        
+
         **Before asking for help, please check:**
         - The README.md file for setup instructions
         - Existing discussions for similar issues

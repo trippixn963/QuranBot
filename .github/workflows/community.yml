@@ -28,7 +28,7 @@ jobs:
           script: |
             const issue = context.payload.issue;
             const isFirstIssue = issue.author_association === 'FIRST_TIME_CONTRIBUTOR';
-            
+
             if (isFirstIssue) {
               github.rest.issues.createComment({
                 issue_number: context.issue.number,
@@ -36,7 +36,7 @@ jobs:
                 repo: context.repo.repo,
                 body: `🕌 **Assalamu Alaikum and welcome to QuranBot!**
 
-Thank you for taking the time to contribute to our Islamic community project! 
+Thank you for taking the time to contribute to our Islamic community project!
 
 🌟 **For new contributors:**
 - Please read our [Contributing Guidelines](.github/CONTRIBUTING.md)
@@ -61,7 +61,7 @@ Thank you for taking the time to contribute to our Islamic community project!
           script: |
             const pr = context.payload.pull_request;
             const isFirstPR = pr.author_association === 'FIRST_TIME_CONTRIBUTOR';
-            
+
             if (isFirstPR) {
               github.rest.issues.createComment({
                 issue_number: context.issue.number,
@@ -134,7 +134,7 @@ Islamic content reviews may take longer to ensure authenticity and accuracy. We 
             // 2. Verify Islamic content accuracy
             // 3. Ensure community guidelines are followed
             // 4. Auto-label discussions based on content
-            
+
             console.log('Discussion moderation placeholder - implement as needed');
 
   community-metrics:
@@ -148,9 +148,9 @@ Islamic content reviews may take longer to ensure authenticity and accuracy. We 
             // Track community engagement metrics
             const eventType = context.eventName;
             const action = context.payload.action;
-            
+
             console.log(`Community event: ${eventType} - ${action}`);
-            
+
             // In a real implementation, you might:
             // 1. Track contributor statistics
             // 2. Monitor Islamic content contributions
@@ -170,32 +170,32 @@ Islamic content reviews may take longer to ensure authenticity and accuracy. We 
             const title = issue.title.toLowerCase();
             const body = issue.body.toLowerCase();
             const labels = [];
-            
+
             // Auto-label based on content
             if (title.includes('quran') || title.includes('verse') || body.includes('islamic')) {
               labels.push('islamic-content');
             }
-            
+
             if (title.includes('bug') || title.includes('error') || title.includes('broken')) {
               labels.push('bug');
             }
-            
+
             if (title.includes('feature') || title.includes('enhancement') || title.includes('add')) {
               labels.push('enhancement');
             }
-            
+
             if (title.includes('help') || title.includes('support') || title.includes('question')) {
               labels.push('question');
             }
-            
+
             if (title.includes('audio') || title.includes('playback') || title.includes('voice')) {
               labels.push('audio');
             }
-            
+
             if (title.includes('discord') || title.includes('command') || title.includes('bot')) {
               labels.push('discord');
             }
-            
+
             if (labels.length > 0) {
               github.rest.issues.addLabels({
                 issue_number: context.issue.number,

@@ -30,7 +30,7 @@ def check_existing_instances():
 
     This function prevents multiple QuranBot instances from running simultaneously
     to avoid conflicts with Discord API, voice channels, and database access.
-    
+
     Process Detection Strategy:
     1. Scan all running processes for Python executables
     2. Check command line arguments for main.py or main_new.py
@@ -79,25 +79,37 @@ def check_existing_instances():
     except Exception as e:
         # If process scanning fails, log error but continue startup
         # This ensures the bot can still start even if instance detection fails
-        TreeLogger.error("Process scanning failed during instance detection", e, service="QuranBot")
-        TreeLogger.warning("Instance Detection - Warning", {
-            "detection_result": "⚠️ Proceeding without complete instance check"
-        }, service="QuranBot")
+        TreeLogger.error(
+            "Process scanning failed during instance detection", e, service="QuranBot"
+        )
+        TreeLogger.warning(
+            "Instance Detection - Warning",
+            {"detection_result": "⚠️ Proceeding without complete instance check"},
+            service="QuranBot",
+        )
         return True
 
     # No existing instances found - safe to proceed
     if not bot_processes:
-        TreeLogger.info("Instance Detection", {
-            "existing_instances": "None detected",
-            "detection_result": "✅ Safe to proceed"
-        }, service="QuranBot")
+        TreeLogger.info(
+            "Instance Detection",
+            {
+                "existing_instances": "None detected",
+                "detection_result": "✅ Safe to proceed",
+            },
+            service="QuranBot",
+        )
         return True
 
     # Found existing instances - initiate automatic termination
-    TreeLogger.info("Instance Detection", {
-        "existing_instances": f"{len(bot_processes)} found",
-        "detection_result": "🤖 Automatically stopping existing instances"
-    }, service="QuranBot")
+    TreeLogger.info(
+        "Instance Detection",
+        {
+            "existing_instances": f"{len(bot_processes)} found",
+            "detection_result": "🤖 Automatically stopping existing instances",
+        },
+        service="QuranBot",
+    )
 
     return stop_existing_instances(bot_processes)
 
@@ -105,7 +117,7 @@ def check_existing_instances():
 def stop_existing_instances(bot_processes):
     """
     Terminate existing bot instances gracefully with fallback to force kill.
-    
+
     Termination Strategy:
     1. Send SIGTERM for graceful shutdown (5 second timeout)
     2. Send SIGKILL if graceful shutdown fails (3 second timeout)
@@ -144,7 +156,9 @@ def stop_existing_instances(bot_processes):
             failed_count += 1
         except Exception as e:
             # Unexpected error during termination
-            TreeLogger.error(f"Failed to terminate process PID {proc.pid}", e, service="QuranBot")
+            TreeLogger.error(
+                f"Failed to terminate process PID {proc.pid}", e, service="QuranBot"
+            )
             failed_count += 1
 
     # Allow time for processes to fully terminate and release resources
@@ -153,13 +167,17 @@ def stop_existing_instances(bot_processes):
 
     # Report termination results with appropriate log level
     if failed_count == 0:
-        TreeLogger.info("Instance Termination", {
-            "termination_result": f"✅ All {stopped_count} instances terminated"
-        }, service="QuranBot")
+        TreeLogger.info(
+            "Instance Termination",
+            {"termination_result": f"✅ All {stopped_count} instances terminated"},
+            service="QuranBot",
+        )
     else:
-        TreeLogger.warning("Instance Termination", {
-            "termination_result": f"⚠️ {stopped_count} stopped, {failed_count} failed"
-        }, service="QuranBot")
+        TreeLogger.warning(
+            "Instance Termination",
+            {"termination_result": f"⚠️ {stopped_count} stopped, {failed_count} failed"},
+            service="QuranBot",
+        )
 
     return True  # Always return True to allow bot startup to continue
 
@@ -170,7 +188,7 @@ async def main():
 
     This function orchestrates the complete bot lifecycle from startup to shutdown,
     including instance management, signal handling, initialization, and cleanup.
-    
+
     Lifecycle Flow:
     1. Set up signal handlers for graceful shutdown
     2. Generate unique run ID for session tracking
@@ -184,11 +202,11 @@ async def main():
     def signal_handler(signum, frame):
         """
         Handle shutdown signals gracefully.
-        
+
         Responds to SIGINT (Ctrl+C) and SIGTERM signals by initiating
         a clean shutdown sequence that properly closes Discord connections
         and releases resources.
-        
+
         Args:
             signum (int): Signal number received
             frame: Current stack frame (unused)
@@ -213,11 +231,15 @@ async def main():
         # Generate unique run ID for session tracking and debugging
         run_id = f"run_{int(time.time())}"
 
-        TreeLogger.info("🚀 QuranBot Starting", {
-            "run_id": run_id,
-            "architecture": "Modular with Dependency Injection",
-            "mode": "100% Automated + Interactive Commands"
-        }, service="QuranBot")
+        TreeLogger.info(
+            "🚀 QuranBot Starting",
+            {
+                "run_id": run_id,
+                "architecture": "Modular with Dependency Injection",
+                "mode": "100% Automated + Interactive Commands",
+            },
+            service="QuranBot",
+        )
 
         # Phase 1: Instance Management
         # Check for existing instances and terminate them to prevent conflicts
@@ -244,10 +266,14 @@ async def main():
 
     except KeyboardInterrupt:
         # Handle Ctrl+C interrupt gracefully
-        TreeLogger.info("🛑 Shutdown Requested", {
-            "trigger": "User interrupt (Ctrl+C)",
-            "status": "Initiating graceful shutdown"
-        }, service="QuranBot")
+        TreeLogger.info(
+            "🛑 Shutdown Requested",
+            {
+                "trigger": "User interrupt (Ctrl+C)",
+                "status": "Initiating graceful shutdown",
+            },
+            service="QuranBot",
+        )
         if bot_instance:
             await bot_instance.shutdown()
 
@@ -259,10 +285,11 @@ async def main():
 
     finally:
         # Ensure cleanup always occurs regardless of how we exit
-        TreeLogger.info("🏁 QuranBot Stopped", {
-            "status": "All processes terminated",
-            "cleanup": "Resources released"
-        }, service="QuranBot")
+        TreeLogger.info(
+            "🏁 QuranBot Stopped",
+            {"status": "All processes terminated", "cleanup": "Resources released"},
+            service="QuranBot",
+        )
 
 
 # =============================================================================

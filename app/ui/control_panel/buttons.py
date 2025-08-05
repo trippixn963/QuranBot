@@ -3,20 +3,20 @@
 # =============================================================================
 # Button components for control panel interactions including playback controls,
 # navigation buttons, and mode toggles.
-# 
+#
 # Button Types:
 # - Playback Control: Previous/Next surah navigation
 # - Mode Toggles: Shuffle and loop mode switches
 # - Navigation: Page navigation for dropdown menus
 # - Utility: Search modal and panel refresh
-# 
+#
 # Features:
 # - Consistent error handling and user feedback
 # - Activity tracking and interaction logging
 # - State synchronization with audio manager
 # - Visual feedback and button state management
 # - Permission validation and voice channel checks
-# 
+#
 # Design Patterns:
 # - Mixin-based functionality composition
 # - Standardized interaction handling
@@ -26,65 +26,77 @@
 
 # Standard library imports
 import asyncio
-from typing import Optional, Any, Dict
 
 # Third-party imports
 import discord
 from discord.ui import Button
+
+# Local imports - core modules
+from ...core.logger import TreeLogger
+
+# Local imports - services
+from ...services.bot.user_interaction_logger import InteractionStatus
 
 # Local imports - base components
 from ..base.components import LoggingMixin
 from ..base.interaction_logging import InteractionLoggingMixin
 
 # Local imports - current module
-from .common import InteractionHandlerMixin, ButtonStateMixin, ComponentInitMixin, create_audio_callback
-from .embeds import create_error_embed, create_success_embed
-from .utils import safe_defer, safe_interaction_response, safe_update_message, create_consistent_error_handler
-
-# Local imports - core modules
-from ...core.errors import ErrorHandler
-from ...core.logger import TreeLogger
-
-# Local imports - services
-from ...services.bot.user_interaction_logger import InteractionStatus
+from .common import (
+    ButtonStateMixin,
+    InteractionHandlerMixin,
+)
+from .embeds import create_error_embed
+from .utils import (
+    create_consistent_error_handler,
+    safe_defer,
+)
 
 
 class ControlButton(Button, LoggingMixin, InteractionLoggingMixin):
     """
     Base class for all control panel buttons with common functionality.
-    
+
     Provides standardized button behavior including:
     - Consistent error handling with user-friendly messages
     - Interaction counting for analytics and debugging
     - Logging integration for monitoring and troubleshooting
     - Common styling and initialization patterns
-    
+
     All control panel buttons inherit from this class to ensure
     consistent behavior and error recovery across the interface.
     """
-    
-    def __init__(self, *, style: discord.ButtonStyle = discord.ButtonStyle.secondary, 
-                 label: Optional[str] = None, emoji: Optional[str] = None, 
-                 custom_id: Optional[str] = None, **kwargs):
+
+    def __init__(
+        self,
+        *,
+        style: discord.ButtonStyle = discord.ButtonStyle.secondary,
+        label: str | None = None,
+        emoji: str | None = None,
+        custom_id: str | None = None,
+        **kwargs,
+    ):
         # Initialize Discord button with provided styling
-        super().__init__(style=style, label=label, emoji=emoji, custom_id=custom_id, **kwargs)
-        
+        super().__init__(
+            style=style, label=label, emoji=emoji, custom_id=custom_id, **kwargs
+        )
+
         # Initialize interaction tracking for analytics
         self.interaction_count = 0
-        
+
         # Create consistent error handler for this button type
         self.error_handler = create_consistent_error_handler("Buttons")
-    
+
     async def handle_error(self, interaction: discord.Interaction, error: Exception):
         """
         Handle button interaction errors using established error handler pattern.
-        
+
         Provides comprehensive error handling including:
         - Detailed error context logging for debugging
         - User-friendly error messages via Discord embeds
         - Graceful fallback for interaction response failures
         - Consistent error reporting across all button types
-        
+
         Args:
             interaction: Discord interaction that caused the error
             error: Exception that occurred during button processing
@@ -98,17 +110,17 @@ class ControlButton(Button, LoggingMixin, InteractionLoggingMixin):
                 "button_type": self.__class__.__name__,
                 "user_id": interaction.user.id,
                 "interaction_count": self.interaction_count,
-                "custom_id": getattr(self, 'custom_id', None),
-                "interaction_done": interaction.response.is_done()
-            }
+                "custom_id": getattr(self, "custom_id", None),
+                "interaction_done": interaction.response.is_done(),
+            },
         )
-        
+
         # Create user-friendly error message embed
         embed = create_error_embed(
             "An error occurred while processing your request. Please try again.",
-            "Button Error"
+            "Button Error",
         )
-        
+
         # Attempt to deliver error message to user with fallback handling
         try:
             # Check if interaction response has already been sent
@@ -126,30 +138,30 @@ class ControlButton(Button, LoggingMixin, InteractionLoggingMixin):
                     "service_name": "ControlPanelButtons",
                     "button_type": self.__class__.__name__,
                     "user_id": interaction.user.id,
-                    "original_error": str(error)
-                }
+                    "original_error": str(error),
+                },
             )
 
 
 class PreviousButton(ControlButton, InteractionHandlerMixin):
     """
     Button for skipping to previous surah in the playlist.
-    
+
     Handles user requests to navigate backwards through the Quran,
     with proper error handling and state synchronization.
     """
-    
+
     def __init__(self, audio_manager=None):
         # Initialize with secondary style and previous track emoji
         super().__init__(
             style=discord.ButtonStyle.secondary,
             emoji="⏮️",
             label="Previous",
-            custom_id="previous_surah"
+            custom_id="previous_surah",
         )
         # Store reference to audio manager for playback control
         self.audio_manager = audio_manager
-    
+
     async def callback(self, interaction: discord.Interaction):
         try:
             # STEP 1: Initialize Interaction Logging
@@ -158,63 +170,75 @@ class PreviousButton(ControlButton, InteractionHandlerMixin):
                 interaction=interaction,
                 component_type="button",
                 component_id="previous_surah",
-                component_label="Previous Surah Button"
+                component_label="Previous Surah Button",
             )
-            
+
             # STEP 2: Log Button Interaction
             # Record button click for monitoring and debugging
-            TreeLogger.debug(f"Previous button clicked by {interaction.user.id}", {
-                "user": interaction.user.display_name,
-                "guild_id": interaction.guild_id
-            }, service="ControlPanelButtons")
-            
+            TreeLogger.debug(
+                f"Previous button clicked by {interaction.user.id}",
+                {
+                    "user": interaction.user.display_name,
+                    "guild_id": interaction.guild_id,
+                },
+                service="ControlPanelButtons",
+            )
+
             # STEP 3: Track User Activity
             # Update activity tracking for display in control panel
             self.track_activity(interaction, "skipped to previous surah")
-            
+
             # STEP 4: Defer Interaction Response
             # Prevent Discord timeout by deferring response immediately
             await safe_defer(interaction)
-            
+
             # STEP 5: Execute Audio Manager Command
             # Request previous surah from audio playback system
             if self.audio_manager:
                 await self.audio_manager.previous_surah()
                 # Allow time for audio manager to update internal state
                 await asyncio.sleep(0.2)
-                
+
             # STEP 6: Update Control Panel Display
             # Refresh panel to show new surah information
-            if hasattr(self.view, 'update_panel'):
+            if hasattr(self.view, "update_panel"):
                 await self.view.update_panel()
-                
-            TreeLogger.info("Previous surah requested", {
-                "user_id": interaction.user.id,
-                "username": interaction.user.display_name,
-                "operation": "previous_surah_request"
-            }, service="ControlPanelButtons")
-            
+
+            TreeLogger.info(
+                "Previous surah requested",
+                {
+                    "user_id": interaction.user.id,
+                    "username": interaction.user.display_name,
+                    "operation": "previous_surah_request",
+                },
+                service="ControlPanelButtons",
+            )
+
             # Complete interaction logging with success
             await self.complete_interaction_logging(status=InteractionStatus.SUCCESS)
-                
+
         except Exception as e:
             # Complete interaction logging with error
-            await self.complete_interaction_logging(status=InteractionStatus.FAILED, error_message=str(e), error_type=type(e).__name__)
+            await self.complete_interaction_logging(
+                status=InteractionStatus.FAILED,
+                error_message=str(e),
+                error_type=type(e).__name__,
+            )
             await self.handle_error(interaction, e)
 
 
 class NextButton(ControlButton, InteractionHandlerMixin):
     """Button for skipping to next surah."""
-    
+
     def __init__(self, audio_manager=None):
         super().__init__(
             style=discord.ButtonStyle.success,
-            emoji="⏭️", 
+            emoji="⏭️",
             label="Next",
-            custom_id="next_surah"
+            custom_id="next_surah",
         )
         self.audio_manager = audio_manager
-    
+
     async def callback(self, interaction: discord.Interaction):
         try:
             # Start detailed interaction logging
@@ -222,149 +246,170 @@ class NextButton(ControlButton, InteractionHandlerMixin):
                 interaction=interaction,
                 component_type="button",
                 component_id="next_surah",
-                component_label="Next Surah Button"
+                component_label="Next Surah Button",
             )
-            
-            TreeLogger.debug(f"Next button clicked by {interaction.user.id}", {
-                "user": interaction.user.display_name,
-                "guild_id": interaction.guild_id
-            }, service="ControlPanelButtons")
-            
+
+            TreeLogger.debug(
+                f"Next button clicked by {interaction.user.id}",
+                {
+                    "user": interaction.user.display_name,
+                    "guild_id": interaction.guild_id,
+                },
+                service="ControlPanelButtons",
+            )
+
             # Track activity using mixin
             self.track_activity(interaction, "skipped to next surah")
-            
+
             # Defer interaction
             await safe_defer(interaction)
-            
+
             # Call audio manager
             if self.audio_manager:
                 await self.audio_manager.next_surah()
                 # Small delay to let audio manager update its state
                 await asyncio.sleep(0.2)
-                
+
             # Update panel to show change
-            if hasattr(self.view, 'update_panel'):
+            if hasattr(self.view, "update_panel"):
                 await self.view.update_panel()
-                
-            TreeLogger.info("Next surah requested", {
-                "user_id": interaction.user.id,
-                "username": interaction.user.display_name,
-                "operation": "next_surah_request"
-            }, service="ControlPanelButtons")
-            
+
+            TreeLogger.info(
+                "Next surah requested",
+                {
+                    "user_id": interaction.user.id,
+                    "username": interaction.user.display_name,
+                    "operation": "next_surah_request",
+                },
+                service="ControlPanelButtons",
+            )
+
             # Complete interaction logging with success
             await self.complete_interaction_logging(status=InteractionStatus.SUCCESS)
-                
+
         except Exception as e:
             # Complete interaction logging with error
-            await self.complete_interaction_logging(status=InteractionStatus.FAILED, error_message=str(e), error_type=type(e).__name__)
+            await self.complete_interaction_logging(
+                status=InteractionStatus.FAILED,
+                error_message=str(e),
+                error_type=type(e).__name__,
+            )
             await self.handle_error(interaction, e)
 
 
 class ShuffleButton(ControlButton, InteractionHandlerMixin, ButtonStateMixin):
     """
     Button for toggling shuffle mode on/off.
-    
+
     Manages shuffle state with visual feedback through button styling.
     When enabled, surahs will play in random order instead of sequential.
     """
-    
+
     def __init__(self, audio_manager=None):
         # Initialize with secondary style and shuffle emoji
         super().__init__(
             style=discord.ButtonStyle.secondary,
             emoji="🔀",
             label="Shuffle",
-            custom_id="toggle_shuffle"
+            custom_id="toggle_shuffle",
         )
         # Store audio manager reference for shuffle control
         self.audio_manager = audio_manager
         # Track current shuffle state for visual updates
         self.is_shuffled = False
-    
+
     def update_appearance(self, is_shuffled: bool):
         """
         Update button appearance based on shuffle state.
-        
+
         Changes button color to provide visual feedback:
         - Green (success) when shuffle is enabled
         - Gray (secondary) when shuffle is disabled
-        
+
         Args:
             is_shuffled: Current shuffle mode state
         """
         # Update internal state tracking
         self.is_shuffled = is_shuffled
-        
+
         # Apply visual styling based on state
         self.update_button_state(
             enabled=is_shuffled,
             enabled_style=discord.ButtonStyle.success,
-            disabled_style=discord.ButtonStyle.secondary
+            disabled_style=discord.ButtonStyle.secondary,
         )
-    
+
     async def callback(self, interaction: discord.Interaction):
         try:
             # STEP 1: Immediate Response Deferral
             # Prevent Discord timeout by deferring response immediately
             await safe_defer(interaction)
-            
+
             # STEP 2: State Change Logging
             # Record current state before toggle for debugging
             old_state = self.is_shuffled
-            TreeLogger.debug(f"Shuffle button toggled from {old_state}", {
-                "user": interaction.user.display_name,
-                "old_state": old_state
-            }, service="ControlPanelButtons")
-            
+            TreeLogger.debug(
+                f"Shuffle button toggled from {old_state}",
+                {"user": interaction.user.display_name, "old_state": old_state},
+                service="ControlPanelButtons",
+            )
+
             # STEP 3: Audio Manager Integration
             # Toggle shuffle mode through audio manager if available
             if self.audio_manager:
                 await self.audio_manager.toggle_shuffle()
                 # Retrieve updated state from audio manager for accuracy
-                self.is_shuffled = getattr(self.audio_manager, 'shuffle_enabled', not old_state)
+                self.is_shuffled = getattr(
+                    self.audio_manager, "shuffle_enabled", not old_state
+                )
             else:
                 # Fallback: simple state toggle if no audio manager
                 self.is_shuffled = not self.is_shuffled
-            
+
             # STEP 4: Visual State Update
             # Update button appearance to reflect new state
             self.update_appearance(self.is_shuffled)
-            
+
             # STEP 5: Activity Tracking
             # Record user action for display in control panel
-            action = "enabled shuffle mode" if self.is_shuffled else "disabled shuffle mode"
+            action = (
+                "enabled shuffle mode" if self.is_shuffled else "disabled shuffle mode"
+            )
             self.track_activity(interaction, action)
-            
+
             # STEP 6: Panel Refresh
             # Update control panel to show state change
-            if hasattr(self.view, 'update_panel'):
+            if hasattr(self.view, "update_panel"):
                 await self.view.update_panel()
-            
-            TreeLogger.info(f"Shuffle {'enabled' if self.is_shuffled else 'disabled'}", {
-                "user_id": interaction.user.id,
-                "username": interaction.user.display_name,
-                "new_state": self.is_shuffled,
-                "operation": "shuffle_toggle"
-            }, service="ControlPanelButtons")
-                
+
+            TreeLogger.info(
+                f"Shuffle {'enabled' if self.is_shuffled else 'disabled'}",
+                {
+                    "user_id": interaction.user.id,
+                    "username": interaction.user.display_name,
+                    "new_state": self.is_shuffled,
+                    "operation": "shuffle_toggle",
+                },
+                service="ControlPanelButtons",
+            )
+
         except Exception as e:
             await self.handle_error(interaction, e)
 
 
 class LoopButton(ControlButton, InteractionHandlerMixin, ButtonStateMixin):
     """Button for cycling through loop modes."""
-    
+
     def __init__(self, audio_manager=None):
         super().__init__(
             style=discord.ButtonStyle.secondary,
             emoji="🔁",
             label="Loop",
-            custom_id="toggle_loop"
+            custom_id="toggle_loop",
         )
         self.audio_manager = audio_manager
         self.is_looping = False
-    
+
     def update_appearance(self, is_looping: bool):
         """Update button appearance based on loop state."""
         self.is_looping = is_looping
@@ -373,49 +418,59 @@ class LoopButton(ControlButton, InteractionHandlerMixin, ButtonStateMixin):
             enabled_style=discord.ButtonStyle.success,
             disabled_style=discord.ButtonStyle.secondary,
             enabled_emoji="🔂",
-            disabled_emoji="🔁"
+            disabled_emoji="🔁",
         )
-    
+
     async def callback(self, interaction: discord.Interaction):
         try:
             # Defer interaction immediately to prevent timeout
             await safe_defer(interaction)
-            
+
             # Simple toggle - just flip the state
             old_state = self.is_looping
             self.is_looping = not self.is_looping
-            
-            TreeLogger.debug(f"Loop button toggled from {old_state} to {self.is_looping}", {
-                "user": interaction.user.display_name,
-                "old_state": old_state,
-                "new_state": self.is_looping
-            }, service="ControlPanelButtons")
-            
+
+            TreeLogger.debug(
+                f"Loop button toggled from {old_state} to {self.is_looping}",
+                {
+                    "user": interaction.user.display_name,
+                    "old_state": old_state,
+                    "new_state": self.is_looping,
+                },
+                service="ControlPanelButtons",
+            )
+
             # Update audio manager if available
             if self.audio_manager:
                 # Set loop mode based on toggle state
                 if self.is_looping:
                     self.audio_manager.loop_mode = "single"  # Loop current surah
                 else:
-                    self.audio_manager.loop_mode = "off"     # No loop
-            
+                    self.audio_manager.loop_mode = "off"  # No loop
+
             # Update button appearance
             self.update_appearance(self.is_looping)
-            
+
             # Track activity
-            action = "enabled repeat surah" if self.is_looping else "disabled repeat surah"
+            action = (
+                "enabled repeat surah" if self.is_looping else "disabled repeat surah"
+            )
             self.track_activity(interaction, action)
-            
+
             # Update panel to show change
-            if hasattr(self.view, 'update_panel'):
+            if hasattr(self.view, "update_panel"):
                 await self.view.update_panel()
-            
-            TreeLogger.info(f"Loop {'enabled' if self.is_looping else 'disabled'}", {
-                "user_id": interaction.user.id,
-                "username": interaction.user.display_name,
-                "is_looping": self.is_looping
-            }, service="ControlPanelButtons")
-                
+
+            TreeLogger.info(
+                f"Loop {'enabled' if self.is_looping else 'disabled'}",
+                {
+                    "user_id": interaction.user.id,
+                    "username": interaction.user.display_name,
+                    "is_looping": self.is_looping,
+                },
+                service="ControlPanelButtons",
+            )
+
         except Exception as e:
             await self.handle_error(interaction, e)
             await safe_defer(interaction)
@@ -424,94 +479,99 @@ class LoopButton(ControlButton, InteractionHandlerMixin, ButtonStateMixin):
 class SearchButton(ControlButton, InteractionHandlerMixin):
     """
     Button for opening the surah search modal dialog.
-    
+
     Provides users with a search interface to quickly find specific
     surahs by name, number, or Arabic text without scrolling through
     the paginated dropdown menus.
     """
-    
+
     def __init__(self, audio_manager=None):
         # Initialize with primary style to highlight search functionality
         super().__init__(
             style=discord.ButtonStyle.primary,
             emoji="🔍",
             label="Search",
-            custom_id="open_search"
+            custom_id="open_search",
         )
         # Store audio manager for search result playback
         self.audio_manager = audio_manager
-    
+
     async def callback(self, interaction: discord.Interaction):
         try:
             # STEP 1: Interaction Counter Update
             # Track button usage for analytics
             self.interaction_count += 1
-            
+
             # STEP 2: Activity Tracking
             # Record user action for control panel display
             self.track_activity(interaction, "opened search modal")
-            
+
             # STEP 3: Dynamic Modal Import
             # Import search modal here to prevent circular import issues
             from ..search.modal import SurahSearchModal
-            
+
             # STEP 4: Search Modal Creation
             # Create modal with audio manager and view references
             search_modal = SurahSearchModal(
-                audio_manager=self.audio_manager,
-                control_panel_view=self.view
+                audio_manager=self.audio_manager, control_panel_view=self.view
             )
-            
+
             # STEP 5: Modal Display
             # Send modal to user for search input
             await interaction.response.send_modal(search_modal)
-            
-            TreeLogger.info("Search modal opened", {
-                "user_id": interaction.user.id,
-                "username": interaction.user.display_name
-            }, service="ControlPanelButtons")
-                
+
+            TreeLogger.info(
+                "Search modal opened",
+                {
+                    "user_id": interaction.user.id,
+                    "username": interaction.user.display_name,
+                },
+                service="ControlPanelButtons",
+            )
+
         except Exception as e:
             await self.handle_error(interaction, e)
 
 
 class PrevPageButton(ControlButton, InteractionHandlerMixin):
     """Button for navigating to previous page in dropdowns."""
-    
+
     def __init__(self, target_dropdown=None):
         super().__init__(
             style=discord.ButtonStyle.secondary,
             emoji="◀️",
             label="Prev Page",
-            custom_id="prev_page"
+            custom_id="prev_page",
         )
         self.target_dropdown = target_dropdown
-    
+
     async def callback(self, interaction: discord.Interaction):
         """Navigate to previous page"""
         try:
-            if hasattr(self.view, 'current_page') and self.view.current_page > 0:
+            if hasattr(self.view, "current_page") and self.view.current_page > 0:
                 # Defer first to prevent timeout
                 await safe_defer(interaction)
-                
+
                 old_page = self.view.current_page
                 self.view.current_page -= 1
-                
+
                 # Track activity using mixin
                 self.track_activity(interaction, "switched to previous page")
-                
+
                 # Update dropdown options
-                if self.target_dropdown and hasattr(self.target_dropdown, 'update_page_data'):
+                if self.target_dropdown and hasattr(
+                    self.target_dropdown, "update_page_data"
+                ):
                     self.target_dropdown.current_page = self.view.current_page
                     self.target_dropdown.update_page_data()
-                
+
                 # Force update the panel to refresh embed
-                if hasattr(self.view, 'update_panel'):
+                if hasattr(self.view, "update_panel"):
                     await self.view.update_panel()
             else:
                 # At boundary - just defer
                 await safe_defer(interaction)
-                
+
         except Exception as e:
             await self.handle_error(interaction, e)
             await safe_defer(interaction)
@@ -519,42 +579,47 @@ class PrevPageButton(ControlButton, InteractionHandlerMixin):
 
 class NextPageButton(ControlButton, InteractionHandlerMixin):
     """Button for navigating to next page in dropdowns."""
-    
+
     def __init__(self, target_dropdown=None):
         super().__init__(
             style=discord.ButtonStyle.secondary,
             emoji="▶️",
-            label="Next Page", 
-            custom_id="next_page"
+            label="Next Page",
+            custom_id="next_page",
         )
         self.target_dropdown = target_dropdown
-    
+
     async def callback(self, interaction: discord.Interaction):
         """Navigate to next page"""
         try:
             max_pages = (114 + 9) // 10  # SURAHS_PER_PAGE = 10
-            if hasattr(self.view, 'current_page') and self.view.current_page < max_pages - 1:
+            if (
+                hasattr(self.view, "current_page")
+                and self.view.current_page < max_pages - 1
+            ):
                 # Defer first to prevent timeout
                 await safe_defer(interaction)
-                
+
                 old_page = self.view.current_page
                 self.view.current_page += 1
-                
+
                 # Track activity using mixin
                 self.track_activity(interaction, "switched to next page")
-                
+
                 # Update dropdown options
-                if self.target_dropdown and hasattr(self.target_dropdown, 'update_page_data'):
+                if self.target_dropdown and hasattr(
+                    self.target_dropdown, "update_page_data"
+                ):
                     self.target_dropdown.current_page = self.view.current_page
                     self.target_dropdown.update_page_data()
-                
+
                 # Force update the panel to refresh embed
-                if hasattr(self.view, 'update_panel'):
+                if hasattr(self.view, "update_panel"):
                     await self.view.update_panel()
             else:
                 # At boundary - just defer
                 await safe_defer(interaction)
-                
+
         except Exception as e:
             await self.handle_error(interaction, e)
             await safe_defer(interaction)
@@ -562,31 +627,37 @@ class NextPageButton(ControlButton, InteractionHandlerMixin):
 
 class RefreshButton(ControlButton, InteractionHandlerMixin):
     """Button for manually refreshing the control panel."""
-    
+
     def __init__(self):
         super().__init__(
             style=discord.ButtonStyle.secondary,
             emoji="🔄",
             label="Refresh",
-            custom_id="refresh_panel"
+            custom_id="refresh_panel",
         )
-    
+
     async def callback(self, interaction: discord.Interaction):
         try:
             # Use standardized interaction handling
-            if not await self.handle_interaction_start(interaction, "Panel Refreshed", check_voice=True):
+            if not await self.handle_interaction_start(
+                interaction, "Panel Refreshed", check_voice=True
+            ):
                 return
-            
+
             self.log_interaction(interaction, "refresh_panel")
-            
+
             # Force update the control panel
-            if hasattr(self.view, 'update_panel'):
+            if hasattr(self.view, "update_panel"):
                 await self.view.update_panel()
-            
-            TreeLogger.info("Control panel refreshed", {
-                "user_id": interaction.user.id,
-                "username": interaction.user.display_name
-            }, service="ControlPanelButtons")
-                
+
+            TreeLogger.info(
+                "Control panel refreshed",
+                {
+                    "user_id": interaction.user.id,
+                    "username": interaction.user.display_name,
+                },
+                service="ControlPanelButtons",
+            )
+
         except Exception as e:
             await self.handle_error(interaction, e)

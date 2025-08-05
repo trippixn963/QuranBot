@@ -6,30 +6,33 @@
 # =============================================================================
 
 import asyncio
+from datetime import datetime
 import time
-from typing import Dict, Any, Optional, List
-from datetime import datetime, timedelta
-from .config.timezone import APP_TIMEZONE
+from typing import Any
 
 import discord
 
 from .config import get_config
-from .core.errors import BotError, DiscordAPIError, ErrorSeverity, ErrorCategory
-from .core.logger import TreeLogger
-from .core.errors import ErrorHandler
+from .config.timezone import APP_TIMEZONE
 from .core.container import DIContainer
-from .services.audio.audio_service import AudioService
-from .services.core.database_service import DatabaseService
-from .services.core.state_service import StateService
-from .services.bot.user_interaction_logger import UserInteractionLogger
-from .services.bot.presence_service import PresenceService
+from .core.errors import (
+    BotError,
+    ErrorHandler,
+    ErrorSeverity,
+)
+from .core.logger import TreeLogger
+from .handlers import MentionHandler
 from .services.ai.ai_service import AIService
 from .services.ai.islamic_ai_service import IslamicAIService
-from .services.ai.token_tracker import TokenTracker
-from .services.ai.rate_limiter import RateLimiter
 from .services.ai.openai_usage_tracker import OpenAIUsageTracker
+from .services.ai.rate_limiter import RateLimiter
+from .services.ai.token_tracker import TokenTracker
+from .services.audio.audio_service import AudioService
+from .services.bot.presence_service import PresenceService
+from .services.bot.user_interaction_logger import UserInteractionLogger
+from .services.core.database_service import DatabaseService
+from .services.core.state_service import StateService
 from .ui import ControlPanelManager
-from .handlers import MentionHandler
 
 
 class QuranBot(discord.Client):
@@ -37,7 +40,7 @@ class QuranBot(discord.Client):
     QuranBot with robust retry mechanisms and comprehensive error handling.
     Manages Discord bot operations, service lifecycle, and advanced error recovery.
     """
-    
+
     def __init__(self):
         """
         Initialize QuranBot with error handling and retry logic.
@@ -48,35 +51,35 @@ class QuranBot(discord.Client):
         intents.guilds = True
         intents.members = True  # Required for role sync to see all members
         intents.message_content = True  # Needed for mention handling
-        
+
         # Initialize parent Discord client
         super().__init__(intents=intents)
-        
+
         # Initialize error handler
         self.error_handler = ErrorHandler()
-        
+
         # Initialize configuration
         self.config = get_config()
-        
+
         # Initialize dependency injection container
         self.container = DIContainer()
-        
+
         # service management
-        self.services: Dict[str, Any] = {}
-        self.service_health: Dict[str, Dict[str, Any]] = {}
-        self.service_startup_times: Dict[str, float] = {}
-        
+        self.services: dict[str, Any] = {}
+        self.service_health: dict[str, dict[str, Any]] = {}
+        self.service_startup_times: dict[str, float] = {}
+
         # control panel management
-        self.control_panel_manager: Optional[ControlPanelManager] = None
-        
+        self.control_panel_manager: ControlPanelManager | None = None
+
         # mention handler for AI responses
-        self.mention_handler: Optional[MentionHandler] = None
-        
+        self.mention_handler: MentionHandler | None = None
+
         # bot state management
-        self.startup_time: Optional[datetime] = None
+        self.startup_time: datetime | None = None
         self.ready_event = asyncio.Event()
         self.shutdown_event = asyncio.Event()
-        
+
         # performance monitoring
         self.performance_metrics = {
             "total_interactions": 0,
@@ -89,67 +92,66 @@ class QuranBot(discord.Client):
             "successful_operations": 0,
             "failed_operations": 0,
             "average_command_time": 0.0,
-            "last_command_time": None
+            "last_command_time": None,
         }
-        
+
         # error tracking
         self.error_stats = {
             "total_errors": 0,
             "critical_errors": 0,
             "recovered_errors": 0,
             "last_error_time": None,
-            "error_rate": 0.0
+            "error_rate": 0.0,
         }
-        
+
         # background task management
-        self.health_monitor_task: Optional[asyncio.Task] = None
-        self.performance_monitor_task: Optional[asyncio.Task] = None
-        self.role_sync_task: Optional[asyncio.Task] = None
-        
+        self.health_monitor_task: asyncio.Task | None = None
+        self.performance_monitor_task: asyncio.Task | None = None
+        self.role_sync_task: asyncio.Task | None = None
+
         # Register event handlers
         self._register_event_handlers()
-    
+
     async def setup_hook(self) -> None:
         """
         setup hook with robust retry mechanisms and error handling.
         """
         try:
             setup_start_time = time.time()
-            TreeLogger.section("Starting QuranBot setup with error handling", 
-                               service="QuranBot")
-            
+            TreeLogger.section(
+                "Starting QuranBot setup with error handling", service="QuranBot"
+            )
+
             # Record startup time
             self.startup_time = datetime.now(APP_TIMEZONE)
-            
+
             # Register services with retry
             await self._retry_operation(
                 operation=self._register_services,
                 operation_name="service_registration",
                 context={
                     "service_name": "QuranBot",
-                    "startup_time": self.startup_time.isoformat()
-                }
+                    "startup_time": self.startup_time.isoformat(),
+                },
             )
-            
+
             # Initialize services with retry
             await self._retry_operation(
                 operation=self._initialize_services,
                 operation_name="service_initialization",
                 context={
                     "service_name": "QuranBot",
-                    "services_count": len(self.services)
-                }
+                    "services_count": len(self.services),
+                },
             )
-            
+
             # Start services with retry
             await self._retry_operation(
                 operation=self._start_services,
                 operation_name="service_startup",
-                context={
-                    "service_name": "QuranBot"
-                }
+                context={"service_name": "QuranBot"},
             )
-            
+
             # Initialize mention handler after services are started
             try:
                 self.mention_handler = MentionHandler(self)
@@ -158,75 +160,76 @@ class QuranBot(discord.Client):
             except Exception as e:
                 TreeLogger.warning(f"Failed to initialize mention handler: {e}")
                 # Not critical, bot can work without AI responses
-            
+
             # Start background monitoring tasks
             await self._retry_operation(
                 operation=self._start_background_tasks,
                 operation_name="background_tasks_startup",
-                context={
-                    "service_name": "QuranBot"
-                }
+                context={"service_name": "QuranBot"},
             )
-            
+
             setup_duration = time.time() - setup_start_time
-            TreeLogger.success(f"QuranBot setup completed successfully in {setup_duration:.2f} seconds",
-                               service="QuranBot")
-            
+            TreeLogger.success(
+                f"QuranBot setup completed successfully in {setup_duration:.2f} seconds",
+                service="QuranBot",
+            )
+
         except Exception as e:
             await self.error_handler.handle_error(
                 e,
                 context={
                     "operation": "setup_hook",
                     "service_name": "QuranBot",
-                    "startup_time": self.startup_time.isoformat() if self.startup_time else None
-                }
+                    "startup_time": (
+                        self.startup_time.isoformat() if self.startup_time else None
+                    ),
+                },
             )
             raise BotError(
                 f"Failed to setup QuranBot: {e}",
                 operation="setup_hook",
-                severity=ErrorSeverity.CRITICAL
+                severity=ErrorSeverity.CRITICAL,
             )
-    
+
     async def on_ready(self) -> None:
         """
         ready event handler with comprehensive startup logging.
         """
         try:
             ready_start_time = time.time()
-            TreeLogger.section("QuranBot is ready with monitoring",
-                               service="QuranBot")
-            
+            TreeLogger.section("QuranBot is ready with monitoring", service="QuranBot")
+
             # Log startup information after bot is fully connected
             await self._log_startup_information()
-            
+
             # Start audio service voice connection and playback
             audio_service = self.get_service("audio")
             if audio_service:
                 await audio_service.connect_and_start_playback()
-            
+
             # Setup control panel after bot is ready and guilds are loaded
             await self._retry_operation(
                 operation=self._setup_control_panel,
                 operation_name="control_panel_setup",
-                context={
-                    "service_name": "QuranBot"
-                }
+                context={"service_name": "QuranBot"},
             )
-            
+
             # Update performance metrics
             await self._update_performance_metrics()
-            
+
             # Schedule role sync to run shortly after startup (non-blocking)
             TreeLogger.info("🔄 Scheduling initial role sync", service="QuranBot")
             asyncio.create_task(self._delayed_startup_role_sync())
-            
+
             # Set ready event
             self.ready_event.set()
-            
+
             ready_duration = time.time() - ready_start_time
-            TreeLogger.success(f"QuranBot startup completed successfully in {ready_duration:.2f} seconds",
-                               service="QuranBot")
-            
+            TreeLogger.success(
+                f"QuranBot startup completed successfully in {ready_duration:.2f} seconds",
+                service="QuranBot",
+            )
+
         except Exception as e:
             await self.error_handler.handle_error(
                 e,
@@ -234,15 +237,15 @@ class QuranBot(discord.Client):
                     "operation": "on_ready",
                     "service_name": "QuranBot",
                     "guild_count": len(self.guilds),
-                    "user_count": len(self.users)
-                }
+                    "user_count": len(self.users),
+                },
             )
             raise BotError(
                 f"Failed to complete startup: {e}",
                 operation="on_ready",
-                severity=ErrorSeverity.ERROR
+                severity=ErrorSeverity.ERROR,
             )
-    
+
     async def on_message(self, message: discord.Message) -> None:
         """
         Handle messages for AI mention responses.
@@ -250,50 +253,47 @@ class QuranBot(discord.Client):
         # Don't process bot's own messages
         if message.author == self.user:
             return
-        
+
         # Pass to mention handler if available
-        if hasattr(self, 'mention_handler') and self.mention_handler:
+        if hasattr(self, "mention_handler") and self.mention_handler:
             await self.mention_handler.handle_message(message)
-    
+
     async def on_disconnect(self) -> None:
         """
         disconnect event handler with graceful shutdown.
         """
         try:
-            TreeLogger.warning("QuranBot disconnected, initiating graceful shutdown",
-                               service="QuranBot")
-            
+            TreeLogger.warning(
+                "QuranBot disconnected, initiating graceful shutdown",
+                service="QuranBot",
+            )
+
             # Stop services with retry
             await self._retry_operation(
                 operation=self._stop_services,
                 operation_name="service_shutdown",
                 context={
                     "service_name": "QuranBot",
-                    "disconnect_time": datetime.now(APP_TIMEZONE).isoformat()
-                }
+                    "disconnect_time": datetime.now(APP_TIMEZONE).isoformat(),
+                },
             )
-            
+
             # Stop background tasks
             await self._retry_operation(
                 operation=self._stop_background_tasks,
                 operation_name="background_tasks_shutdown",
-                context={
-                    "service_name": "QuranBot"
-                }
+                context={"service_name": "QuranBot"},
             )
-            
-            TreeLogger.success("QuranBot shutdown completed gracefully",
-                               service="QuranBot")
-            
+
+            TreeLogger.success(
+                "QuranBot shutdown completed gracefully", service="QuranBot"
+            )
+
         except Exception as e:
             await self.error_handler.handle_error(
-                e,
-                context={
-                    "operation": "on_disconnect",
-                    "service_name": "QuranBot"
-                }
+                e, context={"operation": "on_disconnect", "service_name": "QuranBot"}
             )
-    
+
     async def on_error(self, event_method: str, *args, **kwargs) -> None:
         """
         error event handler with comprehensive error tracking.
@@ -302,15 +302,23 @@ class QuranBot(discord.Client):
             # Update error statistics
             self.error_stats["total_errors"] += 1
             self.error_stats["last_error_time"] = datetime.now(APP_TIMEZONE).isoformat()
-            
+
             # Calculate error rate
             if self.startup_time:
-                uptime = (datetime.now(APP_TIMEZONE) - self.startup_time).total_seconds()
-                self.error_stats["error_rate"] = self.error_stats["total_errors"] / max(uptime / 3600, 1)  # errors per hour
-            
+                uptime = (
+                    datetime.now(APP_TIMEZONE) - self.startup_time
+                ).total_seconds()
+                self.error_stats["error_rate"] = self.error_stats["total_errors"] / max(
+                    uptime / 3600, 1
+                )  # errors per hour
+
             # Get the actual error from args if provided
-            error = args[0] if args and len(args) > 0 else Exception(f"Event error in {event_method}")
-            
+            error = (
+                args[0]
+                if args and len(args) > 0
+                else Exception(f"Event error in {event_method}")
+            )
+
             await self.error_handler.handle_error(
                 error,
                 context={
@@ -318,18 +326,23 @@ class QuranBot(discord.Client):
                     "event_method": event_method,
                     "args": str(args),
                     "kwargs": str(kwargs),
-                    "error_stats": self.error_stats.copy()
-                }
+                    "error_stats": self.error_stats.copy(),
+                },
             )
-            
+
         except Exception as e:
             TreeLogger.error(f"Error in error handler: {e}", service="QuranBot")
-    
-    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState) -> None:
+
+    async def on_voice_state_update(
+        self,
+        member: discord.Member,
+        before: discord.VoiceState,
+        after: discord.VoiceState,
+    ) -> None:
         """
         Handle voice channel join/leave events for user interaction logging.
         Only tracks the configured Quran voice channel.
-        
+
         Args:
             member: Discord member whose voice state changed
             before: Previous voice state
@@ -340,55 +353,61 @@ class QuranBot(discord.Client):
             user_logger = self.services.get("user_interaction_logger")
             if not user_logger:
                 return
-            
+
             # Get the configured Quran voice channel ID
-            quran_vc_id = getattr(self.config, 'voice_channel_id', None)
+            quran_vc_id = getattr(self.config, "voice_channel_id", None)
             if not quran_vc_id:
                 return  # No configured Quran VC, no logging
-            
+
             # Check if the change involves the Quran voice channel
             before_is_quran = before.channel and before.channel.id == quran_vc_id
             after_is_quran = after.channel and after.channel.id == quran_vc_id
-            
+
             # Only log if at least one side involves the Quran VC
             if not (before_is_quran or after_is_quran):
                 return
-            
+
             # Handle join to Quran VC (from outside or from another VC)
             if not before_is_quran and after_is_quran:
                 await user_logger.log_voice_join(member, after.channel, member)
                 # Add Quran VC role
                 await self._add_quran_vc_role(member, after.channel)
-            
+
             # Handle leave from Quran VC (to outside or to another VC)
             elif before_is_quran and not after_is_quran:
                 await user_logger.log_voice_leave(member, before.channel, member)
                 # Remove Quran VC role
                 await self._remove_quran_vc_role(member, before.channel)
-            
+
             # Handle move from Quran VC to Quran VC (shouldn't happen, but just in case)
             elif before_is_quran and after_is_quran and before.channel != after.channel:
                 # This case is unlikely but handle it as leave + join
                 await user_logger.log_voice_leave(member, before.channel, member)
                 # No role change needed since they're still in a Quran VC
                 await user_logger.log_voice_join(member, after.channel, member)
-                
+
         except Exception as e:
             await self.error_handler.handle_error(
                 e,
                 context={
                     "operation": "on_voice_state_update",
-                    "member_id": getattr(member, 'id', None),
-                    "before_channel": getattr(before.channel, 'id', None) if before.channel else None,
-                    "after_channel": getattr(after.channel, 'id', None) if after.channel else None,
-                    "quran_vc_id": getattr(self.config, 'voice_channel_id', None)
-                }
+                    "member_id": getattr(member, "id", None),
+                    "before_channel": (
+                        getattr(before.channel, "id", None) if before.channel else None
+                    ),
+                    "after_channel": (
+                        getattr(after.channel, "id", None) if after.channel else None
+                    ),
+                    "quran_vc_id": getattr(self.config, "voice_channel_id", None),
+                },
             )
-    
-    async def _add_quran_vc_role(self, member: discord.Member, channel: discord.VoiceChannel) -> None:
+
+    async def _add_quran_vc_role(
+        self, member: discord.Member, channel: discord.VoiceChannel
+    ) -> None:
         """
         Add the Quran VC role to a member who joined the Quran voice channel.
-        
+
         Args:
             member: Discord member who joined
             channel: Voice channel that was joined
@@ -396,60 +415,89 @@ class QuranBot(discord.Client):
         try:
             # Role ID for Quran VC access from config
             quran_vc_role_id = self.config.quran_vc_role_id
-            
+
             # Get the role from the guild
             role = member.guild.get_role(quran_vc_role_id)
             if not role:
-                TreeLogger.warning(f"Quran VC role not found in guild", {
-                    "role_id": quran_vc_role_id,
-                    "guild_id": member.guild.id,
-                    "guild_name": member.guild.name
-                }, service="QuranBot")
+                TreeLogger.warning(
+                    "Quran VC role not found in guild",
+                    {
+                        "role_id": quran_vc_role_id,
+                        "guild_id": member.guild.id,
+                        "guild_name": member.guild.name,
+                    },
+                    service="QuranBot",
+                )
                 return
-            
+
             # Check if member already has the role
             if role in member.roles:
-                TreeLogger.info("Member already has Quran VC role", {
-                    "member_id": member.id,
-                    "username": f"{member.name} ({member.nick})" if member.nick else member.name,
-                    "role_id": quran_vc_role_id,
-                    "role_name": role.name
-                }, service="QuranBot")
+                TreeLogger.info(
+                    "Member already has Quran VC role",
+                    {
+                        "member_id": member.id,
+                        "username": (
+                            f"{member.name} ({member.nick})"
+                            if member.nick
+                            else member.name
+                        ),
+                        "role_id": quran_vc_role_id,
+                        "role_name": role.name,
+                    },
+                    service="QuranBot",
+                )
                 return
-            
+
             # Add the role
             await member.add_roles(role, reason="Joined Quran voice channel")
-            
-            TreeLogger.success("🎭 Added Quran VC role to member", {
-                "member_id": member.id,
-                "username": f"{member.name} ({member.nick})" if member.nick else member.name,
-                "discord_username": member.name,
-                "display_name": member.display_name,
-                "role_id": quran_vc_role_id,
-                "role_name": role.name,
-                "channel_id": channel.id,
-                "channel_name": channel.name
-            }, service="QuranBot")
-            
+
+            TreeLogger.success(
+                "🎭 Added Quran VC role to member",
+                {
+                    "member_id": member.id,
+                    "username": (
+                        f"{member.name} ({member.nick})" if member.nick else member.name
+                    ),
+                    "discord_username": member.name,
+                    "display_name": member.display_name,
+                    "role_id": quran_vc_role_id,
+                    "role_name": role.name,
+                    "channel_id": channel.id,
+                    "channel_name": channel.name,
+                },
+                service="QuranBot",
+            )
+
         except discord.Forbidden:
-            TreeLogger.error("No permission to add Quran VC role", {
-                "member_id": member.id,
-                "username": member.name,
-                "role_id": quran_vc_role_id,
-                "guild_id": member.guild.id
-            }, service="QuranBot")
+            TreeLogger.error(
+                "No permission to add Quran VC role",
+                {
+                    "member_id": member.id,
+                    "username": member.name,
+                    "role_id": quran_vc_role_id,
+                    "guild_id": member.guild.id,
+                },
+                service="QuranBot",
+            )
         except Exception as e:
-            TreeLogger.error(f"Error adding Quran VC role: {e}", None, {
-                "member_id": member.id,
-                "username": member.name,
-                "role_id": quran_vc_role_id,
-                "error_type": type(e).__name__
-            }, service="QuranBot")
-    
-    async def _remove_quran_vc_role(self, member: discord.Member, channel: discord.VoiceChannel) -> None:
+            TreeLogger.error(
+                f"Error adding Quran VC role: {e}",
+                None,
+                {
+                    "member_id": member.id,
+                    "username": member.name,
+                    "role_id": quran_vc_role_id,
+                    "error_type": type(e).__name__,
+                },
+                service="QuranBot",
+            )
+
+    async def _remove_quran_vc_role(
+        self, member: discord.Member, channel: discord.VoiceChannel
+    ) -> None:
         """
         Remove the Quran VC role from a member who left the Quran voice channel.
-        
+
         Args:
             member: Discord member who left
             channel: Voice channel that was left
@@ -457,104 +505,137 @@ class QuranBot(discord.Client):
         try:
             # Role ID for Quran VC access from config
             quran_vc_role_id = self.config.quran_vc_role_id
-            
+
             # Get the role from the guild
             role = member.guild.get_role(quran_vc_role_id)
             if not role:
-                TreeLogger.warning(f"Quran VC role not found in guild", {
-                    "role_id": quran_vc_role_id,
-                    "guild_id": member.guild.id,
-                    "guild_name": member.guild.name
-                }, service="QuranBot")
+                TreeLogger.warning(
+                    "Quran VC role not found in guild",
+                    {
+                        "role_id": quran_vc_role_id,
+                        "guild_id": member.guild.id,
+                        "guild_name": member.guild.name,
+                    },
+                    service="QuranBot",
+                )
                 return
-            
+
             # Check if member has the role
             if role not in member.roles:
-                TreeLogger.info("Member doesn't have Quran VC role to remove", {
-                    "member_id": member.id,
-                    "username": f"{member.name} ({member.nick})" if member.nick else member.name,
-                    "role_id": quran_vc_role_id,
-                    "role_name": role.name
-                }, service="QuranBot")
+                TreeLogger.info(
+                    "Member doesn't have Quran VC role to remove",
+                    {
+                        "member_id": member.id,
+                        "username": (
+                            f"{member.name} ({member.nick})"
+                            if member.nick
+                            else member.name
+                        ),
+                        "role_id": quran_vc_role_id,
+                        "role_name": role.name,
+                    },
+                    service="QuranBot",
+                )
                 return
-            
+
             # Remove the role
             await member.remove_roles(role, reason="Left Quran voice channel")
-            
-            TreeLogger.success("🚪 Removed Quran VC role from member", {
-                "member_id": member.id,
-                "username": f"{member.name} ({member.nick})" if member.nick else member.name,
-                "discord_username": member.name,
-                "display_name": member.display_name,
-                "role_id": quran_vc_role_id,
-                "role_name": role.name,
-                "channel_id": channel.id,
-                "channel_name": channel.name
-            }, service="QuranBot")
-            
+
+            TreeLogger.success(
+                "🚪 Removed Quran VC role from member",
+                {
+                    "member_id": member.id,
+                    "username": (
+                        f"{member.name} ({member.nick})" if member.nick else member.name
+                    ),
+                    "discord_username": member.name,
+                    "display_name": member.display_name,
+                    "role_id": quran_vc_role_id,
+                    "role_name": role.name,
+                    "channel_id": channel.id,
+                    "channel_name": channel.name,
+                },
+                service="QuranBot",
+            )
+
         except discord.Forbidden:
-            TreeLogger.error("No permission to remove Quran VC role", {
-                "member_id": member.id,
-                "username": member.name,
-                "role_id": quran_vc_role_id,
-                "guild_id": member.guild.id
-            }, service="QuranBot")
+            TreeLogger.error(
+                "No permission to remove Quran VC role",
+                {
+                    "member_id": member.id,
+                    "username": member.name,
+                    "role_id": quran_vc_role_id,
+                    "guild_id": member.guild.id,
+                },
+                service="QuranBot",
+            )
         except Exception as e:
-            TreeLogger.error(f"Error removing Quran VC role: {e}", None, {
-                "member_id": member.id,
-                "username": member.name,
-                "role_id": quran_vc_role_id,
-                "error_type": type(e).__name__
-            }, service="QuranBot")
-    
+            TreeLogger.error(
+                f"Error removing Quran VC role: {e}",
+                None,
+                {
+                    "member_id": member.id,
+                    "username": member.name,
+                    "role_id": quran_vc_role_id,
+                    "error_type": type(e).__name__,
+                },
+                service="QuranBot",
+            )
+
     async def _delayed_startup_role_sync(self) -> None:
         """Perform role sync after a delay to ensure member cache is ready."""
         try:
             # Wait for member cache to populate
             await asyncio.sleep(5)
-            
+
             TreeLogger.info("🔄 Starting delayed initial role sync", service="QuranBot")
             await self._retry_operation(
                 operation=self._sync_quran_vc_roles,
                 operation_name="startup_role_sync",
-                context={
-                    "service_name": "QuranBot"
-                }
+                context={"service_name": "QuranBot"},
             )
         except Exception as e:
-            TreeLogger.error(f"Error in delayed startup role sync: {e}", service="QuranBot")
-    
+            TreeLogger.error(
+                f"Error in delayed startup role sync: {e}", service="QuranBot"
+            )
+
     async def _sync_quran_vc_roles(self, is_periodic: bool = False) -> None:
         """
         Sync roles for users in the Quran voice channel.
         Ensures role assignments match actual VC presence.
-        
+
         Args:
             is_periodic: True if this is a periodic sync, False if startup sync
         """
         try:
             # Get the configured Quran voice channel ID
-            quran_vc_id = getattr(self.config, 'voice_channel_id', None)
+            quran_vc_id = getattr(self.config, "voice_channel_id", None)
             if not quran_vc_id:
                 if not is_periodic:
-                    TreeLogger.warning("No Quran VC configured, skipping role sync", service="QuranBot")
+                    TreeLogger.warning(
+                        "No Quran VC configured, skipping role sync", service="QuranBot"
+                    )
                 return
-            
+
             # Role ID for Quran VC access from config
             quran_vc_role_id = self.config.quran_vc_role_id
-            
+
             sync_type = "Periodic" if is_periodic else "Startup"
-            TreeLogger.info(f"🔄 Starting {sync_type} Quran VC role synchronization", {
-                "quran_vc_id": quran_vc_id,
-                "role_id": quran_vc_role_id,
-                "sync_type": sync_type
-            }, service="QuranBot")
-            
+            TreeLogger.info(
+                f"🔄 Starting {sync_type} Quran VC role synchronization",
+                {
+                    "quran_vc_id": quran_vc_id,
+                    "role_id": quran_vc_role_id,
+                    "sync_type": sync_type,
+                },
+                service="QuranBot",
+            )
+
             users_given_role = 0
             users_removed_role = 0
             users_already_correct = 0
             guilds_processed = 0
-            
+
             # Check all guilds
             for guild in self.guilds:
                 try:
@@ -562,48 +643,74 @@ class QuranBot(discord.Client):
                     quran_vc = guild.get_channel(quran_vc_id)
                     if not quran_vc or not isinstance(quran_vc, discord.VoiceChannel):
                         continue
-                    
+
                     # Get the role
                     role = guild.get_role(quran_vc_role_id)
                     if not role:
-                        TreeLogger.warning("Quran VC role not found in guild", {
-                            "guild_id": guild.id,
-                            "guild_name": guild.name,
-                            "role_id": quran_vc_role_id
-                        }, service="QuranBot")
+                        TreeLogger.warning(
+                            "Quran VC role not found in guild",
+                            {
+                                "guild_id": guild.id,
+                                "guild_name": guild.name,
+                                "role_id": quran_vc_role_id,
+                            },
+                            service="QuranBot",
+                        )
                         continue
-                    
+
                     guilds_processed += 1
-                    
+
                     # Get all members currently in the Quran VC (excluding bots)
-                    current_vc_members = set(member for member in quran_vc.members if not member.bot)
-                    
+                    current_vc_members = set(
+                        member for member in quran_vc.members if not member.bot
+                    )
+
                     # Get all members who have the role (excluding bots)
                     # First try to get from guild.members (cached)
-                    members_with_role = set(member for member in guild.members if not member.bot and role in member.roles)
-                    
+                    members_with_role = set(
+                        member
+                        for member in guild.members
+                        if not member.bot and role in member.roles
+                    )
+
                     # If we're doing startup sync and member count seems low, try fetching role members
-                    if not is_periodic and len(guild.members) < guild.member_count * 0.5:
-                        TreeLogger.info("Member cache may be incomplete, fetching role members directly", {
-                            "cached_members": len(guild.members),
-                            "total_member_count": guild.member_count,
-                            "guild_name": guild.name
-                        }, service="QuranBot")
+                    if (
+                        not is_periodic
+                        and len(guild.members) < guild.member_count * 0.5
+                    ):
+                        TreeLogger.info(
+                            "Member cache may be incomplete, fetching role members directly",
+                            {
+                                "cached_members": len(guild.members),
+                                "total_member_count": guild.member_count,
+                                "guild_name": guild.name,
+                            },
+                            service="QuranBot",
+                        )
                         try:
                             # Fetch members who have the role
                             async for member in guild.fetch_members(limit=None):
                                 if not member.bot and role in member.roles:
                                     members_with_role.add(member)
                         except Exception as e:
-                            TreeLogger.warning(f"Could not fetch all members: {e}", service="QuranBot")
-                    
-                    TreeLogger.info(f"Checking guild: {guild.name}", {
-                        "guild_id": guild.id,
-                        "current_vc_members": len(current_vc_members),
-                        "members_with_role": len(members_with_role),
-                        "vc_members": [f"{m.name} ({m.nick})" if m.nick else m.name for m in current_vc_members]
-                    }, service="QuranBot")
-                    
+                            TreeLogger.warning(
+                                f"Could not fetch all members: {e}", service="QuranBot"
+                            )
+
+                    TreeLogger.info(
+                        f"Checking guild: {guild.name}",
+                        {
+                            "guild_id": guild.id,
+                            "current_vc_members": len(current_vc_members),
+                            "members_with_role": len(members_with_role),
+                            "vc_members": [
+                                f"{m.name} ({m.nick})" if m.nick else m.name
+                                for m in current_vc_members
+                            ],
+                        },
+                        service="QuranBot",
+                    )
+
                     # Add role to members in VC who don't have it
                     for member in current_vc_members:
                         if role not in member.roles:
@@ -611,96 +718,141 @@ class QuranBot(discord.Client):
                                 reason = f"{sync_type}: User in Quran VC without role"
                                 await member.add_roles(role, reason=reason)
                                 users_given_role += 1
-                                TreeLogger.success("🎭 Synced: Added Quran VC role", {
-                                    "member_id": member.id,
-                                    "username": f"{member.name} ({member.nick})" if member.nick else member.name,
-                                    "guild_id": guild.id,
-                                    "guild_name": guild.name,
-                                    "sync_type": sync_type
-                                }, service="QuranBot")
+                                TreeLogger.success(
+                                    "🎭 Synced: Added Quran VC role",
+                                    {
+                                        "member_id": member.id,
+                                        "username": (
+                                            f"{member.name} ({member.nick})"
+                                            if member.nick
+                                            else member.name
+                                        ),
+                                        "guild_id": guild.id,
+                                        "guild_name": guild.name,
+                                        "sync_type": sync_type,
+                                    },
+                                    service="QuranBot",
+                                )
                                 # Small delay to avoid rate limits
                                 await asyncio.sleep(0.5)
                             except discord.Forbidden:
-                                TreeLogger.warning("No permission to add role during sync", {
-                                    "member_id": member.id,
-                                    "guild_id": guild.id,
-                                    "sync_type": sync_type
-                                }, service="QuranBot")
+                                TreeLogger.warning(
+                                    "No permission to add role during sync",
+                                    {
+                                        "member_id": member.id,
+                                        "guild_id": guild.id,
+                                        "sync_type": sync_type,
+                                    },
+                                    service="QuranBot",
+                                )
                             except Exception as e:
-                                TreeLogger.error(f"Error adding role during sync: {e}", {
-                                    "member_id": member.id,
-                                    "guild_id": guild.id,
-                                    "sync_type": sync_type,
-                                    "error_type": type(e).__name__
-                                }, service="QuranBot")
+                                TreeLogger.error(
+                                    f"Error adding role during sync: {e}",
+                                    {
+                                        "member_id": member.id,
+                                        "guild_id": guild.id,
+                                        "sync_type": sync_type,
+                                        "error_type": type(e).__name__,
+                                    },
+                                    service="QuranBot",
+                                )
                         else:
                             users_already_correct += 1
-                    
+
                     # Remove role from members not in VC who have it
                     for member in members_with_role:
                         if member not in current_vc_members:
                             try:
-                                reason = f"{sync_type}: User has role but not in Quran VC"
+                                reason = (
+                                    f"{sync_type}: User has role but not in Quran VC"
+                                )
                                 await member.remove_roles(role, reason=reason)
                                 users_removed_role += 1
-                                TreeLogger.success("🚪 Synced: Removed Quran VC role", {
-                                    "member_id": member.id,
-                                    "username": f"{member.name} ({member.nick})" if member.nick else member.name,
-                                    "guild_id": guild.id,
-                                    "guild_name": guild.name,
-                                    "sync_type": sync_type
-                                }, service="QuranBot")
+                                TreeLogger.success(
+                                    "🚪 Synced: Removed Quran VC role",
+                                    {
+                                        "member_id": member.id,
+                                        "username": (
+                                            f"{member.name} ({member.nick})"
+                                            if member.nick
+                                            else member.name
+                                        ),
+                                        "guild_id": guild.id,
+                                        "guild_name": guild.name,
+                                        "sync_type": sync_type,
+                                    },
+                                    service="QuranBot",
+                                )
                                 # Small delay to avoid rate limits
                                 await asyncio.sleep(0.5)
                             except discord.Forbidden:
-                                TreeLogger.warning("No permission to remove role during sync", {
-                                    "member_id": member.id,
-                                    "guild_id": guild.id,
-                                    "sync_type": sync_type
-                                }, service="QuranBot")
+                                TreeLogger.warning(
+                                    "No permission to remove role during sync",
+                                    {
+                                        "member_id": member.id,
+                                        "guild_id": guild.id,
+                                        "sync_type": sync_type,
+                                    },
+                                    service="QuranBot",
+                                )
                             except Exception as e:
-                                TreeLogger.error(f"Error removing role during sync: {e}", {
-                                    "member_id": member.id,
-                                    "guild_id": guild.id,
-                                    "sync_type": sync_type,
-                                    "error_type": type(e).__name__
-                                }, service="QuranBot")
-                    
+                                TreeLogger.error(
+                                    f"Error removing role during sync: {e}",
+                                    {
+                                        "member_id": member.id,
+                                        "guild_id": guild.id,
+                                        "sync_type": sync_type,
+                                        "error_type": type(e).__name__,
+                                    },
+                                    service="QuranBot",
+                                )
+
                 except Exception as e:
-                    TreeLogger.error(f"Error syncing roles in guild: {e}", {
-                        "guild_id": guild.id,
-                        "guild_name": guild.name,
-                        "sync_type": sync_type,
-                        "error_type": type(e).__name__
-                    }, service="QuranBot")
-            
+                    TreeLogger.error(
+                        f"Error syncing roles in guild: {e}",
+                        {
+                            "guild_id": guild.id,
+                            "guild_name": guild.name,
+                            "sync_type": sync_type,
+                            "error_type": type(e).__name__,
+                        },
+                        service="QuranBot",
+                    )
+
             total_changes = users_given_role + users_removed_role
-            TreeLogger.success(f"✅ Completed {sync_type} Quran VC role synchronization", {
-                "users_given_role": users_given_role,
-                "users_removed_role": users_removed_role,
-                "users_already_correct": users_already_correct,
-                "total_changes": total_changes,
-                "guilds_processed": guilds_processed,
-                "total_guilds": len(self.guilds),
-                "sync_type": sync_type
-            }, service="QuranBot")
-            
+            TreeLogger.success(
+                f"✅ Completed {sync_type} Quran VC role synchronization",
+                {
+                    "users_given_role": users_given_role,
+                    "users_removed_role": users_removed_role,
+                    "users_already_correct": users_already_correct,
+                    "total_changes": total_changes,
+                    "guilds_processed": guilds_processed,
+                    "total_guilds": len(self.guilds),
+                    "sync_type": sync_type,
+                },
+                service="QuranBot",
+            )
+
         except Exception as e:
-            TreeLogger.error(f"Error during {sync_type.lower()} Quran VC role sync: {e}", None, {
-                "error_type": type(e).__name__,
-                "sync_type": sync_type
-            }, service="QuranBot")
-    
+            TreeLogger.error(
+                f"Error during {sync_type.lower()} Quran VC role sync: {e}",
+                None,
+                {"error_type": type(e).__name__, "sync_type": sync_type},
+                service="QuranBot",
+            )
+
     # =========================================================================
     # Service Management
     # =========================================================================
-    
+
     async def _register_services(self) -> None:
         """Register services with error handling."""
         try:
-            TreeLogger.info("Registering services with error handling",
-                            service="QuranBot")
-            
+            TreeLogger.info(
+                "Registering services with error handling", service="QuranBot"
+            )
+
             # Register core services
             services_to_register = [
                 ("database", DatabaseService),
@@ -712,15 +864,22 @@ class QuranBot(discord.Client):
                 ("islamic_ai", lambda: IslamicAIService(self)),
                 ("token_tracker", lambda: TokenTracker(self)),
                 ("rate_limiter", lambda: RateLimiter(self)),
-                ("openai_usage", lambda: OpenAIUsageTracker(self))
+                ("openai_usage", lambda: OpenAIUsageTracker(self)),
             ]
-            
+
             for service_name, service_class in services_to_register:
                 try:
                     # Create service instance
                     if service_name == "audio":
                         service_instance = service_class(self)
-                    elif service_name in ["presence", "ai", "islamic_ai", "token_tracker", "rate_limiter", "openai_usage"]:
+                    elif service_name in [
+                        "presence",
+                        "ai",
+                        "islamic_ai",
+                        "token_tracker",
+                        "rate_limiter",
+                        "openai_usage",
+                    ]:
                         # Handle lambda functions for services that need bot instance
                         service_instance = service_class()  # This calls the lambda
                         # Set the actual class for registration
@@ -738,50 +897,53 @@ class QuranBot(discord.Client):
                             service_class = OpenAIUsageTracker
                     else:
                         service_instance = service_class()
-                    
+
                     # Register in container
                     self.container.register_singleton(service_class, service_instance)
-                    
+
                     # Store in services dict
                     self.services[service_name] = service_instance
-                    
-                    TreeLogger.success(f"Service '{service_name}' registered successfully",
-                                       service="QuranBot")
-                    
+
+                    TreeLogger.success(
+                        f"Service '{service_name}' registered successfully",
+                        service="QuranBot",
+                    )
+
                 except Exception as e:
                     await self.error_handler.handle_error(
                         e,
                         context={
                             "operation": "register_service",
                             "service_name": service_name,
-                            "service_class": service_class.__name__
-                        }
+                            "service_class": service_class.__name__,
+                        },
                     )
                     raise BotError(
                         f"Failed to register service '{service_name}': {e}",
-                        operation="register_service"
+                        operation="register_service",
                     )
-            
-            TreeLogger.success(f"All {len(self.services)} services registered successfully",
-                               service="QuranBot")
-            
+
+            TreeLogger.success(
+                f"All {len(self.services)} services registered successfully",
+                service="QuranBot",
+            )
+
         except Exception as e:
             await self.error_handler.handle_error(
                 e,
                 context={
                     "operation": "register_services",
-                    "services_count": len(self.services)
-                }
+                    "services_count": len(self.services),
+                },
             )
             raise BotError(
-                f"Failed to register services: {e}",
-                operation="register_services"
+                f"Failed to register services: {e}", operation="register_services"
             )
-    
+
     async def _initialize_services(self) -> None:
         """
         Initialize services with comprehensive retry mechanisms and lifecycle management.
-        
+
         This method performs complex service initialization including:
         - Service registration and dependency resolution
         - Individual service initialization with retry logic
@@ -789,19 +951,20 @@ class QuranBot(discord.Client):
         - Error handling and recovery mechanisms
         - Success tracking and statistics
         - Service class identification and logging
-        
+
         This is the primary entry point for service initialization during bot startup.
         """
         try:
-            TreeLogger.info("Initializing services with retry mechanisms",
-                            service="QuranBot")
-            
+            TreeLogger.info(
+                "Initializing services with retry mechanisms", service="QuranBot"
+            )
+
             # STEP 1: Service Count and Success Tracking
             # Track total services and successful initializations
             # This provides metrics for startup reliability monitoring
             total_services = len(self.services)
             successful_initializations = 0
-            
+
             # STEP 2: Individual Service Initialization Loop
             # Initialize each service with comprehensive error handling
             # This ensures all services are properly set up before bot startup
@@ -811,7 +974,7 @@ class QuranBot(discord.Client):
                     # Track initialization time for each service
                     # This helps identify slow-starting services
                     start_time = time.time()
-                    
+
                     # STEP 4: Service Initialization with Retry Logic
                     # Initialize service with retry mechanism for reliability
                     # This handles transient failures during service startup
@@ -820,25 +983,29 @@ class QuranBot(discord.Client):
                         operation_name=f"{service_name}_initialization",
                         context={
                             "service_name": service_name,
-                            "service_class": type(service).__name__
-                        }
+                            "service_class": type(service).__name__,
+                        },
                     )
-                    
+
                     # STEP 5: Performance Metrics and Success Tracking
                     # Calculate initialization time and track successful startups
                     # This provides detailed performance analytics
                     initialization_time = time.time() - start_time
                     self.service_startup_times[service_name] = initialization_time
                     successful_initializations += 1
-                    
+
                     # STEP 6: Success Logging with Service Details
                     # Log successful service initialization with timing information
                     # This provides debugging information and performance tracking
-                    TreeLogger.success(f"Service '{service_name}' initialized successfully", {
-                        "initialization_time_ms": initialization_time * 1000,
-                        "service_class": type(service).__name__
-                    }, service="QuranBot")
-                    
+                    TreeLogger.success(
+                        f"Service '{service_name}' initialized successfully",
+                        {
+                            "initialization_time_ms": initialization_time * 1000,
+                            "service_class": type(service).__name__,
+                        },
+                        service="QuranBot",
+                    )
+
                 except Exception as e:
                     # STEP 7: Service-Specific Error Handling
                     # Handle initialization failures for individual services
@@ -848,23 +1015,27 @@ class QuranBot(discord.Client):
                         context={
                             "operation": "initialize_service",
                             "service_name": service_name,
-                            "service_class": type(service).__name__
-                        }
+                            "service_class": type(service).__name__,
+                        },
                     )
                     raise BotError(
                         f"Failed to initialize service '{service_name}': {e}",
-                        operation="initialize_service"
+                        operation="initialize_service",
                     )
-            
+
             # STEP 8: Overall Initialization Success Logging
             # Log comprehensive initialization results with statistics
             # This provides summary information for startup monitoring
-            TreeLogger.success(f"Service initialization completed successfully", {
-                "total_services": total_services,
-                "successful_initializations": successful_initializations,
-                "initialization_times": self.service_startup_times
-            }, service="QuranBot")
-            
+            TreeLogger.success(
+                "Service initialization completed successfully",
+                {
+                    "total_services": total_services,
+                    "successful_initializations": successful_initializations,
+                    "initialization_times": self.service_startup_times,
+                },
+                service="QuranBot",
+            )
+
         except Exception as e:
             # ERROR HANDLING: Comprehensive error tracking and recovery
             # This section handles all service initialization failures and provides debugging context
@@ -872,18 +1043,17 @@ class QuranBot(discord.Client):
                 e,
                 context={
                     "operation": "initialize_services",
-                    "services_count": len(self.services)
-                }
+                    "services_count": len(self.services),
+                },
             )
             raise BotError(
-                f"Failed to initialize services: {e}",
-                operation="initialize_services"
+                f"Failed to initialize services: {e}", operation="initialize_services"
             )
-    
+
     async def _start_services(self) -> None:
         """
         Start services with comprehensive error handling and startup sequence management.
-        
+
         This method performs complex service startup including:
         - Service startup sequence coordination
         - Individual service startup with retry logic
@@ -891,19 +1061,18 @@ class QuranBot(discord.Client):
         - Error handling and recovery mechanisms
         - Success tracking and statistics
         - Service class identification and logging
-        
+
         This follows service initialization and prepares services for active operation.
         """
         try:
-            TreeLogger.info("Starting services with error handling",
-                            service="QuranBot")
-            
+            TreeLogger.info("Starting services with error handling", service="QuranBot")
+
             # STEP 1: Service Count and Success Tracking
             # Track total services and successful startups
             # This provides metrics for startup reliability monitoring
             total_services = len(self.services)
             successful_starts = 0
-            
+
             # STEP 2: Individual Service Startup Loop
             # Start each service with comprehensive error handling
             # This ensures all services are actively running before bot operation
@@ -913,7 +1082,7 @@ class QuranBot(discord.Client):
                     # Track startup time for each service
                     # This helps identify slow-starting services
                     start_time = time.time()
-                    
+
                     # STEP 4: Service Startup with Retry Logic
                     # Start service with retry mechanism for reliability
                     # This handles transient failures during service startup
@@ -922,65 +1091,69 @@ class QuranBot(discord.Client):
                         operation_name=f"{service_name}_startup",
                         context={
                             "service_name": service_name,
-                            "service_class": type(service).__name__
-                        }
+                            "service_class": type(service).__name__,
+                        },
                     )
-                    
+
                     # STEP 5: Performance Metrics and Success Tracking
                     # Calculate startup time and track successful starts
                     # This provides detailed performance analytics
                     startup_time = time.time() - start_time
                     successful_starts += 1
-                    
+
                     # STEP 6: Success Logging with Service Details
                     # Log successful service startup with timing information
                     # This provides debugging information and performance tracking
-                    TreeLogger.success(f"Service '{service_name}' started successfully", {
-                        "startup_time_ms": startup_time * 1000,
-                        "service_class": type(service).__name__
-                    }, service="QuranBot")
-                    
+                    TreeLogger.success(
+                        f"Service '{service_name}' started successfully",
+                        {
+                            "startup_time_ms": startup_time * 1000,
+                            "service_class": type(service).__name__,
+                        },
+                        service="QuranBot",
+                    )
+
                 except Exception as e:
                     await self.error_handler.handle_error(
                         e,
                         context={
                             "operation": "start_service",
                             "service_name": service_name,
-                            "service_class": type(service).__name__
-                        }
+                            "service_class": type(service).__name__,
+                        },
                     )
                     raise BotError(
                         f"Failed to start service '{service_name}': {e}",
-                        operation="start_service"
+                        operation="start_service",
                     )
-            
-            TreeLogger.success(f"Service startup completed successfully", {
-                "total_services": total_services,
-                "successful_starts": successful_starts
-            }, service="QuranBot")
-            
+
+            TreeLogger.success(
+                "Service startup completed successfully",
+                {
+                    "total_services": total_services,
+                    "successful_starts": successful_starts,
+                },
+                service="QuranBot",
+            )
+
         except Exception as e:
             await self.error_handler.handle_error(
                 e,
                 context={
                     "operation": "start_services",
-                    "services_count": len(self.services)
-                }
+                    "services_count": len(self.services),
+                },
             )
-            raise BotError(
-                f"Failed to start services: {e}",
-                operation="start_services"
-            )
-    
+            raise BotError(f"Failed to start services: {e}", operation="start_services")
+
     async def _stop_services(self) -> None:
         """Stop services with error handling."""
         try:
-            TreeLogger.info("Stopping services with error handling",
-                            service="QuranBot")
-            
+            TreeLogger.info("Stopping services with error handling", service="QuranBot")
+
             total_services = len(self.services)
             successful_stops = 0
-            
+
             for service_name, service in self.services.items():
                 try:
                     # Stop service with retry
@@ -989,54 +1162,58 @@ class QuranBot(discord.Client):
                         operation_name=f"{service_name}_shutdown",
                         context={
                             "service_name": service_name,
-                            "service_class": type(service).__name__
-                        }
+                            "service_class": type(service).__name__,
+                        },
                     )
-                    
+
                     successful_stops += 1
-                    
-                    TreeLogger.success(f"Service '{service_name}' stopped successfully", {
-                        "service_class": type(service).__name__
-                    }, service="QuranBot")
-                    
+
+                    TreeLogger.success(
+                        f"Service '{service_name}' stopped successfully",
+                        {"service_class": type(service).__name__},
+                        service="QuranBot",
+                    )
+
                 except Exception as e:
                     await self.error_handler.handle_error(
                         e,
                         context={
                             "operation": "stop_service",
                             "service_name": service_name,
-                            "service_class": type(service).__name__
-                        }
+                            "service_class": type(service).__name__,
+                        },
                     )
                     # Continue stopping other services even if one fails
-            
-            TreeLogger.success(f"Service shutdown completed", {
-                "total_services": total_services,
-                "successful_stops": successful_stops
-            }, service="QuranBot")
-            
+
+            TreeLogger.success(
+                "Service shutdown completed",
+                {
+                    "total_services": total_services,
+                    "successful_stops": successful_stops,
+                },
+                service="QuranBot",
+            )
+
         except Exception as e:
             await self.error_handler.handle_error(
                 e,
                 context={
                     "operation": "stop_services",
-                    "services_count": len(self.services)
-                }
+                    "services_count": len(self.services),
+                },
             )
-            raise BotError(
-                f"Failed to stop services: {e}",
-                operation="stop_services"
-            )
-    
+            raise BotError(f"Failed to stop services: {e}", operation="stop_services")
+
     async def _shutdown_services(self) -> None:
         """Shutdown services with error handling."""
         try:
-            TreeLogger.info("Shutting down services with error handling",
-                            service="QuranBot")
-            
+            TreeLogger.info(
+                "Shutting down services with error handling", service="QuranBot"
+            )
+
             total_services = len(self.services)
             successful_shutdowns = 0
-            
+
             for service_name, service in self.services.items():
                 try:
                     # Cleanup service with retry
@@ -1045,172 +1222,202 @@ class QuranBot(discord.Client):
                         operation_name=f"{service_name}_cleanup",
                         context={
                             "service_name": service_name,
-                            "service_class": type(service).__name__
-                        }
+                            "service_class": type(service).__name__,
+                        },
                     )
-                    
+
                     successful_shutdowns += 1
-                    
-                    TreeLogger.success(f"Service '{service_name}' cleaned up successfully", {
-                        "service_class": type(service).__name__
-                    }, service="QuranBot")
-                    
+
+                    TreeLogger.success(
+                        f"Service '{service_name}' cleaned up successfully",
+                        {"service_class": type(service).__name__},
+                        service="QuranBot",
+                    )
+
                 except Exception as e:
                     await self.error_handler.handle_error(
                         e,
                         context={
                             "operation": "cleanup_service",
                             "service_name": service_name,
-                            "service_class": type(service).__name__
-                        }
+                            "service_class": type(service).__name__,
+                        },
                     )
                     # Continue cleaning up other services even if one fails
-            
-            TreeLogger.success(f"Service cleanup completed", {
-                "total_services": total_services,
-                "successful_shutdowns": successful_shutdowns
-            }, service="QuranBot")
-            
+
+            TreeLogger.success(
+                "Service cleanup completed",
+                {
+                    "total_services": total_services,
+                    "successful_shutdowns": successful_shutdowns,
+                },
+                service="QuranBot",
+            )
+
         except Exception as e:
             await self.error_handler.handle_error(
                 e,
                 context={
                     "operation": "shutdown_services",
-                    "services_count": len(self.services)
-                }
+                    "services_count": len(self.services),
+                },
             )
             raise BotError(
-                f"Failed to shutdown services: {e}",
-                operation="shutdown_services"
+                f"Failed to shutdown services: {e}", operation="shutdown_services"
             )
-    
+
     # =========================================================================
     # Control Panel Management
     # =========================================================================
-    
+
     async def _setup_control_panel(self) -> None:
         """Setup control panel with error handling."""
         try:
             TreeLogger.info("Setting up control panel", service="QuranBot")
-            
+
             # Get audio service
             audio_service = self.services.get("audio")
             if not audio_service:
-                TreeLogger.warning("Audio service not available for control panel", service="QuranBot")
+                TreeLogger.warning(
+                    "Audio service not available for control panel", service="QuranBot"
+                )
                 return
-            
+
             # Initialize control panel manager
             self.control_panel_manager = ControlPanelManager(self, audio_service)
-            
+
             # Setup control panel in configured channel
-            if hasattr(self.config, 'panel_channel_id') and self.config.panel_channel_id:
-                success = await self.control_panel_manager.setup_control_panel(self.config.panel_channel_id)
+            if (
+                hasattr(self.config, "panel_channel_id")
+                and self.config.panel_channel_id
+            ):
+                success = await self.control_panel_manager.setup_control_panel(
+                    self.config.panel_channel_id
+                )
                 if success:
-                    TreeLogger.success("Control panel setup successful", {
-                        "channel_id": self.config.panel_channel_id
-                    }, service="QuranBot")
+                    TreeLogger.success(
+                        "Control panel setup successful",
+                        {"channel_id": self.config.panel_channel_id},
+                        service="QuranBot",
+                    )
                 else:
-                    TreeLogger.warning("Control panel setup failed", {
-                        "channel_id": self.config.panel_channel_id
-                    }, service="QuranBot")
+                    TreeLogger.warning(
+                        "Control panel setup failed",
+                        {"channel_id": self.config.panel_channel_id},
+                        service="QuranBot",
+                    )
             else:
-                TreeLogger.info("No panel channel configured - control panel can be created manually", 
-                              service="QuranBot")
-            
+                TreeLogger.info(
+                    "No panel channel configured - control panel can be created manually",
+                    service="QuranBot",
+                )
+
         except Exception as e:
             await self.error_handler.handle_error(
                 e,
                 context={
                     "operation": "setup_control_panel",
-                    "service_name": "QuranBot"
-                }
+                    "service_name": "QuranBot",
+                },
             )
             raise BotError(
-                f"Failed to setup control panel: {e}",
-                operation="setup_control_panel"
+                f"Failed to setup control panel: {e}", operation="setup_control_panel"
             )
-    
+
     # =========================================================================
     # Background Task Management
     # =========================================================================
-    
+
     async def _start_background_tasks(self) -> None:
         """Start background tasks with error handling."""
         try:
             # Perform initial health check
             await self._check_service_health()
-            
+
             # Start health monitoring task
-            self.health_monitor_task = asyncio.create_task(self._health_monitoring_loop())
-            
+            self.health_monitor_task = asyncio.create_task(
+                self._health_monitoring_loop()
+            )
+
             # Start performance monitoring task
-            self.performance_monitor_task = asyncio.create_task(self._performance_monitoring_loop())
-            
+            self.performance_monitor_task = asyncio.create_task(
+                self._performance_monitoring_loop()
+            )
+
             # Start role sync task
             self.role_sync_task = asyncio.create_task(self._role_sync_loop())
-            
-            TreeLogger.success("Background tasks started successfully", {
-                "health_monitoring": "active",
-                "performance_monitoring": "active",
-                "role_sync": "active"
-            }, service="QuranBot")
-            
+
+            TreeLogger.success(
+                "Background tasks started successfully",
+                {
+                    "health_monitoring": "active",
+                    "performance_monitoring": "active",
+                    "role_sync": "active",
+                },
+                service="QuranBot",
+            )
+
         except Exception as e:
             await self.error_handler.handle_error(
                 e,
                 context={
                     "operation": "start_background_tasks",
-                    "service_name": "QuranBot"
-                }
+                    "service_name": "QuranBot",
+                },
             )
             raise BotError(
                 f"Failed to start background tasks: {e}",
-                operation="start_background_tasks"
+                operation="start_background_tasks",
             )
-    
+
     async def _stop_background_tasks(self) -> None:
         """Stop background tasks with error handling."""
         try:
             # Cancel all background tasks
-            tasks_to_cancel = [self.health_monitor_task, self.performance_monitor_task, self.role_sync_task]
-            
+            tasks_to_cancel = [
+                self.health_monitor_task,
+                self.performance_monitor_task,
+                self.role_sync_task,
+            ]
+
             for task in tasks_to_cancel:
                 if task:
                     # For mocked tasks, always try to cancel
-                    if not hasattr(task, 'done'):
+                    if not hasattr(task, "done"):
                         task.cancel()
                     elif not task.done():
                         task.cancel()
                         try:
                             # Only await if it's not a mock
-                            if not hasattr(task, '_mock_name'):
+                            if not hasattr(task, "_mock_name"):
                                 await task
                         except asyncio.CancelledError:
                             pass
-            
-            TreeLogger.success("Background tasks stopped successfully",
-                               service="QuranBot")
-            
+
+            TreeLogger.success(
+                "Background tasks stopped successfully", service="QuranBot"
+            )
+
         except Exception as e:
             await self.error_handler.handle_error(
                 e,
                 context={
                     "operation": "stop_background_tasks",
-                    "service_name": "QuranBot"
-                }
+                    "service_name": "QuranBot",
+                },
             )
             raise BotError(
                 f"Failed to stop background tasks: {e}",
-                operation="stop_background_tasks"
+                operation="stop_background_tasks",
             )
-    
+
     async def _health_monitoring_loop(self) -> None:
         """Background loop for health monitoring."""
         while True:
             try:
                 await asyncio.sleep(60)  # Check every minute
                 await self._check_service_health()
-                
+
             except asyncio.CancelledError:
                 break
             except Exception as e:
@@ -1218,17 +1425,17 @@ class QuranBot(discord.Client):
                     e,
                     context={
                         "operation": "health_monitoring_loop",
-                        "service_name": "QuranBot"
-                    }
+                        "service_name": "QuranBot",
+                    },
                 )
-    
+
     async def _performance_monitoring_loop(self) -> None:
         """Background loop for performance monitoring."""
         while True:
             try:
                 await asyncio.sleep(300)  # Check every 5 minutes
                 await self._update_performance_metrics()
-                
+
             except asyncio.CancelledError:
                 break
             except Exception as e:
@@ -1236,21 +1443,21 @@ class QuranBot(discord.Client):
                     e,
                     context={
                         "operation": "performance_monitoring_loop",
-                        "service_name": "QuranBot"
-                    }
+                        "service_name": "QuranBot",
+                    },
                 )
-    
+
     async def _role_sync_loop(self) -> None:
         """
         Background loop for periodic Quran VC role synchronization.
-        
+
         This method performs comprehensive role management including:
         - Periodic role synchronization every hour
         - Bot readiness validation before sync operations
         - Error handling and recovery for sync failures
         - Logging and monitoring of sync operations
         - Graceful shutdown handling
-        
+
         The loop runs continuously until the bot is shut down, ensuring
         that role assignments stay synchronized with voice channel membership.
         """
@@ -1260,13 +1467,15 @@ class QuranBot(discord.Client):
                 # Wait 1 hour (3600 seconds) between sync operations
                 # This balances system load with synchronization accuracy
                 await asyncio.sleep(3600)
-                
+
                 # STEP 2: Bot Readiness Validation
                 # Only perform sync if bot is ready and connected
                 # This prevents sync attempts during startup/shutdown
                 if self.is_ready() and not self.is_closed():
-                    TreeLogger.info("⏰ Starting hourly Quran VC role sync", service="QuranBot")
-                    
+                    TreeLogger.info(
+                        "⏰ Starting hourly Quran VC role sync", service="QuranBot"
+                    )
+
                     # STEP 3: Role Synchronization Execution
                     # Perform comprehensive role sync with periodic flag
                     # This ensures all role assignments are current
@@ -1275,11 +1484,12 @@ class QuranBot(discord.Client):
                     # STEP 4: Skip Condition Handling
                     # Log warning when bot is not ready for sync
                     # This helps with debugging startup/shutdown issues
-                    TreeLogger.warning("Skipping role sync - bot not ready", {
-                        "is_ready": self.is_ready(),
-                        "is_closed": self.is_closed()
-                    }, service="QuranBot")
-                
+                    TreeLogger.warning(
+                        "Skipping role sync - bot not ready",
+                        {"is_ready": self.is_ready(), "is_closed": self.is_closed()},
+                        service="QuranBot",
+                    )
+
             except asyncio.CancelledError:
                 # STEP 5: Graceful Shutdown Handling
                 # Handle cancellation when bot is shutting down
@@ -1290,16 +1500,19 @@ class QuranBot(discord.Client):
                 # STEP 6: Error Recovery and Continuation
                 # Log errors but continue the loop to maintain sync
                 # This prevents one error from stopping all future syncs
-                TreeLogger.error(f"Error in role sync loop: {e}", None, {
-                    "error_type": type(e).__name__
-                }, service="QuranBot")
+                TreeLogger.error(
+                    f"Error in role sync loop: {e}",
+                    None,
+                    {"error_type": type(e).__name__},
+                    service="QuranBot",
+                )
                 # Continue loop even if there's an error
                 await asyncio.sleep(60)  # Wait 1 minute before retrying
-    
+
     # =========================================================================
     # Health and Performance Monitoring
     # =========================================================================
-    
+
     async def _check_service_health(self) -> None:
         """Check service health with error handling."""
         try:
@@ -1307,36 +1520,36 @@ class QuranBot(discord.Client):
                 try:
                     health_data = await service.health_check()
                     self.service_health[service_name] = health_data
-                    
+
                     # Log health status
                     if not health_data.get("is_healthy", True):
                         TreeLogger.warning(
                             f"Service '{service_name}' health check failed",
                             {
                                 "health_score": health_data.get("health_score", 0),
-                                "error": health_data.get("error", "Unknown error")
+                                "error": health_data.get("error", "Unknown error"),
                             },
-                            service=service_name
+                            service=service_name,
                         )
-                    
+
                 except Exception as e:
                     await self.error_handler.handle_error(
                         e,
                         context={
                             "operation": "check_service_health",
-                            "service_name": service_name
-                        }
+                            "service_name": service_name,
+                        },
                     )
-            
+
         except Exception as e:
             await self.error_handler.handle_error(
                 e,
                 context={
                     "operation": "check_service_health",
-                    "services_count": len(self.services)
-                }
+                    "services_count": len(self.services),
+                },
             )
-    
+
     async def _update_performance_metrics(self) -> None:
         """Update performance metrics with error handling."""
         try:
@@ -1345,210 +1558,251 @@ class QuranBot(discord.Client):
                 self.performance_metrics["uptime_seconds"] = (
                     datetime.now(APP_TIMEZONE) - self.startup_time
                 ).total_seconds()
-            
+
             # Update error rate
             if self.startup_time:
                 uptime_hours = self.performance_metrics["uptime_seconds"] / 3600
-                self.error_stats["error_rate"] = self.error_stats["total_errors"] / max(uptime_hours, 1)
-            
-            TreeLogger.debug("Performance metrics updated", {
-                "performance_metrics": self.performance_metrics,
-                "error_stats": self.error_stats
-            }, service="QuranBot")
-            
+                self.error_stats["error_rate"] = self.error_stats["total_errors"] / max(
+                    uptime_hours, 1
+                )
+
+            TreeLogger.debug(
+                "Performance metrics updated",
+                {
+                    "performance_metrics": self.performance_metrics,
+                    "error_stats": self.error_stats,
+                },
+                service="QuranBot",
+            )
+
         except Exception as e:
             await self.error_handler.handle_error(
                 e,
                 context={
                     "operation": "update_performance_metrics",
-                    "service_name": "QuranBot"
-                }
+                    "service_name": "QuranBot",
+                },
             )
-    
+
     # =========================================================================
     # Retry Mechanism
     # =========================================================================
-    
-    async def _retry_operation(self, operation: callable, operation_name: str,
-                              context: Dict[str, Any], max_retries: int = 3) -> Any:
+
+    async def _retry_operation(
+        self,
+        operation: callable,
+        operation_name: str,
+        context: dict[str, Any],
+        max_retries: int = 3,
+    ) -> Any:
         """
         Execute operation with retry logic and exponential backoff.
-        
+
         This method provides robust operation execution with:
         - Exponential backoff retry strategy
         - Comprehensive error categorization
         - Performance timing and metrics
         - Context-aware retry decisions
         - Detailed logging for debugging
-        
+
         Args:
             operation: Async function to execute
             operation_name: Human-readable name for logging
             context: Additional context for error handling
             max_retries: Maximum number of retry attempts
-            
+
         Returns:
             Result of the operation if successful
-            
+
         Raises:
             BotError: If operation fails after all retries
         """
         start_time = time.time()
         last_error = None
-        
+
         # STEP 1: Initial Operation Attempt
         # Try the operation first without any delay
         try:
             result = await operation()
-            
+
             # STEP 2: Success Metrics Tracking
             # Track successful operation timing for performance monitoring
             operation_time = time.time() - start_time
             self._update_command_metrics(operation_time, True)
-            
-            TreeLogger.success(f"Operation '{operation_name}' completed successfully", {
-                "operation_time_ms": operation_time * 1000,
-                "retry_count": 0
-            }, service="QuranBot")
-            
+
+            TreeLogger.success(
+                f"Operation '{operation_name}' completed successfully",
+                {"operation_time_ms": operation_time * 1000, "retry_count": 0},
+                service="QuranBot",
+            )
+
             return result
-            
+
         except Exception as e:
             last_error = e
             retry_count = 0
-            
+
             # STEP 3: Retry Loop with Exponential Backoff
             # Continue retrying with increasing delays until max_retries reached
             while retry_count < max_retries:
                 retry_count += 1
-                
+
                 # STEP 4: Retry Decision Logic
                 # Determine if this error type should be retried
                 if not self._should_retry_operation(e, context):
-                    TreeLogger.warning(f"Operation '{operation_name}' failed with non-retryable error", {
-                        "error_type": type(e).__name__,
-                        "retry_count": retry_count,
-                        "max_retries": max_retries
-                    }, service="QuranBot")
+                    TreeLogger.warning(
+                        f"Operation '{operation_name}' failed with non-retryable error",
+                        {
+                            "error_type": type(e).__name__,
+                            "retry_count": retry_count,
+                            "max_retries": max_retries,
+                        },
+                        service="QuranBot",
+                    )
                     break
-                
+
                 # STEP 5: Exponential Backoff Calculation
                 # Calculate delay using exponential backoff: 2^retry_count seconds
                 # This prevents overwhelming the system with rapid retries
-                delay = min(2 ** retry_count, 30)  # Cap at 30 seconds max
-                
-                TreeLogger.warning(f"Operation '{operation_name}' failed, retrying in {delay}s", {
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                    "retry_count": retry_count,
-                    "max_retries": max_retries,
-                    "delay_seconds": delay
-                }, service="QuranBot")
-                
+                delay = min(2**retry_count, 30)  # Cap at 30 seconds max
+
+                TreeLogger.warning(
+                    f"Operation '{operation_name}' failed, retrying in {delay}s",
+                    {
+                        "error_type": type(e).__name__,
+                        "error_message": str(e),
+                        "retry_count": retry_count,
+                        "max_retries": max_retries,
+                        "delay_seconds": delay,
+                    },
+                    service="QuranBot",
+                )
+
                 # STEP 6: Wait Before Retry
                 # Sleep for calculated delay to allow system recovery
                 await asyncio.sleep(delay)
-                
+
                 # STEP 7: Retry Attempt
                 # Attempt the operation again with updated context
                 try:
                     result = await operation()
-                    
+
                     # STEP 8: Success After Retry
                     # Track successful retry with timing information
                     operation_time = time.time() - start_time
                     self._update_command_metrics(operation_time, True)
-                    
-                    TreeLogger.success(f"Operation '{operation_name}' completed after {retry_count} retries", {
-                        "operation_time_ms": operation_time * 1000,
-                        "retry_count": retry_count,
-                        "total_time_ms": operation_time * 1000
-                    }, service="QuranBot")
-                    
+
+                    TreeLogger.success(
+                        f"Operation '{operation_name}' completed after {retry_count} retries",
+                        {
+                            "operation_time_ms": operation_time * 1000,
+                            "retry_count": retry_count,
+                            "total_time_ms": operation_time * 1000,
+                        },
+                        service="QuranBot",
+                    )
+
                     return result
-                    
+
                 except Exception as retry_error:
                     # STEP 9: Retry Failure Handling
                     # Update last error and continue retry loop
                     last_error = retry_error
-                    
-                    TreeLogger.error(f"Operation '{operation_name}' retry {retry_count} failed", {
-                        "error_type": type(retry_error).__name__,
-                        "error_message": str(retry_error),
-                        "retry_count": retry_count,
-                        "max_retries": max_retries
-                    }, service="QuranBot")
-            
+
+                    TreeLogger.error(
+                        f"Operation '{operation_name}' retry {retry_count} failed",
+                        {
+                            "error_type": type(retry_error).__name__,
+                            "error_message": str(retry_error),
+                            "retry_count": retry_count,
+                            "max_retries": max_retries,
+                        },
+                        service="QuranBot",
+                    )
+
             # STEP 10: Final Failure Handling
             # All retries exhausted, log comprehensive failure information
             operation_time = time.time() - start_time
             self._update_command_metrics(operation_time, False)
-            
-            TreeLogger.error(f"Operation '{operation_name}' failed after {max_retries} retries", {
-                "operation_time_ms": operation_time * 1000,
-                "retry_count": retry_count,
-                "max_retries": max_retries,
-                "final_error_type": type(last_error).__name__,
-                "final_error_message": str(last_error)
-            }, service="QuranBot")
-            
+
+            TreeLogger.error(
+                f"Operation '{operation_name}' failed after {max_retries} retries",
+                {
+                    "operation_time_ms": operation_time * 1000,
+                    "retry_count": retry_count,
+                    "max_retries": max_retries,
+                    "final_error_type": type(last_error).__name__,
+                    "final_error_message": str(last_error),
+                },
+                service="QuranBot",
+            )
+
             # STEP 11: Error Propagation
             # Raise BotError with comprehensive context for debugging
             raise BotError(
                 f"Operation '{operation_name}' failed after {max_retries} retries: {last_error}",
                 operation=operation_name,
-                severity=ErrorSeverity.ERROR
+                severity=ErrorSeverity.ERROR,
             )
-    
-    def _should_retry_operation(self, error: Exception, context: Dict[str, Any]) -> bool:
+
+    def _should_retry_operation(
+        self, error: Exception, context: dict[str, Any]
+    ) -> bool:
         """
         Determine if operation should be retried based on error type and context.
-        
+
         Args:
             error: The exception that occurred
             context: Operation context
-            
+
         Returns:
             True if operation should be retried, False otherwise
         """
         error_type = type(error).__name__.lower()
-        
+
         # Don't retry critical errors
-        if any(keyword in error_type for keyword in ["critical", "fatal", "permission", "validation"]):
+        if any(
+            keyword in error_type
+            for keyword in ["critical", "fatal", "permission", "validation"]
+        ):
             return False
-        
+
         # Don't retry configuration errors
-        if any(keyword in error_type for keyword in ["config", "environment", "missing"]):
+        if any(
+            keyword in error_type for keyword in ["config", "environment", "missing"]
+        ):
             return False
-        
+
         return True
-    
+
     def _update_command_metrics(self, operation_time: float, success: bool) -> None:
         """Update command performance metrics."""
         self.performance_metrics["total_operations"] += 1
-        
+
         if success:
             self.performance_metrics["successful_operations"] += 1
         else:
             self.performance_metrics["failed_operations"] += 1
-        
+
         # Update average command time
         current_avg = self.performance_metrics["average_command_time"]
         total_operations = self.performance_metrics["total_operations"]
-        
+
         if total_operations == 1:
             self.performance_metrics["average_command_time"] = operation_time
         else:
             self.performance_metrics["average_command_time"] = (
-                (current_avg * (total_operations - 1) + operation_time) / total_operations
-            )
-        
-        self.performance_metrics["last_command_time"] = datetime.now(APP_TIMEZONE).isoformat()
-    
+                current_avg * (total_operations - 1) + operation_time
+            ) / total_operations
+
+        self.performance_metrics["last_command_time"] = datetime.now(
+            APP_TIMEZONE
+        ).isoformat()
+
     # =========================================================================
     # Logging and Information
     # =========================================================================
-    
+
     async def _log_startup_information(self) -> None:
         """Log comprehensive startup information with metrics."""
         try:
@@ -1558,50 +1812,53 @@ class QuranBot(discord.Client):
                     "guild_count": len(self.guilds),
                     "user_count": len(self.users),
                     "services_count": len(self.services),
-                    "startup_time": self.startup_time.isoformat() if self.startup_time else None,
+                    "startup_time": (
+                        self.startup_time.isoformat() if self.startup_time else None
+                    ),
                     "service_startup_times": self.service_startup_times,
                     "performance_metrics": self.performance_metrics,
-                    "error_stats": self.error_stats
+                    "error_stats": self.error_stats,
                 },
-                service="QuranBot"
+                service="QuranBot",
             )
-            
+
         except Exception as e:
             await self.error_handler.handle_error(
                 e,
                 context={
                     "operation": "log_startup_information",
-                    "service_name": "QuranBot"
-                }
+                    "service_name": "QuranBot",
+                },
             )
-    
+
     # =========================================================================
     # Event Handler Registration
     # =========================================================================
-    
+
     def _register_event_handlers(self) -> None:
         """Register event handlers."""
         # Event handlers are already registered in __init__
         pass
-    
+
     # =========================================================================
     # Command Registration
     # =========================================================================
-    
+
     # =========================================================================
     # Public Interface
     # =========================================================================
-    
-    def get_service(self, service_name: str) -> Optional[Any]:
+
+    def get_service(self, service_name: str) -> Any | None:
         """Get service by name with error handling."""
         try:
             return self.services.get(service_name)
         except Exception as e:
-            TreeLogger.error(f"Failed to get service '{service_name}': {e}",
-                            service="QuranBot")
+            TreeLogger.error(
+                f"Failed to get service '{service_name}': {e}", service="QuranBot"
+            )
             return None
-    
-    async def get_health_status(self) -> Dict[str, Any]:
+
+    async def get_health_status(self) -> dict[str, Any]:
         """Get comprehensive health status with error handling."""
         try:
             health_data = {
@@ -1613,89 +1870,91 @@ class QuranBot(discord.Client):
                 "performance_metrics": self.performance_metrics,
                 "error_stats": self.error_stats,
                 "background_tasks_running": {
-                    "health_monitor": self.health_monitor_task is not None and not self.health_monitor_task.done(),
-                    "performance_monitor": self.performance_monitor_task is not None and not self.performance_monitor_task.done()
-                }
+                    "health_monitor": self.health_monitor_task is not None
+                    and not self.health_monitor_task.done(),
+                    "performance_monitor": self.performance_monitor_task is not None
+                    and not self.performance_monitor_task.done(),
+                },
             }
-            
+
             # Check service health
             for service_name, health in self.service_health.items():
                 if health.get("is_healthy", False):
                     health_data["services_healthy"] += 1
-            
+
             # Determine overall bot health
             if health_data["services_healthy"] < health_data["total_services"]:
                 health_data["bot_healthy"] = False
-            
+
             return health_data
-            
+
         except Exception as e:
             await self.error_handler.handle_error(
                 e,
-                context={
-                    "operation": "get_health_status",
-                    "service_name": "QuranBot"
-                }
+                context={"operation": "get_health_status", "service_name": "QuranBot"},
             )
-            
-            return {
-                "bot_healthy": False,
-                "error": str(e),
-                "service_name": "QuranBot"
-            }
-    
+
+            return {"bot_healthy": False, "error": str(e), "service_name": "QuranBot"}
+
     async def shutdown(self) -> None:
         """shutdown with comprehensive cleanup."""
         try:
-            TreeLogger.section("Initiating QuranBot shutdown with cleanup",
-                               service="QuranBot")
-            
+            TreeLogger.section(
+                "Initiating QuranBot shutdown with cleanup", service="QuranBot"
+            )
+
             # Set shutdown event immediately to stop all background tasks
             self.shutdown_event.set()
-            
+
             # Stop background tasks (with shorter timeout)
             try:
                 await asyncio.wait_for(self._stop_background_tasks(), timeout=2.0)
-            except asyncio.TimeoutError:
-                TreeLogger.warning("Background task stop timed out, forcing", service="QuranBot")
-            
+            except TimeoutError:
+                TreeLogger.warning(
+                    "Background task stop timed out, forcing", service="QuranBot"
+                )
+
             # Stop services (with shorter timeout)
             try:
                 await asyncio.wait_for(self._stop_services(), timeout=3.0)
-            except asyncio.TimeoutError:
-                TreeLogger.warning("Service stop timed out, forcing", service="QuranBot")
-            
+            except TimeoutError:
+                TreeLogger.warning(
+                    "Service stop timed out, forcing", service="QuranBot"
+                )
+
             # Shutdown control panel (with shorter timeout)
             if self.control_panel_manager:
                 try:
-                    await asyncio.wait_for(self.control_panel_manager.shutdown(), timeout=2.0)
-                except asyncio.TimeoutError:
-                    TreeLogger.warning("Control panel shutdown timed out, forcing", service="QuranBot")
-            
+                    await asyncio.wait_for(
+                        self.control_panel_manager.shutdown(), timeout=2.0
+                    )
+                except TimeoutError:
+                    TreeLogger.warning(
+                        "Control panel shutdown timed out, forcing", service="QuranBot"
+                    )
+
             # Shutdown services (with shorter timeout)
             try:
                 await asyncio.wait_for(self._shutdown_services(), timeout=3.0)
-            except asyncio.TimeoutError:
-                TreeLogger.warning("Service shutdown timed out, forcing", service="QuranBot")
-            
+            except TimeoutError:
+                TreeLogger.warning(
+                    "Service shutdown timed out, forcing", service="QuranBot"
+                )
+
             # Force Discord connection close
             try:
                 await asyncio.wait_for(self.close(), timeout=2.0)
-            except asyncio.TimeoutError:
-                TreeLogger.warning("Discord connection close timed out, forcing", service="QuranBot")
-            
-            TreeLogger.success("QuranBot shutdown completed successfully",
-                               service="QuranBot")
-            
+            except TimeoutError:
+                TreeLogger.warning(
+                    "Discord connection close timed out, forcing", service="QuranBot"
+                )
+
+            TreeLogger.success(
+                "QuranBot shutdown completed successfully", service="QuranBot"
+            )
+
         except Exception as e:
             await self.error_handler.handle_error(
-                e,
-                context={
-                    "operation": "shutdown",
-                    "service_name": "QuranBot"
-                }
+                e, context={"operation": "shutdown", "service_name": "QuranBot"}
             )
-            raise BotError(
-                f"Failed to shutdown QuranBot: {e}",
-                operation="shutdown"
-            )
+            raise BotError(f"Failed to shutdown QuranBot: {e}", operation="shutdown")

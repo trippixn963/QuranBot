@@ -8,7 +8,4 @@
 from .control_panel import ControlPanelManager
 from .search import SurahSearchModal
 
-__all__ = [
-    'ControlPanelManager', 
-    'SurahSearchModal'
-]
+__all__ = ["ControlPanelManager", "SurahSearchModal"]
