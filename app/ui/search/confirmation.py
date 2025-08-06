@@ -77,11 +77,11 @@ class SurahConfirmationView(View, LoggingMixin):
                         pass
 
                 # Create developer footer
-                footer_text, developer_icon_url = create_developer_footer(interaction.client)
-
-                embed.set_footer(
-                    text=footer_text, icon_url=developer_icon_url
+                footer_text, developer_icon_url = create_developer_footer(
+                    interaction.client, interaction.guild
                 )
+
+                embed.set_footer(text=footer_text, icon_url=developer_icon_url)
                 await interaction.followup.send(embed=embed, ephemeral=True)
                 return
 
@@ -106,11 +106,11 @@ class SurahConfirmationView(View, LoggingMixin):
                         pass
 
                 # Create developer footer
-                footer_text, developer_icon_url = create_developer_footer(interaction.client)
-
-                embed.set_footer(
-                    text=footer_text, icon_url=developer_icon_url
+                footer_text, developer_icon_url = create_developer_footer(
+                    interaction.client, interaction.guild
                 )
+
+                embed.set_footer(text=footer_text, icon_url=developer_icon_url)
                 await interaction.followup.send(embed=embed, ephemeral=True)
                 return
 
@@ -138,11 +138,11 @@ class SurahConfirmationView(View, LoggingMixin):
                         pass
 
                 # Create developer footer
-                footer_text, developer_icon_url = create_developer_footer(interaction.client)
-
-                embed.set_footer(
-                    text=footer_text, icon_url=developer_icon_url
+                footer_text, developer_icon_url = create_developer_footer(
+                    interaction.client, interaction.guild
                 )
+
+                embed.set_footer(text=footer_text, icon_url=developer_icon_url)
 
                 TreeLogger.info(
                     "Surah playback started via search",
@@ -177,11 +177,11 @@ class SurahConfirmationView(View, LoggingMixin):
                         pass
 
                 # Create developer footer
-                footer_text, developer_icon_url = create_developer_footer(interaction.client)
-
-                embed.set_footer(
-                    text=footer_text, icon_url=developer_icon_url
+                footer_text, developer_icon_url = create_developer_footer(
+                    interaction.client, interaction.guild
                 )
+
+                embed.set_footer(text=footer_text, icon_url=developer_icon_url)
 
             # Disable buttons
             for item in self.children:
@@ -213,11 +213,11 @@ class SurahConfirmationView(View, LoggingMixin):
                     pass
 
             # Create developer footer
-            footer_text, developer_icon_url = create_developer_footer(interaction.client)
-
-            embed.set_footer(
-                text=footer_text, icon_url=developer_icon_url
+            footer_text, developer_icon_url = create_developer_footer(
+                interaction.client, interaction.guild
             )
+
+            embed.set_footer(text=footer_text, icon_url=developer_icon_url)
             try:
                 await interaction.followup.send(embed=embed, ephemeral=True)
             except:
@@ -273,11 +273,11 @@ class SurahConfirmationView(View, LoggingMixin):
                     pass
 
             # Create developer footer
-            footer_text, developer_icon_url = create_developer_footer(interaction.client)
-
-            embed.set_footer(
-                text=footer_text, icon_url=developer_icon_url
+            footer_text, developer_icon_url = create_developer_footer(
+                interaction.client, interaction.guild
             )
+
+            embed.set_footer(text=footer_text, icon_url=developer_icon_url)
             try:
                 await interaction.response.send_message(embed=embed, ephemeral=True)
             except:
@@ -305,11 +305,11 @@ class SurahConfirmationView(View, LoggingMixin):
                     pass
 
             # Create developer footer
-            footer_text, developer_icon_url = create_developer_footer(interaction.client)
-
-            embed.set_footer(
-                text=footer_text, icon_url=developer_icon_url
+            footer_text, developer_icon_url = create_developer_footer(
+                interaction.client, interaction.guild
             )
+
+            embed.set_footer(text=footer_text, icon_url=developer_icon_url)
 
             # Disable buttons
             for item in self.children:

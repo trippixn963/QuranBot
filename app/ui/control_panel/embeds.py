@@ -55,6 +55,7 @@ from ..base.formatters import (
     truncate_text,
 )
 
+
 # Initialize error handler for embeds
 error_handler = ErrorHandler()
 
@@ -62,8 +63,7 @@ error_handler = ErrorHandler()
 def create_status_embed(
     audio_state: dict[str, Any], activity_info: dict[str, Any] | None = None
 ) -> discord.Embed:
-    """
-    Create the main status embed matching the exact design from the screenshot.
+    """Create the main status embed matching the exact design from the screenshot.
 
     Generates the primary control panel display with real-time audio information,
     progress tracking, and user activity. Uses consistent formatting and colors

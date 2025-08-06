@@ -1,8 +1,10 @@
-# =============================================================================
-# QuranBot - Validation Utilities
-# =============================================================================
-# Base validation classes and utilities to reduce code duplication across
-# services. Provides common validation patterns for file systems, configurations,
+"""Validation utilities for QuranBot.
+
+Base validation classes and utilities to reduce code duplication across
+services. Provides common validation patterns for file systems, configurations,
+and user inputs.
+"""
+
 # dependencies, and data integrity checks.
 # =============================================================================
 
@@ -22,11 +24,17 @@ class ValidationResult:
     """
     Encapsulates the result of a validation check.
 
-    Attributes:
-        is_valid: Whether the validation passed
-        errors: List of error messages if validation failed
-        warnings: List of warning messages
-        metadata: Additional metadata about the validation
+    Attributes
+    ----------
+    is_valid : bool
+        Whether the validation passed
+    errors : list
+        List of error messages if validation failed
+    warnings : list
+        List of warning messages
+    metadata : dict
+        Additional metadata about the validation
+
     """
 
     def __init__(self):
@@ -62,11 +70,13 @@ class BaseValidator(ABC):
     """
 
     def __init__(self, service_name: str):
-        """
-        Initialize base validator.
+        """Initialize base validator.
 
-        Args:
-            service_name: Name of the service using this validator
+        Args
+        ----
+        service_name : str
+            Name of the service using this validator
+
         """
         self.service_name = service_name
         self.error_handler = ErrorHandler()

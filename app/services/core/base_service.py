@@ -253,7 +253,7 @@ class BaseService(ABC):
                 service="system",
             )
             return
-            
+
         if self.state not in [ServiceState.RUNNING, ServiceState.ERROR]:
             TreeLogger.error(
                 f"Service '{self.service_name}' cannot stop from state: {self.state.value}",

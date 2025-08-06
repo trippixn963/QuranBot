@@ -1,13 +1,14 @@
-# =============================================================================
-# QuranBot - Control Panel Dropdowns
-# =============================================================================
-# Select/dropdown components for surah and reciter selection with pagination
-# and dynamic option generation.
-#
-# Dropdown Types:
-# - SurahSelect: Paginated surah selection with Arabic/English names
-# - ReciterSelect: Dynamic reciter selection with audio folder scanning
-# - QuickJumpSelect: Popular surahs for rapid navigation
+"""Control panel dropdown components for QuranBot.
+
+Select/dropdown components for surah and reciter selection with pagination
+and dynamic option generation.
+
+Dropdown Types:
+- SurahSelect: Paginated surah selection with Arabic/English names
+- ReciterSelect: Dynamic reciter selection with audio folder scanning
+- QuickJumpSelect: Popular surahs for rapid navigation
+"""
+
 #
 # Features:
 # - Pagination: 10 items per page for optimal Discord display

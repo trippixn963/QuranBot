@@ -25,6 +25,7 @@ from .models import (
     VerseInfo,
 )
 
+
 __all__ = [
     # Core models
     "AudioFileInfo",

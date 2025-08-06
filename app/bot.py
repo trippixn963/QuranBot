@@ -12,6 +12,7 @@ from typing import Any
 
 import discord
 
+from .commands.command_handler import CommandHandler
 from .config import get_config
 from .config.timezone import APP_TIMEZONE
 from .core.container import DIContainer
@@ -32,6 +33,8 @@ from .services.bot.presence_service import PresenceService
 from .services.bot.user_interaction_logger import UserInteractionLogger
 from .services.core.database_service import DatabaseService
 from .services.core.state_service import StateService
+from .services.quiz.quiz_service import QuizService
+from .services.economy.unbelievaboat_service import UnbelievaBoatService
 from .ui import ControlPanelManager
 
 
@@ -57,6 +60,9 @@ class QuranBot(discord.Client):
 
         # Initialize error handler
         self.error_handler = ErrorHandler()
+        
+        # Initialize command tree for slash commands
+        self.tree = discord.app_commands.CommandTree(self)
 
         # Initialize configuration
         self.config = get_config()
@@ -107,7 +113,6 @@ class QuranBot(discord.Client):
         # background task management
         self.health_monitor_task: asyncio.Task | None = None
         self.performance_monitor_task: asyncio.Task | None = None
-        self.role_sync_task: asyncio.Task | None = None
 
         # Register event handlers
         self._register_event_handlers()
@@ -160,6 +165,15 @@ class QuranBot(discord.Client):
             except Exception as e:
                 TreeLogger.warning(f"Failed to initialize mention handler: {e}")
                 # Not critical, bot can work without AI responses
+
+            # Initialize command handler for slash commands
+            try:
+                self.command_handler = CommandHandler(self)
+                await self.command_handler.setup_commands()
+                TreeLogger.info("Command handler initialized for slash commands")
+            except Exception as e:
+                TreeLogger.warning(f"Failed to initialize command handler: {e}")
+                # Not critical, bot can work without slash commands
 
             # Start background monitoring tasks
             await self._retry_operation(
@@ -219,7 +233,6 @@ class QuranBot(discord.Client):
 
             # Schedule role sync to run shortly after startup (non-blocking)
             TreeLogger.info("🔄 Scheduling initial role sync", service="QuranBot")
-            asyncio.create_task(self._delayed_startup_role_sync())
 
             # Set ready event
             self.ready_event.set()
@@ -253,6 +266,58 @@ class QuranBot(discord.Client):
         # Don't process bot's own messages
         if message.author == self.user:
             return
+            
+        # Delete all user messages in the stage channel (control panel channel) to keep it clean
+        if (hasattr(self.config, 'panel_channel_id') and 
+            message.channel.id == self.config.panel_channel_id and
+            not message.author.bot):
+            try:
+                await message.delete()
+                TreeLogger.info(
+                    "🗑️ Deleted user message in stage channel",
+                    {
+                        "user_id": message.author.id,
+                        "user_name": message.author.name,
+                        "message_id": message.id,
+                        "content_preview": message.content[:50] if message.content else "None",
+                        "channel_id": message.channel.id,
+                        "channel_name": message.channel.name,
+                        "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                    },
+                    service="QuranBot"
+                )
+                return  # Don't process the message further
+            except discord.Forbidden:
+                TreeLogger.error(
+                    "❌ No permission to delete user message in stage channel",
+                    {
+                        "message_id": message.id,
+                        "user_id": message.author.id,
+                        "user_name": message.author.name,
+                        "required_permission": "MANAGE_MESSAGES",
+                        "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                    },
+                    service="QuranBot"
+                )
+            except discord.NotFound:
+                # Message already deleted, not an error
+                TreeLogger.debug(
+                    "Message already deleted",
+                    {"message_id": message.id},
+                    service="QuranBot"
+                )
+            except Exception as e:
+                TreeLogger.error(
+                    f"❌ Failed to delete user message in stage channel: {e}",
+                    {
+                        "message_id": message.id,
+                        "user_id": message.author.id,
+                        "error_type": type(e).__name__,
+                        "error_details": str(e),
+                        "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                    },
+                    service="QuranBot"
+                )
 
         # Pass to mention handler if available
         if hasattr(self, "mention_handler") and self.mention_handler:
@@ -370,14 +435,55 @@ class QuranBot(discord.Client):
             # Handle join to Quran VC (from outside or from another VC)
             if not before_is_quran and after_is_quran:
                 await user_logger.log_voice_join(member, after.channel, member)
-                # Add Quran VC role
-                await self._add_quran_vc_role(member, after.channel)
+                
+                # Handle stage channel specific features
+                if isinstance(after.channel, discord.StageChannel):
+                    # Auto-mute new speakers (only bot speaks)
+                    if member != self.user:  # Don't mute the bot itself
+                        try:
+                            await member.edit(suppress=True)
+                            TreeLogger.success(
+                                "🔇 Auto-muted new stage speaker",
+                                {
+                                    "member_id": member.id,
+                                    "member_name": member.name,
+                                    "member_display_name": member.display_name,
+                                    "channel_id": after.channel.id,
+                                    "channel_name": after.channel.name,
+                                    "action": "join_mute",
+                                    "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                                },
+                                service="QuranBot"
+                            )
+                        except discord.Forbidden:
+                            TreeLogger.error(
+                                "❌ No permission to mute stage speaker",
+                                {
+                                    "member_id": member.id,
+                                    "member_name": member.name,
+                                    "required_permission": "MUTE_MEMBERS",
+                                    "action": "join_mute",
+                                    "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                                },
+                                service="QuranBot"
+                            )
+                        except Exception as e:
+                            TreeLogger.error(
+                                f"❌ Failed to auto-mute speaker: {e}",
+                                {
+                                    "member_id": member.id,
+                                    "member_name": member.name,
+                                    "error_type": type(e).__name__,
+                                    "error_details": str(e),
+                                    "action": "join_mute",
+                                    "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                                },
+                                service="QuranBot"
+                            )
 
             # Handle leave from Quran VC (to outside or to another VC)
             elif before_is_quran and not after_is_quran:
                 await user_logger.log_voice_leave(member, before.channel, member)
-                # Remove Quran VC role
-                await self._remove_quran_vc_role(member, before.channel)
 
             # Handle move from Quran VC to Quran VC (shouldn't happen, but just in case)
             elif before_is_quran and after_is_quran and before.channel != after.channel:
@@ -385,6 +491,55 @@ class QuranBot(discord.Client):
                 await user_logger.log_voice_leave(member, before.channel, member)
                 # No role change needed since they're still in a Quran VC
                 await user_logger.log_voice_join(member, after.channel, member)
+            
+            # Handle stage speaker state changes (someone became speaker or stopped being speaker)
+            elif before_is_quran and after_is_quran and before.channel == after.channel:
+                if isinstance(after.channel, discord.StageChannel):
+                    # Check if suppress state changed (became speaker or stopped being speaker)
+                    if before.suppress != after.suppress and member != self.user:
+                        if not after.suppress:  # User became a speaker
+                            # Auto-mute them again
+                            try:
+                                await member.edit(suppress=True)
+                                TreeLogger.success(
+                                    "🔇 Re-muted stage speaker who requested to speak",
+                                    {
+                                        "member_id": member.id,
+                                        "member_name": member.name,
+                                        "member_display_name": member.display_name,
+                                        "channel_id": after.channel.id,
+                                        "channel_name": after.channel.name,
+                                        "action": "speaker_request_mute",
+                                        "previous_state": "suppressed" if before.suppress else "speaker",
+                                        "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                                    },
+                                    service="QuranBot"
+                                )
+                            except discord.Forbidden:
+                                TreeLogger.error(
+                                    "❌ No permission to re-mute stage speaker",
+                                    {
+                                        "member_id": member.id,
+                                        "member_name": member.name,
+                                        "required_permission": "MUTE_MEMBERS",
+                                        "action": "speaker_request_mute",
+                                        "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                                    },
+                                    service="QuranBot"
+                                )
+                            except Exception as e:
+                                TreeLogger.error(
+                                    f"❌ Failed to re-mute speaker: {e}",
+                                    {
+                                        "member_id": member.id,
+                                        "member_name": member.name,
+                                        "error_type": type(e).__name__,
+                                        "error_details": str(e),
+                                        "action": "speaker_request_mute",
+                                        "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                                    },
+                                    service="QuranBot"
+                                )
 
         except Exception as e:
             await self.error_handler.handle_error(
@@ -402,445 +557,6 @@ class QuranBot(discord.Client):
                 },
             )
 
-    async def _add_quran_vc_role(
-        self, member: discord.Member, channel: discord.VoiceChannel
-    ) -> None:
-        """
-        Add the Quran VC role to a member who joined the Quran voice channel.
-
-        Args:
-            member: Discord member who joined
-            channel: Voice channel that was joined
-        """
-        try:
-            # Role ID for Quran VC access from config
-            quran_vc_role_id = self.config.quran_vc_role_id
-
-            # Get the role from the guild
-            role = member.guild.get_role(quran_vc_role_id)
-            if not role:
-                TreeLogger.warning(
-                    "Quran VC role not found in guild",
-                    {
-                        "role_id": quran_vc_role_id,
-                        "guild_id": member.guild.id,
-                        "guild_name": member.guild.name,
-                    },
-                    service="QuranBot",
-                )
-                return
-
-            # Check if member already has the role
-            if role in member.roles:
-                TreeLogger.info(
-                    "Member already has Quran VC role",
-                    {
-                        "member_id": member.id,
-                        "username": (
-                            f"{member.name} ({member.nick})"
-                            if member.nick
-                            else member.name
-                        ),
-                        "role_id": quran_vc_role_id,
-                        "role_name": role.name,
-                    },
-                    service="QuranBot",
-                )
-                return
-
-            # Add the role
-            await member.add_roles(role, reason="Joined Quran voice channel")
-
-            TreeLogger.success(
-                "🎭 Added Quran VC role to member",
-                {
-                    "member_id": member.id,
-                    "username": (
-                        f"{member.name} ({member.nick})" if member.nick else member.name
-                    ),
-                    "discord_username": member.name,
-                    "display_name": member.display_name,
-                    "role_id": quran_vc_role_id,
-                    "role_name": role.name,
-                    "channel_id": channel.id,
-                    "channel_name": channel.name,
-                },
-                service="QuranBot",
-            )
-
-        except discord.Forbidden:
-            TreeLogger.error(
-                "No permission to add Quran VC role",
-                {
-                    "member_id": member.id,
-                    "username": member.name,
-                    "role_id": quran_vc_role_id,
-                    "guild_id": member.guild.id,
-                },
-                service="QuranBot",
-            )
-        except Exception as e:
-            TreeLogger.error(
-                f"Error adding Quran VC role: {e}",
-                None,
-                {
-                    "member_id": member.id,
-                    "username": member.name,
-                    "role_id": quran_vc_role_id,
-                    "error_type": type(e).__name__,
-                },
-                service="QuranBot",
-            )
-
-    async def _remove_quran_vc_role(
-        self, member: discord.Member, channel: discord.VoiceChannel
-    ) -> None:
-        """
-        Remove the Quran VC role from a member who left the Quran voice channel.
-
-        Args:
-            member: Discord member who left
-            channel: Voice channel that was left
-        """
-        try:
-            # Role ID for Quran VC access from config
-            quran_vc_role_id = self.config.quran_vc_role_id
-
-            # Get the role from the guild
-            role = member.guild.get_role(quran_vc_role_id)
-            if not role:
-                TreeLogger.warning(
-                    "Quran VC role not found in guild",
-                    {
-                        "role_id": quran_vc_role_id,
-                        "guild_id": member.guild.id,
-                        "guild_name": member.guild.name,
-                    },
-                    service="QuranBot",
-                )
-                return
-
-            # Check if member has the role
-            if role not in member.roles:
-                TreeLogger.info(
-                    "Member doesn't have Quran VC role to remove",
-                    {
-                        "member_id": member.id,
-                        "username": (
-                            f"{member.name} ({member.nick})"
-                            if member.nick
-                            else member.name
-                        ),
-                        "role_id": quran_vc_role_id,
-                        "role_name": role.name,
-                    },
-                    service="QuranBot",
-                )
-                return
-
-            # Remove the role
-            await member.remove_roles(role, reason="Left Quran voice channel")
-
-            TreeLogger.success(
-                "🚪 Removed Quran VC role from member",
-                {
-                    "member_id": member.id,
-                    "username": (
-                        f"{member.name} ({member.nick})" if member.nick else member.name
-                    ),
-                    "discord_username": member.name,
-                    "display_name": member.display_name,
-                    "role_id": quran_vc_role_id,
-                    "role_name": role.name,
-                    "channel_id": channel.id,
-                    "channel_name": channel.name,
-                },
-                service="QuranBot",
-            )
-
-        except discord.Forbidden:
-            TreeLogger.error(
-                "No permission to remove Quran VC role",
-                {
-                    "member_id": member.id,
-                    "username": member.name,
-                    "role_id": quran_vc_role_id,
-                    "guild_id": member.guild.id,
-                },
-                service="QuranBot",
-            )
-        except Exception as e:
-            TreeLogger.error(
-                f"Error removing Quran VC role: {e}",
-                None,
-                {
-                    "member_id": member.id,
-                    "username": member.name,
-                    "role_id": quran_vc_role_id,
-                    "error_type": type(e).__name__,
-                },
-                service="QuranBot",
-            )
-
-    async def _delayed_startup_role_sync(self) -> None:
-        """Perform role sync after a delay to ensure member cache is ready."""
-        try:
-            # Wait for member cache to populate
-            await asyncio.sleep(5)
-
-            TreeLogger.info("🔄 Starting delayed initial role sync", service="QuranBot")
-            await self._retry_operation(
-                operation=self._sync_quran_vc_roles,
-                operation_name="startup_role_sync",
-                context={"service_name": "QuranBot"},
-            )
-        except Exception as e:
-            TreeLogger.error(
-                f"Error in delayed startup role sync: {e}", service="QuranBot"
-            )
-
-    async def _sync_quran_vc_roles(self, is_periodic: bool = False) -> None:
-        """
-        Sync roles for users in the Quran voice channel.
-        Ensures role assignments match actual VC presence.
-
-        Args:
-            is_periodic: True if this is a periodic sync, False if startup sync
-        """
-        try:
-            # Get the configured Quran voice channel ID
-            quran_vc_id = getattr(self.config, "voice_channel_id", None)
-            if not quran_vc_id:
-                if not is_periodic:
-                    TreeLogger.warning(
-                        "No Quran VC configured, skipping role sync", service="QuranBot"
-                    )
-                return
-
-            # Role ID for Quran VC access from config
-            quran_vc_role_id = self.config.quran_vc_role_id
-
-            sync_type = "Periodic" if is_periodic else "Startup"
-            TreeLogger.info(
-                f"🔄 Starting {sync_type} Quran VC role synchronization",
-                {
-                    "quran_vc_id": quran_vc_id,
-                    "role_id": quran_vc_role_id,
-                    "sync_type": sync_type,
-                },
-                service="QuranBot",
-            )
-
-            users_given_role = 0
-            users_removed_role = 0
-            users_already_correct = 0
-            guilds_processed = 0
-
-            # Check all guilds
-            for guild in self.guilds:
-                try:
-                    # Get the Quran voice channel
-                    quran_vc = guild.get_channel(quran_vc_id)
-                    if not quran_vc or not isinstance(quran_vc, discord.VoiceChannel):
-                        continue
-
-                    # Get the role
-                    role = guild.get_role(quran_vc_role_id)
-                    if not role:
-                        TreeLogger.warning(
-                            "Quran VC role not found in guild",
-                            {
-                                "guild_id": guild.id,
-                                "guild_name": guild.name,
-                                "role_id": quran_vc_role_id,
-                            },
-                            service="QuranBot",
-                        )
-                        continue
-
-                    guilds_processed += 1
-
-                    # Get all members currently in the Quran VC (excluding bots)
-                    current_vc_members = set(
-                        member for member in quran_vc.members if not member.bot
-                    )
-
-                    # Get all members who have the role (excluding bots)
-                    # First try to get from guild.members (cached)
-                    members_with_role = set(
-                        member
-                        for member in guild.members
-                        if not member.bot and role in member.roles
-                    )
-
-                    # If we're doing startup sync and member count seems low, try fetching role members
-                    if (
-                        not is_periodic
-                        and len(guild.members) < guild.member_count * 0.5
-                    ):
-                        TreeLogger.info(
-                            "Member cache may be incomplete, fetching role members directly",
-                            {
-                                "cached_members": len(guild.members),
-                                "total_member_count": guild.member_count,
-                                "guild_name": guild.name,
-                            },
-                            service="QuranBot",
-                        )
-                        try:
-                            # Fetch members who have the role
-                            async for member in guild.fetch_members(limit=None):
-                                if not member.bot and role in member.roles:
-                                    members_with_role.add(member)
-                        except Exception as e:
-                            TreeLogger.warning(
-                                f"Could not fetch all members: {e}", service="QuranBot"
-                            )
-
-                    TreeLogger.info(
-                        f"Checking guild: {guild.name}",
-                        {
-                            "guild_id": guild.id,
-                            "current_vc_members": len(current_vc_members),
-                            "members_with_role": len(members_with_role),
-                            "vc_members": [
-                                f"{m.name} ({m.nick})" if m.nick else m.name
-                                for m in current_vc_members
-                            ],
-                        },
-                        service="QuranBot",
-                    )
-
-                    # Add role to members in VC who don't have it
-                    for member in current_vc_members:
-                        if role not in member.roles:
-                            try:
-                                reason = f"{sync_type}: User in Quran VC without role"
-                                await member.add_roles(role, reason=reason)
-                                users_given_role += 1
-                                TreeLogger.success(
-                                    "🎭 Synced: Added Quran VC role",
-                                    {
-                                        "member_id": member.id,
-                                        "username": (
-                                            f"{member.name} ({member.nick})"
-                                            if member.nick
-                                            else member.name
-                                        ),
-                                        "guild_id": guild.id,
-                                        "guild_name": guild.name,
-                                        "sync_type": sync_type,
-                                    },
-                                    service="QuranBot",
-                                )
-                                # Small delay to avoid rate limits
-                                await asyncio.sleep(0.5)
-                            except discord.Forbidden:
-                                TreeLogger.warning(
-                                    "No permission to add role during sync",
-                                    {
-                                        "member_id": member.id,
-                                        "guild_id": guild.id,
-                                        "sync_type": sync_type,
-                                    },
-                                    service="QuranBot",
-                                )
-                            except Exception as e:
-                                TreeLogger.error(
-                                    f"Error adding role during sync: {e}",
-                                    {
-                                        "member_id": member.id,
-                                        "guild_id": guild.id,
-                                        "sync_type": sync_type,
-                                        "error_type": type(e).__name__,
-                                    },
-                                    service="QuranBot",
-                                )
-                        else:
-                            users_already_correct += 1
-
-                    # Remove role from members not in VC who have it
-                    for member in members_with_role:
-                        if member not in current_vc_members:
-                            try:
-                                reason = (
-                                    f"{sync_type}: User has role but not in Quran VC"
-                                )
-                                await member.remove_roles(role, reason=reason)
-                                users_removed_role += 1
-                                TreeLogger.success(
-                                    "🚪 Synced: Removed Quran VC role",
-                                    {
-                                        "member_id": member.id,
-                                        "username": (
-                                            f"{member.name} ({member.nick})"
-                                            if member.nick
-                                            else member.name
-                                        ),
-                                        "guild_id": guild.id,
-                                        "guild_name": guild.name,
-                                        "sync_type": sync_type,
-                                    },
-                                    service="QuranBot",
-                                )
-                                # Small delay to avoid rate limits
-                                await asyncio.sleep(0.5)
-                            except discord.Forbidden:
-                                TreeLogger.warning(
-                                    "No permission to remove role during sync",
-                                    {
-                                        "member_id": member.id,
-                                        "guild_id": guild.id,
-                                        "sync_type": sync_type,
-                                    },
-                                    service="QuranBot",
-                                )
-                            except Exception as e:
-                                TreeLogger.error(
-                                    f"Error removing role during sync: {e}",
-                                    {
-                                        "member_id": member.id,
-                                        "guild_id": guild.id,
-                                        "sync_type": sync_type,
-                                        "error_type": type(e).__name__,
-                                    },
-                                    service="QuranBot",
-                                )
-
-                except Exception as e:
-                    TreeLogger.error(
-                        f"Error syncing roles in guild: {e}",
-                        {
-                            "guild_id": guild.id,
-                            "guild_name": guild.name,
-                            "sync_type": sync_type,
-                            "error_type": type(e).__name__,
-                        },
-                        service="QuranBot",
-                    )
-
-            total_changes = users_given_role + users_removed_role
-            TreeLogger.success(
-                f"✅ Completed {sync_type} Quran VC role synchronization",
-                {
-                    "users_given_role": users_given_role,
-                    "users_removed_role": users_removed_role,
-                    "users_already_correct": users_already_correct,
-                    "total_changes": total_changes,
-                    "guilds_processed": guilds_processed,
-                    "total_guilds": len(self.guilds),
-                    "sync_type": sync_type,
-                },
-                service="QuranBot",
-            )
-
-        except Exception as e:
-            TreeLogger.error(
-                f"Error during {sync_type.lower()} Quran VC role sync: {e}",
-                None,
-                {"error_type": type(e).__name__, "sync_type": sync_type},
-                service="QuranBot",
-            )
 
     # =========================================================================
     # Service Management
@@ -865,6 +581,8 @@ class QuranBot(discord.Client):
                 ("token_tracker", lambda: TokenTracker(self)),
                 ("rate_limiter", lambda: RateLimiter(self)),
                 ("openai_usage", lambda: OpenAIUsageTracker(self)),
+                ("quiz", lambda: QuizService(self)),
+                ("unbelievaboat", lambda: UnbelievaBoatService(self)),
             ]
 
             for service_name, service_class in services_to_register:
@@ -879,6 +597,8 @@ class QuranBot(discord.Client):
                         "token_tracker",
                         "rate_limiter",
                         "openai_usage",
+                        "unbelievaboat",
+                        "quiz",
                     ]:
                         # Handle lambda functions for services that need bot instance
                         service_instance = service_class()  # This calls the lambda
@@ -1344,8 +1064,6 @@ class QuranBot(discord.Client):
                 self._performance_monitoring_loop()
             )
 
-            # Start role sync task
-            self.role_sync_task = asyncio.create_task(self._role_sync_loop())
 
             TreeLogger.success(
                 "Background tasks started successfully",
@@ -1377,7 +1095,6 @@ class QuranBot(discord.Client):
             tasks_to_cancel = [
                 self.health_monitor_task,
                 self.performance_monitor_task,
-                self.role_sync_task,
             ]
 
             for task in tasks_to_cancel:
@@ -1447,67 +1164,6 @@ class QuranBot(discord.Client):
                     },
                 )
 
-    async def _role_sync_loop(self) -> None:
-        """
-        Background loop for periodic Quran VC role synchronization.
-
-        This method performs comprehensive role management including:
-        - Periodic role synchronization every hour
-        - Bot readiness validation before sync operations
-        - Error handling and recovery for sync failures
-        - Logging and monitoring of sync operations
-        - Graceful shutdown handling
-
-        The loop runs continuously until the bot is shut down, ensuring
-        that role assignments stay synchronized with voice channel membership.
-        """
-        while True:
-            try:
-                # STEP 1: Periodic Execution Timing
-                # Wait 1 hour (3600 seconds) between sync operations
-                # This balances system load with synchronization accuracy
-                await asyncio.sleep(3600)
-
-                # STEP 2: Bot Readiness Validation
-                # Only perform sync if bot is ready and connected
-                # This prevents sync attempts during startup/shutdown
-                if self.is_ready() and not self.is_closed():
-                    TreeLogger.info(
-                        "⏰ Starting hourly Quran VC role sync", service="QuranBot"
-                    )
-
-                    # STEP 3: Role Synchronization Execution
-                    # Perform comprehensive role sync with periodic flag
-                    # This ensures all role assignments are current
-                    await self._sync_quran_vc_roles(is_periodic=True)
-                else:
-                    # STEP 4: Skip Condition Handling
-                    # Log warning when bot is not ready for sync
-                    # This helps with debugging startup/shutdown issues
-                    TreeLogger.warning(
-                        "Skipping role sync - bot not ready",
-                        {"is_ready": self.is_ready(), "is_closed": self.is_closed()},
-                        service="QuranBot",
-                    )
-
-            except asyncio.CancelledError:
-                # STEP 5: Graceful Shutdown Handling
-                # Handle cancellation when bot is shutting down
-                # This ensures clean termination of the sync loop
-                TreeLogger.info("Role sync loop cancelled", service="QuranBot")
-                break
-            except Exception as e:
-                # STEP 6: Error Recovery and Continuation
-                # Log errors but continue the loop to maintain sync
-                # This prevents one error from stopping all future syncs
-                TreeLogger.error(
-                    f"Error in role sync loop: {e}",
-                    None,
-                    {"error_type": type(e).__name__},
-                    service="QuranBot",
-                )
-                # Continue loop even if there's an error
-                await asyncio.sleep(60)  # Wait 1 minute before retrying
 
     # =========================================================================
     # Health and Performance Monitoring
@@ -1921,7 +1577,7 @@ class QuranBot(discord.Client):
                 TreeLogger.warning(
                     "Service stop timed out, forcing", service="QuranBot"
                 )
-                
+
             try:
                 await asyncio.wait_for(self._shutdown_services(), timeout=3.0)
             except TimeoutError:

@@ -24,6 +24,7 @@ import uuid
 # Import centralized timezone configuration
 from ..config.timezone import APP_TIMEZONE
 
+
 # =============================================================================
 # Configuration Constants
 # =============================================================================

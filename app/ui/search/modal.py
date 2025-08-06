@@ -1,8 +1,9 @@
-# =============================================================================
-# QuranBot - Search Modal
-# =============================================================================
-# Interactive modal for Surah search functionality with intelligent search
-# capabilities and result handling.
+"""Search modal for QuranBot.
+
+Interactive modal for Surah search functionality with intelligent search
+capabilities and result handling.
+"""
+
 # =============================================================================
 
 
@@ -62,11 +63,11 @@ class SurahSearchModal(Modal, LoggingMixin, InteractionLoggingMixin):
                         pass
 
                 # Create developer footer
-                footer_text, developer_icon_url = create_developer_footer(interaction.client)
-
-                embed.set_footer(
-                    text=footer_text, icon_url=developer_icon_url
+                footer_text, developer_icon_url = create_developer_footer(
+                    interaction.client, interaction.guild
                 )
+
+                embed.set_footer(text=footer_text, icon_url=developer_icon_url)
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
 
@@ -112,11 +113,11 @@ class SurahSearchModal(Modal, LoggingMixin, InteractionLoggingMixin):
                         pass
 
                 # Create developer footer
-                footer_text, developer_icon_url = create_developer_footer(interaction.client)
-
-                embed.set_footer(
-                    text=footer_text, icon_url=developer_icon_url
+                footer_text, developer_icon_url = create_developer_footer(
+                    interaction.client, interaction.guild
                 )
+
+                embed.set_footer(text=footer_text, icon_url=developer_icon_url)
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
 
@@ -167,11 +168,11 @@ class SurahSearchModal(Modal, LoggingMixin, InteractionLoggingMixin):
                     pass
 
             # Create developer footer
-            footer_text, developer_icon_url = create_developer_footer(interaction.client)
-
-            embed.set_footer(
-                text=footer_text, icon_url=developer_icon_url
+            footer_text, developer_icon_url = create_developer_footer(
+                interaction.client, interaction.guild
             )
+
+            embed.set_footer(text=footer_text, icon_url=developer_icon_url)
 
             try:
                 await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -214,7 +215,7 @@ class SurahSearchModal(Modal, LoggingMixin, InteractionLoggingMixin):
             embed.add_field(name="💫 Meaning", value=surah["meaning"], inline=True)
 
         # Create developer footer
-        footer_text, developer_icon_url = create_developer_footer(interaction.client)
+        footer_text, developer_icon_url = create_developer_footer(interaction.client, interaction.guild)
 
         embed.set_footer(text=footer_text, icon_url=developer_icon_url)
 
@@ -276,7 +277,7 @@ class SurahSearchModal(Modal, LoggingMixin, InteractionLoggingMixin):
             )
 
         # Create developer footer
-        footer_text, developer_icon_url = create_developer_footer(interaction.client)
+        footer_text, developer_icon_url = create_developer_footer(interaction.client, interaction.guild)
 
         embed.set_footer(text=footer_text, icon_url=developer_icon_url)
         await interaction.followup.send(embed=embed, view=results_view, ephemeral=True)

@@ -71,6 +71,7 @@ class LanguageToggleView(discord.ui.View):
                     title="❌ Permission Denied",
                     description="Only the person who asked can switch languages.",
                     bot=self.bot,
+                    guild=interaction.guild,
                     color=0xFF0000,  # Red
                 )
                 await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -87,6 +88,7 @@ class LanguageToggleView(discord.ui.View):
                 response=self.arabic_response,
                 user=self.user,
                 bot=self.bot,
+                guild=interaction.guild,
                 remaining_questions=self.remaining_questions,
             )
 
@@ -102,6 +104,7 @@ class LanguageToggleView(discord.ui.View):
                 title="❌ Error",
                 description="Error switching language.",
                 bot=self.bot,
+                guild=interaction.guild,
                 color=0xFF0000,  # Red
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -117,6 +120,7 @@ class LanguageToggleView(discord.ui.View):
                     title="❌ Permission Denied",
                     description="Only the person who asked can switch languages.",
                     bot=self.bot,
+                    guild=interaction.guild,
                     color=0xFF0000,  # Red
                 )
                 await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -133,6 +137,7 @@ class LanguageToggleView(discord.ui.View):
                 response=self.english_response,
                 user=self.user,
                 bot=self.bot,
+                guild=interaction.guild,
                 remaining_questions=self.remaining_questions,
             )
 
@@ -148,6 +153,7 @@ class LanguageToggleView(discord.ui.View):
                 title="❌ Error",
                 description="Error switching language.",
                 bot=self.bot,
+                guild=interaction.guild,
                 color=0xFF0000,  # Red
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)

@@ -1,8 +1,9 @@
-# =============================================================================
-# QuranBot - Interaction Logging Mixin
-# =============================================================================
-# Mixin class for UI components to automatically log user interactions
-# with comprehensive state tracking and performance metrics.
+"""Interaction logging mixin for QuranBot UI components.
+
+Mixin class for UI components to automatically log user interactions
+with comprehensive state tracking and performance metrics.
+"""
+
 # =============================================================================
 
 import time

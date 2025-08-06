@@ -546,7 +546,7 @@ class PrevPageButton(ControlButton, InteractionHandlerMixin):
         self.target_dropdown = target_dropdown
 
     async def callback(self, interaction: discord.Interaction):
-        """Navigate to previous page"""
+        """Navigate to previous page."""
         try:
             if hasattr(self.view, "current_page") and self.view.current_page > 0:
                 # Defer first to prevent timeout
@@ -590,7 +590,7 @@ class NextPageButton(ControlButton, InteractionHandlerMixin):
         self.target_dropdown = target_dropdown
 
     async def callback(self, interaction: discord.Interaction):
-        """Navigate to next page"""
+        """Navigate to next page."""
         try:
             max_pages = (114 + 9) // 10  # SURAHS_PER_PAGE = 10
             if (

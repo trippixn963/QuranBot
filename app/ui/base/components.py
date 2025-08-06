@@ -17,12 +17,14 @@ from ...core.logger import TreeLogger
 
 def create_developer_footer(
     bot: discord.Client | None = None,
+    guild: discord.Guild | None = None,
 ) -> tuple[str, str | None]:
     """
     Create standardized developer footer text and icon URL.
 
     Args:
         bot: Discord client for fetching developer info
+        guild: Discord guild to get member-specific avatar
 
     Returns:
         tuple: (footer_text, developer_icon_url)
@@ -38,9 +40,21 @@ def create_developer_footer(
     developer_icon_url = None
     if bot and config.developer_id:
         try:
-            developer = bot.get_user(config.developer_id)
-            if developer and developer.avatar:
-                developer_icon_url = developer.avatar.url
+            # If guild is provided, try to get member-specific avatar first
+            if guild:
+                member = guild.get_member(config.developer_id)
+                if member:
+                    # Try to get server-specific avatar first, fall back to user avatar
+                    if member.guild_avatar:
+                        developer_icon_url = member.guild_avatar.url
+                    elif member.avatar:
+                        developer_icon_url = member.avatar.url
+            
+            # If no guild or member not found, fall back to user avatar
+            if not developer_icon_url:
+                developer = bot.get_user(config.developer_id)
+                if developer and developer.avatar:
+                    developer_icon_url = developer.avatar.url
         except:
             pass
 
@@ -309,7 +323,9 @@ class BaseView(discord.ui.View, ActivityTrackingMixin, UpdateableMixin, LoggingM
                 pass
 
         # Create standardized developer footer
-        footer_text, developer_icon_url = create_developer_footer(interaction.client)
+        footer_text, developer_icon_url = create_developer_footer(
+            interaction.client, interaction.guild
+        )
 
         embed.set_footer(text=footer_text, icon_url=developer_icon_url)
 

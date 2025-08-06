@@ -1,8 +1,7 @@
-# =============================================================================
-# QuranBot - Audio Services Package
-# =============================================================================
-# Audio-related services for Quran playback and metadata management
-# =============================================================================
+"""Audio services package for QuranBot.
+
+Audio-related services for Quran playback and metadata management.
+"""
 
 from .audio_service import AudioService
 from .metadata_cache import MetadataCache

@@ -1,9 +1,9 @@
-# =============================================================================
-# QuranBot - Mention Handler
-# =============================================================================
-# Handles bot mentions for Islamic AI companion functionality
-# =============================================================================
+"""Mention handler for QuranBot.
 
+Handles bot mentions for Islamic AI companion functionality.
+"""
+
+import asyncio
 import re
 
 import discord
@@ -15,6 +15,7 @@ from ..ui.islamic.response_embeds import (
     create_ai_response_embed,
     create_rate_limit_embed,
 )
+from ..ui.base.components import create_developer_footer
 
 
 class MentionHandler:
@@ -208,9 +209,17 @@ class MentionHandler:
                         time_remaining
                     )
                     embed = create_rate_limit_embed(
-                        cooldown_message, time_remaining, message.author, self.bot
+                        cooldown_message, time_remaining, message.author, self.bot, message.guild
                     )
-                    await message.reply(embed=embed, ephemeral=True)
+                    reply = await message.reply(embed=embed)
+                    # Delete the rate limit message after 10 seconds
+                    await asyncio.sleep(10)
+                    try:
+                        await reply.delete()
+                    except discord.NotFound:
+                        pass  # Message already deleted
+                    except discord.Forbidden:
+                        pass  # No permission to delete
                     return
 
             # Check budget limit
@@ -233,19 +242,12 @@ class MentionHandler:
                     except:
                         pass
 
-                # Get developer avatar
-                developer_icon_url = None
-                if self.config.developer_id:
-                    try:
-                        developer = self.bot.get_user(self.config.developer_id)
-                        if developer and developer.avatar:
-                            developer_icon_url = developer.avatar.url
-                    except:
-                        pass
-
-                embed.set_footer(
-                    text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url
+                # Get developer footer with guild-specific avatar
+                # Get developer footer with guild-specific avatar
+                footer_text, developer_icon_url = create_developer_footer(
+                    self.bot, message.guild
                 )
+                embed.set_footer(text=footer_text, icon_url=developer_icon_url)
                 await message.reply(embed=embed)
                 return
 
@@ -286,7 +288,7 @@ class MentionHandler:
                 # Add user_id to context and check if user is developer
                 context["user_id"] = message.author.id
                 context["is_developer"] = message.author.id == self.config.developer_id
-                
+
                 # Log developer interaction if detected
                 if context["is_developer"]:
                     TreeLogger.info(
@@ -334,18 +336,11 @@ class MentionHandler:
                             pass
 
                     # Get developer avatar
-                    developer_icon_url = None
-                    if self.config.developer_id:
-                        try:
-                            developer = self.bot.get_user(self.config.developer_id)
-                            if developer and developer.avatar:
-                                developer_icon_url = developer.avatar.url
-                        except:
-                            pass
-
-                    embed.set_footer(
-                        text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url
+                    # Get developer footer with guild-specific avatar
+                    footer_text, developer_icon_url = create_developer_footer(
+                        self.bot, message.guild
                     )
+                    embed.set_footer(text=footer_text, icon_url=developer_icon_url)
                     await message.reply(embed=embed)
                     return
 
@@ -400,6 +395,7 @@ class MentionHandler:
                     context=context,
                     metadata=metadata,
                     bot=self.bot,
+                    guild=message.guild,
                     remaining_questions=remaining_questions,
                 )
 
@@ -493,18 +489,11 @@ class MentionHandler:
                         pass
 
                 # Get developer avatar
-                developer_icon_url = None
-                if self.config.developer_id:
-                    try:
-                        developer = self.bot.get_user(self.config.developer_id)
-                        if developer and developer.avatar:
-                            developer_icon_url = developer.avatar.url
-                    except:
-                        pass
-
-                embed.set_footer(
-                    text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url
+                # Get developer footer with guild-specific avatar
+                footer_text, developer_icon_url = create_developer_footer(
+                    self.bot, message.guild
                 )
+                embed.set_footer(text=footer_text, icon_url=developer_icon_url)
                 await message.reply(embed=embed)
             except:
                 pass
@@ -564,19 +553,11 @@ class MentionHandler:
                         except:
                             pass
 
-                    # Get developer avatar
-                    developer_icon_url = None
-                    if self.config.developer_id:
-                        try:
-                            developer = self.bot.get_user(self.config.developer_id)
-                            if developer and developer.avatar:
-                                developer_icon_url = developer.avatar.url
-                        except:
-                            pass
-
-                    embed.set_footer(
-                        text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url
+                    # Get developer footer with guild-specific avatar
+                    footer_text, developer_icon_url = create_developer_footer(
+                        self.bot, message.guild
                     )
+                    embed.set_footer(text=footer_text, icon_url=developer_icon_url)
                     await message.reply(embed=embed)
                     return
 
@@ -597,19 +578,11 @@ class MentionHandler:
                         except:
                             pass
 
-                    # Get developer avatar
-                    developer_icon_url = None
-                    if self.config.developer_id:
-                        try:
-                            developer = self.bot.get_user(self.config.developer_id)
-                            if developer and developer.avatar:
-                                developer_icon_url = developer.avatar.url
-                        except:
-                            pass
-
-                    embed.set_footer(
-                        text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url
+                    # Get developer footer with guild-specific avatar
+                    footer_text, developer_icon_url = create_developer_footer(
+                        self.bot, message.guild
                     )
+                    embed.set_footer(text=footer_text, icon_url=developer_icon_url)
                     await message.reply(embed=embed)
                     return
 
@@ -668,19 +641,11 @@ class MentionHandler:
                         inline=False,
                     )
 
-                # Add developer footer
-                developer_icon_url = None
-                if self.config.developer_id:
-                    try:
-                        developer = self.bot.get_user(self.config.developer_id)
-                        if developer and developer.avatar:
-                            developer_icon_url = developer.avatar.url
-                    except:
-                        pass
-
-                embed.set_footer(
-                    text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url
+                # Add developer footer with guild-specific avatar
+                footer_text, developer_icon_url = create_developer_footer(
+                    self.bot, message.guild
                 )
+                embed.set_footer(text=footer_text, icon_url=developer_icon_url)
 
                 # Add refresh tip
                 embed.add_field(
@@ -715,18 +680,10 @@ class MentionHandler:
                 except:
                     pass
 
-            # Get developer avatar
-            developer_icon_url = None
-            if self.config.developer_id:
-                try:
-                    developer = self.bot.get_user(self.config.developer_id)
-                    if developer and developer.avatar:
-                        developer_icon_url = developer.avatar.url
-                except:
-                    pass
-
-            embed.set_footer(
-                text="Developed by حَـــــنَّـــــا", icon_url=developer_icon_url
+            # Get developer footer with guild-specific avatar
+            footer_text, developer_icon_url = create_developer_footer(
+                self.bot, message.guild
             )
+            embed.set_footer(text=footer_text, icon_url=developer_icon_url)
 
             await message.reply(embed=embed)

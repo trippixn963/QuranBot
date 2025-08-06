@@ -24,6 +24,7 @@ from .core.base_service import BaseService, ServiceStatus
 from .core.database_service import DatabaseService
 from .core.state_service import StateService
 
+
 # Service Groups for better organization
 CORE_SERVICES = {
     "database": DatabaseService,

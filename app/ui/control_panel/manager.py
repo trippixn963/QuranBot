@@ -449,56 +449,16 @@ class ControlPanelManager:
 
             try:
                 # STEP 4: Message History Scanning
-                # Scan recent messages (last 50) to find control panel messages
-                async for message in channel.history(limit=50):
-                    # STEP 5: Control Panel Message Detection Logic
-                    # Identify messages that are likely control panel messages
-                    if message.author == self.bot.user:
-                        # STEP 6: Multi-Criteria Message Identification
-                        # Check multiple indicators to identify control panel messages
-                        is_control_panel = (
-                            message.embeds  # Has embeds (status displays)
-                            or message.components  # Has buttons/dropdowns (interactive elements)
-                            or "Surah"
-                            in (message.content or "")  # Contains surah information
-                            or "Reciter"
-                            in (message.content or "")  # Contains reciter information
-                            or "🎵"
-                            in (
-                                message.content or ""
-                            )  # Has music emoji (playback indicator)
-                            or "▰" in (message.content or "")
-                            or "▱"
-                            in (
-                                message.content or ""
-                            )  # Has progress bar (playback progress)
-                        )
-
-                        if is_control_panel:
-                            # STEP 7: Control Panel Message Collection
-                            # Add identified control panel messages to deletion queue
-                            messages_to_delete.append(message)
-                        else:
-                            # STEP 8: Non-Control Panel Message Logging
-                            # Log messages that are skipped to prevent confusion
-                            TreeLogger.info(
-                                "Skipping non-control-panel bot message",
-                                {
-                                    "channel_id": channel.id,
-                                    "message_id": message.id,
-                                    "content_preview": (
-                                        message.content[:50]
-                                        if message.content
-                                        else "[no content]"
-                                    ),
-                                },
-                                service="ControlPanelManager",
-                            )
+                # Scan ALL messages in the channel (increased limit to clear everything)
+                async for message in channel.history(limit=200):
+                    # STEP 5: Add ALL messages to deletion queue
+                    # We want to clear the entire channel, not just control panel messages
+                    messages_to_delete.append(message)
 
                 # STEP 9: Deletion Queue Summary Logging
                 # Log the number of messages identified for deletion
                 TreeLogger.info(
-                    f"Found {len(messages_to_delete)} bot messages to delete",
+                    f"🧹 Found {len(messages_to_delete)} messages to delete from control panel channel",
                     {
                         "channel_id": channel.id,
                         "messages_count": len(messages_to_delete),
@@ -515,15 +475,16 @@ class ControlPanelManager:
                         await message.delete()
                         deleted_count += 1
 
-                        TreeLogger.info(
-                            "Deleted old control panel message",
+                        TreeLogger.debug(
+                            "Deleted message",
                             {
                                 "channel_id": channel.id,
                                 "message_id": message.id,
-                                "message_content_preview": (
+                                "author": str(message.author),
+                                "content_preview": (
                                     message.content[:50]
                                     if message.content
-                                    else "[embed]"
+                                    else "[embed/attachment]"
                                 ),
                             },
                             service="ControlPanelManager",
@@ -574,8 +535,8 @@ class ControlPanelManager:
                 )
 
             if deleted_count > 0:
-                TreeLogger.info(
-                    f"Successfully cleaned up {deleted_count} old control panel messages",
+                TreeLogger.success(
+                    f"✅ Successfully cleared {deleted_count} messages from control panel channel",
                     {
                         "channel_id": channel.id,
                         "channel_name": channel.name,
@@ -585,7 +546,7 @@ class ControlPanelManager:
                 )
             else:
                 TreeLogger.info(
-                    "No old control panel messages found to clean up",
+                    "Control panel channel is already empty",
                     {"channel_id": channel.id, "channel_name": channel.name},
                     service="ControlPanelManager",
                 )

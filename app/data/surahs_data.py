@@ -6,6 +6,7 @@
 
 from typing import Any
 
+
 # Complete surah data with custom emojis for each surah
 COMPLETE_SURAHS_DATA: list[dict[str, Any]] = [
     {

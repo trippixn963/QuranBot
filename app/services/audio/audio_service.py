@@ -38,10 +38,10 @@ from ...core.validation import (
     FileSystemValidator,
 )
 from ...data.models import AudioFileInfo
+from ...data.surahs_data import COMPLETE_SURAHS_DATA
 from ..core.base_service import BaseService
 
 # Commands removed - using discord.Client instead
-
 
 
 class PlaybackState:
@@ -483,6 +483,9 @@ class AudioService(BaseService):
                         # MONITORING LOOP: Track playback state until completion
                         # Give audio 3 seconds to start before checking is_playing()
                         await asyncio.sleep(3)
+                        
+                        # Update stage topic after playback starts
+                        await self._update_stage_topic()
 
                         while self.playback_state == PlaybackState.PLAYING:
                             await asyncio.sleep(1)  # Check every second
@@ -1029,13 +1032,13 @@ class AudioService(BaseService):
                     user_friendly_message="Voice channel not found",
                 )
 
-            # STEP 3: Verify channel type is actually a voice channel
+            # STEP 3: Verify channel type is actually a voice or stage channel
             # Discord has different channel types (text, voice, stage, etc.)
-            if not isinstance(channel, discord.VoiceChannel):
+            if not isinstance(channel, (discord.VoiceChannel, discord.StageChannel)):
                 raise DiscordAPIError(
-                    f"Channel {channel_id} is not a voice channel",
+                    f"Channel {channel_id} is not a voice or stage channel",
                     operation="voice_connection",
-                    user_friendly_message="Selected channel is not a voice channel",
+                    user_friendly_message="Selected channel is not a voice or stage channel",
                 )
 
             # STEP 4: Check bot permissions for voice channel access
@@ -1052,6 +1055,63 @@ class AudioService(BaseService):
             start_time = time.time()
             self.voice_client = await channel.connect(timeout=30.0, self_deaf=True)
             connection_time = time.time() - start_time
+            
+            # STEP 5.1: If this is a stage channel, start stage and request to speak
+            if isinstance(channel, discord.StageChannel):
+                try:
+                    # Check if stage instance exists, if not create one
+                    if channel.instance is None:
+                        await channel.create_instance(
+                            topic="📖 24/7 Quran Recitation - القرآن الكريم",
+                            send_start_notification=False  # This prevents @everyone
+                        )
+                        TreeLogger.success(
+                            "🎭 Started stage instance successfully",
+                            {
+                                "channel_id": channel_id,
+                                "channel_name": channel.name,
+                                "topic": "📖 24/7 Quran Recitation - القرآن الكريم",
+                                "notification_sent": False,
+                                "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                            },
+                            service="AudioService"
+                        )
+                    
+                    # Request to speak in stage
+                    await guild.me.edit(suppress=False)
+                    TreeLogger.success(
+                        "🎤 Requested to speak in stage channel",
+                        {
+                            "channel_id": channel_id,
+                            "channel_name": channel.name,
+                            "bot_id": self.bot.user.id if self.bot.user else None,
+                            "bot_name": self.bot.user.name if self.bot.user else None,
+                            "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                        },
+                        service="AudioService"
+                    )
+                except discord.Forbidden as e:
+                    TreeLogger.error(
+                        "❌ No permission to manage stage channel",
+                        {
+                            "channel_id": channel_id,
+                            "error": str(e),
+                            "required_permissions": ["MANAGE_CHANNELS", "MUTE_MEMBERS", "MOVE_MEMBERS"],
+                            "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                        },
+                        service="AudioService"
+                    )
+                except Exception as e:
+                    TreeLogger.error(
+                        f"❌ Failed to setup stage channel: {e}",
+                        {
+                            "channel_id": channel_id,
+                            "error_type": type(e).__name__,
+                            "error_details": str(e),
+                            "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                        },
+                        service="AudioService"
+                    )
 
             # STEP 6: Update connection state and reset error counters
             # This marks the service as successfully connected
@@ -1344,6 +1404,200 @@ class AudioService(BaseService):
                 },
             )
             raise
+
+    async def _update_stage_topic(self) -> None:
+        """Update stage channel topic with current playing info."""
+        try:
+            if not self.voice_client or not self.current_audio:
+                return
+                
+            channel = self.voice_client.channel
+            if not isinstance(channel, discord.StageChannel):
+                return
+                
+            # Get current surah info
+            surah_number = self.current_audio.surah_number
+            # Find surah info from the list
+            surah_info = next(
+                (s for s in COMPLETE_SURAHS_DATA if s["number"] == surah_number),
+                None
+            )
+            if surah_info:
+                surah_name = surah_info["name_english"]
+                surah_emoji = surah_info.get("emoji", "📖")
+            else:
+                surah_name = f"Surah {surah_number}"
+                surah_emoji = "📖"
+            
+            # Create simple topic with just surah name to minimize spam
+            topic = f"{surah_emoji} {surah_name}"
+            
+            # Update stage instance topic
+            if channel.instance:
+                old_topic = channel.instance.topic if channel.instance else "None"
+                await channel.instance.edit(topic=topic[:120])  # Discord limit is 120 chars
+                
+                TreeLogger.info(
+                    "🎭 Updated stage topic",
+                    {
+                        "channel_id": channel.id,
+                        "channel_name": channel.name,
+                        "old_topic": old_topic,
+                        "new_topic": topic,
+                        "surah_number": surah_number,
+                        "surah_name": surah_name,
+                        "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                    },
+                    service="AudioService"
+                )
+                
+                # Schedule deletion of the stage topic change message
+                # Run multiple times to catch messages that appear with delay
+                asyncio.create_task(self._delete_stage_topic_messages(channel, delay=0.5))
+                asyncio.create_task(self._delete_stage_topic_messages(channel, delay=2.0))
+                asyncio.create_task(self._delete_stage_topic_messages(channel, delay=5.0))
+                
+        except discord.Forbidden as e:
+            TreeLogger.error(
+                "❌ No permission to update stage topic",
+                {
+                    "channel_id": channel.id,
+                    "error": str(e),
+                    "required_permission": "MANAGE_CHANNELS",
+                    "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                },
+                service="AudioService"
+            )
+        except Exception as e:
+            TreeLogger.error(
+                f"❌ Failed to update stage topic: {e}",
+                {
+                    "channel_id": channel.id if channel else None,
+                    "error_type": type(e).__name__,
+                    "error_details": str(e),
+                    "current_surah": surah_number if 'surah_number' in locals() else None,
+                    "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                },
+                service="AudioService"
+            )
+    
+    async def _delete_stage_topic_messages(self, stage_channel: discord.StageChannel, delay: float = 1.0) -> None:
+        """Delete stage topic change system messages to keep the channel clean."""
+        try:
+            # Wait for the message to appear
+            await asyncio.sleep(delay)
+            
+            # Stage channels are also text channels in Discord.py
+            # So we can use the stage channel directly to fetch messages
+            # Fetch recent messages
+            deleted_count = 0
+            messages_checked = 0
+            
+            TreeLogger.debug(
+                f"🔍 Checking for stage topic messages after {delay}s delay",
+                {
+                    "channel_id": stage_channel.id,
+                    "channel_name": stage_channel.name,
+                    "delay_seconds": delay,
+                    "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                },
+                service="AudioService"
+            )
+            
+            async for message in stage_channel.history(limit=20):
+                messages_checked += 1
+                
+                # Debug log each message
+                TreeLogger.debug(
+                    "Checking message",
+                    {
+                        "message_id": message.id,
+                        "author_id": message.author.id,
+                        "bot_id": self.bot.user.id,
+                        "type": str(message.type),
+                        "content": message.content[:50] if message.content else "None"
+                    },
+                    service="AudioService"
+                )
+                
+                # Check if it's a stage topic message
+                # These are system messages created when the stage topic changes
+                if (message.author.id == self.bot.user.id and 
+                    str(message.type) == "MessageType.stage_topic"):
+                    try:
+                        await message.delete()
+                        deleted_count += 1
+                        TreeLogger.success(
+                            "🗑️ Deleted stage topic change message",
+                            {
+                                "message_id": message.id,
+                                "delay_seconds": delay,
+                                "deleted_count": deleted_count,
+                                "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                            },
+                            service="AudioService"
+                        )
+                        # Delete all recent stage topic messages to clean up
+                        if deleted_count >= 3:  # Limit to avoid rate limits
+                            break
+                    except discord.Forbidden:
+                        TreeLogger.error(
+                            "❌ No permission to delete stage topic message",
+                            {
+                                "message_id": message.id,
+                                "required_permission": "MANAGE_MESSAGES",
+                                "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                            },
+                            service="AudioService"
+                        )
+                    except discord.NotFound:
+                        # Message already deleted
+                        pass
+                    except Exception as e:
+                        TreeLogger.error(
+                            f"❌ Failed to delete stage topic message: {e}",
+                            {
+                                "message_id": message.id,
+                                "error_type": type(e).__name__,
+                                "error_details": str(e),
+                                "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                            },
+                            service="AudioService"
+                        )
+            
+            if deleted_count > 0:
+                TreeLogger.info(
+                    f"✅ Stage topic cleanup complete",
+                    {
+                        "messages_checked": messages_checked,
+                        "messages_deleted": deleted_count,
+                        "delay_seconds": delay,
+                        "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                    },
+                    service="AudioService"
+                )
+            else:
+                TreeLogger.debug(
+                    "No stage topic messages found to delete",
+                    {
+                        "messages_checked": messages_checked,
+                        "delay_seconds": delay
+                    },
+                    service="AudioService"
+                )
+                            
+        except Exception as e:
+            TreeLogger.error(
+                f"❌ Error in delete stage topic messages: {e}",
+                {
+                    "channel_id": stage_channel.id if stage_channel else None,
+                    "error_type": type(e).__name__,
+                    "error_details": str(e),
+                    "delay_seconds": delay,
+                    "timestamp": datetime.now(APP_TIMEZONE).isoformat()
+                },
+                service="AudioService"
+            )
 
     async def _extract_audio_duration(self, file_path: str) -> Optional[float]:
         """
@@ -1950,6 +2204,9 @@ class AudioService(BaseService):
                     # Fall back to get_duration method with estimates
                     self.current_duration = self.get_duration()
 
+            # Update stage topic if connected to a stage channel
+            await self._update_stage_topic()
+            
             TreeLogger.info(
                 f"Playback started successfully",
                 {

@@ -19,6 +19,7 @@ from pydantic_settings import BaseSettings
 
 from .timezone import APP_TIMEZONE
 
+
 # Configuration loading timing and logging
 _config_load_start = time.time()
 _env_load_result = load_dotenv()
@@ -42,7 +43,6 @@ _config_metadata = {
                     "GUILD_",
                     "VOICE_",
                     "PANEL_",
-                    "QURAN_VC_",
                     "DEVELOPER_",
                     "AUDIO_",
                     "FFMPEG_",
@@ -140,12 +140,6 @@ class QuranBotConfig(BaseSettings):
         json_schema_extra={"env": "PANEL_CHANNEL_ID"},
     )
 
-    quran_vc_role_id: int = Field(
-        ...,
-        description="Role ID that gives access to Quran VC features",
-        gt=0,
-        json_schema_extra={"env": "QURAN_VC_ROLE_ID"},
-    )
 
     # =========================================================================
     # Optional Discord Channels
@@ -169,12 +163,6 @@ class QuranBotConfig(BaseSettings):
         json_schema_extra={"env": "DEVELOPER_ID"},
     )
 
-    panel_access_role_id: int | None = Field(
-        None,
-        description="Role ID for panel access permissions",
-        gt=0,
-        json_schema_extra={"env": "PANEL_ACCESS_ROLE_ID"},
-    )
 
     # =========================================================================
     # Audio System Configuration
@@ -385,6 +373,40 @@ class QuranBotConfig(BaseSettings):
         json_schema_extra={"env": "AI_USE_KNOWLEDGE_BASE"},
     )
 
+    # =========================================================================
+    # UnbelievaBoat Economy Integration
+    # =========================================================================
+    
+    unbelievaboat_token: str | None = Field(
+        None,
+        description="UnbelievaBoat API token for economy integration",
+        json_schema_extra={"env": "UNBELIEVABOAT_TOKEN"},
+    )
+    
+    quiz_reward_easy: int = Field(
+        default=100,
+        description="Reward for easy quiz questions (1-2 stars)",
+        ge=0,
+        le=10000,
+        json_schema_extra={"env": "QUIZ_REWARD_EASY"},
+    )
+    
+    quiz_reward_medium: int = Field(
+        default=250,
+        description="Reward for medium quiz questions (3 stars)",
+        ge=0,
+        le=10000,
+        json_schema_extra={"env": "QUIZ_REWARD_MEDIUM"},
+    )
+    
+    quiz_reward_hard: int = Field(
+        default=500,
+        description="Reward for hard quiz questions (4-5 stars)",
+        ge=0,
+        le=10000,
+        json_schema_extra={"env": "QUIZ_REWARD_HARD"},
+    )
+
     vps_host: str | None = Field(
         None,
         description="VPS host for deployment",
@@ -591,9 +613,9 @@ class QuranBotConfig(BaseSettings):
                 log_detection_info()
                 return detected_path
             else:
-                detection_info["path_verification"][str(detected_path)] = (
-                    "found_in_path_but_not_executable"
-                )
+                detection_info["path_verification"][
+                    str(detected_path)
+                ] = "found_in_path_but_not_executable"
 
         # Strategy 3: OS-specific common installation paths
         os_system = platform.system().lower()
@@ -651,9 +673,9 @@ class QuranBotConfig(BaseSettings):
                     log_detection_info()
                     return path
                 else:
-                    detection_info["path_verification"][str(path)] = (
-                        "exists_but_not_executable"
-                    )
+                    detection_info["path_verification"][
+                        str(path)
+                    ] = "exists_but_not_executable"
             else:
                 detection_info["path_verification"][str(path)] = "does_not_exist"
 
@@ -750,6 +772,15 @@ class QuranBotConfig(BaseSettings):
     def get_logs_folder_for_date(self, date_str: str) -> Path:
         """Get the logs folder for a specific date (YYYY-MM-DD format)."""
         return self.logs_folder / date_str
+    
+    def get_quiz_reward(self, difficulty: int) -> int:
+        """Get the reward amount for a quiz question based on difficulty."""
+        if difficulty <= 2:
+            return self.quiz_reward_easy
+        elif difficulty == 3:
+            return self.quiz_reward_medium
+        else:
+            return self.quiz_reward_hard
 
     # =========================================================================
     # Pydantic Configuration
@@ -797,7 +828,6 @@ def validate_configuration_with_logging(config: QuranBotConfig) -> dict[str, Any
             "guild_id": config.guild_id,
             "voice_channel_id": config.voice_channel_id,
             "panel_channel_id": config.panel_channel_id,
-            "quran_vc_role_id": config.quran_vc_role_id,
             "developer_id": config.developer_id,
         }
 
@@ -876,26 +906,26 @@ def validate_configuration_with_logging(config: QuranBotConfig) -> dict[str, Any
         # Security checks
         if config.discord_token:
             if len(config.discord_token) < 50:
-                validation_results["security_checks"]["discord_token_length"] = (
-                    "⚠️ Suspiciously short"
-                )
+                validation_results["security_checks"][
+                    "discord_token_length"
+                ] = "⚠️ Suspiciously short"
                 validation_results["warnings"].append(
                     "Discord token appears to be too short"
                 )
             else:
-                validation_results["security_checks"]["discord_token_length"] = (
-                    "✅ Appropriate length"
-                )
+                validation_results["security_checks"][
+                    "discord_token_length"
+                ] = "✅ Appropriate length"
 
         if config.openai_api_key:
             if config.openai_api_key.startswith("sk-"):
-                validation_results["security_checks"]["openai_key_format"] = (
-                    "✅ Valid format"
-                )
+                validation_results["security_checks"][
+                    "openai_key_format"
+                ] = "✅ Valid format"
             else:
-                validation_results["security_checks"]["openai_key_format"] = (
-                    "⚠️ Invalid format"
-                )
+                validation_results["security_checks"][
+                    "openai_key_format"
+                ] = "⚠️ Invalid format"
                 validation_results["warnings"].append(
                     "OpenAI API key format appears invalid"
                 )
@@ -907,20 +937,20 @@ def validate_configuration_with_logging(config: QuranBotConfig) -> dict[str, Any
                     "DEBUG logging enabled in production environment"
                 )
 
-            validation_results["security_checks"]["production_ready"] = (
-                "✅ Production mode"
-            )
+            validation_results["security_checks"][
+                "production_ready"
+            ] = "✅ Production mode"
         else:
-            validation_results["security_checks"]["production_ready"] = (
-                "⚠️ Development mode"
-            )
+            validation_results["security_checks"][
+                "production_ready"
+            ] = "⚠️ Development mode"
 
         # Audio system validation
         if config.audio_folder.exists():
             reciter_folders = [f for f in config.audio_folder.iterdir() if f.is_dir()]
-            validation_results["field_details"]["available_reciters"] = (
-                f"✅ {len(reciter_folders)} found"
-            )
+            validation_results["field_details"][
+                "available_reciters"
+            ] = f"✅ {len(reciter_folders)} found"
 
             if len(reciter_folders) == 0:
                 validation_results["errors"].append(

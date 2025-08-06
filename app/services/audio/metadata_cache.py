@@ -1,8 +1,10 @@
-# =============================================================================
-# QuranBot - Metadata Cache Service
-# =============================================================================
-# Caches audio file metadata and reciter information for fast access.
-# Provides efficient lookup for audio files and Quran data with performance monitoring.
+"""
+Metadata cache service for QuranBot.
+
+Caches audio file metadata and reciter information for fast access.
+Provides efficient lookup for audio files and Quran data with performance monitoring.
+"""
+
 # Designed for high-performance audio file operations with intelligent caching.
 # =============================================================================
 
@@ -28,8 +30,7 @@ from ..core.base_service import BaseService
 
 
 class MetadataCache(BaseService):
-    """
-    Metadata cache service for audio and Quran data.
+    """Metadata cache service for audio and Quran data.
 
     Provides high-performance caching with intelligent preloading,
     memory management, and comprehensive performance monitoring.
@@ -971,7 +972,7 @@ class MetadataCache(BaseService):
     # =========================================================================
 
     async def _setup_file_watching(self) -> None:
-        """Setup file system monitoring for audio directories."""
+        """Set up file system monitoring for audio directories."""
         try:
             audio_folder = self.config.audio_folder
             if not audio_folder.exists():

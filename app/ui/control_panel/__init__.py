@@ -26,6 +26,7 @@ from .embeds import create_error_embed, create_status_embed, create_surah_info_e
 from .manager import ControlPanelManager
 from .view import ControlPanelView
 
+
 __all__ = [
     "ControlPanelManager",
     "ControlPanelView",

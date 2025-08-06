@@ -7,4 +7,5 @@
 
 from .modal import SurahSearchModal
 
+
 __all__ = ["SurahSearchModal"]

@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional
 
 from .timezone import APP_TIMEZONE
 
+
 # Track configuration package import performance
 _config_import_start = time.time()
 _config_import_errors: list[str] = []

@@ -10,7 +10,11 @@ from pathlib import Path
 from typing import Any
 
 from openai import AsyncOpenAI
-import tiktoken
+
+try:
+    import tiktoken
+except ImportError:
+    tiktoken = None
 
 from ...config import get_config
 from ...core.errors import ErrorHandler
@@ -52,12 +56,19 @@ class AIService(BaseService):
             )
 
         # Initialize tokenizer for token counting
-        try:
-            self.tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
-            TreeLogger.debug("Tokenizer initialized", service=self.service_name)
-        except Exception as e:
-            TreeLogger.error(
-                "Failed to initialize tokenizer", e, service=self.service_name
+        if tiktoken:
+            try:
+                self.tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
+                TreeLogger.debug("Tokenizer initialized", service=self.service_name)
+            except Exception as e:
+                TreeLogger.error(
+                    "Failed to initialize tokenizer", e, service=self.service_name
+                )
+                self.tokenizer = None
+        else:
+            TreeLogger.warning(
+                "tiktoken not available - token counting disabled",
+                service=self.service_name,
             )
             self.tokenizer = None
 
@@ -474,7 +485,9 @@ Remember: You're not just an information source - you're a companion who loves I
 
                 # Check if this is the developer
                 if context.get("is_developer"):
-                    context_parts.append(f"SPECIAL: This is your creator حَنَّا (trippixn)! Show extra appreciation and warmth.")
+                    context_parts.append(
+                        "SPECIAL: This is your creator حَنَّا (trippixn)! Show extra appreciation and warmth."
+                    )
 
             # Build messages for ChatGPT
             messages = [{"role": "system", "content": self.system_prompt}]
@@ -489,7 +502,9 @@ Remember: You're not just an information source - you're a companion who loves I
                     {
                         "user_id": user_id,
                         "is_developer": True,
-                        "question_preview": question[:50] + "..." if len(question) > 50 else question,
+                        "question_preview": (
+                            question[:50] + "..." if len(question) > 50 else question
+                        ),
                     },
                     service=self.service_name,
                 )

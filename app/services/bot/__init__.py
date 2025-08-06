@@ -7,6 +7,7 @@
 from .presence_service import PresenceService
 from .user_interaction_logger import UserInteractionLogger
 
+
 __all__ = [
     "PresenceService",
     "UserInteractionLogger",

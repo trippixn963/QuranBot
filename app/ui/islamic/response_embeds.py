@@ -20,6 +20,7 @@ def create_ai_response_embed(
     context: dict[str, Any] | None = None,
     metadata: dict[str, Any] | None = None,
     bot: discord.Client | None = None,
+    guild: discord.Guild | None = None,
     remaining_questions: int = 1,
 ) -> discord.Embed:
     """
@@ -47,16 +48,16 @@ def create_ai_response_embed(
         name="❓ Your Question", value=f"```\n{question}\n```", inline=False
     )
 
-        # Add bot thumbnail
+    # Add bot thumbnail
     if bot and bot.user:
         try:
             embed.set_thumbnail(url=bot.user.avatar.url)
         except:
             pass
-    
+
     # Create developer footer (Discord embed footers don't support clickable mentions)
-    footer_text, developer_icon_url = create_developer_footer(bot)
-    
+    footer_text, developer_icon_url = create_developer_footer(bot, guild)
+
     embed.set_footer(text=footer_text, icon_url=developer_icon_url)
 
     return embed
@@ -67,6 +68,7 @@ def create_rate_limit_embed(
     time_remaining: timedelta,
     user: discord.User,
     bot: discord.Client | None = None,
+    guild: discord.Guild | None = None,
 ) -> discord.Embed:
     """
     Create embed for rate limit message.
@@ -93,16 +95,16 @@ def create_rate_limit_embed(
         color=0xFF0000,  # Red color as requested
     )
 
-        # Add bot thumbnail
+    # Add bot thumbnail
     if bot and bot.user and bot.user.avatar:
         try:
             embed.set_thumbnail(url=bot.user.avatar.url)
         except:
             pass
-    
+
     # Create developer footer (Discord embed footers don't support clickable mentions)
-    footer_text, developer_icon_url = create_developer_footer(bot)
-    
+    footer_text, developer_icon_url = create_developer_footer(bot, guild)
+
     embed.set_footer(text=footer_text, icon_url=developer_icon_url)
 
     return embed
@@ -112,6 +114,7 @@ def create_error_embed_with_pfp(
     title: str,
     description: str,
     bot: discord.Client | None = None,
+    guild: discord.Guild | None = None,
     color: int = 0xFF0000,  # Red by default
 ) -> discord.Embed:
     """
@@ -136,7 +139,7 @@ def create_error_embed_with_pfp(
             pass
 
     # Create developer footer
-    footer_text, developer_icon_url = create_developer_footer(bot)
+    footer_text, developer_icon_url = create_developer_footer(bot, guild)
 
     embed.set_footer(text=footer_text, icon_url=developer_icon_url)
 
@@ -144,7 +147,9 @@ def create_error_embed_with_pfp(
 
 
 def create_ai_error_embed(
-    error_type: str = "generic", bot: discord.Client | None = None
+    error_type: str = "generic", 
+    bot: discord.Client | None = None,
+    guild: discord.Guild | None = None,
 ) -> discord.Embed:
     """
     Create embed for AI service errors.
@@ -163,6 +168,7 @@ def create_ai_error_embed(
             "It will be available again next month, InshaAllah.\n\n"
             "📅 **Budget Reset**: The budget resets on the 1st of each month",
             bot=bot,
+            guild=guild,
             color=0xFF0000,  # Red
         )
 
@@ -172,6 +178,7 @@ def create_ai_error_embed(
             description="I'm having trouble connecting to my knowledge base. "
             "Please try again in a few moments.",
             bot=bot,
+            guild=guild,
             color=0xFF0000,  # Red
         )
 
@@ -181,5 +188,6 @@ def create_ai_error_embed(
             description="I encountered an error while processing your message. "
             "Please try again later.",
             bot=bot,
+            guild=guild,
             color=0xFF0000,  # Red
         )

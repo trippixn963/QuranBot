@@ -15,6 +15,7 @@ from .formatters import (
     truncate_text,
 )
 
+
 __all__ = [
     "BaseView",
     "ActivityTrackingMixin",

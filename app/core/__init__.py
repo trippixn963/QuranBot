@@ -23,6 +23,7 @@ from .errors import (
 # Import core components
 from .logger import TreeLogger, log_event, setup_logging
 
+
 __all__ = [
     # Logging
     "TreeLogger",

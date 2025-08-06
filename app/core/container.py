@@ -19,6 +19,7 @@ from typing import Any, TypeVar
 
 from .logger import TreeLogger
 
+
 T = TypeVar("T")
 
 
